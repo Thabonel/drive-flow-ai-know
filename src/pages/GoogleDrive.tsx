@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { FolderOpen, Plus, Trash2, RefreshCw, CheckCircle, XCircle } from 'lucide-react';
@@ -9,49 +9,64 @@ import { useToast } from '@/hooks/use-toast';
 
 const GoogleDrive = () => {
   const [folders, setFolders] = useState<any[]>([]);
-  const [newFolderUrl, setNewFolderUrl] = useState('');
+  const [newFolderUrls, setNewFolderUrls] = useState('');
   const [isAdding, setIsAdding] = useState(false);
   const { toast } = useToast();
 
-  const handleAddFolder = async () => {
-    if (!newFolderUrl.trim()) return;
+  const handleAddFolders = async () => {
+    if (!newFolderUrls.trim()) return;
     
     setIsAdding(true);
-    try {
-      // Extract folder ID from Google Drive URL
-      const folderIdMatch = newFolderUrl.match(/folders\/([a-zA-Z0-9-_]+)/);
-      if (!folderIdMatch) {
-        throw new Error('Invalid Google Drive folder URL');
+    const urls = newFolderUrls.split('\n').filter(url => url.trim());
+    let successCount = 0;
+    let errorCount = 0;
+    
+    for (const url of urls) {
+      try {
+        // Extract folder ID from Google Drive URL
+        const folderIdMatch = url.trim().match(/folders\/([a-zA-Z0-9-_]+)/);
+        if (!folderIdMatch) {
+          errorCount++;
+          continue;
+        }
+        
+        const folderId = folderIdMatch[1];
+        
+        // TODO: Implement actual Google Drive API integration
+        const newFolder = {
+          id: `${Date.now()}-${Math.random()}`,
+          folder_id: folderId,
+          folder_name: `Sample Folder ${folderId.slice(-4)}`,
+          folder_path: '/sample/path',
+          is_active: true,
+          last_synced_at: null,
+        };
+        
+        setFolders(prev => [...prev, newFolder]);
+        successCount++;
+      } catch (error) {
+        errorCount++;
       }
-      
-      const folderId = folderIdMatch[1];
-      
-      // TODO: Implement actual Google Drive API integration
-      const newFolder = {
-        id: Date.now().toString(),
-        folder_id: folderId,
-        folder_name: 'Sample Folder',
-        folder_path: '/sample/path',
-        is_active: true,
-        last_synced_at: null,
-      };
-      
-      setFolders(prev => [...prev, newFolder]);
-      setNewFolderUrl('');
-      
+    }
+    
+    setNewFolderUrls('');
+    
+    if (successCount > 0) {
       toast({
-        title: 'Folder Added',
-        description: 'Google Drive folder has been connected successfully.',
+        title: 'Folders Added',
+        description: `${successCount} folder(s) connected successfully.${errorCount > 0 ? ` ${errorCount} failed.` : ''}`,
       });
-    } catch (error) {
+    }
+    
+    if (errorCount > 0 && successCount === 0) {
       toast({
         title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to add folder',
+        description: 'Failed to add folders. Please check the URLs.',
         variant: 'destructive',
       });
-    } finally {
-      setIsAdding(false);
     }
+    
+    setIsAdding(false);
   };
 
   const handleRemoveFolder = async (folderId: string) => {
@@ -99,20 +114,21 @@ const GoogleDrive = () => {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="folder-url">Google Drive Folder URL</Label>
-            <Input
-              id="folder-url"
-              placeholder="https://drive.google.com/drive/folders/..."
-              value={newFolderUrl}
-              onChange={(e) => setNewFolderUrl(e.target.value)}
+            <Label htmlFor="folder-urls">Google Drive Folder URLs (one per line)</Label>
+            <Textarea
+              id="folder-urls"
+              placeholder="https://drive.google.com/drive/folders/...&#10;https://drive.google.com/drive/folders/..."
+              value={newFolderUrls}
+              onChange={(e) => setNewFolderUrls(e.target.value)}
+              rows={4}
             />
           </div>
           <Button 
-            onClick={handleAddFolder} 
-            disabled={isAdding || !newFolderUrl.trim()}
+            onClick={handleAddFolders} 
+            disabled={isAdding || !newFolderUrls.trim()}
           >
             <Plus className="h-4 w-4 mr-2" />
-            {isAdding ? 'Adding...' : 'Add Folder'}
+            {isAdding ? 'Adding...' : 'Add Folders'}
           </Button>
         </CardContent>
       </Card>
