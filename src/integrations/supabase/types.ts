@@ -470,6 +470,161 @@ export type Database = {
         }
         Relationships: []
       }
+      google_drive_folders: {
+        Row: {
+          created_at: string
+          folder_id: string
+          folder_name: string
+          folder_path: string | null
+          id: string
+          is_active: boolean | null
+          last_synced_at: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          folder_id: string
+          folder_name: string
+          folder_path?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_synced_at?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          folder_id?: string
+          folder_name?: string
+          folder_path?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_synced_at?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      knowledge_bases: {
+        Row: {
+          ai_generated_content: string | null
+          content: Json
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean | null
+          last_updated_from_source: string | null
+          source_document_ids: string[] | null
+          title: string
+          type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          ai_generated_content?: string | null
+          content?: Json
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_updated_from_source?: string | null
+          source_document_ids?: string[] | null
+          title: string
+          type: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          ai_generated_content?: string | null
+          content?: Json
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_updated_from_source?: string | null
+          source_document_ids?: string[] | null
+          title?: string
+          type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      knowledge_documents: {
+        Row: {
+          ai_insights: Json | null
+          ai_summary: string | null
+          category: string | null
+          content: string | null
+          created_at: string
+          drive_created_at: string | null
+          drive_modified_at: string | null
+          file_size: number | null
+          file_type: string
+          folder_id: string | null
+          google_file_id: string
+          id: string
+          is_archived: boolean | null
+          is_outdated: boolean | null
+          mime_type: string | null
+          tags: string[] | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          ai_insights?: Json | null
+          ai_summary?: string | null
+          category?: string | null
+          content?: string | null
+          created_at?: string
+          drive_created_at?: string | null
+          drive_modified_at?: string | null
+          file_size?: number | null
+          file_type: string
+          folder_id?: string | null
+          google_file_id: string
+          id?: string
+          is_archived?: boolean | null
+          is_outdated?: boolean | null
+          mime_type?: string | null
+          tags?: string[] | null
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          ai_insights?: Json | null
+          ai_summary?: string | null
+          category?: string | null
+          content?: string | null
+          created_at?: string
+          drive_created_at?: string | null
+          drive_modified_at?: string | null
+          file_size?: number | null
+          file_type?: string
+          folder_id?: string | null
+          google_file_id?: string
+          id?: string
+          is_archived?: boolean | null
+          is_outdated?: boolean | null
+          mime_type?: string | null
+          tags?: string[] | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "knowledge_documents_folder_id_fkey"
+            columns: ["folder_id"]
+            isOneToOne: false
+            referencedRelation: "google_drive_folders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       memory_links: {
         Row: {
           from_id: string
@@ -592,6 +747,36 @@ export type Database = {
         }
         Relationships: []
       }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          email: string | null
+          full_name: string | null
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       project_memory: {
         Row: {
           content: string | null
@@ -666,6 +851,53 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      sync_jobs: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          error_message: string | null
+          files_processed: number | null
+          files_total: number | null
+          folder_id: string | null
+          id: string
+          started_at: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          files_processed?: number | null
+          files_total?: number | null
+          folder_id?: string | null
+          id?: string
+          started_at?: string | null
+          status: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          files_processed?: number | null
+          files_total?: number | null
+          folder_id?: string | null
+          id?: string
+          started_at?: string | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sync_jobs_folder_id_fkey"
+            columns: ["folder_id"]
+            isOneToOne: false
+            referencedRelation: "google_drive_folders"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       tasks: {
         Row: {
