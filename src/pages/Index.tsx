@@ -3,10 +3,39 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Brain, FileText, FolderOpen, TrendingUp, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 
 const Index = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+
+  const { data: stats } = useQuery({
+    queryKey: ['stats', user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const [docs, bases, folders] = await Promise.all([
+        supabase.from('knowledge_documents').select('*', { count: 'exact', head: true }).eq('user_id', user!.id),
+        supabase.from('knowledge_bases').select('*', { count: 'exact', head: true }).eq('user_id', user!.id),
+        supabase.from('google_drive_folders').select('*', { count: 'exact', head: true }).eq('user_id', user!.id),
+      ]);
+
+      const lastSyncRes = await supabase
+        .from('google_drive_folders')
+        .select('last_synced_at')
+        .eq('user_id', user!.id)
+        .order('last_synced_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      return {
+        docCount: docs.count ?? 0,
+        baseCount: bases.count ?? 0,
+        folderCount: folders.count ?? 0,
+        lastSync: lastSyncRes.data?.last_synced_at ?? null,
+      };
+    }
+  });
 
   return (
     <div className="space-y-6">
@@ -22,7 +51,7 @@ const Index = () => {
             <FileText className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">0</div>
+            <div className="text-2xl font-bold">{stats?.docCount ?? 0}</div>
             <p className="text-xs text-muted-foreground">From your Google Drive</p>
           </CardContent>
         </Card>
@@ -33,7 +62,7 @@ const Index = () => {
             <Brain className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">0</div>
+            <div className="text-2xl font-bold">{stats?.baseCount ?? 0}</div>
             <p className="text-xs text-muted-foreground">AI-generated collections</p>
           </CardContent>
         </Card>
@@ -44,7 +73,7 @@ const Index = () => {
             <FolderOpen className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">0</div>
+            <div className="text-2xl font-bold">{stats?.folderCount ?? 0}</div>
             <p className="text-xs text-muted-foreground">Google Drive folders</p>
           </CardContent>
         </Card>
@@ -55,8 +84,8 @@ const Index = () => {
             <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">Never</div>
-            <p className="text-xs text-muted-foreground">No syncs yet</p>
+            <div className="text-2xl font-bold">{stats?.lastSync ? new Date(stats.lastSync).toLocaleString() : 'Never'}</div>
+            <p className="text-xs text-muted-foreground">{stats?.lastSync ? 'Most recent sync' : 'No syncs yet'}</p>
           </CardContent>
         </Card>
       </div>

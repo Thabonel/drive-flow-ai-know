@@ -6,12 +6,13 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { FolderOpen, Plus, Trash2, RefreshCw, CheckCircle, XCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useDriveFolders } from '@/hooks/useDriveFolders';
 
 const GoogleDrive = () => {
-  const [folders, setFolders] = useState<any[]>([]);
   const [newFolderUrls, setNewFolderUrls] = useState('');
-  const [isAdding, setIsAdding] = useState(false);
   const { toast } = useToast();
+  const { folders, addFolder, removeFolder, syncFolder } = useDriveFolders();
+  const [isAdding, setIsAdding] = useState(false);
 
   const handleAddFolders = async () => {
     if (!newFolderUrls.trim()) return;
@@ -32,17 +33,11 @@ const GoogleDrive = () => {
         
         const folderId = folderIdMatch[1];
         
-        // TODO: Implement actual Google Drive API integration
-        const newFolder = {
-          id: `${Date.now()}-${Math.random()}`,
+        await addFolder.mutateAsync({
           folder_id: folderId,
-          folder_name: `Sample Folder ${folderId.slice(-4)}`,
-          folder_path: '/sample/path',
-          is_active: true,
-          last_synced_at: null,
-        };
-        
-        setFolders(prev => [...prev, newFolder]);
+          folder_name: `Folder ${folderId.slice(-4)}`,
+          folder_path: null,
+        });
         successCount++;
       } catch (error) {
         errorCount++;
@@ -70,7 +65,7 @@ const GoogleDrive = () => {
   };
 
   const handleRemoveFolder = async (folderId: string) => {
-    setFolders(prev => prev.filter(f => f.id !== folderId));
+    await removeFolder.mutateAsync(folderId);
     toast({
       title: 'Folder Removed',
       description: 'Google Drive folder has been disconnected.',
@@ -82,20 +77,19 @@ const GoogleDrive = () => {
       title: 'Sync Started',
       description: 'Syncing folder contents...',
     });
-    
-    // TODO: Implement actual sync logic
-    setTimeout(() => {
-      setFolders(prev => prev.map(f => 
-        f.id === folderId 
-          ? { ...f, last_synced_at: new Date().toISOString() }
-          : f
-      ));
-      
+    try {
+      const result = await syncFolder.mutateAsync(folderId);
       toast({
         title: 'Sync Complete',
-        description: 'Folder has been synced successfully.',
+        description: `${result.files_processed} files processed`,
       });
-    }, 2000);
+    } catch (err) {
+      toast({
+        title: 'Sync Error',
+        description: (err as Error).message,
+        variant: 'destructive',
+      });
+    }
   };
 
   return (
@@ -141,7 +135,9 @@ const GoogleDrive = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {folders.length === 0 ? (
+          {folders.isLoading ? (
+            <div className="text-center py-8">Loading...</div>
+          ) : (!folders.data || folders.data.length === 0) ? (
             <div className="text-center py-8">
               <FolderOpen className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
               <h3 className="text-lg font-medium text-foreground mb-2">No folders connected</h3>
@@ -149,7 +145,7 @@ const GoogleDrive = () => {
             </div>
           ) : (
             <div className="space-y-4">
-              {folders.map((folder) => (
+              {folders.data?.map((folder) => (
                 <div key={folder.id} className="flex items-center justify-between p-4 border rounded-lg">
                   <div className="flex items-center space-x-4">
                     <FolderOpen className="h-8 w-8 text-primary" />

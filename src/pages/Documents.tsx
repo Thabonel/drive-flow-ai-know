@@ -4,36 +4,32 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { FileText, Search, Archive, Tag, Calendar, Brain } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 
 const Documents = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
-  // Mock data - will be replaced with real data from Supabase
-  const documents = [
-    {
-      id: '1',
-      title: 'AI Prompt Engineering Guide',
-      category: 'prompts',
-      tags: ['ai', 'prompts', 'engineering'],
-      ai_summary: 'Comprehensive guide for creating effective AI prompts with best practices and examples.',
-      drive_modified_at: '2024-01-15T10:00:00Z',
-      is_archived: false,
-    },
-    {
-      id: '2',
-      title: 'Marketing Strategy Q1 2024',
-      category: 'marketing',
-      tags: ['marketing', 'strategy', '2024'],
-      ai_summary: 'Marketing strategy document outlining goals and tactics for Q1 2024.',
-      drive_modified_at: '2024-01-10T14:30:00Z',
-      is_archived: false,
-    },
-  ];
+  const { user } = useAuth();
+  const { data: documents, isLoading } = useQuery({
+    queryKey: ['documents', user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('knowledge_documents')
+        .select('*')
+        .eq('user_id', user!.id)
+        .order('drive_modified_at', { ascending: false });
+      if (error) throw new Error(error.message);
+      return data;
+    }
+  });
 
   const categories = ['prompts', 'marketing', 'specs', 'general'];
-  
-  const filteredDocuments = documents.filter(doc => {
+
+  const filteredDocuments = (documents || []).filter(doc => {
     const matchesSearch = doc.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          doc.ai_summary?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = !selectedCategory || doc.category === selectedCategory;
@@ -94,7 +90,9 @@ const Documents = () => {
       </Card>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredDocuments.length === 0 ? (
+        {isLoading ? (
+          <div className="col-span-full text-center py-8">Loading...</div>
+        ) : filteredDocuments.length === 0 ? (
           <div className="col-span-full">
             <Card>
               <CardContent className="text-center py-12">
