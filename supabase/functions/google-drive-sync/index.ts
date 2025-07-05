@@ -32,8 +32,19 @@ serve(async (req) => {
       throw new Error(`Folder not found: ${folderError.message}`);
     }
 
-    // TODO: Implement actual Google Drive API integration
-    // For now, we'll simulate the sync process
+    const googleToken = Deno.env.get('GOOGLE_DRIVE_TOKEN');
+    if (!googleToken) {
+      throw new Error('Missing GOOGLE_DRIVE_TOKEN env variable');
+    }
+
+    // Fetch files from Google Drive
+    const listRes = await fetch(`https://www.googleapis.com/drive/v3/files?q='${folder.folder_id}'+in+parents&fields=files(id,name,mimeType,createdTime,modifiedTime,size)&supportsAllDrives=true&includeItemsFromAllDrives=true`, {
+      headers: { Authorization: `Bearer ${googleToken}` }
+    });
+    const listData = await listRes.json();
+    const driveFiles = listData.files || [];
+
+    // Create sync job
     
     // Create sync job
     const { data: syncJob, error: syncError } = await supabaseClient
@@ -43,7 +54,7 @@ serve(async (req) => {
         folder_id: folder.id,
         status: 'running',
         started_at: new Date().toISOString(),
-        files_total: 10, // Mock data
+        files_total: driveFiles.length,
       })
       .select()
       .single();
@@ -52,53 +63,41 @@ serve(async (req) => {
       throw new Error(`Failed to create sync job: ${syncError.message}`);
     }
 
-    // Simulate processing files
-    const mockFiles = [
-      {
-        google_file_id: 'file1',
-        title: 'AI Prompts Collection',
-        content: 'This document contains various AI prompts for different use cases...',
-        file_type: 'document',
-        mime_type: 'application/vnd.google-apps.document',
-        drive_created_at: new Date('2024-01-01').toISOString(),
-        drive_modified_at: new Date('2024-01-15').toISOString(),
-        category: 'prompts',
-        tags: ['ai', 'prompts'],
-      },
-      {
-        google_file_id: 'file2',
-        title: 'Marketing Strategy Q1',
-        content: 'Marketing strategy document for Q1 2024...',
-        file_type: 'document',
-        mime_type: 'application/vnd.google-apps.document',
-        drive_created_at: new Date('2024-01-05').toISOString(),
-        drive_modified_at: new Date('2024-01-12').toISOString(),
-        category: 'marketing',
-        tags: ['marketing', 'strategy'],
-      },
-    ];
-
     // Insert/update documents
-    for (const file of mockFiles) {
+    for (const file of driveFiles) {
+      let content: string | null = null;
+      if (file.mimeType === 'application/vnd.google-apps.document') {
+        const exportRes = await fetch(`https://www.googleapis.com/drive/v3/files/${file.id}/export?mimeType=text/plain`, {
+          headers: { Authorization: `Bearer ${googleToken}` }
+        });
+        content = await exportRes.text();
+      }
+
       await supabaseClient
         .from('knowledge_documents')
         .upsert({
           user_id,
           folder_id: folder.id,
-          ...file,
+          google_file_id: file.id,
+          title: file.name,
+          content,
+          file_type: file.mimeType.startsWith('application/vnd.google-apps') ? 'document' : 'file',
+          mime_type: file.mimeType,
+          drive_created_at: file.createdTime,
+          drive_modified_at: file.modifiedTime,
         }, {
           onConflict: 'user_id,google_file_id',
         });
     }
 
     // Update sync job as completed
-    await supabaseClient
-      .from('sync_jobs')
-      .update({
-        status: 'completed',
-        completed_at: new Date().toISOString(),
-        files_processed: mockFiles.length,
-      })
+      await supabaseClient
+        .from('sync_jobs')
+        .update({
+          status: 'completed',
+          completed_at: new Date().toISOString(),
+          files_processed: driveFiles.length,
+        })
       .eq('id', syncJob.id);
 
     // Update folder last sync time
@@ -110,11 +109,11 @@ serve(async (req) => {
       .eq('id', folder.id);
 
     return new Response(
-      JSON.stringify({
-        success: true,
-        files_processed: mockFiles.length,
-        sync_job_id: syncJob.id,
-      }),
+        JSON.stringify({
+          success: true,
+          files_processed: driveFiles.length,
+          sync_job_id: syncJob.id,
+        }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       }

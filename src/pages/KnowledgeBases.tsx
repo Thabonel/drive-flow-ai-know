@@ -3,29 +3,25 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Brain, Plus, BookOpen, Lightbulb, BarChart3, Clock } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 
 const KnowledgeBases = () => {
-  // Mock data - will be replaced with real data from Supabase
-  const knowledgeBases = [
-    {
-      id: '1',
-      title: 'AI Prompts Master Collection',
-      description: 'Curated collection of the most effective AI prompts across different domains',
-      type: 'prompts',
-      source_document_ids: ['1', '3', '5'],
-      last_updated_from_source: '2024-01-15T10:00:00Z',
-      is_active: true,
-    },
-    {
-      id: '2',
-      title: 'Marketing Best Practices',
-      description: 'Synthesized marketing strategies and actionable insights from various campaigns',
-      type: 'marketing',
-      source_document_ids: ['2', '4'],
-      last_updated_from_source: '2024-01-12T16:30:00Z',
-      is_active: true,
-    },
-  ];
+  const { user } = useAuth();
+  const { data: knowledgeBases, isLoading } = useQuery({
+    queryKey: ['knowledge-bases', user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('knowledge_bases')
+        .select('*')
+        .eq('user_id', user!.id)
+        .order('updated_at', { ascending: false });
+      if (error) throw new Error(error.message);
+      return data;
+    }
+  });
 
   const getTypeIcon = (type: string) => {
     const icons = {
@@ -61,7 +57,9 @@ const KnowledgeBases = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {knowledgeBases.length === 0 ? (
+        {isLoading ? (
+          <div className="col-span-full text-center py-8">Loading...</div>
+        ) : !knowledgeBases || knowledgeBases.length === 0 ? (
           <div className="col-span-full">
             <Card>
               <CardContent className="text-center py-12">
