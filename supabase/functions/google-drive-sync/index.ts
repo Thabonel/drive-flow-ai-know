@@ -32,16 +32,39 @@ serve(async (req) => {
       throw new Error(`Folder not found: ${folderError.message}`);
     }
 
-    // For now, use a static token. In production, implement OAuth properly
-    const googleToken = Deno.env.get('GOOGLE_API_KEY');
-    if (!googleToken) {
-      throw new Error('Missing GOOGLE_API_KEY env variable. Please add your Google API key to secrets.');
+    // Get user's stored OAuth token
+    const { data: tokenData, error: tokenError } = await supabaseClient
+      .from('user_google_tokens')
+      .select('access_token, expires_at')
+      .eq('user_id', user_id)
+      .single();
+
+    if (tokenError || !tokenData) {
+      throw new Error('No Google Drive access token found. Please reconnect your Google Drive account.');
     }
 
-    // Fetch files from Google Drive
+    // Check if token is expired
+    const now = new Date();
+    const expiresAt = new Date(tokenData.expires_at);
+    if (now >= expiresAt) {
+      throw new Error('Google Drive access token has expired. Please reconnect your Google Drive account.');
+    }
+
+    const googleToken = tokenData.access_token;
+
+    // Fetch files from Google Drive using OAuth token
     const listRes = await fetch(`https://www.googleapis.com/drive/v3/files?q='${folder.folder_id}'+in+parents&fields=files(id,name,mimeType,createdTime,modifiedTime,size)&supportsAllDrives=true&includeItemsFromAllDrives=true`, {
-      headers: { Authorization: `Bearer ${googleToken}` }
+      headers: { 
+        Authorization: `Bearer ${googleToken}`,
+        'Content-Type': 'application/json'
+      }
     });
+    if (!listRes.ok) {
+      const errorText = await listRes.text();
+      console.error('Google Drive API error:', errorText);
+      throw new Error(`Failed to fetch files from Google Drive: ${listRes.status} ${listRes.statusText}`);
+    }
+    
     const listData = await listRes.json();
     const driveFiles = listData.files || [];
 
@@ -71,10 +94,15 @@ serve(async (req) => {
       if (file.mimeType === 'application/vnd.google-apps.document') {
         try {
           const exportRes = await fetch(`https://www.googleapis.com/drive/v3/files/${file.id}/export?mimeType=text/plain`, {
-            headers: { Authorization: `Bearer ${googleToken}` }
+            headers: { 
+              Authorization: `Bearer ${googleToken}`,
+              'Content-Type': 'application/json'
+            }
           });
           if (exportRes.ok) {
             content = await exportRes.text();
+          } else {
+            console.log(`Could not export document ${file.name}: ${exportRes.status} ${exportRes.statusText}`);
           }
         } catch (error) {
           console.log(`Could not export document ${file.name}:`, error);

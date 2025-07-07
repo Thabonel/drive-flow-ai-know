@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 import { DriveItem } from '@/types/googleDrive';
 
 export const useGoogleDrive = () => {
@@ -8,6 +9,31 @@ export const useGoogleDrive = () => {
   const [driveItems, setDriveItems] = useState<DriveItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  const { user } = useAuth();
+
+  const storeTokens = useCallback(async (tokenResponse: any) => {
+    if (!user) return;
+    
+    try {
+      const expiresAt = new Date(Date.now() + (tokenResponse.expires_in * 1000));
+      
+      await supabase
+        .from('user_google_tokens')
+        .upsert({
+          user_id: user.id,
+          access_token: tokenResponse.access_token,
+          token_type: tokenResponse.token_type || 'Bearer',
+          expires_at: expiresAt.toISOString(),
+          scope: tokenResponse.scope
+        }, {
+          onConflict: 'user_id'
+        });
+        
+      console.log('Tokens stored successfully');
+    } catch (error) {
+      console.error('Error storing tokens:', error);
+    }
+  }, [user]);
 
   const loadScript = useCallback((src: string): Promise<void> => {
     return new Promise((resolve, reject) => {
@@ -105,11 +131,17 @@ export const useGoogleDrive = () => {
       const tokenClient = window.google.accounts.oauth2.initTokenClient({
         client_id: await getClientId(),
         scope: 'https://www.googleapis.com/auth/drive.readonly',
-        callback: (response: any) => {
+        callback: async (response: any) => {
           if (response.access_token) {
             window.gapi.client.setToken(response);
+            await storeTokens(response);
             setIsAuthenticated(true);
             loadDriveItems();
+            
+            toast({
+              title: 'Success',
+              description: 'Successfully connected to Google Drive',
+            });
           }
         },
       });
@@ -123,7 +155,7 @@ export const useGoogleDrive = () => {
         variant: 'destructive',
       });
     }
-  }, [getClientId, loadDriveItems, toast]);
+  }, [getClientId, loadDriveItems, toast, storeTokens]);
 
   return {
     isAuthenticated,
