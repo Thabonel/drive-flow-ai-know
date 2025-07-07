@@ -47,6 +47,29 @@ const GoogleAuthStatus = () => {
     checkTokenStatus();
   }, [user]);
 
+  // Listen for auth changes and refresh status
+  useEffect(() => {
+    const channel = supabase
+      .channel('google_tokens_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'user_google_tokens',
+        },
+        () => {
+          // Refresh token status when tokens are updated
+          setTimeout(checkTokenStatus, 500);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
   const handleReconnect = async () => {
     await initializeGoogleDrive();
     await signIn();
