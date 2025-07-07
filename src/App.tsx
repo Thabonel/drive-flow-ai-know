@@ -12,6 +12,7 @@ import GoogleDrive from "./pages/GoogleDrive";
 import Documents from "./pages/Documents";
 import KnowledgeBases from "./pages/KnowledgeBases";
 import SyncStatus from "./pages/SyncStatus";
+import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -106,6 +107,11 @@ const App = () => (
             <Route path="/sync" element={
               <ProtectedRoute>
                 <SyncStatus />
+              </ProtectedRoute>
+            } />
+            <Route path="/settings" element={
+              <ProtectedRoute>
+                <Settings />
               </ProtectedRoute>
             } />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

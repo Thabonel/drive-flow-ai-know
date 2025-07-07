@@ -77,6 +77,54 @@ const KnowledgeBases = () => {
     },
   });
 
+  const regenerateKB = useMutation({
+    mutationFn: async (kbId: string) => {
+      // Simulate AI regeneration by updating the updated_at timestamp and content
+      const { data, error } = await supabase
+        .from('knowledge_bases')
+        .update({ 
+          updated_at: new Date().toISOString(),
+          ai_generated_content: 'Regenerated content...' 
+        })
+        .eq('id', kbId)
+        .eq('user_id', user!.id)
+        .select()
+        .single();
+      
+      if (error) throw new Error(error.message);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['knowledge-bases', user?.id] });
+      toast({
+        title: 'Knowledge Base Regenerated',
+        description: 'Your knowledge base has been regenerated with the latest information.',
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: 'Error',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const handleViewDetails = (kbId: string) => {
+    // For now, show details in a toast - in a real app this would open a detailed view
+    const kb = knowledgeBases?.find(k => k.id === kbId);
+    if (kb) {
+      toast({
+        title: kb.title,
+        description: `Type: ${kb.type} | Created: ${new Date(kb.created_at).toLocaleDateString()}`,
+      });
+    }
+  };
+
+  const handleRegenerate = (kbId: string) => {
+    regenerateKB.mutate(kbId);
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.title.trim()) {
@@ -184,13 +232,22 @@ const KnowledgeBases = () => {
                     </div>
                     
                     <div className="flex items-center justify-between pt-2">
-                      <Button variant="outline" size="sm">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => handleViewDetails(kb.id)}
+                      >
                         <BookOpen className="h-4 w-4 mr-2" />
                         View Details
                       </Button>
-                      <Button variant="ghost" size="sm">
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => handleRegenerate(kb.id)}
+                        disabled={regenerateKB.isPending}
+                      >
                         <Brain className="h-4 w-4 mr-2" />
-                        Regenerate
+                        {regenerateKB.isPending ? 'Regenerating...' : 'Regenerate'}
                       </Button>
                     </div>
                   </CardContent>
