@@ -52,6 +52,37 @@ serve(async (req) => {
 
     const googleToken = tokenData.access_token;
 
+    // First, get folder details to update folder_path if needed
+    const folderRes = await fetch(`https://www.googleapis.com/drive/v3/files/${folder.folder_id}?fields=name,parents&supportsAllDrives=true`, {
+      headers: { 
+        Authorization: `Bearer ${googleToken}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    let folderPath = folder.folder_path;
+    if (folderRes.ok) {
+      const folderData = await folderRes.json();
+      if (folderData.parents && folderData.parents.length > 0) {
+        // Try to build a folder path by getting parent folder names
+        try {
+          const parentRes = await fetch(`https://www.googleapis.com/drive/v3/files/${folderData.parents[0]}?fields=name&supportsAllDrives=true`, {
+            headers: { 
+              Authorization: `Bearer ${googleToken}`,
+              'Content-Type': 'application/json'
+            }
+          });
+          if (parentRes.ok) {
+            const parentData = await parentRes.json();
+            folderPath = `${parentData.name}/${folderData.name}`;
+          }
+        } catch (e) {
+          console.log('Could not get parent folder info:', e);
+          folderPath = folderData.name;
+        }
+      }
+    }
+
     // Fetch files from Google Drive using OAuth token
     const listRes = await fetch(`https://www.googleapis.com/drive/v3/files?q='${folder.folder_id}'+in+parents&fields=files(id,name,mimeType,createdTime,modifiedTime,size)&supportsAllDrives=true&includeItemsFromAllDrives=true`, {
       headers: { 
@@ -162,11 +193,12 @@ serve(async (req) => {
         })
       .eq('id', syncJob.id);
 
-    // Update folder last sync time
+    // Update folder last sync time and path
     await supabaseClient
       .from('google_drive_folders')
       .update({
         last_synced_at: new Date().toISOString(),
+        folder_path: folderPath,
       })
       .eq('id', folder.id);
 
