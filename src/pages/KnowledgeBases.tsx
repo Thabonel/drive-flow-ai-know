@@ -2,13 +2,28 @@ import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Brain, Plus, BookOpen, Lightbulb, BarChart3, Clock } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useToast } from '@/hooks/use-toast';
 
 const KnowledgeBases = () => {
   const { user } = useAuth();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [formData, setFormData] = useState({
+    title: '',
+    description: '',
+    type: 'general'
+  });
+
   const { data: knowledgeBases, isLoading } = useQuery({
     queryKey: ['knowledge-bases', user?.id],
     enabled: !!user,
@@ -22,6 +37,58 @@ const KnowledgeBases = () => {
       return data;
     }
   });
+
+  const createKnowledgeBase = useMutation({
+    mutationFn: async (data: { title: string; description: string; type: string }) => {
+      const { data: result, error } = await supabase
+        .from('knowledge_bases')
+        .insert([
+          {
+            title: data.title,
+            description: data.description,
+            type: data.type,
+            user_id: user!.id,
+            content: {},
+            source_document_ids: [],
+            is_active: true
+          }
+        ])
+        .select()
+        .single();
+      
+      if (error) throw new Error(error.message);
+      return result;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['knowledge-bases', user?.id] });
+      setIsDialogOpen(false);
+      setFormData({ title: '', description: '', type: 'general' });
+      toast({
+        title: 'Knowledge Base Created',
+        description: 'Your new knowledge base has been created successfully.',
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: 'Error',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formData.title.trim()) {
+      toast({
+        title: 'Error',
+        description: 'Please enter a title for your knowledge base.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    createKnowledgeBase.mutate(formData);
+  };
 
   const getTypeIcon = (type: string) => {
     const icons = {
@@ -50,10 +117,76 @@ const KnowledgeBases = () => {
           <h1 className="text-3xl font-bold text-foreground">Knowledge Bases</h1>
           <p className="text-muted-foreground">AI-generated collections of synthesized knowledge</p>
         </div>
-        <Button>
-          <Plus className="h-4 w-4 mr-2" />
-          Create Knowledge Base
-        </Button>
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogTrigger asChild>
+            <Button>
+              <Plus className="h-4 w-4 mr-2" />
+              Create Knowledge Base
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Create Knowledge Base</DialogTitle>
+              <DialogDescription>
+                Create a new knowledge base to organize and synthesize your information.
+              </DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="title">Title</Label>
+                <Input
+                  id="title"
+                  value={formData.title}
+                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                  placeholder="Enter knowledge base title"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="description">Description</Label>
+                <Textarea
+                  id="description"
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  placeholder="Describe what this knowledge base will contain"
+                  rows={3}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="type">Type</Label>
+                <Select
+                  value={formData.type}
+                  onValueChange={(value) => setFormData({ ...formData, type: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select knowledge base type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="general">General</SelectItem>
+                    <SelectItem value="prompts">Prompts</SelectItem>
+                    <SelectItem value="marketing">Marketing</SelectItem>
+                    <SelectItem value="specs">Specifications</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex justify-end space-x-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsDialogOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={createKnowledgeBase.isPending}
+                >
+                  {createKnowledgeBase.isPending ? 'Creating...' : 'Create Knowledge Base'}
+                </Button>
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -68,10 +201,12 @@ const KnowledgeBases = () => {
                 <p className="text-muted-foreground mb-4">
                   AI will automatically create knowledge bases as you add more documents
                 </p>
-                <Button variant="outline">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Create Manual Knowledge Base
-                </Button>
+                <DialogTrigger asChild>
+                  <Button variant="outline">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Create Manual Knowledge Base
+                  </Button>
+                </DialogTrigger>
               </CardContent>
             </Card>
           </div>
