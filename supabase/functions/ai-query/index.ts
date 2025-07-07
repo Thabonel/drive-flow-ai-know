@@ -159,11 +159,15 @@ serve(async (req) => {
     // Prepare context for AI
     let documentContext = '';
     if (contextDocuments.length > 0) {
-      documentContext = contextDocuments.map(doc => {
-        const summary = doc.ai_summary || doc.content?.substring(0, 500) || '';
-        return `Title: ${doc.title}\nSummary: ${summary}\nTags: ${doc.tags?.join(', ') || 'None'}\n---`;
+      documentContext = contextDocuments.map((doc, index) => {
+        // Use full content if no summary, but limit to reasonable size for AI
+        const content = doc.ai_summary || doc.content?.substring(0, 3000) || 'No content available';
+        console.log(`Document ${index + 1}: ${doc.title} - Content length: ${content.length}`);
+        return `Title: ${doc.title}\nContent: ${content}\nTags: ${doc.tags?.join(', ') || 'None'}\nFile Type: ${doc.file_type}\n---`;
       }).join('\n');
     }
+
+    console.log('Final document context length:', documentContext.length);
 
     if (contextText) {
       documentContext += `\n\nKnowledge Base Content:\n${contextText}`;
