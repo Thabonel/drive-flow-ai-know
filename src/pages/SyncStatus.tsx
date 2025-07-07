@@ -44,7 +44,7 @@ const SyncStatus = () => {
     mutationFn: async (folderId: string) => {
       // Call the Google Drive sync edge function
       const { data, error } = await supabase.functions.invoke('google-drive-sync', {
-        body: { folder_id: folderId }
+        body: { folder_id: folderId, user_id: user!.id }
       });
       if (error) throw new Error(error.message);
       return data;
@@ -52,9 +52,11 @@ const SyncStatus = () => {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['sync-jobs', user?.id] });
       queryClient.invalidateQueries({ queryKey: ['google-drive-folders', user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['documents', user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['knowledge-bases', user?.id] });
       toast({
-        title: 'Sync Started',
-        description: `Folder sync has been initiated. ${data?.files_processed || 0} files processed.`,
+        title: 'Sync Completed',
+        description: `Successfully synced ${data?.files_processed || 0} files. AI analysis in progress.`,
       });
     },
     onError: (error) => {

@@ -77,6 +77,31 @@ const KnowledgeBases = () => {
     },
   });
 
+  const seedTestData = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.functions.invoke('seed-test-data', {
+        body: { user_id: user!.id }
+      });
+      if (error) throw new Error(error.message);
+      return data;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['knowledge-bases', user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['documents', user?.id] });
+      toast({
+        title: 'Demo Data Loaded',
+        description: `Created ${data.documents_created} documents and ${data.knowledge_bases_created} knowledge bases`,
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: 'Error Loading Demo Data',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
   const regenerateKB = useMutation({
     mutationFn: async (kbId: string) => {
       // Simulate AI regeneration by updating the updated_at timestamp and content
@@ -123,6 +148,10 @@ const KnowledgeBases = () => {
 
   const handleRegenerate = (kbId: string) => {
     regenerateKB.mutate(kbId);
+  };
+
+  const loadTestData = () => {
+    seedTestData.mutate();
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -184,14 +213,19 @@ const KnowledgeBases = () => {
                   <Brain className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
                   <h3 className="text-lg font-medium text-foreground mb-2">No knowledge bases yet</h3>
                   <p className="text-muted-foreground mb-4">
-                    AI will automatically create knowledge bases as you add more documents
+                    Connect your Google Drive folders and sync documents to automatically generate knowledge bases
                   </p>
-                  <DialogTrigger asChild>
-                    <Button variant="outline">
-                      <Plus className="h-4 w-4 mr-2" />
-                      Create Manual Knowledge Base
+                  <div className="flex gap-2 justify-center">
+                    <Button onClick={loadTestData} disabled={seedTestData.isPending}>
+                      {seedTestData.isPending ? 'Loading...' : 'Load Demo Data'}
                     </Button>
-                  </DialogTrigger>
+                    <DialogTrigger asChild>
+                      <Button variant="outline">
+                        <Plus className="h-4 w-4 mr-2" />
+                        Create Manual KB
+                      </Button>
+                    </DialogTrigger>
+                  </div>
                 </CardContent>
               </Card>
             </div>

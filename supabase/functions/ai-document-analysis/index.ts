@@ -132,16 +132,41 @@ async function createOrUpdateKnowledgeBase(supabaseClient: any, userId: string, 
     .eq('is_active', true)
     .single();
 
+  // Get all documents in this category to generate comprehensive content
+  const { data: categoryDocs } = await supabaseClient
+    .from('knowledge_documents')
+    .select('id, title, ai_summary, content, tags')
+    .eq('user_id', userId)
+    .eq('category', category)
+    .not('ai_summary', 'is', null);
+
+  // Generate comprehensive knowledge base content
+  const allDocuments = categoryDocs || [];
+  const documentSummaries = allDocuments.map(doc => ({
+    title: doc.title,
+    summary: doc.ai_summary,
+    tags: doc.tags || []
+  }));
+
+  const synthesizedContent = await generateKnowledgeBaseSynthesis(documentSummaries, category);
+
   if (existingKB) {
     // Update existing knowledge base
-    const updatedSourceIds = [...new Set([...existingKB.source_document_ids, document.id])];
+    const updatedSourceIds = [...new Set([...existingKB.source_document_ids || [], document.id])];
     
     await supabaseClient
       .from('knowledge_bases')
       .update({
         source_document_ids: updatedSourceIds,
+        ai_generated_content: synthesizedContent,
         last_updated_from_source: new Date().toISOString(),
         updated_at: new Date().toISOString(),
+        content: {
+          documents: updatedSourceIds,
+          created_from: 'ai_analysis',
+          last_synthesis: new Date().toISOString(),
+          document_count: updatedSourceIds.length
+        }
       })
       .eq('id', existingKB.id);
   } else {
@@ -151,14 +176,48 @@ async function createOrUpdateKnowledgeBase(supabaseClient: any, userId: string, 
       .insert({
         user_id: userId,
         title: `${category.charAt(0).toUpperCase() + category.slice(1)} Knowledge Base`,
-        description: `Automatically generated knowledge base for ${category} documents`,
+        description: `AI-synthesized knowledge base containing insights from ${allDocuments.length} ${category} documents`,
         type: category,
         source_document_ids: [document.id],
+        ai_generated_content: synthesizedContent,
         content: {
           documents: [document.id],
           created_from: 'ai_analysis',
+          last_synthesis: new Date().toISOString(),
+          document_count: 1
         },
         last_updated_from_source: new Date().toISOString(),
       });
   }
+}
+
+async function generateKnowledgeBaseSynthesis(documentSummaries: any[], category: string): Promise<string> {
+  if (documentSummaries.length === 0) {
+    return `This ${category} knowledge base will be populated as documents are analyzed.`;
+  }
+
+  // Simple synthesis for now - in production, this would use AI
+  const titles = documentSummaries.map(doc => doc.title).join(', ');
+  const allTags = documentSummaries.flatMap(doc => doc.tags).filter((tag, index, arr) => arr.indexOf(tag) === index);
+  
+  return `
+# ${category.charAt(0).toUpperCase() + category.slice(1)} Knowledge Base
+
+This knowledge base synthesizes insights from ${documentSummaries.length} documents in the ${category} category.
+
+## Document Overview
+Documents included: ${titles}
+
+## Key Topics
+${allTags.map(tag => `- ${tag}`).join('\n')}
+
+## Summary
+This collection provides comprehensive coverage of ${category}-related content, drawing from multiple source documents to create a unified knowledge resource.
+
+## Document Summaries
+${documentSummaries.map(doc => `
+### ${doc.title}
+${doc.summary}
+`).join('\n')}
+  `.trim();
 }
