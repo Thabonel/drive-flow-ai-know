@@ -30,6 +30,14 @@ const DriveItemsList = ({ items, isLoading, onConfirmSelection }: DriveItemsList
     setSelectedItems(new Set());
   };
 
+  const handleSelectAll = () => {
+    setSelectedItems(new Set(items.map(item => item.id)));
+  };
+
+  const handleDeselectAll = () => {
+    setSelectedItems(new Set());
+  };
+
   const isFolderType = (mimeType: string) => {
     return mimeType === 'application/vnd.google-apps.folder';
   };
@@ -44,6 +52,25 @@ const DriveItemsList = ({ items, isLoading, onConfirmSelection }: DriveItemsList
 
   return (
     <div className="space-y-4">
+      <div className="flex gap-2">
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={handleSelectAll}
+          disabled={items.length === 0}
+        >
+          Select All
+        </Button>
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={handleDeselectAll}
+          disabled={selectedItems.size === 0}
+        >
+          Deselect All
+        </Button>
+      </div>
+      
       <ScrollArea className="h-96 w-full border rounded-md p-4">
         <div className="space-y-2">
           {items.map((item) => (
