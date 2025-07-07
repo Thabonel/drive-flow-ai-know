@@ -17,11 +17,12 @@ export const useGoogleDrive = () => {
     try {
       const expiresAt = new Date(Date.now() + (tokenResponse.expires_in * 1000));
       
-      await supabase
+      const { data, error } = await supabase
         .from('user_google_tokens')
         .upsert({
           user_id: user.id,
           access_token: tokenResponse.access_token,
+          refresh_token: tokenResponse.refresh_token || null,
           token_type: tokenResponse.token_type || 'Bearer',
           expires_at: expiresAt.toISOString(),
           scope: tokenResponse.scope
@@ -29,11 +30,21 @@ export const useGoogleDrive = () => {
           onConflict: 'user_id'
         });
         
-      console.log('Tokens stored successfully');
+      if (error) {
+        console.error('Error storing tokens:', error);
+        throw error;
+      }
+      
+      console.log('Tokens stored successfully:', data);
     } catch (error) {
       console.error('Error storing tokens:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to store authentication tokens',
+        variant: 'destructive',
+      });
     }
-  }, [user]);
+  }, [user, toast]);
 
   const loadScript = useCallback((src: string): Promise<void> => {
     return new Promise((resolve, reject) => {
@@ -128,20 +139,25 @@ export const useGoogleDrive = () => {
 
   const signIn = useCallback(async () => {
     try {
+      const clientId = await getClientId();
       const tokenClient = window.google.accounts.oauth2.initTokenClient({
-        client_id: await getClientId(),
+        client_id: clientId,
         scope: 'https://www.googleapis.com/auth/drive.readonly',
         callback: async (response: any) => {
+          console.log('OAuth response received:', response);
           if (response.access_token) {
             window.gapi.client.setToken(response);
             await storeTokens(response);
             setIsAuthenticated(true);
-            loadDriveItems();
+            await loadDriveItems();
             
             toast({
               title: 'Success',
               description: 'Successfully connected to Google Drive',
             });
+          } else {
+            console.error('No access token in response:', response);
+            throw new Error('No access token received');
           }
         },
       });
