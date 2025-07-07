@@ -38,7 +38,6 @@ export const AIQueryInput = ({ selectedKnowledgeBase, onClearSelection }: AIQuer
       const { data, error } = await supabase.functions.invoke('ai-query', {
         body: {
           query: query,
-          user_id: user.id,
           knowledge_base_id: selectedKnowledgeBase?.id
         }
       });
