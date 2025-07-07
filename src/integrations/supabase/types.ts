@@ -567,6 +567,7 @@ export type Database = {
           id: string
           is_archived: boolean | null
           is_outdated: boolean | null
+          is_pinned: boolean | null
           mime_type: string | null
           tags: string[] | null
           title: string
@@ -588,6 +589,7 @@ export type Database = {
           id?: string
           is_archived?: boolean | null
           is_outdated?: boolean | null
+          is_pinned?: boolean | null
           mime_type?: string | null
           tags?: string[] | null
           title: string
@@ -609,6 +611,7 @@ export type Database = {
           id?: string
           is_archived?: boolean | null
           is_outdated?: boolean | null
+          is_pinned?: boolean | null
           mime_type?: string | null
           tags?: string[] | null
           title?: string
