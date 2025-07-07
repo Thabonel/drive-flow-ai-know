@@ -18,7 +18,15 @@ const KnowledgeBases = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [selectedKB, setSelectedKB] = useState<any>(null);
+  const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
+    title: '',
+    description: '',
+    type: 'general'
+  });
+  const [editFormData, setEditFormData] = useState({
     title: '',
     description: '',
     type: 'general'
@@ -135,14 +143,64 @@ const KnowledgeBases = () => {
     },
   });
 
+  const updateKB = useMutation({
+    mutationFn: async (data: { id: string; title: string; description: string; type: string }) => {
+      const { data: result, error } = await supabase
+        .from('knowledge_bases')
+        .update({
+          title: data.title,
+          description: data.description,
+          type: data.type,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', data.id)
+        .eq('user_id', user!.id)
+        .select()
+        .single();
+      if (error) throw new Error(error.message);
+      return result;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['knowledge-bases', user?.id] });
+      setIsEditing(false);
+      toast({
+        title: 'Knowledge Base Updated',
+        description: 'Your knowledge base has been updated successfully.',
+      });
+    }
+  });
+
+  const deleteKB = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from('knowledge_bases')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', user!.id);
+      if (error) throw new Error(error.message);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['knowledge-bases', user?.id] });
+      setIsDetailsOpen(false);
+      setSelectedKB(null);
+      toast({
+        title: 'Knowledge Base Deleted',
+        description: 'Your knowledge base has been deleted successfully.',
+      });
+    }
+  });
+
   const handleViewDetails = (kbId: string) => {
-    // For now, show details in a toast - in a real app this would open a detailed view
     const kb = knowledgeBases?.find(k => k.id === kbId);
     if (kb) {
-      toast({
+      setSelectedKB(kb);
+      setEditFormData({
         title: kb.title,
-        description: `Type: ${kb.type} | Created: ${new Date(kb.created_at).toLocaleDateString()}`,
+        description: kb.description || '',
+        type: kb.type
       });
+      setIsDetailsOpen(true);
+      setIsEditing(false);
     }
   };
 
@@ -152,6 +210,22 @@ const KnowledgeBases = () => {
 
   const loadTestData = () => {
     seedTestData.mutate();
+  };
+
+  const handleUpdateKB = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (selectedKB) {
+      updateKB.mutate({
+        id: selectedKB.id,
+        ...editFormData
+      });
+    }
+  };
+
+  const handleDeleteKB = () => {
+    if (selectedKB && confirm('Are you sure you want to delete this knowledge base?')) {
+      deleteKB.mutate(selectedKB.id);
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -188,7 +262,8 @@ const KnowledgeBases = () => {
   };
 
   return (
-    <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+    <>
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
@@ -396,7 +471,143 @@ const KnowledgeBases = () => {
           </div>
         </form>
       </DialogContent>
-    </Dialog>
+      </Dialog>
+
+      <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center justify-between">
+              {isEditing ? 'Edit Knowledge Base' : selectedKB?.title}
+              <div className="flex gap-2">
+                {!isEditing && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setIsEditing(true)}
+                  >
+                    Edit
+                  </Button>
+                )}
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={handleDeleteKB}
+                  disabled={deleteKB.isPending}
+                >
+                  {deleteKB.isPending ? 'Deleting...' : 'Delete'}
+                </Button>
+              </div>
+            </DialogTitle>
+          </DialogHeader>
+          
+          {selectedKB && (
+            <div className="space-y-6">
+              {isEditing ? (
+                <form onSubmit={handleUpdateKB} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-title">Title</Label>
+                    <Input
+                      id="edit-title"
+                      value={editFormData.title}
+                      onChange={(e) => setEditFormData({ ...editFormData, title: e.target.value })}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-description">Description</Label>
+                    <Textarea
+                      id="edit-description"
+                      value={editFormData.description}
+                      onChange={(e) => setEditFormData({ ...editFormData, description: e.target.value })}
+                      rows={3}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-type">Type</Label>
+                    <Select
+                      value={editFormData.type}
+                      onValueChange={(value) => setEditFormData({ ...editFormData, type: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="general">General</SelectItem>
+                        <SelectItem value="prompts">Prompts</SelectItem>
+                        <SelectItem value="marketing">Marketing</SelectItem>
+                        <SelectItem value="specs">Specifications</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="flex justify-end space-x-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setIsEditing(false)}
+                    >
+                      Cancel
+                    </Button>
+                    <Button type="submit" disabled={updateKB.isPending}>
+                      {updateKB.isPending ? 'Updating...' : 'Update'}
+                    </Button>
+                  </div>
+                </form>
+              ) : (
+                <div className="space-y-4">
+                  <div>
+                    <h4 className="font-medium text-foreground mb-2">Description</h4>
+                    <p className="text-muted-foreground">{selectedKB.description || 'No description available'}</p>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <h4 className="font-medium text-foreground mb-2">Type</h4>
+                      <Badge variant="secondary">
+                        {selectedKB.type.charAt(0).toUpperCase() + selectedKB.type.slice(1)}
+                      </Badge>
+                    </div>
+                    <div>
+                      <h4 className="font-medium text-foreground mb-2">Status</h4>
+                      <Badge variant={selectedKB.is_active ? 'default' : 'secondary'}>
+                        {selectedKB.is_active ? 'Active' : 'Inactive'}
+                      </Badge>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h4 className="font-medium text-foreground mb-2">Source Documents</h4>
+                    <p className="text-muted-foreground">
+                      {selectedKB.source_document_ids?.length || 0} documents contributing to this knowledge base
+                    </p>
+                  </div>
+
+                  <div>
+                    <h4 className="font-medium text-foreground mb-2">Last Updated</h4>
+                    <p className="text-muted-foreground">
+                      {selectedKB.last_updated_from_source 
+                        ? new Date(selectedKB.last_updated_from_source).toLocaleString()
+                        : 'Never updated from source'
+                      }
+                    </p>
+                  </div>
+
+                  {selectedKB.ai_generated_content && (
+                    <div>
+                      <h4 className="font-medium text-foreground mb-2">AI-Generated Content</h4>
+                      <div className="bg-muted p-4 rounded-lg max-h-96 overflow-y-auto">
+                        <pre className="whitespace-pre-wrap text-sm text-muted-foreground">
+                          {selectedKB.ai_generated_content}
+                        </pre>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };
 
