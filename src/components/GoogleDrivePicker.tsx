@@ -18,6 +18,7 @@ interface DriveItem {
 declare global {
   interface Window {
     gapi: any;
+    google: any;
   }
 }
 
@@ -33,43 +34,71 @@ const GoogleDrivePicker = ({ onItemsSelected }: GoogleDrivePickerProps) => {
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
   const { toast } = useToast();
 
-  const initializeGoogleDrive = () => {
-    // Load Google API
-    if (typeof window.gapi === 'undefined') {
-      const script = document.createElement('script');
-      script.src = 'https://apis.google.com/js/api.js';
-      script.onload = () => {
-        window.gapi.load('auth2:client', initAuth);
-      };
-      document.head.appendChild(script);
-    } else {
-      window.gapi.load('auth2:client', initAuth);
-    }
-  };
-
-  const initAuth = async () => {
+  const initializeGoogleDrive = async () => {
     try {
       // Fetch Google API configuration from edge function
       const { data: config, error } = await supabase.functions.invoke('get-google-config');
       if (error) throw error;
 
-      await window.gapi.client.init({
-        apiKey: config.apiKey,
-        clientId: config.clientId,
-        discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'],
-        scope: 'https://www.googleapis.com/auth/drive.readonly'
+      // Load Google Identity Services and API client
+      await Promise.all([
+        loadScript('https://accounts.google.com/gsi/client'),
+        loadScript('https://apis.google.com/js/api.js')
+      ]);
+
+      // Initialize Google API client
+      await new Promise((resolve, reject) => {
+        window.gapi.load('client', {callback: resolve, onerror: reject});
       });
 
-      const authInstance = window.gapi.auth2.getAuthInstance();
-      if (authInstance.isSignedIn.get()) {
-        setIsAuthenticated(true);
-        loadDriveItems();
-      }
+      await window.gapi.client.init({
+        apiKey: config.apiKey,
+        discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest']
+      });
+
+      // Initialize Google Identity Services
+      window.google.accounts.id.initialize({
+        client_id: config.clientId,
+        callback: handleCredentialResponse,
+      });
+
+      setIsAuthenticated(false);
     } catch (error) {
-      console.error('Error initializing Google API:', error);
+      console.error('Error initializing Google services:', error);
       toast({
         title: 'Error',
-        description: 'Failed to initialize Google Drive API',
+        description: 'Failed to initialize Google Drive services',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const loadScript = (src: string): Promise<void> => {
+    return new Promise((resolve, reject) => {
+      if (document.querySelector(`script[src="${src}"]`)) {
+        resolve();
+        return;
+      }
+      const script = document.createElement('script');
+      script.src = src;
+      script.onload = () => resolve();
+      script.onerror = () => reject(new Error(`Failed to load script: ${src}`));
+      document.head.appendChild(script);
+    });
+  };
+
+  const handleCredentialResponse = async (response: any) => {
+    try {
+      // For OAuth 2.0 with PKCE, we need to handle the token differently
+      // This is called when using Google Identity Services
+      console.log('Credential response:', response);
+      setIsAuthenticated(true);
+      await loadDriveItems();
+    } catch (error) {
+      console.error('Error handling credential response:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to authenticate with Google',
         variant: 'destructive',
       });
     }
@@ -77,10 +106,20 @@ const GoogleDrivePicker = ({ onItemsSelected }: GoogleDrivePickerProps) => {
 
   const signIn = async () => {
     try {
-      const authInstance = window.gapi.auth2.getAuthInstance();
-      await authInstance.signIn();
-      setIsAuthenticated(true);
-      loadDriveItems();
+      // Use OAuth 2.0 with PKCE for Drive API access
+      const tokenClient = window.google.accounts.oauth2.initTokenClient({
+        client_id: await getClientId(),
+        scope: 'https://www.googleapis.com/auth/drive.readonly',
+        callback: (response: any) => {
+          if (response.access_token) {
+            window.gapi.client.setToken(response);
+            setIsAuthenticated(true);
+            loadDriveItems();
+          }
+        },
+      });
+      
+      tokenClient.requestAccessToken({ prompt: 'consent' });
     } catch (error) {
       console.error('Error signing in:', error);
       toast({
@@ -89,6 +128,11 @@ const GoogleDrivePicker = ({ onItemsSelected }: GoogleDrivePickerProps) => {
         variant: 'destructive',
       });
     }
+  };
+
+  const getClientId = async () => {
+    const { data: config } = await supabase.functions.invoke('get-google-config');
+    return config.clientId;
   };
 
   const loadDriveItems = async () => {
