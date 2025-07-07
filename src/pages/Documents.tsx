@@ -3,11 +3,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { FileText, Search, Archive, Tag, Calendar, Brain } from 'lucide-react';
+import { FileText, Search, Archive, Tag, Calendar, Brain, Plus } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
+import { CreateKnowledgeDocumentModal } from '@/components/CreateKnowledgeDocumentModal';
 
 const Documents = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -102,9 +103,19 @@ const Documents = () => {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-foreground">Documents</h1>
-        <p className="text-muted-foreground">Browse and search your knowledge documents</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground">Documents</h1>
+          <p className="text-muted-foreground">Browse and search your knowledge documents</p>
+        </div>
+        <CreateKnowledgeDocumentModal 
+          trigger={
+            <Button size="lg">
+              <Plus className="h-5 w-5 mr-2" />
+              Create Document
+            </Button>
+          }
+        />
       </div>
 
       <Card>
