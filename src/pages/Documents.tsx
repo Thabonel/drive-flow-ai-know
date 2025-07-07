@@ -4,15 +4,19 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { FileText, Search, Archive, Tag, Calendar, Brain } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useToast } from '@/hooks/use-toast';
 
 const Documents = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
   const { user } = useAuth();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
   const { data: documents, isLoading } = useQuery({
     queryKey: ['documents', user?.id],
     enabled: !!user,
@@ -26,6 +30,56 @@ const Documents = () => {
       return data;
     }
   });
+
+  const generateInsights = useMutation({
+    mutationFn: async (docId: string) => {
+      // Simulate AI insights generation by updating the ai_insights field
+      const insights = {
+        key_topics: ['AI', 'Machine Learning', 'Data Analysis'],
+        summary: 'This document contains valuable insights about AI and machine learning applications.',
+        recommendations: ['Consider implementing these strategies', 'Review the data analysis section']
+      };
+      
+      const { data, error } = await supabase
+        .from('knowledge_documents')
+        .update({ 
+          ai_insights: insights,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', docId)
+        .eq('user_id', user!.id)
+        .select()
+        .single();
+      
+      if (error) throw new Error(error.message);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['documents', user?.id] });
+      toast({
+        title: 'AI Insights Generated',
+        description: 'New insights have been generated for this document.',
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: 'Error',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const handleViewDocument = (doc: any) => {
+    toast({
+      title: doc.title,
+      description: `File type: ${doc.file_type} | Size: ${doc.file_size ? (doc.file_size / 1024).toFixed(1) + 'KB' : 'Unknown'}`,
+    });
+  };
+
+  const handleGenerateInsights = (docId: string) => {
+    generateInsights.mutate(docId);
+  };
 
   const categories = ['prompts', 'marketing', 'specs', 'general'];
 
@@ -122,26 +176,35 @@ const Documents = () => {
               <CardContent className="space-y-4">
                 <div className="flex items-center text-sm text-muted-foreground">
                   <Calendar className="h-4 w-4 mr-1" />
-                  {new Date(doc.drive_modified_at).toLocaleDateString()}
+                  {doc.drive_modified_at ? new Date(doc.drive_modified_at).toLocaleDateString() : 'Unknown date'}
                 </div>
                 
-                <div className="flex flex-wrap gap-1">
-                  {doc.tags.map((tag) => (
-                    <Badge key={tag} variant="secondary" className="text-xs">
-                      <Tag className="h-3 w-3 mr-1" />
-                      {tag}
-                    </Badge>
-                  ))}
-                </div>
+                 <div className="flex flex-wrap gap-1">
+                   {(doc.tags || []).map((tag, index) => (
+                     <Badge key={`${tag}-${index}`} variant="secondary" className="text-xs">
+                       <Tag className="h-3 w-3 mr-1" />
+                       {tag}
+                     </Badge>
+                   ))}
+                 </div>
                 
                 <div className="flex items-center justify-between pt-2">
-                  <Button variant="outline" size="sm">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => handleViewDocument(doc)}
+                  >
                     <FileText className="h-4 w-4 mr-2" />
                     View
                   </Button>
-                  <Button variant="ghost" size="sm">
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    onClick={() => handleGenerateInsights(doc.id)}
+                    disabled={generateInsights.isPending}
+                  >
                     <Brain className="h-4 w-4 mr-2" />
-                    AI Insights
+                    {generateInsights.isPending ? 'Generating...' : 'AI Insights'}
                   </Button>
                 </div>
               </CardContent>
