@@ -10,13 +10,24 @@ import { useAuth } from '@/hooks/useAuth';
 export const AIAssistantSidebar = () => {
   const { user } = useAuth();
 
-  // Query for recent AI interactions - this would need a separate table to track AI query history
+  // Query for recent AI interactions
   const { data: recentQueries } = useQuery({
     queryKey: ['recent-ai-queries', user?.id],
     enabled: !!user,
     queryFn: async () => {
-      // For now, return empty array since we don't have a queries history table yet
-      return [];
+      const { data, error } = await supabase
+        .from('ai_query_history')
+        .select('id, query_text, created_at')
+        .eq('user_id', user!.id)
+        .order('created_at', { ascending: false })
+        .limit(5);
+
+      if (error) {
+        console.error('Error fetching AI query history:', error);
+        return [];
+      }
+
+      return data || [];
     }
   });
 
@@ -97,10 +108,12 @@ export const AIAssistantSidebar = () => {
             </div>
           ) : (
             <div className="space-y-2">
-              {recentQueries.map((query: any, index: number) => (
-                <div key={index} className="p-2 border rounded cursor-pointer hover:bg-accent/50">
-                  <div className="font-medium text-sm truncate">{query.question}</div>
-                  <div className="text-xs text-muted-foreground">{query.timestamp}</div>
+              {recentQueries.map((query: any) => (
+                <div key={query.id} className="p-2 border rounded cursor-pointer hover:bg-accent/50">
+                  <div className="font-medium text-sm truncate">{query.query_text}</div>
+                  <div className="text-xs text-muted-foreground">
+                    {new Date(query.created_at).toLocaleDateString()}
+                  </div>
                 </div>
               ))}
             </div>
