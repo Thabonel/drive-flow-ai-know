@@ -20,11 +20,11 @@ serve(async (req) => {
 
     const { folder_id, user_id } = await req.json();
 
-    // Get folder info from database
+    // Get folder info from database - folder_id is the internal ID
     const { data: folder, error: folderError } = await supabaseClient
       .from('google_drive_folders')
       .select('*')
-      .eq('folder_id', folder_id)
+      .eq('id', folder_id)
       .eq('user_id', user_id)
       .single();
 
@@ -32,9 +32,10 @@ serve(async (req) => {
       throw new Error(`Folder not found: ${folderError.message}`);
     }
 
-    const googleToken = Deno.env.get('GOOGLE_DRIVE_TOKEN');
+    // For now, use a static token. In production, implement OAuth properly
+    const googleToken = Deno.env.get('GOOGLE_API_KEY');
     if (!googleToken) {
-      throw new Error('Missing GOOGLE_DRIVE_TOKEN env variable');
+      throw new Error('Missing GOOGLE_API_KEY env variable. Please add your Google API key to secrets.');
     }
 
     // Fetch files from Google Drive
@@ -63,17 +64,24 @@ serve(async (req) => {
       throw new Error(`Failed to create sync job: ${syncError.message}`);
     }
 
-    // Insert/update documents
+    // Insert/update documents and trigger AI analysis
+    const processedDocuments = [];
     for (const file of driveFiles) {
       let content: string | null = null;
       if (file.mimeType === 'application/vnd.google-apps.document') {
-        const exportRes = await fetch(`https://www.googleapis.com/drive/v3/files/${file.id}/export?mimeType=text/plain`, {
-          headers: { Authorization: `Bearer ${googleToken}` }
-        });
-        content = await exportRes.text();
+        try {
+          const exportRes = await fetch(`https://www.googleapis.com/drive/v3/files/${file.id}/export?mimeType=text/plain`, {
+            headers: { Authorization: `Bearer ${googleToken}` }
+          });
+          if (exportRes.ok) {
+            content = await exportRes.text();
+          }
+        } catch (error) {
+          console.log(`Could not export document ${file.name}:`, error);
+        }
       }
 
-      await supabaseClient
+      const { data: document, error: docError } = await supabaseClient
         .from('knowledge_documents')
         .upsert({
           user_id,
@@ -85,9 +93,28 @@ serve(async (req) => {
           mime_type: file.mimeType,
           drive_created_at: file.createdTime,
           drive_modified_at: file.modifiedTime,
+          file_size: file.size || null,
         }, {
           onConflict: 'user_id,google_file_id',
-        });
+        })
+        .select()
+        .single();
+
+      if (!docError && document && content) {
+        processedDocuments.push(document);
+        
+        // Trigger AI analysis for documents with content
+        try {
+          await supabaseClient.functions.invoke('ai-document-analysis', {
+            body: { 
+              document_id: document.id, 
+              user_id: user_id 
+            }
+          });
+        } catch (aiError) {
+          console.log(`AI analysis failed for document ${file.name}:`, aiError);
+        }
+      }
     }
 
     // Update sync job as completed

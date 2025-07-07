@@ -65,6 +65,11 @@ export function useDriveFolders() {
       });
       if (error) throw new Error(error.message);
       return data as { files_processed: number };
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['drive-folders', user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['documents', user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['knowledge-bases', user?.id] });
     }
   });
 
