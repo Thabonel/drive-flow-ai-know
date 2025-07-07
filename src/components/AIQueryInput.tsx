@@ -35,12 +35,16 @@ export const AIQueryInput = ({ selectedKnowledgeBase, onClearSelection }: AIQuer
     setResponse('');
 
     try {
+      console.log('Invoking AI query function with:', { query: query.substring(0, 50) + '...', knowledge_base_id: selectedKnowledgeBase?.id });
+      
       const { data, error } = await supabase.functions.invoke('ai-query', {
         body: {
           query: query,
           knowledge_base_id: selectedKnowledgeBase?.id
         }
       });
+
+      console.log('AI query response:', { data, error });
 
       if (error) throw error;
       
@@ -49,7 +53,7 @@ export const AIQueryInput = ({ selectedKnowledgeBase, onClearSelection }: AIQuer
       console.error('Error querying AI:', error);
       toast({
         title: 'Error',
-        description: 'Failed to process your query. Please try again.',
+        description: `Failed to process your query: ${error.message || 'Unknown error'}`,
         variant: 'destructive',
       });
     } finally {
