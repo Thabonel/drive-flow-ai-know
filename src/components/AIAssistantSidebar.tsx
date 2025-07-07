@@ -3,9 +3,22 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Brain, Zap, CheckSquare, Clock, Sparkles, PlusCircle } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 
 export const AIAssistantSidebar = () => {
-  const [activeTools, setActiveTools] = useState<string[]>([]);
+  const { user } = useAuth();
+
+  // Query for recent AI interactions - this would need a separate table to track AI query history
+  const { data: recentQueries } = useQuery({
+    queryKey: ['recent-ai-queries', user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      // For now, return empty array since we don't have a queries history table yet
+      return [];
+    }
+  });
 
   const quickAITools = [
     { id: 'summarize', name: 'Summarize', icon: Brain, description: 'Create quick summaries' },
@@ -14,54 +27,23 @@ export const AIAssistantSidebar = () => {
     { id: 'insights', name: 'Insights', icon: Zap, description: 'Find key insights' },
   ];
 
-  const recentAIOutputs = [
-    {
-      id: 1,
-      type: 'summary',
-      title: 'Q1 Marketing Strategy Summary',
-      timestamp: '2 hours ago',
-      preview: 'Key focus areas: digital transformation, customer retention...'
-    },
-    {
-      id: 2,
-      type: 'brainstorm',
-      title: 'Product Feature Ideas',
-      timestamp: '5 hours ago',
-      preview: 'Generated 8 new feature concepts based on user feedback...'
-    },
-    {
-      id: 3,
-      type: 'actions',
-      title: 'Meeting Action Items',
-      timestamp: '1 day ago',
-      preview: 'Extracted 5 action items from team meeting notes...'
+  const handleToolClick = (toolId: string) => {
+    // Scroll to AI query input and add a pre-filled prompt based on the tool
+    const prompts = {
+      summarize: "Please summarize my recent documents",
+      brainstorm: "Help me brainstorm ideas based on my knowledge base",
+      actions: "Extract action items from my recent documents",
+      insights: "What key insights can you find in my documents?"
+    };
+    
+    // Find the AI query input and set its value
+    const queryInput = document.querySelector('input[placeholder*="Ask about"]') as HTMLInputElement;
+    if (queryInput) {
+      queryInput.value = prompts[toolId as keyof typeof prompts] || '';
+      queryInput.focus();
+      // Scroll to the input
+      queryInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
-  ];
-
-  const activeTasks = [
-    { id: 1, task: 'Analyze competitor research docs', status: 'in-progress' },
-    { id: 2, task: 'Generate marketing copy variations', status: 'pending' },
-    { id: 3, task: 'Summarize customer feedback', status: 'completed' }
-  ];
-
-  const getStatusColor = (status: string) => {
-    const colors = {
-      'completed': 'bg-green-100 text-green-700 border-green-200',
-      'in-progress': 'bg-blue-100 text-blue-700 border-blue-200',
-      'pending': 'bg-yellow-100 text-yellow-700 border-yellow-200'
-    };
-    return colors[status as keyof typeof colors] || 'bg-gray-100 text-gray-700 border-gray-200';
-  };
-
-  const getTypeIcon = (type: string) => {
-    const icons = {
-      summary: Brain,
-      brainstorm: Sparkles,
-      actions: CheckSquare,
-      insights: Zap
-    };
-    const IconComponent = icons[type as keyof typeof icons] || Brain;
-    return <IconComponent className="h-3 w-3" />;
   };
 
   return (
@@ -83,6 +65,7 @@ export const AIAssistantSidebar = () => {
                 variant="outline"
                 size="sm"
                 className="w-full justify-start h-auto p-3"
+                onClick={() => handleToolClick(tool.id)}
               >
                 <div className="flex items-center space-x-2">
                   <IconComponent className="h-4 w-4" />
@@ -97,76 +80,62 @@ export const AIAssistantSidebar = () => {
         </CardContent>
       </Card>
 
-      {/* Active AI Tasks */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base flex items-center">
-            <CheckSquare className="h-4 w-4 mr-2" />
-            Active Tasks
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-2">
-          {activeTasks.map((item) => (
-            <div key={item.id} className="p-2 border rounded text-sm">
-              <div className="flex items-center justify-between mb-1">
-                <span className="font-medium truncate">{item.task}</span>
-                <Badge variant="outline" className={`${getStatusColor(item.status)} text-xs`}>
-                  {item.status}
-                </Badge>
-              </div>
-            </div>
-          ))}
-          
-          <Button variant="ghost" size="sm" className="w-full justify-start">
-            <PlusCircle className="h-4 w-4 mr-2" />
-            Add New Task
-          </Button>
-        </CardContent>
-      </Card>
-
-      {/* Recent AI Outputs */}
+      {/* Recent AI Queries */}
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center">
             <Clock className="h-4 w-4 mr-2" />
-            Recent AI Outputs
+            Recent AI Queries
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-2">
-          {recentAIOutputs.map((output) => (
-            <div key={output.id} className="p-2 border rounded cursor-pointer hover:bg-accent/50">
-              <div className="flex items-start space-x-2">
-                <div className="mt-0.5">
-                  {getTypeIcon(output.type)}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="font-medium text-sm truncate">{output.title}</div>
-                  <div className="text-xs text-muted-foreground mb-1">{output.timestamp}</div>
-                  <div className="text-xs text-muted-foreground truncate">{output.preview}</div>
-                </div>
-              </div>
+        <CardContent>
+          {!recentQueries || recentQueries.length === 0 ? (
+            <div className="text-center py-4 text-muted-foreground">
+              <Brain className="h-8 w-8 mx-auto mb-2 opacity-50" />
+              <p className="text-sm mb-2">No AI queries yet</p>
+              <p className="text-xs">Start asking questions above!</p>
             </div>
-          ))}
+          ) : (
+            <div className="space-y-2">
+              {recentQueries.map((query: any, index: number) => (
+                <div key={index} className="p-2 border rounded cursor-pointer hover:bg-accent/50">
+                  <div className="font-medium text-sm truncate">{query.question}</div>
+                  <div className="text-xs text-muted-foreground">{query.timestamp}</div>
+                </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
 
-      {/* Daily AI Prompt */}
+      {/* AI Tips */}
       <Card className="bg-gradient-to-br from-blue-50 to-purple-50 border-blue-200">
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center">
             <Sparkles className="h-4 w-4 mr-2 text-blue-600" />
-            AI Suggestion
+            AI Tips
           </CardTitle>
         </CardHeader>
         <CardContent>
           <p className="text-sm text-blue-700 mb-3">
-            "What should I work on now?"
+            Try asking specific questions about your documents
           </p>
           <p className="text-xs text-muted-foreground mb-3">
-            Based on your recent activity, consider reviewing your marketing knowledge base and updating any outdated strategies.
+            Examples: "What are the main themes?", "Summarize key points", "Find action items"
           </p>
-          <Button size="sm" variant="outline" className="w-full">
-            Get More Suggestions
+          <Button 
+            size="sm" 
+            variant="outline" 
+            className="w-full"
+            onClick={() => {
+              const queryInput = document.querySelector('input[placeholder*="Ask about"]') as HTMLInputElement;
+              if (queryInput) {
+                queryInput.focus();
+                queryInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              }
+            }}
+          >
+            Start Asking Questions
           </Button>
         </CardContent>
       </Card>

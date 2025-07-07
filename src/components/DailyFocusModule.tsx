@@ -50,10 +50,10 @@ export const DailyFocusModule = () => {
   };
 
   const aiSuggestions = [
-    "Review and prioritize your knowledge bases",
-    "Update any outdated documents",
-    "Create summaries for recent research",
-    "Organize loose notes into structured content"
+    "Ask AI to summarize your recent documents",
+    "Query your knowledge bases for insights", 
+    "Have AI extract action items from your files",
+    "Get AI to identify key themes across documents"
   ];
 
   return (
