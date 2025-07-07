@@ -6,6 +6,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { FolderOpen, File, Cloud } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 interface DriveItem {
   id: string;
@@ -48,9 +49,13 @@ const GoogleDrivePicker = ({ onItemsSelected }: GoogleDrivePickerProps) => {
 
   const initAuth = async () => {
     try {
+      // Fetch Google API configuration from edge function
+      const { data: config, error } = await supabase.functions.invoke('get-google-config');
+      if (error) throw error;
+
       await window.gapi.client.init({
-        apiKey: 'YOUR_API_KEY', // This should come from Supabase secrets
-        clientId: 'YOUR_CLIENT_ID', // This should come from Supabase secrets
+        apiKey: config.apiKey,
+        clientId: config.clientId,
         discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'],
         scope: 'https://www.googleapis.com/auth/drive.readonly'
       });
