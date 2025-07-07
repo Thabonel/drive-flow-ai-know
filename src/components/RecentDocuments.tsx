@@ -1,15 +1,21 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { FileText, Clock, Pin, Eye } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
+import { useToast } from '@/hooks/use-toast';
+import { useState } from 'react';
 
 export const RecentDocuments = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [viewingDoc, setViewingDoc] = useState<any>(null);
 
   const { data: recentDocs, isLoading } = useQuery({
     queryKey: ['recent-documents', user?.id],
@@ -26,6 +32,35 @@ export const RecentDocuments = () => {
       return data;
     }
   });
+
+  const handleViewDocument = (doc: any) => {
+    setViewingDoc(doc);
+  };
+
+  const handlePinDocument = async (docId: string, isPinned: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('knowledge_documents')
+        .update({ is_pinned: isPinned })
+        .eq('id', docId)
+        .eq('user_id', user!.id);
+
+      if (error) throw error;
+
+      toast({
+        title: isPinned ? 'Document pinned' : 'Document unpinned',
+        description: isPinned ? 'Document added to pinned items' : 'Document removed from pinned items',
+      });
+
+      queryClient.invalidateQueries({ queryKey: ['recent-documents', user?.id] });
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to update document',
+        variant: 'destructive',
+      });
+    }
+  };
 
   const getFileTypeColor = (fileType: string) => {
     const colors = {
@@ -140,6 +175,39 @@ export const RecentDocuments = () => {
           </div>
         )}
       </CardContent>
+
+      {/* Document View Dialog */}
+      <Dialog open={!!viewingDoc} onOpenChange={() => setViewingDoc(null)}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center space-x-2">
+              <FileText className="h-5 w-5" />
+              <span>{viewingDoc?.title}</span>
+              <Badge variant="outline" className={getFileTypeColor(viewingDoc?.file_type)}>
+                {viewingDoc?.file_type.toUpperCase()}
+              </Badge>
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {viewingDoc?.ai_summary && (
+              <div className="p-4 bg-muted/50 rounded-lg">
+                <h4 className="font-medium mb-2">AI Summary</h4>
+                <p className="text-sm">{viewingDoc.ai_summary}</p>
+              </div>
+            )}
+            {viewingDoc?.content ? (
+              <div className="prose prose-sm max-w-none">
+                <h4 className="font-medium mb-2">Content</h4>
+                <div className="whitespace-pre-wrap text-sm bg-muted/30 p-4 rounded-lg">
+                  {viewingDoc.content}
+                </div>
+              </div>
+            ) : (
+              <p className="text-muted-foreground text-sm">No content available for this document.</p>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 };
