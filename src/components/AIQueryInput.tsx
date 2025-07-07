@@ -35,7 +35,7 @@ export const AIQueryInput = ({ selectedKnowledgeBase, onClearSelection }: AIQuer
     setResponse('');
 
     try {
-      const { data, error } = await supabase.functions.invoke('ai-document-analysis', {
+      const { data, error } = await supabase.functions.invoke('ai-query', {
         body: {
           query: query,
           user_id: user.id,

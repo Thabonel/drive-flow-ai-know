@@ -1,1 +1,16 @@
 project_id = "fskwutnoxbbflzqrphro"
+
+[functions.ai-document-analysis]
+verify_jwt = false
+
+[functions.ai-query]
+verify_jwt = false
+
+[functions.get-google-config]
+verify_jwt = false
+
+[functions.google-drive-sync]
+verify_jwt = false
+
+[functions.seed-test-data]
+verify_jwt = false
