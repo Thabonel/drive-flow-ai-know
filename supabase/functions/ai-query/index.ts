@@ -15,70 +15,74 @@ serve(async (req) => {
   }
 
   try {
+    console.log('AI Query function called');
+    
     // Get authorization header
     const authHeader = req.headers.get('authorization');
+    console.log('Auth header present:', !!authHeader);
     
     if (!authHeader) {
       throw new Error('Authorization header is required');
     }
 
-    // Create client with service role for admin operations
-    const supabaseAdmin = createClient(
+    // Create service role client for database operations
+    const supabaseService = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // Also create client with user auth for RLS queries
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      {
-        global: {
-          headers: {
-            authorization: authHeader,
-          },
-        },
-      }
-    );
+    // Extract user from JWT token
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user }, error: userError } = await supabaseService.auth.getUser(token);
+    
+    console.log('User authentication result:', { user: !!user, error: userError?.message });
+    
+    if (userError || !user) {
+      throw new Error(`User not authenticated: ${userError?.message || 'No user found'}`);
+    }
+
+    const user_id = user.id;
+    console.log('Authenticated user ID:', user_id);
 
     const { query, knowledge_base_id } = await req.json();
+    console.log('Query received:', query);
+    console.log('Knowledge base ID:', knowledge_base_id);
 
     if (!query) {
       throw new Error('Query is required');
     }
 
-    // Get the authenticated user
-    const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
-    
-    if (userError || !user) {
-      throw new Error('User not authenticated');
-    }
-
-    const user_id = user.id;
-
     let contextDocuments = [];
     let contextText = '';
 
     if (knowledge_base_id) {
+      console.log('Searching for specific knowledge base:', knowledge_base_id);
+      
       // Get specific knowledge base content
-      const { data: knowledgeBase, error: kbError } = await supabaseClient
+      const { data: knowledgeBase, error: kbError } = await supabaseService
         .from('knowledge_bases')
         .select('*')
         .eq('id', knowledge_base_id)
         .eq('user_id', user_id)
         .single();
 
+      console.log('Knowledge base query result:', { found: !!knowledgeBase, error: kbError?.message });
+
       if (kbError) {
         throw new Error(`Knowledge base not found: ${kbError.message}`);
       }
 
-      // Get documents from the knowledge base
+      // Get documents from the knowledge base  
       if (knowledgeBase.source_document_ids && knowledgeBase.source_document_ids.length > 0) {
-        const { data: documents, error: docsError } = await supabaseClient
+        console.log('Fetching documents from knowledge base, count:', knowledgeBase.source_document_ids.length);
+        
+        const { data: documents, error: docsError } = await supabaseService
           .from('knowledge_documents')
-          .select('title, content, ai_summary, tags')
+          .select('title, content, ai_summary, tags, file_type')
           .in('id', knowledgeBase.source_document_ids)
           .eq('user_id', user_id);
+
+        console.log('Knowledge base documents result:', { found: documents?.length || 0, error: docsError?.message });
 
         if (!docsError && documents) {
           contextDocuments = documents;
@@ -88,52 +92,69 @@ serve(async (req) => {
       // Use AI-generated content from knowledge base if available
       if (knowledgeBase.ai_generated_content) {
         contextText = knowledgeBase.ai_generated_content;
+        console.log('Using AI-generated content from knowledge base');
       }
     } else {
-      // Search all user's documents with intelligent filtering based on query
-      let query_builder = supabaseClient
+      console.log('Searching all user documents');
+      
+      // First, get total document count for this user
+      const { count: totalDocs, error: countError } = await supabaseService
         .from('knowledge_documents')
-        .select('title, content, ai_summary, tags')
+        .select('id', { count: 'exact' })
         .eq('user_id', user_id);
+        
+      console.log('Total documents for user:', totalDocs, 'Count error:', countError?.message);
 
-      // If query mentions specific keywords, filter for relevant documents first
+      // Search all user's documents with more robust logic
       const queryLower = query.toLowerCase();
-      const isMarketingQuery = queryLower.includes('marketing') || queryLower.includes('market') || queryLower.includes('campaign') || queryLower.includes('brand') || queryLower.includes('promotion');
-      const isTrelloQuery = queryLower.includes('trello') || queryLower.includes('json');
+      console.log('Query keywords:', queryLower);
+      
+      // Check for marketing-related terms
+      const isMarketingQuery = queryLower.includes('marketing') || queryLower.includes('market') || 
+                             queryLower.includes('campaign') || queryLower.includes('brand') || 
+                             queryLower.includes('promotion') || queryLower.includes('wheels') || 
+                             queryLower.includes('wins');
+      
+      console.log('Is marketing query:', isMarketingQuery);
       
       if (isMarketingQuery) {
-        // First try to get marketing-specific documents
-        const { data: marketingDocs, error: marketingError } = await query_builder
-          .or('title.ilike.%marketing%,content.ilike.%marketing%,tags.cs.["marketing"]')
-          .limit(15);
+        console.log('Searching for marketing documents...');
+        
+        // Cast query for marketing documents with broader search
+        const { data: marketingDocs, error: marketingError } = await supabaseService
+          .from('knowledge_documents')
+          .select('title, content, ai_summary, tags, file_type')
+          .eq('user_id', user_id)
+          .or('title.ilike.%marketing%,content.ilike.%marketing%,tags.cs.["marketing"],title.ilike.%wheels%,title.ilike.%wins%,file_type.eq.json')
+          .limit(30);
+        
+        console.log('Marketing documents found:', marketingDocs?.length || 0, 'Error:', marketingError?.message);
         
         if (!marketingError && marketingDocs && marketingDocs.length > 0) {
           contextDocuments = marketingDocs;
         }
       }
       
-      if (isTrelloQuery) {
-        // Look for Trello/JSON documents
-        const { data: trelloDocs, error: trelloError } = await query_builder
-          .or('title.ilike.%trello%,title.ilike.%json%,file_type.eq.json')
-          .limit(10);
-        
-        if (!trelloError && trelloDocs) {
-          contextDocuments = [...contextDocuments, ...trelloDocs];
-        }
-      }
-      
-      // If no specific documents found or query is general, get recent documents
+      // If no marketing docs or general query, get recent documents
       if (contextDocuments.length === 0) {
-        const { data: documents, error: docsError } = await query_builder
+        console.log('Getting recent documents as fallback...');
+        
+        const { data: documents, error: docsError } = await supabaseService
+          .from('knowledge_documents')
+          .select('title, content, ai_summary, tags, file_type')
+          .eq('user_id', user_id)
           .order('updated_at', { ascending: false })
-          .limit(20);
+          .limit(30);
+
+        console.log('Recent documents found:', documents?.length || 0, 'Error:', docsError?.message);
 
         if (!docsError && documents) {
           contextDocuments = documents;
         }
       }
     }
+
+    console.log('Final context documents count:', contextDocuments.length);
 
     // Prepare context for AI
     let documentContext = '';
@@ -198,7 +219,9 @@ serve(async (req) => {
 
     // Save query to history
     try {
-      await supabaseClient
+      console.log('Saving query to history...');
+      
+      await supabaseService
         .from('ai_query_history')
         .insert({
           user_id,
@@ -207,6 +230,8 @@ serve(async (req) => {
           knowledge_base_id: knowledge_base_id || null,
           context_documents_count: contextDocuments.length
         });
+        
+      console.log('Query history saved successfully');
     } catch (historyError) {
       console.error('Failed to save query history:', historyError);
       // Don't fail the main request if history saving fails
