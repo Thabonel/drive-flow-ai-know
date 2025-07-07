@@ -8,6 +8,7 @@ import { FolderOpen, Plus, Trash2, RefreshCw, CheckCircle, XCircle } from 'lucid
 import { useToast } from '@/hooks/use-toast';
 import { useDriveFolders } from '@/hooks/useDriveFolders';
 import GoogleDrivePicker from '@/components/GoogleDrivePicker';
+import GoogleAuthStatus from '@/components/GoogleAuthStatus';
 
 const GoogleDrive = () => {
   const [newFolderUrls, setNewFolderUrls] = useState('');
@@ -131,6 +132,8 @@ const GoogleDrive = () => {
         <h1 className="text-3xl font-bold text-foreground">Google Drive Integration</h1>
         <p className="text-muted-foreground">Connect and manage your shared Google Drive folders</p>
       </div>
+
+      <GoogleAuthStatus />
 
       <Card>
         <CardHeader>
