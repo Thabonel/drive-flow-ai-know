@@ -1,7 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { FileText, Clock, Pin, Eye } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -187,6 +187,9 @@ export const RecentDocuments = () => {
                 {viewingDoc?.file_type.toUpperCase()}
               </Badge>
             </DialogTitle>
+            <DialogDescription>
+              Document content and AI-generated summary
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             {viewingDoc?.ai_summary && (
@@ -198,9 +201,15 @@ export const RecentDocuments = () => {
             {viewingDoc?.content ? (
               <div className="prose prose-sm max-w-none">
                 <h4 className="font-medium mb-2">Content</h4>
-                <div className="whitespace-pre-wrap text-sm bg-muted/30 p-4 rounded-lg">
-                  {viewingDoc.content}
-                </div>
+                {viewingDoc.file_type === 'json' ? (
+                  <pre className="text-xs bg-muted/30 p-4 rounded-lg overflow-x-auto">
+                    {JSON.stringify(JSON.parse(viewingDoc.content), null, 2)}
+                  </pre>
+                ) : (
+                  <div className="whitespace-pre-wrap text-sm bg-muted/30 p-4 rounded-lg">
+                    {viewingDoc.content}
+                  </div>
+                )}
               </div>
             ) : (
               <p className="text-muted-foreground text-sm">No content available for this document.</p>
