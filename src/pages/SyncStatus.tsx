@@ -72,6 +72,50 @@ const SyncStatus = () => {
     syncFolder.mutate(folderId);
   };
 
+  const syncAllFolders = useMutation({
+    mutationFn: async () => {
+      if (!folders || folders.length === 0) {
+        throw new Error('No folders to sync');
+      }
+
+      const results = [];
+      for (const folder of folders) {
+        try {
+          const { data, error } = await supabase.functions.invoke('google-drive-sync', {
+            body: { folder_id: folder.id, user_id: user!.id }
+          });
+          if (error) throw error;
+          results.push({ folder: folder.folder_name, files: data?.files_processed || 0 });
+        } catch (error) {
+          console.error(`Error syncing folder ${folder.folder_name}:`, error);
+          results.push({ folder: folder.folder_name, error: error.message });
+        }
+      }
+      return results;
+    },
+    onSuccess: (results) => {
+      queryClient.invalidateQueries({ queryKey: ['sync-jobs', user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['google-drive-folders', user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['documents', user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['knowledge-bases', user?.id] });
+      
+      const totalFiles = results.reduce((sum, result) => sum + (result.files || 0), 0);
+      const errors = results.filter(result => result.error);
+      
+      toast({
+        title: 'Sync All Completed',
+        description: `Successfully synced ${totalFiles} files from ${results.length} folders.${errors.length > 0 ? ` ${errors.length} folders had errors.` : ''}`,
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: 'Sync All Error',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
   const getActiveSyncJob = (folderId: string) => {
     return syncJobs?.find(job => job.folder_id === folderId && job.status === 'running');
   };
@@ -85,8 +129,22 @@ const SyncStatus = () => {
 
       <Card>
         <CardHeader>
-          <CardTitle>Folders</CardTitle>
-          <CardDescription>Connected Google Drive folders</CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Folders</CardTitle>
+              <CardDescription>Connected Google Drive folders</CardDescription>
+            </div>
+            {folders && folders.length > 0 && (
+              <Button 
+                onClick={() => syncAllFolders.mutate()}
+                disabled={syncAllFolders.isPending || syncFolder.isPending}
+                className="ml-4"
+              >
+                <RefreshCw className={`h-4 w-4 mr-2 ${syncAllFolders.isPending ? 'animate-spin' : ''}`} />
+                {syncAllFolders.isPending ? 'Syncing All...' : 'Sync All Folders'}
+              </Button>
+            )}
+          </div>
         </CardHeader>
         <CardContent className="space-y-4">
           {isLoading ? (

@@ -100,19 +100,26 @@ serve(async (req) => {
         .select()
         .single();
 
-      if (!docError && document && content) {
+      if (!docError && document) {
         processedDocuments.push(document);
         
+        // If document has content, chunk it and store in doc_qa_documents for better AI processing
+        if (content && content.length > 0) {
+          await chunkAndStoreDocument(supabaseClient, document, content);
+        }
+        
         // Trigger AI analysis for documents with content
-        try {
-          await supabaseClient.functions.invoke('ai-document-analysis', {
-            body: { 
-              document_id: document.id, 
-              user_id: user_id 
-            }
-          });
-        } catch (aiError) {
-          console.log(`AI analysis failed for document ${file.name}:`, aiError);
+        if (content) {
+          try {
+            await supabaseClient.functions.invoke('ai-document-analysis', {
+              body: { 
+                document_id: document.id, 
+                user_id: user_id 
+              }
+            });
+          } catch (aiError) {
+            console.log(`AI analysis failed for document ${file.name}:`, aiError);
+          }
         }
       }
     }
@@ -157,3 +164,45 @@ serve(async (req) => {
     );
   }
 });
+
+// Function to chunk documents and store them for better AI processing
+async function chunkAndStoreDocument(supabaseClient: any, document: any, content: string) {
+  const maxChunkSize = 1000; // Characters per chunk
+  const chunks = [];
+  
+  // Split content into chunks
+  for (let i = 0; i < content.length; i += maxChunkSize) {
+    const chunk = content.substring(i, i + maxChunkSize);
+    chunks.push(chunk);
+  }
+
+  // Delete existing chunks for this document
+  await supabaseClient
+    .from('doc_qa_documents')
+    .delete()
+    .eq('document_id', document.id);
+
+  // Store new chunks
+  for (let i = 0; i < chunks.length; i++) {
+    const chunk = chunks[i];
+    if (chunk.trim().length === 0) continue; // Skip empty chunks
+
+    await supabaseClient
+      .from('doc_qa_documents')
+      .insert({
+        document_id: document.id,
+        document_name: document.title,
+        content: chunk,
+        chunk_index: i,
+        chunk_total: chunks.length,
+        document_type: 'text',
+        metadata: {
+          source: 'google_drive',
+          google_file_id: document.google_file_id,
+          created_at: new Date().toISOString()
+        }
+      });
+  }
+
+  console.log(`Chunked document ${document.title} into ${chunks.length} chunks`);
+}

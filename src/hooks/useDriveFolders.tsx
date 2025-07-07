@@ -73,11 +73,46 @@ export function useDriveFolders() {
     }
   });
 
+  const syncAllFolders = useMutation({
+    mutationFn: async () => {
+      const { data: allFolders, error } = await supabase
+        .from('google_drive_folders')
+        .select('*')
+        .eq('user_id', user!.id);
+      
+      if (error) throw new Error(error.message);
+      if (!allFolders || allFolders.length === 0) {
+        throw new Error('No folders to sync');
+      }
+
+      const results = [];
+      for (const folder of allFolders) {
+        try {
+          const { data, error } = await supabase.functions.invoke('google-drive-sync', {
+            body: { folder_id: folder.id, user_id: user!.id }
+          });
+          if (error) throw error;
+          results.push({ folder: folder.folder_name, files: data?.files_processed || 0 });
+        } catch (error) {
+          console.error(`Error syncing folder ${folder.folder_name}:`, error);
+          results.push({ folder: folder.folder_name, error: error.message });
+        }
+      }
+      return results;
+    },
+    onSuccess: (results) => {
+      queryClient.invalidateQueries({ queryKey: ['drive-folders', user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['documents', user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['knowledge-bases', user?.id] });
+    }
+  });
+
   return {
     folders,
     addFolder,
     removeFolder,
-    syncFolder
+    syncFolder,
+    syncAllFolders
   };
 }
 
