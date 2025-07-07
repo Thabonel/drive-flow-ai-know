@@ -120,6 +120,8 @@ export const RecentDocuments = () => {
                     variant="ghost"
                     size="sm"
                     className="h-8 px-2"
+                    onClick={() => handleViewDocument(doc)}
+                    title="View document"
                   >
                     <Eye className="h-3 w-3" />
                   </Button>
@@ -127,8 +129,10 @@ export const RecentDocuments = () => {
                     variant="ghost"
                     size="sm"
                     className="h-8 px-2"
+                    onClick={() => handlePinDocument(doc.id, !doc.is_pinned)}
+                    title={doc.is_pinned ? "Unpin document" : "Pin document"}
                   >
-                    <Pin className="h-3 w-3" />
+                    <Pin className={`h-3 w-3 ${doc.is_pinned ? 'fill-current text-primary' : ''}`} />
                   </Button>
                 </div>
               </div>
