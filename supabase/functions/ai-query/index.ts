@@ -15,16 +15,46 @@ serve(async (req) => {
   }
 
   try {
-    const supabaseClient = createClient(
+    // Get authorization header
+    const authHeader = req.headers.get('authorization');
+    
+    if (!authHeader) {
+      throw new Error('Authorization header is required');
+    }
+
+    // Create client with service role for admin operations
+    const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    const { query, user_id, knowledge_base_id } = await req.json();
+    // Also create client with user auth for RLS queries
+    const supabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      {
+        global: {
+          headers: {
+            authorization: authHeader,
+          },
+        },
+      }
+    );
 
-    if (!query || !user_id) {
-      throw new Error('Query and user_id are required');
+    const { query, knowledge_base_id } = await req.json();
+
+    if (!query) {
+      throw new Error('Query is required');
     }
+
+    // Get the authenticated user
+    const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
+    
+    if (userError || !user) {
+      throw new Error('User not authenticated');
+    }
+
+    const user_id = user.id;
 
     let contextDocuments = [];
     let contextText = '';
