@@ -60,15 +60,48 @@ serve(async (req) => {
         contextText = knowledgeBase.ai_generated_content;
       }
     } else {
-      // Search all user's documents
-      const { data: documents, error: docsError } = await supabaseClient
+      // Search all user's documents with intelligent filtering based on query
+      let query_builder = supabaseClient
         .from('knowledge_documents')
         .select('title, content, ai_summary, tags')
-        .eq('user_id', user_id)
-        .limit(10);
+        .eq('user_id', user_id);
 
-      if (!docsError && documents) {
-        contextDocuments = documents;
+      // If query mentions specific keywords, filter for relevant documents first
+      const queryLower = query.toLowerCase();
+      const isMarketingQuery = queryLower.includes('marketing') || queryLower.includes('market') || queryLower.includes('campaign') || queryLower.includes('brand') || queryLower.includes('promotion');
+      const isTrelloQuery = queryLower.includes('trello') || queryLower.includes('json');
+      
+      if (isMarketingQuery) {
+        // First try to get marketing-specific documents
+        const { data: marketingDocs, error: marketingError } = await query_builder
+          .or('title.ilike.%marketing%,content.ilike.%marketing%,tags.cs.["marketing"]')
+          .limit(15);
+        
+        if (!marketingError && marketingDocs && marketingDocs.length > 0) {
+          contextDocuments = marketingDocs;
+        }
+      }
+      
+      if (isTrelloQuery) {
+        // Look for Trello/JSON documents
+        const { data: trelloDocs, error: trelloError } = await query_builder
+          .or('title.ilike.%trello%,title.ilike.%json%,file_type.eq.json')
+          .limit(10);
+        
+        if (!trelloError && trelloDocs) {
+          contextDocuments = [...contextDocuments, ...trelloDocs];
+        }
+      }
+      
+      // If no specific documents found or query is general, get recent documents
+      if (contextDocuments.length === 0) {
+        const { data: documents, error: docsError } = await query_builder
+          .order('updated_at', { ascending: false })
+          .limit(20);
+
+        if (!docsError && documents) {
+          contextDocuments = documents;
+        }
       }
     }
 
@@ -132,6 +165,22 @@ serve(async (req) => {
     }
 
     const aiAnswer = aiResponse.choices[0].message.content;
+
+    // Save query to history
+    try {
+      await supabaseClient
+        .from('ai_query_history')
+        .insert({
+          user_id,
+          query_text: query,
+          response_text: aiAnswer,
+          knowledge_base_id: knowledge_base_id || null,
+          context_documents_count: contextDocuments.length
+        });
+    } catch (historyError) {
+      console.error('Failed to save query history:', historyError);
+      // Don't fail the main request if history saving fails
+    }
 
     return new Response(
       JSON.stringify({

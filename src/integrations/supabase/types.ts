@@ -66,6 +66,39 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_query_history: {
+        Row: {
+          context_documents_count: number | null
+          created_at: string
+          id: string
+          knowledge_base_id: string | null
+          processing_time_ms: number | null
+          query_text: string
+          response_text: string | null
+          user_id: string
+        }
+        Insert: {
+          context_documents_count?: number | null
+          created_at?: string
+          id?: string
+          knowledge_base_id?: string | null
+          processing_time_ms?: number | null
+          query_text: string
+          response_text?: string | null
+          user_id: string
+        }
+        Update: {
+          context_documents_count?: number | null
+          created_at?: string
+          id?: string
+          knowledge_base_id?: string | null
+          processing_time_ms?: number | null
+          query_text?: string
+          response_text?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       attachments: {
         Row: {
           created_at: string | null
