@@ -7,12 +7,45 @@ import { Badge } from '@/components/ui/badge';
 import { FolderOpen, Plus, Trash2, RefreshCw, CheckCircle, XCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useDriveFolders } from '@/hooks/useDriveFolders';
+import GoogleDrivePicker from '@/components/GoogleDrivePicker';
 
 const GoogleDrive = () => {
   const [newFolderUrls, setNewFolderUrls] = useState('');
   const { toast } = useToast();
   const { folders, addFolder, removeFolder, syncFolder } = useDriveFolders();
   const [isAdding, setIsAdding] = useState(false);
+
+  const handleItemsFromPicker = async (items: { folder_id: string; folder_name: string; folder_path: string | null }[]) => {
+    setIsAdding(true);
+    let successCount = 0;
+    let errorCount = 0;
+
+    for (const item of items) {
+      try {
+        await addFolder.mutateAsync(item);
+        successCount++;
+      } catch (error) {
+        errorCount++;
+      }
+    }
+
+    if (successCount > 0) {
+      toast({
+        title: 'Items Added',
+        description: `${successCount} item(s) connected successfully.${errorCount > 0 ? ` ${errorCount} failed.` : ''}`,
+      });
+    }
+
+    if (errorCount > 0 && successCount === 0) {
+      toast({
+        title: 'Error',
+        description: 'Failed to add items. Please try again.',
+        variant: 'destructive',
+      });
+    }
+
+    setIsAdding(false);
+  };
 
   const handleAddFolders = async () => {
     if (!newFolderUrls.trim()) return;
@@ -101,29 +134,47 @@ const GoogleDrive = () => {
 
       <Card>
         <CardHeader>
-          <CardTitle>Add New Folder</CardTitle>
+          <CardTitle>Add Files & Folders</CardTitle>
           <CardDescription>
-            Paste the URL of a shared Google Drive folder to start syncing its contents
+            Connect files and folders from your Google Drive to start syncing
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="folder-urls">Google Drive Folder URLs (one per line)</Label>
-            <Textarea
-              id="folder-urls"
-              placeholder="https://drive.google.com/drive/folders/...&#10;https://drive.google.com/drive/folders/..."
-              value={newFolderUrls}
-              onChange={(e) => setNewFolderUrls(e.target.value)}
-              rows={4}
-            />
+          <div className="space-y-4">
+            <div>
+              <GoogleDrivePicker onItemsSelected={handleItemsFromPicker} />
+              <p className="text-sm text-muted-foreground mt-2">
+                Browse and select files/folders directly from your Google Drive
+              </p>
+            </div>
+            
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-background px-2 text-muted-foreground">Or</span>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="folder-urls">Paste Google Drive URLs (one per line)</Label>
+              <Textarea
+                id="folder-urls"
+                placeholder="https://drive.google.com/drive/folders/...&#10;https://drive.google.com/drive/folders/..."
+                value={newFolderUrls}
+                onChange={(e) => setNewFolderUrls(e.target.value)}
+                rows={4}
+              />
+            </div>
+            <Button 
+              onClick={handleAddFolders} 
+              disabled={isAdding || !newFolderUrls.trim()}
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              {isAdding ? 'Adding...' : 'Add from URLs'}
+            </Button>
           </div>
-          <Button 
-            onClick={handleAddFolders} 
-            disabled={isAdding || !newFolderUrls.trim()}
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            {isAdding ? 'Adding...' : 'Add Folders'}
-          </Button>
         </CardContent>
       </Card>
 
