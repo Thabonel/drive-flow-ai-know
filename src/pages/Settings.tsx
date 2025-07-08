@@ -136,7 +136,7 @@ const Settings = () => {
         </Card>
 
         {/* AI Preferences */}
-        <Card>
+        <Card id="model-provider">
           <CardHeader>
             <CardTitle className="flex items-center">
               <Brain className="h-5 w-5 mr-2" />

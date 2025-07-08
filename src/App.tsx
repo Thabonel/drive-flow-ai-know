@@ -15,6 +15,7 @@ import KnowledgeBases from "./pages/KnowledgeBases";
 import SyncStatus from "./pages/SyncStatus";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
+import Footer from "./layout/Footer";
 
 const queryClient = new QueryClient();
 
@@ -37,6 +38,7 @@ function AppLayout({ children }: { children: React.ReactNode }) {
             <div className="p-6">{children}</div>
           </main>
         </div>
+        <Footer />
       </div>
     </SidebarProvider>
   );
