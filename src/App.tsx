@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { offlineEnabled } from "@/lib/ai";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { AppSidebar } from "@/components/AppSidebar";
 import Index from "./pages/Index";
@@ -18,18 +19,24 @@ import NotFound from "./pages/NotFound";
 const queryClient = new QueryClient();
 
 function AppLayout({ children }: { children: React.ReactNode }) {
+  const offline = offlineEnabled();
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full">
-        <AppSidebar />
-        <main className="flex-1">
-          <header className="h-12 flex items-center border-b bg-background px-4">
-            <SidebarTrigger />
-          </header>
-          <div className="p-6">
-            {children}
+      <div className="min-h-screen flex flex-col w-full">
+        {offline && (
+          <div className="bg-yellow-300 text-yellow-900 text-center py-1 text-sm font-medium">
+            Offline Mode Enabled
           </div>
-        </main>
+        )}
+        <div className="flex flex-1 w-full">
+          <AppSidebar />
+          <main className="flex-1">
+            <header className="h-12 flex items-center border-b bg-background px-4">
+              <SidebarTrigger />
+            </header>
+            <div className="p-6">{children}</div>
+          </main>
+        </div>
       </div>
     </SidebarProvider>
   );
