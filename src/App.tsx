@@ -3,10 +3,11 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { SidebarProvider } from "@/components/ui/sidebar";
 import { offlineEnabled } from "@/lib/ai";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { AppSidebar } from "@/components/AppSidebar";
+import Header from "./layout/Header";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import GoogleDrive from "./pages/GoogleDrive";
@@ -32,9 +33,7 @@ function AppLayout({ children }: { children: React.ReactNode }) {
         <div className="flex flex-1 w-full">
           <AppSidebar />
           <main className="flex-1">
-            <header className="h-12 flex items-center border-b bg-background px-4">
-              <SidebarTrigger />
-            </header>
+            <Header />
             <div className="p-6">{children}</div>
           </main>
         </div>
