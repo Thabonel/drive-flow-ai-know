@@ -6,16 +6,19 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
-import { User, Bell, Shield, Trash2, Download, Upload } from 'lucide-react';
+import { User, Bell, Shield, Trash2, Download, Upload, Brain } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { useState } from 'react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useUserSettings, ModelPreference } from '@/hooks/useUserSettings';
 
 const Settings = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [notifications, setNotifications] = useState(true);
   const [autoSync, setAutoSync] = useState(false);
+  const { modelPreference, setModelPreference } = useUserSettings();
 
   const handleSaveProfile = () => {
     toast({
@@ -129,12 +132,40 @@ const Settings = () => {
                   onCheckedChange={setAutoSync}
                 />
               </div>
-            </CardContent>
-          </Card>
+          </CardContent>
+        </Card>
 
-          {/* Privacy & Security */}
-          <Card>
-            <CardHeader>
+        {/* AI Preferences */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <Brain className="h-5 w-5 mr-2" />
+              Model Provider
+            </CardTitle>
+            <CardDescription>
+              Choose the AI model provider used for analysis
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Select
+              value={modelPreference}
+              onValueChange={(val) => setModelPreference(val as ModelPreference)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select provider" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="openai">OpenAI (Global)</SelectItem>
+                <SelectItem value="openrouter">OpenRouter (Regional)</SelectItem>
+                <SelectItem value="ollama">Local (Ollama)</SelectItem>
+              </SelectContent>
+            </Select>
+          </CardContent>
+        </Card>
+
+        {/* Privacy & Security */}
+        <Card>
+          <CardHeader>
               <CardTitle className="flex items-center">
                 <Shield className="h-5 w-5 mr-2" />
                 Privacy & Security
