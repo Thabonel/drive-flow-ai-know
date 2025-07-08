@@ -59,8 +59,8 @@ async function localCompletion(prompt: string, context: string) {
   return data.response ?? '';
 }
 
-export async function getLLMResponse(prompt: string, context: string) {
-  const providerEnv = Deno.env.get('MODEL_PROVIDER');
+export async function getLLMResponse(prompt: string, context: string, providerOverride?: string) {
+  const providerEnv = providerOverride || Deno.env.get('MODEL_PROVIDER');
   const useOpenRouter = Deno.env.get('USE_OPENROUTER') === 'true';
   const useLocalLLM = Deno.env.get('USE_LOCAL_LLM') === 'true';
 
@@ -116,6 +116,13 @@ serve(async (req) => {
 
     const user_id = user.id;
     console.log('Authenticated user ID:', user_id);
+
+    const { data: settings } = await supabaseService
+      .from('user_settings')
+      .select('model_preference')
+      .eq('user_id', user_id)
+      .maybeSingle();
+    const providerOverride = settings?.model_preference;
 
     const { query, knowledge_base_id } = await req.json();
     console.log('Query received:', query);
@@ -267,7 +274,7 @@ serve(async (req) => {
 
     const userPrompt = `Context from my documents:\n${documentContext}\n\nQuestion: ${query}`;
 
-    const aiAnswer = await getLLMResponse(userPrompt, systemMessage);
+    const aiAnswer = await getLLMResponse(userPrompt, systemMessage, providerOverride);
 
     // Save query to history
     try {
