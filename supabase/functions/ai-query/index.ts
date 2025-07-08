@@ -3,6 +3,79 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
+const openRouterApiKey = Deno.env.get('OPENROUTER_API_KEY');
+
+async function openAICompletion(prompt: string, context: string) {
+  const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${openAIApiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: 'gpt-4o',
+      messages: [
+        { role: 'system', content: context },
+        { role: 'user', content: prompt },
+      ],
+    }),
+  });
+  const data = await response.json();
+  return data.choices?.[0]?.message?.content ?? '';
+}
+
+async function openRouterCompletion(prompt: string, context: string) {
+  const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${openRouterApiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: 'openai/gpt-4o',
+      messages: [
+        { role: 'system', content: context },
+        { role: 'user', content: prompt },
+      ],
+    }),
+  });
+  const data = await response.json();
+  return data.choices?.[0]?.message?.content ?? '';
+}
+
+async function localCompletion(prompt: string, context: string) {
+  const response = await fetch('http://localhost:11434/api/generate', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: 'llama3',
+      prompt: `${context}\n${prompt}`,
+      stream: false,
+    }),
+  });
+  const data = await response.json();
+  return data.response ?? '';
+}
+
+export async function getLLMResponse(prompt: string, context: string) {
+  const providerEnv = Deno.env.get('MODEL_PROVIDER');
+  const useOpenRouter = Deno.env.get('USE_OPENROUTER') === 'true';
+  const useLocalLLM = Deno.env.get('USE_LOCAL_LLM') === 'true';
+
+  const provider = providerEnv || (useOpenRouter ? 'openrouter' : useLocalLLM ? 'ollama' : 'openai');
+
+  switch (provider) {
+    case 'openrouter':
+      return await openRouterCompletion(prompt, context);
+    case 'ollama':
+    case 'local':
+      return await localCompletion(prompt, context);
+    default:
+      return await openAICompletion(prompt, context);
+  }
+}
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -185,41 +258,16 @@ serve(async (req) => {
     }
 
     // Generate AI response
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openAIApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [
-          {
-            role: 'system',
-            content: `You are an AI assistant that helps analyze and answer questions about the user's knowledge documents. 
-            You have access to their document summaries, content, and knowledge bases.
-            
-            Provide helpful, specific answers based on the available context.
-            If you can't find relevant information in the provided documents, say so clearly.
-            Be concise but comprehensive in your responses.`
-          },
-          {
-            role: 'user',
-            content: `Context from my documents:\n${documentContext}\n\nQuestion: ${query}`
-          }
-        ],
-        temperature: 0.3,
-        max_tokens: 1500,
-      }),
-    });
+    const systemMessage = `You are an AI assistant that helps analyze and answer questions about the user's knowledge documents.
+    You have access to their document summaries, content, and knowledge bases.
 
-    const aiResponse = await response.json();
-    
-    if (!aiResponse.choices || !aiResponse.choices[0]) {
-      throw new Error('Invalid response from OpenAI');
-    }
+    Provide helpful, specific answers based on the available context.
+    If you can't find relevant information in the provided documents, say so clearly.
+    Be concise but comprehensive in your responses.`;
 
-    const aiAnswer = aiResponse.choices[0].message.content;
+    const userPrompt = `Context from my documents:\n${documentContext}\n\nQuestion: ${query}`;
+
+    const aiAnswer = await getLLMResponse(userPrompt, systemMessage);
 
     // Save query to history
     try {
