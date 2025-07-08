@@ -18,7 +18,7 @@ const Settings = () => {
   const { toast } = useToast();
   const [notifications, setNotifications] = useState(true);
   const [autoSync, setAutoSync] = useState(false);
-  const { modelPreference, setModelPreference } = useUserSettings();
+  const { modelPreference, setModelPreference, offlineMode, setOfflineMode } = useUserSettings();
 
   const handleSaveProfile = () => {
     toast({
@@ -146,11 +146,11 @@ const Settings = () => {
               Choose the AI model provider used for analysis
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <Select
-              value={modelPreference}
-              onValueChange={(val) => setModelPreference(val as ModelPreference)}
-            >
+        <CardContent>
+          <Select
+            value={modelPreference}
+            onValueChange={(val) => setModelPreference(val as ModelPreference)}
+          >
               <SelectTrigger>
                 <SelectValue placeholder="Select provider" />
               </SelectTrigger>
@@ -159,9 +159,19 @@ const Settings = () => {
                 <SelectItem value="openrouter">OpenRouter (Regional)</SelectItem>
                 <SelectItem value="ollama">Local (Ollama)</SelectItem>
               </SelectContent>
-            </Select>
-          </CardContent>
-        </Card>
+          </Select>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center">Offline Mode</CardTitle>
+          <CardDescription>Work without internet using local models</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Switch checked={offlineMode} onCheckedChange={setOfflineMode} />
+        </CardContent>
+      </Card>
 
         {/* Privacy & Security */}
         <Card>
