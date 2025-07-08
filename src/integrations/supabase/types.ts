@@ -893,6 +893,30 @@ export type Database = {
         }
         Relationships: []
       }
+      saved_prompts: {
+        Row: {
+          created_at: string
+          id: string
+          prompt_text: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          prompt_text: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          prompt_text?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       sync_jobs: {
         Row: {
           completed_at: string | null
@@ -995,6 +1019,30 @@ export type Database = {
           refresh_token?: string | null
           scope?: string | null
           token_type?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_settings: {
+        Row: {
+          created_at: string
+          id: string
+          model_preference: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          model_preference?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          model_preference?: string
           updated_at?: string
           user_id?: string
         }
