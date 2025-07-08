@@ -6,7 +6,7 @@ const Header = () => {
   const { offlineEnabled } = useOffline();
   const { modelPreference } = useUserSettings();
 
-  const showBanner = offlineEnabled && modelPreference === 'ollama';
+  const showBanner = true; // Temporarily forced for testing
 
   return (
     <header className="h-12 flex items-center border-b bg-background px-4 relative">

@@ -17,6 +17,8 @@ import SyncStatus from "./pages/SyncStatus";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 import Footer from "./layout/Footer";
+import Landing from "./pages/Landing";
+import DocumentList from "./components/DocumentList";
 
 const queryClient = new QueryClient();
 
@@ -92,7 +94,8 @@ const App = () => (
                 <Auth />
               </PublicRoute>
             } />
-            <Route path="/" element={
+            <Route path="/" element={<Landing />} />
+            <Route path="/dashboard" element={
               <ProtectedRoute>
                 <Index />
               </ProtectedRoute>
@@ -120,6 +123,16 @@ const App = () => (
             <Route path="/settings" element={
               <ProtectedRoute>
                 <Settings />
+              </ProtectedRoute>
+            } />
+            <Route path="/settings/billing" element={
+              <ProtectedRoute>
+                <Settings />
+              </ProtectedRoute>
+            } />
+            <Route path="/docs" element={
+              <ProtectedRoute>
+                <DocumentList />
               </ProtectedRoute>
             } />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
