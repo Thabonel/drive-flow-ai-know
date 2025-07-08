@@ -1,12 +1,16 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useState } from 'react';
 
 export type ModelPreference = 'openai' | 'openrouter' | 'ollama';
 
 export function useUserSettings() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const [offlineMode, setOfflineModeState] = useState(
+    localStorage.getItem('offline-mode') === 'true'
+  );
 
   const settings = useQuery({
     queryKey: ['user-settings', user?.id],
@@ -26,6 +30,11 @@ export function useUserSettings() {
     }
   });
 
+  const setOfflineMode = (val: boolean) => {
+    localStorage.setItem('offline-mode', String(val));
+    setOfflineModeState(val);
+  };
+
   const updatePreference = useMutation({
     mutationFn: async (preference: ModelPreference) => {
       const { error } = await supabase
@@ -44,5 +53,7 @@ export function useUserSettings() {
   return {
     modelPreference: settings.data as ModelPreference | undefined,
     setModelPreference: updatePreference.mutate,
+    offlineMode,
+    setOfflineMode,
   };
 }
