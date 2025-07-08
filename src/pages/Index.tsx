@@ -9,6 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { KnowledgeBasePreview } from '@/components/KnowledgeBasePreview';
 import { AIQueryInput } from '@/components/AIQueryInput';
 import { RecentDocuments } from '@/components/RecentDocuments';
+import { DocumentList } from '@/components/DocumentList';
 import { DailyFocusModule } from '@/components/DailyFocusModule';
 import { AIAssistantSidebar } from '@/components/AIAssistantSidebar';
 import { CreateKnowledgeDocumentModal } from '@/components/CreateKnowledgeDocumentModal';
@@ -125,6 +126,7 @@ const Index = () => {
           <div className="space-y-6">
             <KnowledgeBasePreview onAskQuestion={handleAskQuestion} />
             <RecentDocuments />
+            <DocumentList />
             
             {/* Quick Actions */}
             <Card>
