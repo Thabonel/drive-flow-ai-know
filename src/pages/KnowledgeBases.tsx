@@ -112,12 +112,44 @@ const KnowledgeBases = () => {
 
   const regenerateKB = useMutation({
     mutationFn: async (kbId: string) => {
-      // Simulate AI regeneration by updating the updated_at timestamp and content
+      // Get knowledge base and its source documents
+      const { data: kb, error: kbError } = await supabase
+        .from('knowledge_bases')
+        .select('*, source_document_ids')
+        .eq('id', kbId)
+        .eq('user_id', user!.id)
+        .single();
+      
+      if (kbError) throw new Error(kbError.message);
+      
+      // Get source documents content
+      const { data: documents, error: docsError } = await supabase
+        .from('knowledge_documents')
+        .select('*')
+        .in('id', kb.source_document_ids || []);
+      
+      if (docsError) throw new Error(docsError.message);
+      
+      // Call AI to regenerate knowledge base content
+      const { data: aiResult, error: aiError } = await supabase.functions.invoke('ai-document-analysis', {
+        body: { 
+          knowledge_base_id: kbId,
+          documents: documents,
+          type: kb.type,
+          regenerate: true
+        }
+      });
+      
+      if (aiError) throw new Error(aiError.message);
+      
+      // Update knowledge base with new AI-generated content
       const { data, error } = await supabase
         .from('knowledge_bases')
         .update({ 
           updated_at: new Date().toISOString(),
-          ai_generated_content: 'Regenerated content...' 
+          ai_generated_content: aiResult.generated_content,
+          content: aiResult.structured_content,
+          last_updated_from_source: new Date().toISOString()
         })
         .eq('id', kbId)
         .eq('user_id', user!.id)

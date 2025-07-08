@@ -34,17 +34,33 @@ const Documents = () => {
 
   const generateInsights = useMutation({
     mutationFn: async (docId: string) => {
-      // Simulate AI insights generation by updating the ai_insights field
-      const insights = {
-        key_topics: ['AI', 'Machine Learning', 'Data Analysis'],
-        summary: 'This document contains valuable insights about AI and machine learning applications.',
-        recommendations: ['Consider implementing these strategies', 'Review the data analysis section']
-      };
+      // Get the document to analyze
+      const { data: doc, error: docError } = await supabase
+        .from('knowledge_documents')
+        .select('*')
+        .eq('id', docId)
+        .eq('user_id', user!.id)
+        .single();
       
+      if (docError) throw new Error(docError.message);
+      
+      // Call AI document analysis edge function
+      const { data: analysisResult, error: analysisError } = await supabase.functions.invoke('ai-document-analysis', {
+        body: { 
+          document_id: docId,
+          content: doc.content || '',
+          title: doc.title
+        }
+      });
+      
+      if (analysisError) throw new Error(analysisError.message);
+      
+      // Update document with AI insights
       const { data, error } = await supabase
         .from('knowledge_documents')
         .update({ 
-          ai_insights: insights,
+          ai_insights: analysisResult.insights,
+          ai_summary: analysisResult.summary,
           updated_at: new Date().toISOString()
         })
         .eq('id', docId)
@@ -72,10 +88,8 @@ const Documents = () => {
   });
 
   const handleViewDocument = (doc: any) => {
-    toast({
-      title: doc.title,
-      description: `File type: ${doc.file_type} | Size: ${doc.file_size ? (doc.file_size / 1024).toFixed(1) + 'KB' : 'Unknown'}`,
-    });
+    // Open document in a modal or navigate to detailed view
+    window.open(`https://drive.google.com/file/d/${doc.google_file_id}/view`, '_blank');
   };
 
   const handleGenerateInsights = (docId: string) => {
@@ -93,12 +107,12 @@ const Documents = () => {
 
   const getCategoryColor = (category: string) => {
     const colors = {
-      prompts: 'bg-blue-500',
-      marketing: 'bg-green-500',
-      specs: 'bg-purple-500',
-      general: 'bg-gray-500',
+      prompts: 'bg-primary',
+      marketing: 'bg-accent',
+      specs: 'bg-secondary',
+      general: 'bg-muted',
     };
-    return colors[category as keyof typeof colors] || 'bg-gray-500';
+    return colors[category as keyof typeof colors] || 'bg-muted';
   };
 
   return (
