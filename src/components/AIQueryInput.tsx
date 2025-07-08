@@ -7,6 +7,7 @@ import { Brain, Send, Sparkles, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 interface AIQueryInputProps {
   selectedKnowledgeBase?: { id: string; name: string };
@@ -19,6 +20,19 @@ export const AIQueryInput = ({ selectedKnowledgeBase, onClearSelection }: AIQuer
   const [response, setResponse] = useState('');
   const { toast } = useToast();
   const { user } = useAuth();
+  const queryClient = useQueryClient();
+
+  const savePrompt = useMutation({
+    mutationFn: async (text: string) => {
+      const { error } = await supabase
+        .from('saved_prompts')
+        .insert({ user_id: user!.id, prompt_text: text });
+      if (error) throw new Error(error.message);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['saved-prompts', user?.id] });
+    }
+  });
 
   const quickPrompts = [
     "What are my key marketing messages?",
@@ -30,6 +44,8 @@ export const AIQueryInput = ({ selectedKnowledgeBase, onClearSelection }: AIQuer
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!query.trim() || !user) return;
+
+    savePrompt.mutate(query);
 
     setIsLoading(true);
     setResponse('');
