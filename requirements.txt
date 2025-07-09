@@ -1,6 +1,7 @@
 fastapi
-uvicorn[standard]
+uvicorn
+openai
+python-dotenv
 langchain
 supabase
-python-dotenv
-
+httpx
