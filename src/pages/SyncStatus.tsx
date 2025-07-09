@@ -62,7 +62,7 @@ const SyncStatus = () => {
     onError: (error) => {
       toast({
         title: 'Sync Error',
-        description: error.message,
+        description: error instanceof Error ? error.message : 'An error occurred',
         variant: 'destructive',
       });
     },
@@ -110,7 +110,7 @@ const SyncStatus = () => {
     onError: (error) => {
       toast({
         title: 'Sync All Error',
-        description: error.message,
+        description: error instanceof Error ? error.message : 'An error occurred',
         variant: 'destructive',
       });
     },

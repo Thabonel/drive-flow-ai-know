@@ -25,7 +25,7 @@ export default function Landing() {
     <div className="min-h-screen flex flex-col">
       <header className="flex justify-end p-4">
         <Button asChild variant="ghost" size="sm">
-          <Link to="/login">Login</Link>
+          <Link to="/auth">Login</Link>
         </Button>
       </header>
 
@@ -41,7 +41,7 @@ export default function Landing() {
         </h1>
         <div className="space-x-4">
           <Button asChild size="lg">
-            <Link to="/register">Try Free</Link>
+            <Link to="/auth">Try Free</Link>
           </Button>
           <Button asChild size="lg" variant="secondary">
             <a href="https://github.com/your-org/your-repo" target="_blank" rel="noopener noreferrer">
@@ -70,17 +70,17 @@ export default function Landing() {
                   </ul>
                   {plan.name === 'Free' && (
                     <Button asChild className="w-full mt-2">
-                      <Link to="/register">Get Started</Link>
+                      <Link to="/auth">Get Started</Link>
                     </Button>
                   )}
                   {plan.name === 'Starter' && (
                     <Button asChild className="w-full mt-2">
-                      <Link to="/register?plan=starter">Choose Starter</Link>
+                      <Link to="/auth?plan=starter">Choose Starter</Link>
                     </Button>
                   )}
                   {plan.name === 'Pro' && (
                     <Button asChild className="w-full mt-2">
-                      <Link to="/register?plan=pro">Choose Pro</Link>
+                      <Link to="/auth?plan=pro">Choose Pro</Link>
                     </Button>
                   )}
                 </CardContent>
