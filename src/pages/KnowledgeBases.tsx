@@ -79,7 +79,7 @@ const KnowledgeBases = () => {
     onError: (error) => {
       toast({
         title: 'Error',
-        description: error.message,
+        description: error instanceof Error ? error.message : 'An error occurred',
         variant: 'destructive',
       });
     },
@@ -104,7 +104,7 @@ const KnowledgeBases = () => {
     onError: (error) => {
       toast({
         title: 'Error Loading Demo Data',
-        description: error.message,
+        description: error instanceof Error ? error.message : 'An error occurred',
         variant: 'destructive',
       });
     },
@@ -169,7 +169,7 @@ const KnowledgeBases = () => {
     onError: (error) => {
       toast({
         title: 'Error',
-        description: error.message,
+        description: error instanceof Error ? error.message : 'An error occurred',
         variant: 'destructive',
       });
     },
