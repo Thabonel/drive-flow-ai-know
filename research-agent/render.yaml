@@ -1,7 +1,7 @@
 services:
   - type: web
     name: deep-research-agent
-    env: python
+    runtime: python
     plan: free
     branch: main
     autoDeploy: true
@@ -10,4 +10,3 @@ services:
     envVars:
       - key: PORT
         value: "10000"
-
