@@ -96,7 +96,7 @@ export default function Landing() {
           </nav>
 
           <Button asChild variant="default">
-            <Link to="/auth">Get Started</Link>
+            <Link to="/auth">Log In</Link>
           </Button>
         </div>
       </header>
