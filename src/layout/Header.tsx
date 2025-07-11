@@ -6,7 +6,7 @@ const Header = () => {
   const { offlineEnabled } = useOffline();
   const { modelPreference } = useUserSettings();
 
-  const showBanner = true; // Temporarily forced for testing
+  const showBanner = offlineEnabled;
 
   return (
     <header className="h-12 flex items-center border-b bg-background px-4 relative">
