@@ -23,7 +23,7 @@ export type Database = {
           id: string
           memory_type: string
           metadata: Json | null
-          user_id: string | null
+          user_id: string
         }
         Insert: {
           agent: string
@@ -33,7 +33,7 @@ export type Database = {
           id?: string
           memory_type: string
           metadata?: Json | null
-          user_id?: string | null
+          user_id: string
         }
         Update: {
           agent?: string
@@ -43,7 +43,7 @@ export type Database = {
           id?: string
           memory_type?: string
           metadata?: Json | null
-          user_id?: string | null
+          user_id?: string
         }
         Relationships: []
       }
