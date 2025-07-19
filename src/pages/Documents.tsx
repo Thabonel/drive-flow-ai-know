@@ -100,7 +100,7 @@ const Documents = () => {
     generateInsights.mutate(docId);
   };
 
-  const categories = ['prompts', 'marketing', 'specs', 'general'];
+  const categories = ['prompts', 'marketing', 'specs', 'general', 'research', 'planning', 'strategy', 'notes', 'reference'];
 
   const filteredDocuments = (documents || []).filter(doc => {
     const matchesSearch = doc.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
