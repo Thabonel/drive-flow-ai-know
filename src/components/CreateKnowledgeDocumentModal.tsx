@@ -217,8 +217,11 @@ export const CreateKnowledgeDocumentModal = ({ trigger }: CreateKnowledgeDocumen
                 <SelectValue placeholder="Select a category (optional)" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="research">Research</SelectItem>
+                <SelectItem value="prompts">Prompts</SelectItem>
                 <SelectItem value="marketing">Marketing</SelectItem>
+                <SelectItem value="specs">Specs</SelectItem>
+                <SelectItem value="general">General</SelectItem>
+                <SelectItem value="research">Research</SelectItem>
                 <SelectItem value="planning">Planning</SelectItem>
                 <SelectItem value="strategy">Strategy</SelectItem>
                 <SelectItem value="notes">Notes</SelectItem>
