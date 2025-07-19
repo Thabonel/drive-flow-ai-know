@@ -71,6 +71,10 @@ export const DocumentList = () => {
     window.open(`https://drive.google.com/file/d/${doc.google_file_id}/view`, '_blank');
   };
 
+  const handleEditDocument = (doc: any) => {
+    window.open(`https://docs.google.com/document/d/${doc.google_file_id}/edit`, '_blank');
+  };
+
   if (isLoading) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -94,6 +98,7 @@ export const DocumentList = () => {
             key={doc.id}
             document={doc}
             onView={handleViewDocument}
+            onEdit={handleEditDocument}
             onGenerateInsights={() => {}}
             isGeneratingInsights={false}
             getCategoryColor={getCategoryColor}

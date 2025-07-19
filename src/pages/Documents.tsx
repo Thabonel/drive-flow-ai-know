@@ -91,6 +91,11 @@ const Documents = () => {
     window.open(`https://drive.google.com/file/d/${doc.google_file_id}/view`, '_blank');
   };
 
+  const handleEditDocument = (doc: any) => {
+    // Open document for editing in Google Drive
+    window.open(`https://docs.google.com/document/d/${doc.google_file_id}/edit`, '_blank');
+  };
+
   const handleGenerateInsights = (docId: string) => {
     generateInsights.mutate(docId);
   };
@@ -146,6 +151,7 @@ const Documents = () => {
           searchTerm={searchTerm}
           selectedCategory={selectedCategory}
           onViewDocument={handleViewDocument}
+          onEditDocument={handleEditDocument}
           onGenerateInsights={handleGenerateInsights}
           isGeneratingInsights={generateInsights.isPending}
           getCategoryColor={getCategoryColor}

@@ -1,7 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { FileText, Calendar, Tag, Brain } from 'lucide-react';
+import { FileText, Calendar, Tag, Brain, Edit } from 'lucide-react';
 
 interface DocumentCardProps {
   document: {
@@ -15,6 +15,7 @@ interface DocumentCardProps {
     file_size?: number;
   };
   onView: (doc: any) => void;
+  onEdit: (doc: any) => void;
   onGenerateInsights: (docId: string) => void;
   isGeneratingInsights: boolean;
   getCategoryColor: (category: string) => string;
@@ -23,6 +24,7 @@ interface DocumentCardProps {
 export const DocumentCard = ({
   document: doc,
   onView,
+  onEdit,
   onGenerateInsights,
   isGeneratingInsights,
   getCategoryColor,
@@ -54,14 +56,24 @@ export const DocumentCard = ({
         </div>
         
         <div className="flex items-center justify-between pt-2">
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={() => onView(doc)}
-          >
-            <FileText className="h-4 w-4 mr-2" />
-            View
-          </Button>
+          <div className="flex gap-2">
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => onView(doc)}
+            >
+              <FileText className="h-4 w-4 mr-2" />
+              View
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => onEdit(doc)}
+            >
+              <Edit className="h-4 w-4 mr-2" />
+              Edit
+            </Button>
+          </div>
           <Button 
             variant="ghost" 
             size="sm"

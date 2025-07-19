@@ -17,7 +17,7 @@ import {
 import { Button } from '@/components/ui/button';
 
 const navigationItems = [
-  { title: 'Dashboard', url: '/', icon: Home },
+  { title: 'Dashboard', url: '/dashboard', icon: Home },
   { title: 'Google Drive', url: '/drive', icon: FolderOpen },
   { title: 'Documents', url: '/documents', icon: FileText },
   { title: 'Knowledge Bases', url: '/knowledge', icon: Brain },
