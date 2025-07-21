@@ -8,10 +8,13 @@ import { useToast } from '@/hooks/use-toast';
 import { CreateKnowledgeDocumentModal } from '@/components/CreateKnowledgeDocumentModal';
 import { DocumentSearchFilter } from '@/components/DocumentSearchFilter';
 import { DocumentGrid } from '@/components/DocumentGrid';
+import { DocumentViewerModal } from '@/components/DocumentViewerModal';
 
 const Documents = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [viewerDocument, setViewerDocument] = useState<any>(null);
+  const [isViewerOpen, setIsViewerOpen] = useState(false);
 
   const { user } = useAuth();
   const { toast } = useToast();
@@ -89,8 +92,9 @@ const Documents = () => {
   const handleViewDocument = (doc: any) => {
     // Check if this is a document created in the app (manual document)
     if (doc.file_type === 'manual' || doc.google_file_id?.startsWith('manual-')) {
-      // For app-created documents, show content in a modal or alert
-      alert(`Title: ${doc.title}\n\nContent:\n${doc.content || 'No content available'}`);
+      // For app-created documents, open in the viewer modal
+      setViewerDocument(doc);
+      setIsViewerOpen(true);
       return;
     }
     // For Google Drive documents, open in Google Drive
@@ -163,6 +167,15 @@ const Documents = () => {
           getCategoryColor={getCategoryColor}
         />
       </div>
+
+      <DocumentViewerModal 
+        document={viewerDocument}
+        isOpen={isViewerOpen}
+        onClose={() => {
+          setIsViewerOpen(false);
+          setViewerDocument(null);
+        }}
+      />
     </div>
   );
 };
