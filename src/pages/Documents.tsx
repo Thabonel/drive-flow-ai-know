@@ -102,7 +102,14 @@ const Documents = () => {
   };
 
   const handleEditDocument = (doc: any) => {
-    // Open document for editing in Google Drive
+    // Check if this is a document created in the app (manual document)
+    if (doc.file_type === 'manual' || doc.google_file_id?.startsWith('manual-')) {
+      // For app-created documents, open in the viewer modal in edit mode
+      setViewerDocument(doc);
+      setIsViewerOpen(true);
+      return;
+    }
+    // For Google Drive documents, open in Google Drive
     window.open(`https://docs.google.com/document/d/${doc.google_file_id}/edit`, '_blank');
   };
 
