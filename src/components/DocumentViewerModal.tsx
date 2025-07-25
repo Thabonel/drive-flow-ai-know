@@ -130,7 +130,15 @@ export const DocumentViewerModal = ({ document, isOpen, onClose }: DocumentViewe
         category: document.category || '',
         tags: document.tags || []
       });
-      setIsEditing(false);
+      // Check if this is coming from an edit action (Google Drive documents)
+      // If Google Drive document doesn't have editable content, start in view mode
+      if (document.file_type === 'document' && document.content) {
+        setIsEditing(false);
+      } else if (document.file_type === 'manual') {
+        setIsEditing(false);
+      } else {
+        setIsEditing(false);
+      }
     }
   }, [document]);
 
