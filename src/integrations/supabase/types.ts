@@ -1053,78 +1053,36 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      binary_quantize: {
-        Args: { "": string } | { "": unknown }
-        Returns: unknown
-      }
       cleanup_old_qa_sessions: {
-        Args: { days_old?: number }
-        Returns: number
+        Args: Record<PropertyKey, never> | { days_old?: number }
+        Returns: undefined
       }
       get_qa_agent_stats: {
-        Args: { p_agent_id: string }
+        Args: Record<PropertyKey, never> | { p_agent_id: string }
         Returns: {
-          total_documents: number
-          total_collections: number
-          total_sessions: number
-          total_messages: number
-          avg_session_length: number
+          agent_id: string
+          total_tickets: number
+          open_tickets: number
+          closed_tickets: number
         }[]
       }
-      halfvec_avg: {
-        Args: { "": number[] }
-        Returns: unknown
+      get_qa_agent_stats_new: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          agent_id: number
+          total_messages: number
+          total_documents: number
+          total_collections: number
+        }[]
       }
-      halfvec_out: {
-        Args: { "": unknown }
-        Returns: unknown
-      }
-      halfvec_send: {
-        Args: { "": unknown }
-        Returns: string
-      }
-      halfvec_typmod_in: {
-        Args: { "": unknown[] }
-        Returns: number
-      }
-      hnsw_bit_support: {
-        Args: { "": unknown }
-        Returns: unknown
-      }
-      hnsw_halfvec_support: {
-        Args: { "": unknown }
-        Returns: unknown
-      }
-      hnsw_sparsevec_support: {
-        Args: { "": unknown }
-        Returns: unknown
-      }
-      hnswhandler: {
-        Args: { "": unknown }
-        Returns: unknown
-      }
-      ivfflat_bit_support: {
-        Args: { "": unknown }
-        Returns: unknown
-      }
-      ivfflat_halfvec_support: {
-        Args: { "": unknown }
-        Returns: unknown
-      }
-      ivfflathandler: {
-        Args: { "": unknown }
-        Returns: unknown
-      }
-      l2_norm: {
-        Args: { "": unknown } | { "": unknown }
-        Returns: number
-      }
-      l2_normalize: {
-        Args: { "": string } | { "": unknown } | { "": unknown }
-        Returns: string
+      handle_new_user_v2: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
       }
       match_documents: {
-        Args: { query_embedding: string; match_count?: number; filter?: Json }
+        Args:
+          | { query: string }
+          | { query_embedding: string; match_count?: number; filter?: Json }
         Returns: {
           id: string
           content: string
@@ -1135,6 +1093,7 @@ export type Database = {
       }
       match_memories: {
         Args:
+          | Record<PropertyKey, never>
           | { query_embedding: string; match_count?: number }
           | {
               query_embedding: string
@@ -1143,66 +1102,32 @@ export type Database = {
               filter_agent: string
               user_filter: string
             }
+        Returns: undefined
+      }
+      match_memories_optimized: {
+        Args: Record<PropertyKey, never>
         Returns: {
-          id: string
           agent: string
-          memory_type: string
           content: string
-          metadata: Json
-          similarity: number
+          created_at: string
+          embedding: string | null
+          id: string
+          memory_type: string
+          metadata: Json | null
+          user_id: string
         }[]
       }
       match_qa_documents: {
-        Args: {
-          query_embedding: string
-          p_agent_id?: string
-          p_collection_id?: string
-          match_threshold?: number
-          match_count?: number
-        }
-        Returns: {
-          id: string
-          content: string
-          metadata: Json
-          document_name: string
-          similarity: number
-        }[]
-      }
-      sparsevec_out: {
-        Args: { "": unknown }
-        Returns: unknown
-      }
-      sparsevec_send: {
-        Args: { "": unknown }
-        Returns: string
-      }
-      sparsevec_typmod_in: {
-        Args: { "": unknown[] }
-        Returns: number
-      }
-      vector_avg: {
-        Args: { "": number[] }
-        Returns: string
-      }
-      vector_dims: {
-        Args: { "": string } | { "": unknown }
-        Returns: number
-      }
-      vector_norm: {
-        Args: { "": string }
-        Returns: number
-      }
-      vector_out: {
-        Args: { "": string }
-        Returns: unknown
-      }
-      vector_send: {
-        Args: { "": string }
-        Returns: string
-      }
-      vector_typmod_in: {
-        Args: { "": unknown[] }
-        Returns: number
+        Args:
+          | Record<PropertyKey, never>
+          | {
+              query_embedding: string
+              p_agent_id?: string
+              p_collection_id?: string
+              match_threshold?: number
+              match_count?: number
+            }
+        Returns: undefined
       }
     }
     Enums: {
