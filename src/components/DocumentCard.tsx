@@ -9,6 +9,7 @@ interface DocumentCardProps {
     title: string;
     ai_summary?: string;
     category: string;
+    created_at?: string;
     drive_modified_at?: string;
     tags?: string[];
     file_type: string;
@@ -41,9 +42,17 @@ export const DocumentCard = ({
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="flex items-center text-sm text-muted-foreground">
-          <Calendar className="h-4 w-4 mr-1" />
-          {doc.drive_modified_at ? new Date(doc.drive_modified_at).toLocaleDateString() : 'Unknown date'}
+        <div className="flex items-center justify-between text-sm text-muted-foreground">
+          <div className="flex items-center">
+            <Calendar className="h-4 w-4 mr-1" />
+            Created: {doc.created_at ? new Date(doc.created_at).toLocaleDateString() : 'Unknown date'}
+          </div>
+          {doc.drive_modified_at && (
+            <div className="flex items-center">
+              <Calendar className="h-4 w-4 mr-1" />
+              Modified: {new Date(doc.drive_modified_at).toLocaleDateString()}
+            </div>
+          )}
         </div>
         
         <div className="flex flex-wrap gap-1">
