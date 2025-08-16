@@ -13,6 +13,7 @@ import { DocumentViewerModal } from '@/components/DocumentViewerModal';
 const Documents = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [sortBy, setSortBy] = useState('created_desc');
   const [viewerDocument, setViewerDocument] = useState<any>(null);
   const [isViewerOpen, setIsViewerOpen] = useState(false);
 
@@ -21,14 +22,39 @@ const Documents = () => {
   const queryClient = useQueryClient();
 
   const { data: documents, isLoading } = useQuery({
-    queryKey: ['documents', user?.id],
+    queryKey: ['documents', user?.id, sortBy],
     enabled: !!user,
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from('knowledge_documents')
         .select('*')
-        .eq('user_id', user!.id)
-        .order('drive_modified_at', { ascending: false });
+        .eq('user_id', user!.id);
+
+      // Apply sorting based on sortBy value
+      switch (sortBy) {
+        case 'created_desc':
+          query = query.order('created_at', { ascending: false });
+          break;
+        case 'created_asc':
+          query = query.order('created_at', { ascending: true });
+          break;
+        case 'modified_desc':
+          query = query.order('drive_modified_at', { ascending: false, nullsFirst: false });
+          break;
+        case 'modified_asc':
+          query = query.order('drive_modified_at', { ascending: true, nullsFirst: false });
+          break;
+        case 'title_asc':
+          query = query.order('title', { ascending: true });
+          break;
+        case 'title_desc':
+          query = query.order('title', { ascending: false });
+          break;
+        default:
+          query = query.order('created_at', { ascending: false });
+      }
+
+      const { data, error } = await query;
       if (error) throw new Error(error.message);
       return data;
     }
@@ -149,6 +175,8 @@ const Documents = () => {
         selectedCategory={selectedCategory}
         onCategoryChange={setSelectedCategory}
         categories={categories}
+        sortBy={sortBy}
+        onSortChange={setSortBy}
       />
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

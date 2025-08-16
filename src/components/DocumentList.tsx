@@ -33,7 +33,7 @@ export const DocumentList = () => {
         .from('knowledge_documents')
         .select('*')
         .eq('user_id', user!.id)
-        .order('drive_modified_at', { ascending: false });
+        .order('created_at', { ascending: false });
       if (error) throw new Error(error.message);
       return data || [];
     }
