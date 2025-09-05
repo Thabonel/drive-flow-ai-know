@@ -1,7 +1,7 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-import subprocess
-from pathlib import Path
+import asyncio
+from DeepResearchAgency.agency import agency
 
 app = FastAPI()
 
@@ -12,18 +12,23 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-SCRIPT_PATH = Path(__file__).parent / "DeepResearchAgency" / "agency.py"
+
+@app.on_event("startup")
+async def startup_event():
+    app.state.agency = agency
 
 @app.post("/query")
 async def run_query(payload: dict):
     query = payload.get("query", "")
-    completed = subprocess.run(
-        ["python", str(SCRIPT_PATH)],
-        input=f"{query}\nquit\n",
-        capture_output=True,
-        text=True,
-    )
-    return {"input": query, "output": completed.stdout}
+    try:
+        output = await asyncio.wait_for(
+            app.state.agency.get_response(query), timeout=30
+        )
+    except asyncio.TimeoutError:
+        raise HTTPException(status_code=504, detail="Query timed out")
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
+    return {"input": query, "output": output}
 
 if __name__ == "__main__":
     import uvicorn
