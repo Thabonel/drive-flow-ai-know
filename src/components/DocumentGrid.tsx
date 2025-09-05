@@ -1,4 +1,5 @@
 import { DocumentCard } from '@/components/DocumentCard';
+import { DocumentCardSkeleton } from '@/components/DocumentCardSkeleton';
 import { EmptyDocumentsState } from '@/components/EmptyDocumentsState';
 
 interface DocumentGridProps {
@@ -28,7 +29,11 @@ export const DocumentGrid = ({
 }: DocumentGridProps) => {
   if (isLoading) {
     return (
-      <div className="col-span-full text-center py-8">Loading...</div>
+      <>
+        {Array.from({ length: 6 }).map((_, index) => (
+          <DocumentCardSkeleton key={index} />
+        ))}
+      </>
     );
   }
 

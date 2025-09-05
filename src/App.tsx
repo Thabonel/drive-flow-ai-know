@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { offlineEnabled } from "@/lib/ai";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
+import { useKeyboardShortcuts, globalShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { AppSidebar } from "@/components/AppSidebar";
 import Header from "./layout/Header";
 import Index from "./pages/Index";
@@ -24,6 +25,8 @@ const queryClient = new QueryClient();
 
 function AppLayout({ children }: { children: React.ReactNode }) {
   const offline = offlineEnabled();
+  useKeyboardShortcuts(globalShortcuts);
+  
   return (
     <SidebarProvider>
       <div className="min-h-screen flex flex-col w-full">

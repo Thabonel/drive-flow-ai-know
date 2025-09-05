@@ -122,8 +122,15 @@ export const AIQueryInput = ({ selectedKnowledgeBase, onClearSelection }: AIQuer
             }
             disabled={isLoading}
             className="flex-1"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+                e.preventDefault();
+                handleSubmit(e);
+              }
+            }}
+            maxLength={500}
           />
-          <Button type="submit" disabled={isLoading || !query.trim()}>
+          <Button type="submit" disabled={isLoading || !query.trim() || query.length < 3}>
             {isLoading ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
@@ -131,6 +138,17 @@ export const AIQueryInput = ({ selectedKnowledgeBase, onClearSelection }: AIQuer
             )}
           </Button>
         </form>
+
+        <div className="text-xs text-muted-foreground">
+          {query.length > 0 && (
+            <span className={query.length > 450 ? 'text-orange-500' : ''}>
+              {query.length}/500 characters
+            </span>
+          )}
+          {query.length === 0 && (
+            <span>Tip: Press Ctrl/Cmd + Enter to submit</span>
+          )}
+        </div>
 
         <div className="flex flex-wrap gap-2">
           {quickPrompts.map((prompt, index) => (
