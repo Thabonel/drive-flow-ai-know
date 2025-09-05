@@ -67,11 +67,22 @@ export const AIQueryInput = ({ selectedKnowledgeBase, onClearSelection }: AIQuer
       setResponse(data.response || 'No response generated');
     } catch (error) {
       console.error('Error querying AI:', error);
+      
+      let errorMessage = 'Unknown error occurred';
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      } else if (typeof error === 'object' && error !== null && 'message' in error) {
+        errorMessage = String(error.message);
+      }
+      
       toast({
-        title: 'Error',
-        description: `Failed to process your query: ${error.message || 'Unknown error'}`,
+        title: 'Query Failed',
+        description: `Failed to process your query: ${errorMessage}`,
         variant: 'destructive',
       });
+      
+      // Set a helpful response message
+      setResponse('Sorry, I encountered an error processing your query. Please try again or rephrase your question.');
     } finally {
       setIsLoading(false);
     }

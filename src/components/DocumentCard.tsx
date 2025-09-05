@@ -1,7 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { FileText, Calendar, Tag, Brain, Edit } from 'lucide-react';
+import { FileText, Calendar, Tag, Brain, Edit, Trash2 } from 'lucide-react';
 
 interface DocumentCardProps {
   document: {
@@ -17,6 +17,7 @@ interface DocumentCardProps {
   };
   onView: (doc: any) => void;
   onEdit: (doc: any) => void;
+  onDelete?: (doc: any) => void;
   onGenerateInsights: (docId: string) => void;
   isGeneratingInsights: boolean;
   getCategoryColor: (category: string) => string;
@@ -26,6 +27,7 @@ export const DocumentCard = ({
   document: doc,
   onView,
   onEdit,
+  onDelete,
   onGenerateInsights,
   isGeneratingInsights,
   getCategoryColor,
@@ -64,8 +66,8 @@ export const DocumentCard = ({
           ))}
         </div>
         
-        <div className="flex items-center justify-between pt-2">
-          <div className="flex gap-2">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between pt-2 gap-2">
+          <div className="flex flex-wrap gap-2">
             <Button 
               variant="outline" 
               size="sm"
@@ -82,6 +84,17 @@ export const DocumentCard = ({
               <Edit className="h-4 w-4 mr-2" />
               Edit
             </Button>
+            {onDelete && (
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => onDelete(doc)}
+                className="text-red-600 hover:text-red-700"
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Delete
+              </Button>
+            )}
           </div>
           <Button 
             variant="ghost" 
@@ -89,8 +102,17 @@ export const DocumentCard = ({
             onClick={() => onGenerateInsights(doc.id)}
             disabled={isGeneratingInsights}
           >
-            <Brain className="h-4 w-4 mr-2" />
-            {isGeneratingInsights ? 'Generating...' : 'AI Insights'}
+            {isGeneratingInsights ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary mr-2" />
+                Generating...
+              </>
+            ) : (
+              <>
+                <Brain className="h-4 w-4 mr-2" />
+                AI Insights
+              </>
+            )}
           </Button>
         </div>
       </CardContent>

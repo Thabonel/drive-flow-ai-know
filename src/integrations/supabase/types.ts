@@ -7,7 +7,7 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "12.2.3 (519615d)"
@@ -1061,18 +1061,18 @@ export type Database = {
         Args: Record<PropertyKey, never> | { p_agent_id: string }
         Returns: {
           agent_id: string
-          total_tickets: number
-          open_tickets: number
           closed_tickets: number
+          open_tickets: number
+          total_tickets: number
         }[]
       }
       get_qa_agent_stats_new: {
         Args: Record<PropertyKey, never>
         Returns: {
           agent_id: number
-          total_messages: number
-          total_documents: number
           total_collections: number
+          total_documents: number
+          total_messages: number
         }[]
       }
       handle_new_user_v2: {
@@ -1081,27 +1081,28 @@ export type Database = {
       }
       match_documents: {
         Args:
+          | { filter?: Json; match_count?: number; query_embedding: string }
           | { query: string }
-          | { query_embedding: string; match_count?: number; filter?: Json }
         Returns: {
-          id: string
           content: string
-          metadata: Json
           embedding: string
+          id: string
+          metadata: Json
           similarity: number
         }[]
       }
       match_memories: {
         Args:
           | Record<PropertyKey, never>
-          | { query_embedding: string; match_count?: number }
           | {
-              query_embedding: string
-              match_threshold: number
-              match_count: number
               filter_agent: string
+              match_count: number
+              match_threshold: number
+              query_embedding: string
               user_filter: string
             }
+          | { match_count?: number; query_embedding: string }
+          | { param1: string; param2: number }
         Returns: undefined
       }
       match_memories_optimized: {
@@ -1121,11 +1122,11 @@ export type Database = {
         Args:
           | Record<PropertyKey, never>
           | {
-              query_embedding: string
+              match_count?: number
+              match_threshold?: number
               p_agent_id?: string
               p_collection_id?: string
-              match_threshold?: number
-              match_count?: number
+              query_embedding: string
             }
         Returns: undefined
       }
