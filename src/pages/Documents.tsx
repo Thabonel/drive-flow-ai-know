@@ -74,8 +74,9 @@ const Documents = () => {
       
       // Call AI document analysis edge function
       const { data: analysisResult, error: analysisError } = await supabase.functions.invoke('ai-document-analysis', {
-        body: { 
+        body: {
           document_id: docId,
+          user_id: user!.id,
           content: doc.content || '',
           title: doc.title
         }
