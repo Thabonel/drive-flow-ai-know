@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -10,6 +10,7 @@ import { DocumentSearchFilter } from '@/components/DocumentSearchFilter';
 import { DocumentGrid } from '@/components/DocumentGrid';
 import { DocumentViewerModal } from '@/components/DocumentViewerModal';
 import { ConfirmationDialog } from '@/components/ConfirmationDialog';
+import { PaginationControls } from '@/components/PaginationControls';
 
 const Documents = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -19,6 +20,8 @@ const Documents = () => {
   const [isViewerOpen, setIsViewerOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [documentToDelete, setDocumentToDelete] = useState<any>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const documentsPerPage = 12;
 
   const { user } = useAuth();
   const { toast } = useToast();
@@ -177,6 +180,16 @@ const Documents = () => {
     return matchesSearch && matchesCategory && !doc.is_archived;
   });
 
+  // Pagination logic
+  const totalPages = Math.ceil(filteredDocuments.length / documentsPerPage);
+  const startIndex = (currentPage - 1) * documentsPerPage;
+  const paginatedDocuments = filteredDocuments.slice(startIndex, startIndex + documentsPerPage);
+
+  // Reset to page 1 when search/filter changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, selectedCategory, sortBy]);
+
   const getCategoryColor = (category: string) => {
     const colors = {
       prompts: 'bg-primary',
@@ -196,7 +209,7 @@ const Documents = () => {
         </div>
         <CreateKnowledgeDocumentModal 
           trigger={
-            <Button size="lg">
+            <Button size="lg" data-create-document aria-label="Create new document">
               <Plus className="h-5 w-5 mr-2" />
               Create Document
             </Button>
@@ -225,7 +238,7 @@ const Documents = () => {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
         <DocumentGrid
-          documents={filteredDocuments}
+          documents={paginatedDocuments}
           isLoading={isLoading}
           searchTerm={searchTerm}
           selectedCategory={selectedCategory}
@@ -237,6 +250,14 @@ const Documents = () => {
           getCategoryColor={getCategoryColor}
         />
       </div>
+
+      <PaginationControls
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onPageChange={setCurrentPage}
+        totalItems={filteredDocuments.length}
+        itemsPerPage={documentsPerPage}
+      />
 
       <DocumentViewerModal 
         document={viewerDocument}
