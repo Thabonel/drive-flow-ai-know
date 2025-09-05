@@ -214,6 +214,38 @@ export type Database = {
           },
         ]
       }
+      doc_qa_agent_memberships: {
+        Row: {
+          agent_id: string
+          created_at: string
+          id: string
+          is_owner: boolean
+          user_id: string
+        }
+        Insert: {
+          agent_id: string
+          created_at?: string
+          id?: string
+          is_owner?: boolean
+          user_id: string
+        }
+        Update: {
+          agent_id?: string
+          created_at?: string
+          id?: string
+          is_owner?: boolean
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "doc_qa_agent_memberships_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "doc_qa_agents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       doc_qa_agents: {
         Row: {
           created_at: string | null
@@ -1057,6 +1089,10 @@ export type Database = {
         Args: Record<PropertyKey, never> | { days_old?: number }
         Returns: undefined
       }
+      get_current_user_can_view_agent: {
+        Args: { p_agent_id: string }
+        Returns: boolean
+      }
       get_qa_agent_stats: {
         Args: Record<PropertyKey, never> | { p_agent_id: string }
         Returns: {
@@ -1103,7 +1139,14 @@ export type Database = {
             }
           | { match_count?: number; query_embedding: string }
           | { param1: string; param2: number }
-        Returns: undefined
+        Returns: {
+          agent: string
+          content: string
+          id: string
+          memory_type: string
+          metadata: Json
+          similarity: number
+        }[]
       }
       match_memories_optimized: {
         Args: Record<PropertyKey, never>
