@@ -13,12 +13,27 @@ serve(async (req) => {
   }
 
   try {
+    // Get authorization header and validate JWT
+    const authHeader = req.headers.get('authorization');
+    if (!authHeader) {
+      throw new Error('Authorization header is required');
+    }
+
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    const { folder_id, user_id } = await req.json();
+    // Extract user from JWT token
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user }, error: userError } = await supabaseClient.auth.getUser(token);
+    
+    if (userError || !user) {
+      throw new Error(`User not authenticated: ${userError?.message || 'No user found'}`);
+    }
+
+    const user_id = user.id;
+    const { folder_id } = await req.json();
 
     // Get folder info from database - folder_id is the internal ID
     const { data: folder, error: folderError } = await supabaseClient

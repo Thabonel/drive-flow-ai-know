@@ -15,32 +15,27 @@ export const useGoogleDrive = () => {
     if (!user) return;
     
     try {
-      const expiresAt = new Date(Date.now() + (tokenResponse.expires_in * 1000));
-      
-      const { data, error } = await supabase
-        .from('user_google_tokens')
-        .upsert({
-          user_id: user.id,
+      const { data, error } = await supabase.functions.invoke('store-google-tokens', {
+        body: {
           access_token: tokenResponse.access_token,
           refresh_token: tokenResponse.refresh_token || null,
           token_type: tokenResponse.token_type || 'Bearer',
-          expires_at: expiresAt.toISOString(),
-          scope: tokenResponse.scope
-        }, {
-          onConflict: 'user_id'
-        });
-        
+          expires_in: tokenResponse.expires_in || 3600,
+          scope: tokenResponse.scope,
+        }
+      });
+
       if (error) {
         console.error('Error storing tokens:', error);
         throw error;
       }
       
-      console.log('Tokens stored successfully:', data);
+      console.log('Tokens stored securely:', data);
     } catch (error) {
       console.error('Error storing tokens:', error);
       toast({
         title: 'Error',
-        description: 'Failed to store authentication tokens',
+        description: 'Failed to store authentication tokens securely',
         variant: 'destructive',
       });
     }
