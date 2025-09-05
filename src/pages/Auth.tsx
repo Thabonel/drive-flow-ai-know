@@ -41,7 +41,7 @@ const Auth = () => {
       <div className="w-full max-w-md">
         <div className="flex items-center justify-center mb-8">
           <Brain className="h-8 w-8 text-primary mr-2" />
-          <h1 className="text-2xl font-bold text-foreground">PromptKeeper</h1>
+          <h1 className="text-2xl font-bold text-foreground">DocChat</h1>
         </div>
         
         <Tabs defaultValue="signin" className="w-full">
@@ -55,7 +55,7 @@ const Auth = () => {
               <CardHeader>
                 <CardTitle>Welcome back</CardTitle>
                 <CardDescription>
-                  Sign in to your PromptKeeper account
+                  Sign in to your DocChat account
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -93,7 +93,7 @@ const Auth = () => {
               <CardHeader>
                 <CardTitle>Create account</CardTitle>
                 <CardDescription>
-                  Sign up for your PromptKeeper account
+                  Sign up for your DocChat account
                 </CardDescription>
               </CardHeader>
               <CardContent>

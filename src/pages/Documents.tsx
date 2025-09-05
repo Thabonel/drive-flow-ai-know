@@ -9,6 +9,7 @@ import { CreateKnowledgeDocumentModal } from '@/components/CreateKnowledgeDocume
 import { DocumentSearchFilter } from '@/components/DocumentSearchFilter';
 import { DocumentGrid } from '@/components/DocumentGrid';
 import { DocumentViewerModal } from '@/components/DocumentViewerModal';
+import { ConfirmationDialog } from '@/components/ConfirmationDialog';
 
 const Documents = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -16,12 +17,14 @@ const Documents = () => {
   const [sortBy, setSortBy] = useState('created_desc');
   const [viewerDocument, setViewerDocument] = useState<any>(null);
   const [isViewerOpen, setIsViewerOpen] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [documentToDelete, setDocumentToDelete] = useState<any>(null);
 
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: documents, isLoading } = useQuery({
+  const { data: documents, isLoading, error, isError } = useQuery({
     queryKey: ['documents', user?.id, sortBy],
     enabled: !!user,
     queryFn: async () => {
@@ -134,6 +137,37 @@ const Documents = () => {
     generateInsights.mutate(docId);
   };
 
+  const handleDeleteDocument = (doc: any) => {
+    setDocumentToDelete(doc);
+    setDeleteConfirmOpen(true);
+  };
+
+  const confirmDeleteDocument = async () => {
+    if (!documentToDelete || !user) return;
+
+    try {
+      const { error } = await supabase
+        .from('knowledge_documents')
+        .delete()
+        .eq('id', documentToDelete.id)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      queryClient.invalidateQueries({ queryKey: ['documents', user.id] });
+      toast({
+        title: 'Document Deleted',
+        description: 'The document has been successfully deleted.',
+      });
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to delete document',
+        variant: 'destructive',
+      });
+    }
+  };
+
   const categories = ['prompts', 'marketing', 'specs', 'general', 'research', 'planning', 'strategy', 'notes', 'reference'];
 
   const filteredDocuments = (documents || []).filter(doc => {
@@ -180,7 +214,16 @@ const Documents = () => {
         onSortChange={setSortBy}
       />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {isError && (
+        <div className="text-center py-8">
+          <div className="text-red-500 mb-2">Failed to load documents</div>
+          <div className="text-sm text-muted-foreground">
+            {error instanceof Error ? error.message : 'An unknown error occurred'}
+          </div>
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
         <DocumentGrid
           documents={filteredDocuments}
           isLoading={isLoading}
@@ -188,6 +231,7 @@ const Documents = () => {
           selectedCategory={selectedCategory}
           onViewDocument={handleViewDocument}
           onEditDocument={handleEditDocument}
+          onDeleteDocument={handleDeleteDocument}
           onGenerateInsights={handleGenerateInsights}
           isGeneratingInsights={generateInsights.isPending}
           getCategoryColor={getCategoryColor}
@@ -201,6 +245,17 @@ const Documents = () => {
           setIsViewerOpen(false);
           setViewerDocument(null);
         }}
+      />
+
+      <ConfirmationDialog
+        isOpen={deleteConfirmOpen}
+        onClose={() => setDeleteConfirmOpen(false)}
+        onConfirm={confirmDeleteDocument}
+        title="Delete Document"
+        description={`Are you sure you want to delete "${documentToDelete?.title}"? This action cannot be undone.`}
+        confirmText="Delete"
+        cancelText="Cancel"
+        variant="destructive"
       />
     </div>
   );

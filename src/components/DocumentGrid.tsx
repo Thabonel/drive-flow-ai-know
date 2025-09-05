@@ -8,6 +8,7 @@ interface DocumentGridProps {
   selectedCategory: string | null;
   onViewDocument: (doc: any) => void;
   onEditDocument: (doc: any) => void;
+  onDeleteDocument?: (doc: any) => void;
   onGenerateInsights: (docId: string) => void;
   isGeneratingInsights: boolean;
   getCategoryColor: (category: string) => string;
@@ -20,6 +21,7 @@ export const DocumentGrid = ({
   selectedCategory,
   onViewDocument,
   onEditDocument,
+  onDeleteDocument,
   onGenerateInsights,
   isGeneratingInsights,
   getCategoryColor,
@@ -47,6 +49,7 @@ export const DocumentGrid = ({
           document={doc}
           onView={onViewDocument}
           onEdit={onEditDocument}
+          onDelete={onDeleteDocument}
           onGenerateInsights={onGenerateInsights}
           isGeneratingInsights={isGeneratingInsights}
           getCategoryColor={getCategoryColor}
