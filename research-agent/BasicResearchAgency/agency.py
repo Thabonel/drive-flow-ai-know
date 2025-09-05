@@ -48,6 +48,5 @@ research_agent = Agent(
 agency = Agency(research_agent)
 
 if __name__ == "__main__":
-    #run_agency_demo(agency)
-    # agency.create_interactive_visualization()
+    run_agency_demo(agency)
     
