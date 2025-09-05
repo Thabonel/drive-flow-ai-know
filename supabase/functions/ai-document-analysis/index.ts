@@ -155,7 +155,8 @@ serve(async (req) => {
         tags: analysis.suggested_tags,
         updated_at: new Date().toISOString(),
       })
-      .eq('id', document_id);
+      .eq('id', document_id)
+      .eq('user_id', user_id);
 
     if (updateError) {
       throw new Error(`Failed to update document: ${updateError.message}`);
