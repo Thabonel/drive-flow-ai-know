@@ -1024,6 +1024,8 @@ export type Database = {
         Row: {
           access_token: string
           created_at: string
+          encrypted_access_token: string | null
+          encrypted_refresh_token: string | null
           expires_at: string | null
           id: string
           refresh_token: string | null
@@ -1035,6 +1037,8 @@ export type Database = {
         Insert: {
           access_token: string
           created_at?: string
+          encrypted_access_token?: string | null
+          encrypted_refresh_token?: string | null
           expires_at?: string | null
           id?: string
           refresh_token?: string | null
@@ -1046,6 +1050,8 @@ export type Database = {
         Update: {
           access_token?: string
           created_at?: string
+          encrypted_access_token?: string | null
+          encrypted_refresh_token?: string | null
           expires_at?: string | null
           id?: string
           refresh_token?: string | null
@@ -1092,6 +1098,16 @@ export type Database = {
       get_current_user_can_view_agent: {
         Args: { p_agent_id: string }
         Returns: boolean
+      }
+      get_decrypted_google_token: {
+        Args: { p_user_id: string }
+        Returns: {
+          access_token: string
+          expires_at: string
+          refresh_token: string
+          scope: string
+          token_type: string
+        }[]
       }
       get_qa_agent_stats: {
         Args: Record<PropertyKey, never> | { p_agent_id: string }
@@ -1171,6 +1187,16 @@ export type Database = {
               p_collection_id?: string
               query_embedding: string
             }
+        Returns: undefined
+      }
+      store_encrypted_google_tokens: {
+        Args: {
+          p_access_token: string
+          p_expires_in?: number
+          p_refresh_token?: string
+          p_scope?: string
+          p_token_type?: string
+        }
         Returns: undefined
       }
     }
