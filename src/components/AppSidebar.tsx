@@ -42,7 +42,7 @@ export function AppSidebar() {
           <Brain className="h-6 w-6 text-sidebar-primary" />
           {!collapsed && (
             <span className="font-semibold text-sidebar-foreground">
-              PromptKeeper
+              DocChat
             </span>
           )}
         </div>
