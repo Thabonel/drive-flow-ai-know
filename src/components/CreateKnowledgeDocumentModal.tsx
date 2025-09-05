@@ -25,6 +25,8 @@ export const CreateKnowledgeDocumentModal = ({ trigger }: CreateKnowledgeDocumen
     tags: [] as string[]
   });
   const [newTag, setNewTag] = useState('');
+  const [newCategory, setNewCategory] = useState('');
+  const [showNewCategoryInput, setShowNewCategoryInput] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -77,6 +79,36 @@ export const CreateKnowledgeDocumentModal = ({ trigger }: CreateKnowledgeDocumen
       tags: []
     });
     setNewTag('');
+    setNewCategory('');
+    setShowNewCategoryInput(false);
+  };
+
+  const handleCategorySelect = (value: string) => {
+    if (value === 'create-new') {
+      setShowNewCategoryInput(true);
+      setFormData({ ...formData, category: '' });
+    } else {
+      setFormData({ ...formData, category: value });
+      setShowNewCategoryInput(false);
+    }
+  };
+
+  const handleNewCategorySubmit = () => {
+    if (newCategory.trim()) {
+      setFormData({ ...formData, category: newCategory.trim() });
+      setNewCategory('');
+      setShowNewCategoryInput(false);
+    }
+  };
+
+  const handleNewCategoryKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleNewCategorySubmit();
+    } else if (e.key === 'Escape') {
+      setNewCategory('');
+      setShowNewCategoryInput(false);
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -209,25 +241,67 @@ export const CreateKnowledgeDocumentModal = ({ trigger }: CreateKnowledgeDocumen
 
           <div className="space-y-2">
             <Label htmlFor="category">Category</Label>
-            <Select
-              value={formData.category}
-              onValueChange={(value) => setFormData({ ...formData, category: value })}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select a category (optional)" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="prompts">Prompts</SelectItem>
-                <SelectItem value="marketing">Marketing</SelectItem>
-                <SelectItem value="specs">Specs</SelectItem>
-                <SelectItem value="general">General</SelectItem>
-                <SelectItem value="research">Research</SelectItem>
-                <SelectItem value="planning">Planning</SelectItem>
-                <SelectItem value="strategy">Strategy</SelectItem>
-                <SelectItem value="notes">Notes</SelectItem>
-                <SelectItem value="reference">Reference</SelectItem>
-              </SelectContent>
-            </Select>
+            {!showNewCategoryInput ? (
+              <Select
+                value={formData.category}
+                onValueChange={handleCategorySelect}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a category (optional)" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="prompts">Prompts</SelectItem>
+                  <SelectItem value="marketing">Marketing</SelectItem>
+                  <SelectItem value="specs">Specs</SelectItem>
+                  <SelectItem value="general">General</SelectItem>
+                  <SelectItem value="research">Research</SelectItem>
+                  <SelectItem value="planning">Planning</SelectItem>
+                  <SelectItem value="strategy">Strategy</SelectItem>
+                  <SelectItem value="notes">Notes</SelectItem>
+                  <SelectItem value="reference">Reference</SelectItem>
+                  <SelectItem value="create-new">
+                    <div className="flex items-center">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Create New Category
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            ) : (
+              <div className="flex space-x-2">
+                <Input
+                  value={newCategory}
+                  onChange={(e) => setNewCategory(e.target.value)}
+                  placeholder="Enter new category name..."
+                  onKeyPress={handleNewCategoryKeyPress}
+                  autoFocus
+                />
+                <Button
+                  type="button"
+                  onClick={handleNewCategorySubmit}
+                  disabled={!newCategory.trim()}
+                  size="sm"
+                >
+                  Add
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setShowNewCategoryInput(false);
+                    setNewCategory('');
+                  }}
+                  size="sm"
+                >
+                  Cancel
+                </Button>
+              </div>
+            )}
+            {formData.category && !showNewCategoryInput && (
+              <p className="text-sm text-muted-foreground">
+                Selected: <span className="font-medium">{formData.category}</span>
+              </p>
+            )}
           </div>
 
           <div className="space-y-2">
