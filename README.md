@@ -71,3 +71,13 @@ Yes, you can!
 To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
 
 Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+
+## Environment Variables
+
+The Supabase Edge Functions in this project rely on the following environment variables:
+
+- `OPENAI_API_KEY` – used to access OpenAI's API for AI features.
+- `SUPABASE_URL` – the URL of your Supabase project.
+- `SUPABASE_SERVICE_ROLE_KEY` – service role key used by server-side functions.
+
+`SUPABASE_KEY` is not used by the current codebase.
