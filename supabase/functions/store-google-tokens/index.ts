@@ -39,8 +39,21 @@ serve(async (req) => {
       throw new Error('Access token is required');
     }
 
+    // Create a user context client to ensure auth.uid() works correctly in the function
+    const userContextClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      {
+        global: {
+          headers: {
+            authorization: authHeader
+          }
+        }
+      }
+    );
+
     // Use the secure function to store encrypted tokens
-    const { error: storeError } = await supabaseClient.rpc('store_encrypted_google_tokens', {
+    const { error: storeError } = await userContextClient.rpc('store_encrypted_google_tokens', {
       p_access_token: access_token,
       p_refresh_token: refresh_token,
       p_token_type: token_type,
