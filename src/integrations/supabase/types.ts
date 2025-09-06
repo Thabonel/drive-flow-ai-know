@@ -859,6 +859,7 @@ export type Database = {
           source: string | null
           tags: string[] | null
           title: string | null
+          user_id: string | null
         }
         Insert: {
           content?: string | null
@@ -868,6 +869,7 @@ export type Database = {
           source?: string | null
           tags?: string[] | null
           title?: string | null
+          user_id?: string | null
         }
         Update: {
           content?: string | null
@@ -877,6 +879,7 @@ export type Database = {
           source?: string | null
           tags?: string[] | null
           title?: string | null
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -886,18 +889,21 @@ export type Database = {
           id: string
           timestamp: string | null
           title: string | null
+          user_id: string | null
         }
         Insert: {
           content?: string | null
           id?: string
           timestamp?: string | null
           title?: string | null
+          user_id?: string | null
         }
         Update: {
           content?: string | null
           id?: string
           timestamp?: string | null
           title?: string | null
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -1094,6 +1100,10 @@ export type Database = {
       cleanup_old_qa_sessions: {
         Args: Record<PropertyKey, never> | { days_old?: number }
         Returns: undefined
+      }
+      example_function: {
+        Args: { param1: string }
+        Returns: string
       }
       get_current_user_can_view_agent: {
         Args: { p_agent_id: string }
