@@ -1,6 +1,6 @@
 project_id = "fskwutnoxbbflzqrphro"
 
-[functions.ai-document-analysis]
+[functions."ai-document-analysis"]
 verify_jwt = true
 
 [functions.ai-query]
