@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useState } from 'react';
 
-export type ModelPreference = 'openai' | 'openrouter' | 'ollama';
+export type ModelPreference = 'anthropic' | 'openai' | 'openrouter' | 'ollama';
 
 export function useUserSettings() {
   const { user } = useAuth();
@@ -26,7 +26,7 @@ export function useUserSettings() {
         throw new Error(error.message);
       }
 
-      return (data?.model_preference as ModelPreference) || 'openai';
+      return (data?.model_preference as ModelPreference) || 'anthropic';
     }
   });
 
