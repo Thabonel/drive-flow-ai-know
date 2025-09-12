@@ -4,6 +4,30 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
 const openRouterApiKey = Deno.env.get('OPENROUTER_API_KEY');
+const anthropicApiKey = Deno.env.get('ANTHROPIC_API_KEY');
+
+async function anthropicCompletion(prompt: string, context: string) {
+  const response = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': anthropicApiKey,
+      'anthropic-version': '2023-06-01',
+    },
+    body: JSON.stringify({
+      model: 'claude-3-5-sonnet-20241022',
+      max_tokens: 4000,
+      messages: [
+        {
+          role: 'user',
+          content: `${prompt}\n\nDocument Content:\n${context}`
+        }
+      ]
+    }),
+  });
+  const data = await response.json();
+  return data.content?.[0]?.text ?? '';
+}
 
 async function openAICompletion(prompt: string, context: string) {
   const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -66,16 +90,20 @@ export async function getLLMResponse(prompt: string, context: string, providerOv
   const useOpenRouter = Deno.env.get('USE_OPENROUTER') === 'true';
   const useLocalLLM = Deno.env.get('USE_LOCAL_LLM') === 'true';
 
-  const provider = providerEnv || (useOpenRouter ? 'openrouter' : useLocalLLM ? 'ollama' : 'openai');
+  const provider = providerEnv || (useOpenRouter ? 'openrouter' : useLocalLLM ? 'ollama' : 'anthropic');
 
   switch (provider) {
+    case 'anthropic':
+      return await anthropicCompletion(prompt, context);
     case 'openrouter':
       return await openRouterCompletion(prompt, context);
     case 'ollama':
     case 'local':
       return await localCompletion(prompt, context);
-    default:
+    case 'openai':
       return await openAICompletion(prompt, context);
+    default:
+      return await anthropicCompletion(prompt, context);
   }
 }
 
