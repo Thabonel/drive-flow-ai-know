@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Brain, Send, Sparkles, Loader2 } from 'lucide-react';
+import { Brain, Send, Sparkles, Loader2, Save, FileText } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -18,6 +18,8 @@ export const AIQueryInput = ({ selectedKnowledgeBase, onClearSelection }: AIQuer
   const [query, setQuery] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [response, setResponse] = useState('');
+  const [lastQuery, setLastQuery] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -65,6 +67,7 @@ export const AIQueryInput = ({ selectedKnowledgeBase, onClearSelection }: AIQuer
       if (error) throw error;
       
       setResponse(data.response || 'No response generated');
+      setLastQuery(query);
     } catch (error) {
       console.error('Error querying AI:', error);
       
@@ -90,6 +93,42 @@ export const AIQueryInput = ({ selectedKnowledgeBase, onClearSelection }: AIQuer
 
   const handleQuickPrompt = (prompt: string) => {
     setQuery(prompt);
+  };
+
+  const handleSaveAsDocument = async () => {
+    if (!response || !lastQuery || !user) return;
+
+    setIsSaving(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('save-ai-document', {
+        body: {
+          query: lastQuery,
+          response: response
+        }
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: 'Document Saved!',
+        description: `"${data.document.title}" has been saved to your documents with category "${data.document.category}".`,
+      });
+
+      // Refresh documents list
+      queryClient.invalidateQueries({ queryKey: ['knowledge-documents'] });
+      queryClient.invalidateQueries({ queryKey: ['recent-documents'] });
+      queryClient.invalidateQueries({ queryKey: ['stats'] });
+      
+    } catch (error) {
+      console.error('Error saving document:', error);
+      toast({
+        title: 'Save Failed',
+        description: 'Failed to save the document. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -166,12 +205,32 @@ export const AIQueryInput = ({ selectedKnowledgeBase, onClearSelection }: AIQuer
         </div>
 
         {response && (
-          <div className="p-4 bg-muted/50 rounded-lg">
-            <div className="flex items-start space-x-2">
-              <Brain className="h-4 w-4 mt-0.5 text-primary" />
-              <div className="flex-1">
-                <p className="text-sm whitespace-pre-wrap">{response}</p>
+          <div className="space-y-3">
+            <div className="p-4 bg-muted/50 rounded-lg">
+              <div className="flex items-start space-x-2">
+                <Brain className="h-4 w-4 mt-0.5 text-primary" />
+                <div className="flex-1">
+                  <p className="text-sm whitespace-pre-wrap">{response}</p>
+                </div>
               </div>
+            </div>
+            
+            <div className="flex justify-end">
+              <Button
+                onClick={handleSaveAsDocument}
+                disabled={isSaving || !response}
+                size="sm"
+                variant="outline"
+                className="flex items-center space-x-2"
+              >
+                {isSaving ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Save className="h-4 w-4" />
+                )}
+                <span>{isSaving ? 'Saving...' : 'Save as Document'}</span>
+                <FileText className="h-4 w-4" />
+              </Button>
             </div>
           </div>
         )}
