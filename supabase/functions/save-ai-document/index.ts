@@ -2,7 +2,6 @@ import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
 const anthropicApiKey = Deno.env.get('ANTHROPIC_API_KEY');
 
 async function generateDocumentMetadata(content: string, query: string): Promise<{ title: string; category: string }> {
@@ -21,33 +20,7 @@ Respond in this exact JSON format:
 }`;
 
   try {
-    // Try OpenAI first
-    if (openAIApiKey) {
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${openAIApiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: 'gpt-4o-mini',
-          messages: [
-            { role: 'system', content: 'You are an expert at creating concise, descriptive document titles and categories. Always respond with valid JSON.' },
-            { role: 'user', content: prompt }
-          ],
-          max_tokens: 150,
-          temperature: 0.3
-        }),
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        const result = JSON.parse(data.choices[0].message.content);
-        return result;
-      }
-    }
-
-    // Fallback to Anthropic
+    // Use Claude exclusively
     if (anthropicApiKey) {
       const response = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
@@ -57,7 +30,7 @@ Respond in this exact JSON format:
           'anthropic-version': '2023-06-01',
         },
         body: JSON.stringify({
-          model: 'claude-3-5-haiku-20241022',
+          model: 'claude-sonnet-4-20250514',
           max_tokens: 150,
           messages: [
             {
@@ -75,7 +48,7 @@ Respond in this exact JSON format:
       }
     }
 
-    throw new Error('No AI provider available');
+    throw new Error('Claude API key not available');
   } catch (error) {
     console.error('Error generating metadata:', error);
     // Fallback to basic generation

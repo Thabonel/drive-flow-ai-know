@@ -155,7 +155,7 @@ const Settings = () => {
                 <SelectValue placeholder="Select provider" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="openai">OpenAI (Global)</SelectItem>
+                <SelectItem value="anthropic">Claude (Anthropic)</SelectItem>
                 <SelectItem value="openrouter">OpenRouter (Regional)</SelectItem>
                 <SelectItem value="ollama">Local (Ollama)</SelectItem>
               </SelectContent>
