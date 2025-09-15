@@ -1,7 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { FileText, Calendar, Tag, Brain, Edit, Trash2 } from 'lucide-react';
+import { FileText, Calendar, Tag, Brain, Edit, Trash2, Sparkles } from 'lucide-react';
 
 interface DocumentCardProps {
   document: {
@@ -19,6 +19,7 @@ interface DocumentCardProps {
   onEdit: (doc: any) => void;
   onDelete?: (doc: any) => void;
   onGenerateInsights: (docId: string) => void;
+  onClaudeProcess?: (docId: string) => void;
   isGeneratingInsights: boolean;
   getCategoryColor: (category: string) => string;
 }
@@ -29,6 +30,7 @@ export const DocumentCard = ({
   onEdit,
   onDelete,
   onGenerateInsights,
+  onClaudeProcess,
   isGeneratingInsights,
   getCategoryColor,
 }: DocumentCardProps) => {
@@ -96,24 +98,38 @@ export const DocumentCard = ({
               </Button>
             )}
           </div>
-          <Button 
-            variant="ghost" 
-            size="sm"
-            onClick={() => onGenerateInsights(doc.id)}
-            disabled={isGeneratingInsights}
-          >
-            {isGeneratingInsights ? (
-              <>
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary mr-2" />
-                Generating...
-              </>
-            ) : (
-              <>
-                <Brain className="h-4 w-4 mr-2" />
-                AI Insights
-              </>
+          <div className="flex gap-2">
+            <Button 
+              variant="ghost" 
+              size="sm"
+              onClick={() => onGenerateInsights(doc.id)}
+              disabled={isGeneratingInsights}
+            >
+              {isGeneratingInsights ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary mr-2" />
+                  Generating...
+                </>
+              ) : (
+                <>
+                  <Brain className="h-4 w-4 mr-2" />
+                  AI Insights
+                </>
+              )}
+            </Button>
+            
+            {onClaudeProcess && (doc.file_type === 'pdf' || doc.file_type?.includes('sheet') || doc.file_type?.includes('document')) && (
+              <Button 
+                variant="secondary" 
+                size="sm"
+                onClick={() => onClaudeProcess(doc.id)}
+                className="flex items-center gap-2"
+              >
+                <Sparkles className="h-4 w-4" />
+                Claude MVP
+              </Button>
             )}
-          </Button>
+          </div>
         </div>
       </CardContent>
     </Card>
