@@ -576,6 +576,63 @@ export type Database = {
         }
         Relationships: []
       }
+      google_token_audit_log: {
+        Row: {
+          action: string
+          created_at: string | null
+          details: Json | null
+          id: string
+          ip_address: unknown | null
+          success: boolean
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          action: string
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          ip_address?: unknown | null
+          success: boolean
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          ip_address?: unknown | null
+          success?: boolean
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      google_token_rate_limit: {
+        Row: {
+          access_count: number | null
+          blocked_until: string | null
+          created_at: string | null
+          user_id: string
+          window_start: string | null
+        }
+        Insert: {
+          access_count?: number | null
+          blocked_until?: string | null
+          created_at?: string | null
+          user_id: string
+          window_start?: string | null
+        }
+        Update: {
+          access_count?: number | null
+          blocked_until?: string | null
+          created_at?: string | null
+          user_id?: string
+          window_start?: string | null
+        }
+        Relationships: []
+      }
       knowledge_bases: {
         Row: {
           ai_generated_content: string | null
@@ -1091,6 +1148,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      cleanup_expired_google_data: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       cleanup_old_qa_sessions: {
         Args: Record<PropertyKey, never> | { days_old?: number }
         Returns: number
@@ -1105,6 +1166,20 @@ export type Database = {
       }
       get_decrypted_google_token: {
         Args: { p_user_id: string }
+        Returns: {
+          access_token: string
+          expires_at: string
+          refresh_token: string
+          scope: string
+          token_type: string
+        }[]
+      }
+      get_decrypted_google_token_enhanced: {
+        Args: {
+          p_ip_address?: unknown
+          p_user_agent?: string
+          p_user_id: string
+        }
         Returns: {
           access_token: string
           expires_at: string
@@ -1221,8 +1296,29 @@ export type Database = {
         }
         Returns: undefined
       }
+      store_encrypted_google_tokens_enhanced: {
+        Args: {
+          p_access_token: string
+          p_expires_in?: number
+          p_ip_address?: unknown
+          p_refresh_token?: string
+          p_scope?: string
+          p_token_type?: string
+          p_user_agent?: string
+        }
+        Returns: undefined
+      }
       validate_google_token_access: {
         Args: { p_user_id: string }
+        Returns: boolean
+      }
+      validate_google_token_access_enhanced: {
+        Args: {
+          p_action?: string
+          p_ip_address?: unknown
+          p_user_agent?: string
+          p_user_id: string
+        }
         Returns: boolean
       }
     }
