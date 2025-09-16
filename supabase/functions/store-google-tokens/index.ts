@@ -52,13 +52,19 @@ serve(async (req) => {
       }
     );
 
-    // Use the secure function to store encrypted tokens
-    const { error: storeError } = await userContextClient.rpc('store_encrypted_google_tokens', {
+    // Get client IP and user agent for enhanced security logging
+    const clientIP = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'unknown';
+    const userAgent = req.headers.get('user-agent') || 'unknown';
+
+    // Use the enhanced secure function to store encrypted tokens
+    const { error: storeError } = await userContextClient.rpc('store_encrypted_google_tokens_enhanced', {
       p_access_token: access_token,
       p_refresh_token: refresh_token,
       p_token_type: token_type,
       p_expires_in: expires_in,
-      p_scope: scope
+      p_scope: scope,
+      p_ip_address: clientIP,
+      p_user_agent: userAgent
     });
 
     if (storeError) {
