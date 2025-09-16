@@ -1136,6 +1136,15 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
+      log_token_access_attempt: {
+        Args: {
+          p_action: string
+          p_details?: string
+          p_success: boolean
+          p_user_id: string
+        }
+        Returns: undefined
+      }
       match_documents: {
         Args:
           | { filter?: Json; match_count?: number; query_embedding: string }
@@ -1211,6 +1220,10 @@ export type Database = {
           p_token_type?: string
         }
         Returns: undefined
+      }
+      validate_google_token_access: {
+        Args: { p_user_id: string }
+        Returns: boolean
       }
     }
     Enums: {
