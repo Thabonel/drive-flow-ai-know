@@ -859,7 +859,7 @@ export type Database = {
           source: string | null
           tags: string[] | null
           title: string | null
-          user_id: string | null
+          user_id: string
         }
         Insert: {
           content?: string | null
@@ -869,7 +869,7 @@ export type Database = {
           source?: string | null
           tags?: string[] | null
           title?: string | null
-          user_id?: string | null
+          user_id: string
         }
         Update: {
           content?: string | null
@@ -879,7 +879,7 @@ export type Database = {
           source?: string | null
           tags?: string[] | null
           title?: string | null
-          user_id?: string | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -1093,7 +1093,7 @@ export type Database = {
     Functions: {
       cleanup_old_qa_sessions: {
         Args: Record<PropertyKey, never> | { days_old?: number }
-        Returns: undefined
+        Returns: number
       }
       example_function: {
         Args: { param1: string }
@@ -1116,10 +1116,11 @@ export type Database = {
       get_qa_agent_stats: {
         Args: Record<PropertyKey, never> | { p_agent_id: string }
         Returns: {
-          agent_id: string
-          closed_tickets: number
-          open_tickets: number
-          total_tickets: number
+          avg_session_length: number
+          total_collections: number
+          total_documents: number
+          total_messages: number
+          total_sessions: number
         }[]
       }
       get_qa_agent_stats_new: {
@@ -1140,11 +1141,14 @@ export type Database = {
           | { filter?: Json; match_count?: number; query_embedding: string }
           | { query: string }
         Returns: {
+          agent_id: number
+          collection_id: number
           content: string
+          created_at: string
+          document_name: string
           embedding: string
-          id: string
-          metadata: Json
-          similarity: number
+          id: number
+          updated_at: string
         }[]
       }
       match_memories: {
@@ -1160,12 +1164,8 @@ export type Database = {
           | { match_count?: number; query_embedding: string }
           | { param1: string; param2: number }
         Returns: {
-          agent: string
-          content: string
-          id: string
-          memory_type: string
-          metadata: Json
-          similarity: number
+          id: number
+          result: string
         }[]
       }
       match_memories_optimized: {
@@ -1191,7 +1191,16 @@ export type Database = {
               p_collection_id?: string
               query_embedding: string
             }
-        Returns: undefined
+          | {
+              match_count?: number
+              match_threshold?: number
+              query_embedding: string
+            }
+        Returns: {
+          content: string
+          id: string
+          similarity: number
+        }[]
       }
       store_encrypted_google_tokens: {
         Args: {
