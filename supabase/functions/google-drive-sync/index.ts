@@ -47,25 +47,31 @@ serve(async (req) => {
       throw new Error(`Folder not found: ${folderError.message}`);
     }
 
-    // Get user's stored OAuth token
-    const { data: tokenData, error: tokenError } = await supabaseClient
-      .from('user_google_tokens')
-      .select('access_token, expires_at')
-      .eq('user_id', user_id)
-      .single();
+    // Get client IP and user agent for enhanced security logging
+    const clientIP = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'unknown';
+    const userAgent = req.headers.get('user-agent') || 'unknown';
 
-    if (tokenError || !tokenData) {
+    // Get user's stored OAuth token using enhanced security function
+    const { data: tokenData, error: tokenError } = await supabaseClient.rpc('get_decrypted_google_token_enhanced', {
+      p_user_id: user_id,
+      p_ip_address: clientIP,
+      p_user_agent: userAgent
+    });
+
+    if (tokenError || !tokenData || tokenData.length === 0) {
       throw new Error('No Google Drive access token found. Please reconnect your Google Drive account.');
     }
 
-    // Check if token is expired
+    const tokenRecord = tokenData[0];
+
+    // Check if token is expired (additional check beyond the function's internal validation)
     const now = new Date();
-    const expiresAt = new Date(tokenData.expires_at);
+    const expiresAt = new Date(tokenRecord.expires_at);
     if (now >= expiresAt) {
       throw new Error('Google Drive access token has expired. Please reconnect your Google Drive account.');
     }
 
-    const googleToken = tokenData.access_token;
+    const googleToken = tokenRecord.access_token;
 
     // First, get folder details to update folder_path if needed
     const folderRes = await fetch(`https://www.googleapis.com/drive/v3/files/${folder.folder_id}?fields=name,parents&supportsAllDrives=true`, {
