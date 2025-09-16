@@ -1152,6 +1152,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
+      cleanup_expired_google_tokens: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       cleanup_old_qa_sessions: {
         Args: Record<PropertyKey, never> | { days_old?: number }
         Returns: number
@@ -1307,6 +1311,10 @@ export type Database = {
           p_user_agent?: string
         }
         Returns: undefined
+      }
+      validate_encryption_key_configured: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
       }
       validate_google_token_access: {
         Args: { p_user_id: string }
