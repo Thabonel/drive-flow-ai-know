@@ -11,6 +11,7 @@ import { DocumentGrid } from '@/components/DocumentGrid';
 import { DocumentViewerModal } from '@/components/DocumentViewerModal';
 import { ConfirmationDialog } from '@/components/ConfirmationDialog';
 import { PaginationControls } from '@/components/PaginationControls';
+import DocumentSources from '@/components/DocumentSources';
 
 const Documents = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -200,6 +201,16 @@ const Documents = () => {
     return colors[category as keyof typeof colors] || 'bg-muted';
   };
 
+  const handleDocumentsAdded = (documents: any[]) => {
+    // Refresh the documents list
+    queryClient.invalidateQueries({ queryKey: ['documents', user?.id] });
+    
+    toast({
+      title: 'Documents Added',
+      description: `${documents.length} document(s) have been added successfully.`,
+    });
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -216,6 +227,8 @@ const Documents = () => {
           }
         />
       </div>
+
+      <DocumentSources onDocumentsAdded={handleDocumentsAdded} />
 
       <DocumentSearchFilter
         searchTerm={searchTerm}
