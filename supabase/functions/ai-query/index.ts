@@ -24,7 +24,16 @@ async function anthropicCompletion(prompt: string, context: string) {
       ]
     }),
   });
+  
+  if (!response.ok) {
+    console.error('Anthropic API error:', response.status, response.statusText);
+    const errorData = await response.text();
+    console.error('Anthropic error details:', errorData);
+    throw new Error(`Anthropic API error: ${response.status}`);
+  }
+  
   const data = await response.json();
+  console.log('Anthropic response structure:', Object.keys(data));
   return data.content?.[0]?.text ?? '';
 }
 
@@ -70,6 +79,16 @@ export async function getLLMResponse(prompt: string, context: string, providerOv
   const useLocalLLM = Deno.env.get('USE_LOCAL_LLM') === 'true';
 
   const provider = providerEnv || (useOpenRouter ? 'openrouter' : useLocalLLM ? 'ollama' : 'anthropic');
+  
+  console.log('Using AI provider:', provider);
+
+  // Check for required API keys
+  if (provider === 'anthropic' && !anthropicApiKey) {
+    throw new Error('Anthropic API key not configured');
+  }
+  if (provider === 'openrouter' && !openRouterApiKey) {
+    throw new Error('OpenRouter API key not configured');
+  }
 
   switch (provider) {
     case 'anthropic':
@@ -281,7 +300,20 @@ serve(async (req) => {
 
     const userPrompt = `Context from my documents:\n${documentContext}\n\nQuestion: ${query}`;
 
-    const aiAnswer = await getLLMResponse(userPrompt, systemMessage, providerOverride);
+    console.log('Calling AI model for response generation...');
+    let aiAnswer;
+    try {
+      aiAnswer = await getLLMResponse(userPrompt, systemMessage, providerOverride);
+      console.log('AI response generated successfully:', aiAnswer ? 'Yes' : 'No', 'Length:', aiAnswer?.length || 0);
+    } catch (aiError) {
+      console.error('AI model error:', aiError);
+      aiAnswer = "I'm having trouble generating a response right now. Please try again in a moment.";
+    }
+
+    if (!aiAnswer || aiAnswer.trim() === '') {
+      console.warn('Empty AI response received');
+      aiAnswer = "I'm sorry, I couldn't generate a response to your question. Please try rephrasing or try again.";
+    }
 
     // Save query to history
     try {
