@@ -78,29 +78,68 @@ export async function getLLMResponse(prompt: string, context: string, providerOv
   const useOpenRouter = Deno.env.get('USE_OPENROUTER') === 'true';
   const useLocalLLM = Deno.env.get('USE_LOCAL_LLM') === 'true';
 
-  const provider = providerEnv || (useOpenRouter ? 'openrouter' : useLocalLLM ? 'ollama' : 'anthropic');
+  // Define fallback order
+  const providers = [];
   
-  console.log('Using AI provider:', provider);
+  if (providerEnv) {
+    providers.push(providerEnv);
+  } else if (useOpenRouter) {
+    providers.push('openrouter');
+  } else if (useLocalLLM) {
+    providers.push('ollama');
+  } else {
+    providers.push('anthropic');
+  }
+  
+  // Add fallbacks
+  if (!providers.includes('openrouter') && openRouterApiKey) {
+    providers.push('openrouter');
+  }
+  if (!providers.includes('ollama')) {
+    providers.push('ollama');
+  }
+  if (!providers.includes('anthropic') && anthropicApiKey) {
+    providers.push('anthropic');
+  }
 
-  // Check for required API keys
-  if (provider === 'anthropic' && !anthropicApiKey) {
-    throw new Error('Anthropic API key not configured');
-  }
-  if (provider === 'openrouter' && !openRouterApiKey) {
-    throw new Error('OpenRouter API key not configured');
+  console.log('Available providers to try:', providers);
+
+  // Try each provider in order
+  for (const provider of providers) {
+    try {
+      console.log('Trying AI provider:', provider);
+      
+      switch (provider) {
+        case 'anthropic':
+          if (!anthropicApiKey) {
+            console.log('Anthropic API key not available, skipping');
+            continue;
+          }
+          return await anthropicCompletion(prompt, context);
+        case 'openrouter':
+          if (!openRouterApiKey) {
+            console.log('OpenRouter API key not available, skipping');
+            continue;
+          }
+          return await openRouterCompletion(prompt, context);
+        case 'ollama':
+        case 'local':
+          return await localCompletion(prompt, context);
+        default:
+          continue;
+      }
+    } catch (error) {
+      console.error(`Provider ${provider} failed:`, error);
+      if (provider === providers[providers.length - 1]) {
+        // Last provider failed, throw the error
+        throw error;
+      }
+      // Continue to next provider
+      continue;
+    }
   }
 
-  switch (provider) {
-    case 'anthropic':
-      return await anthropicCompletion(prompt, context);
-    case 'openrouter':
-      return await openRouterCompletion(prompt, context);
-    case 'ollama':
-    case 'local':
-      return await localCompletion(prompt, context);
-    default:
-      return await anthropicCompletion(prompt, context);
-  }
+  throw new Error('All AI providers failed');
 }
 
 const corsHeaders = {
