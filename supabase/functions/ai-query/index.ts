@@ -3,38 +3,39 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const openRouterApiKey = Deno.env.get('OPENROUTER_API_KEY');
-const anthropicApiKey = Deno.env.get('ANTHROPIC_API_KEY');
 
-async function anthropicCompletion(prompt: string, context: string) {
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
+async function geminiCompletion(prompt: string, context: string) {
+  const apiKey = Deno.env.get("LOVABLE_API_KEY");
+  
+  if (!apiKey) {
+    throw new Error('Lovable AI Gateway not available');
+  }
+
+  const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
     method: 'POST',
     headers: {
+      'Authorization': `Bearer ${apiKey}`,
       'Content-Type': 'application/json',
-      'x-api-key': anthropicApiKey,
-      'anthropic-version': '2023-06-01',
     },
     body: JSON.stringify({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 4000,
+      model: 'google/gemini-2.5-flash',
       messages: [
-        {
-          role: 'user',
-          content: `${context}\n\nUser Question: ${prompt}`
-        }
-      ]
+        { role: 'system', content: context },
+        { role: 'user', content: prompt },
+      ],
     }),
   });
   
   if (!response.ok) {
-    console.error('Anthropic API error:', response.status, response.statusText);
+    console.error('Gemini API error:', response.status, response.statusText);
     const errorData = await response.text();
-    console.error('Anthropic error details:', errorData);
-    throw new Error(`Anthropic API error: ${response.status}`);
+    console.error('Gemini error details:', errorData);
+    throw new Error(`Gemini API error: ${response.status}`);
   }
   
   const data = await response.json();
-  console.log('Anthropic response structure:', Object.keys(data));
-  return data.content?.[0]?.text ?? '';
+  console.log('Gemini response structure:', Object.keys(data));
+  return data.choices?.[0]?.message?.content ?? '';
 }
 
 
@@ -78,7 +79,7 @@ export async function getLLMResponse(prompt: string, context: string, providerOv
   const useOpenRouter = Deno.env.get('USE_OPENROUTER') === 'true';
   const useLocalLLM = Deno.env.get('USE_LOCAL_LLM') === 'true';
 
-  // Define fallback order
+  // Define fallback order - Gemini first, then other providers
   const providers = [];
   
   if (providerEnv) {
@@ -88,18 +89,18 @@ export async function getLLMResponse(prompt: string, context: string, providerOv
   } else if (useLocalLLM) {
     providers.push('ollama');
   } else {
-    providers.push('anthropic');
+    providers.push('gemini'); // Default to Gemini instead of Anthropic
   }
   
-  // Add fallbacks
+  // Add fallbacks - Gemini is always available through Lovable Gateway
+  if (!providers.includes('gemini')) {
+    providers.push('gemini');
+  }
   if (!providers.includes('openrouter') && openRouterApiKey) {
     providers.push('openrouter');
   }
   if (!providers.includes('ollama')) {
     providers.push('ollama');
-  }
-  if (!providers.includes('anthropic') && anthropicApiKey) {
-    providers.push('anthropic');
   }
 
   console.log('Available providers to try:', providers);
@@ -110,12 +111,8 @@ export async function getLLMResponse(prompt: string, context: string, providerOv
       console.log('Trying AI provider:', provider);
       
       switch (provider) {
-        case 'anthropic':
-          if (!anthropicApiKey) {
-            console.log('Anthropic API key not available, skipping');
-            continue;
-          }
-          return await anthropicCompletion(prompt, context);
+        case 'gemini':
+          return await geminiCompletion(prompt, context);
         case 'openrouter':
           if (!openRouterApiKey) {
             console.log('OpenRouter API key not available, skipping');
