@@ -6,28 +6,30 @@ import { ArrowRight, Check, FileText, MessageSquare, Shield, Star, Users, Zap } 
 
 const plans = [
   {
-    name: 'Free',
-    price: '$0',
-    period: '/month',
-    description: 'Perfect for getting started',
-    features: ['100 documents', 'Basic AI chat', 'Community support', '1 GB storage'],
+    name: 'Free Trial',
+    price: 'Free',
+    period: 'for 14 days',
+    description: 'Try everything with no commitment',
+    features: ['Full access to all features', 'Unlimited documents', 'Advanced AI chat', 'Custom prompts', 'Priority support', 'Analytics dashboard'],
     popular: false,
+    trial: true,
   },
   {
-    name: 'Starter',
-    price: '$19',
+    name: 'Monthly',
+    price: '$14',
     period: '/month',
-    description: 'For growing teams',
-    features: ['Unlimited documents', 'Advanced AI chat', 'Custom prompts', '10 GB storage', 'Priority support'],
+    description: 'Pay as you go',
+    features: ['Unlimited documents', 'Advanced AI chat', 'Custom prompts', 'Priority support', 'Analytics dashboard', 'API access'],
     popular: true,
   },
   {
-    name: 'Pro',
-    price: '$49',
-    period: '/month',
-    description: 'For professional teams',
-    features: ['Everything in Starter', 'Custom branding', 'Analytics dashboard', 'API access', '100 GB storage', 'White-label option'],
+    name: 'Yearly',
+    price: '$140',
+    period: '/year',
+    description: 'Save with annual billing',
+    features: ['Everything in Monthly', '2 months free', 'Priority support', 'Analytics dashboard', 'API access', 'Custom branding'],
     popular: false,
+    savings: 'Save $28',
   },
 ];
 
@@ -219,13 +221,16 @@ export default function Landing() {
                     Most Popular
                   </Badge>
                 )}
-                <CardHeader className="text-center pb-4">
-                  <CardTitle className="text-2xl">{plan.name}</CardTitle>
-                  <CardDescription>{plan.description}</CardDescription>
-                  <div className="text-4xl font-bold">
-                    {plan.price}<span className="text-lg font-normal text-muted-foreground">{plan.period}</span>
-                  </div>
-                </CardHeader>
+                 <CardHeader className="text-center pb-4">
+                   <CardTitle className="text-2xl">{plan.name}</CardTitle>
+                   <CardDescription>{plan.description}</CardDescription>
+                   <div className="text-4xl font-bold">
+                     {plan.price}<span className="text-lg font-normal text-muted-foreground">{plan.period}</span>
+                   </div>
+                   {plan.savings && (
+                     <div className="text-sm text-primary font-medium">{plan.savings}</div>
+                   )}
+                 </CardHeader>
                 <CardContent>
                   <ul className="space-y-3 mb-6">
                     {plan.features.map((feature, featureIndex) => (
@@ -235,11 +240,11 @@ export default function Landing() {
                       </li>
                     ))}
                   </ul>
-                  <Button asChild className="w-full" variant={plan.popular ? 'default' : 'outline'}>
-                    <Link to={`/auth${plan.name !== 'Free' ? `?plan=${plan.name.toLowerCase()}` : ''}`}>
-                      {plan.name === 'Free' ? 'Get Started' : `Choose ${plan.name}`}
-                    </Link>
-                  </Button>
+                   <Button asChild className="w-full" variant={plan.popular ? 'default' : 'outline'}>
+                     <Link to={`/auth${plan.trial ? '' : `?plan=${plan.name.toLowerCase()}`}`}>
+                       {plan.trial ? 'Start Free Trial' : `Choose ${plan.name}`}
+                     </Link>
+                   </Button>
                 </CardContent>
               </Card>
             ))}
