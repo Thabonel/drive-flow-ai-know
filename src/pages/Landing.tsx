@@ -63,8 +63,8 @@ const features = [
   },
   {
     icon: Shield,
-    title: 'Privacy First',
-    description: 'Your data stays yours. Choose between cloud or local deployment for complete control.',
+    title: 'You Control Your Data',
+    description: 'Choose where your documents are stored - on your local drive, your cloud storage, or our secure cloud. You decide.',
   },
   {
     icon: Zap,
@@ -115,7 +115,7 @@ export default function Landing() {
           
           <p className="text-xl md:text-2xl text-muted-foreground mb-10 max-w-2xl mx-auto">
             Upload any document and chat with it using AI. Get instant answers, insights, and summaries. 
-            Your data stays private and secure.
+            You choose where your documents stay - local drive, your cloud, or our secure cloud.
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-16">
@@ -126,8 +126,8 @@ export default function Landing() {
               </Link>
             </Button>
             <Button asChild size="lg" variant="outline" className="text-lg px-8 py-3">
-              <a href="https://github.com/your-org/your-repo" target="_blank" rel="noopener noreferrer">
-                Install Locally
+              <a href="#storage" onClick={(e) => { e.preventDefault(); document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' }); }}>
+                Choose Your Storage
               </a>
             </Button>
           </div>

@@ -11,7 +11,7 @@ async function anthropicCompletion(prompt: string, context: string) {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'x-api-key': anthropicApiKey,
+      'x-api-key': anthropicApiKey || '',
       'anthropic-version': '2023-06-01',
     },
     body: JSON.stringify({
@@ -222,7 +222,7 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error in ai-document-analysis:', error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }),
       {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -251,7 +251,7 @@ async function createOrUpdateKnowledgeBase(supabaseClient: any, userId: string, 
 
   // Generate comprehensive knowledge base content
   const allDocuments = categoryDocs || [];
-  const documentSummaries = allDocuments.map(doc => ({
+  const documentSummaries = allDocuments.map((doc: any) => ({
     title: doc.title,
     summary: doc.ai_summary,
     tags: doc.tags || []
