@@ -74,7 +74,7 @@ const features = [
   {
     icon: FileText,
     title: 'Any Format',
-    description: 'Support for PDFs, Word docs, spreadsheets, and more. Upload anything, chat with everything.',
+    description: 'Support for PDFs, Word docs, Excel spreadsheets, PowerPoint presentations, audio files, images, and more. Upload anything, chat with everything.',
   },
 ];
 
