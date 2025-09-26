@@ -4,9 +4,10 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import { Shield, Send, MessageSquare, Clock, CheckCircle } from 'lucide-react';
+import { Shield, Send, MessageSquare, Clock, CheckCircle, Users, UserPlus } from 'lucide-react';
 
 interface AdminMessage {
   id: string;
@@ -25,6 +26,8 @@ export default function Admin() {
   const [priority, setPriority] = useState<'low' | 'normal' | 'high' | 'urgent'>('normal');
   const [messages, setMessages] = useState<AdminMessage[]>([]);
   const [sending, setSending] = useState(false);
+  const [newAdminEmail, setNewAdminEmail] = useState('');
+  const [grantingAdmin, setGrantingAdmin] = useState(false);
 
   useEffect(() => {
     checkAdminAccess();
@@ -102,6 +105,61 @@ export default function Admin() {
     }
   };
 
+  const grantAdminRole = async () => {
+    if (!newAdminEmail.trim()) {
+      toast.error('Please enter an email address');
+      return;
+    }
+
+    setGrantingAdmin(true);
+    try {
+      // First, find the user by email
+      const { data: userData, error: userError } = await supabase
+        .from('profiles')
+        .select('user_id')
+        .eq('email', newAdminEmail.trim())
+        .single();
+
+      if (userError || !userData) {
+        toast.error('User not found. Make sure they have signed up first.');
+        setGrantingAdmin(false);
+        return;
+      }
+
+      // Check if user already has admin role
+      const { data: existingRole } = await supabase
+        .from('user_roles')
+        .select('id')
+        .eq('user_id', userData.user_id)
+        .eq('role', 'admin')
+        .single();
+
+      if (existingRole) {
+        toast.error('User already has admin privileges');
+        setGrantingAdmin(false);
+        return;
+      }
+
+      // Grant admin role
+      const { error: roleError } = await supabase
+        .from('user_roles')
+        .insert({
+          user_id: userData.user_id,
+          role: 'admin'
+        });
+
+      if (roleError) throw roleError;
+
+      toast.success(`Admin privileges granted to ${newAdminEmail}`);
+      setNewAdminEmail('');
+    } catch (error) {
+      console.error('Error granting admin role:', error);
+      toast.error('Failed to grant admin privileges');
+    } finally {
+      setGrantingAdmin(false);
+    }
+  };
+
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case 'urgent': return 'destructive';
@@ -151,6 +209,39 @@ export default function Admin() {
         <h1 className="text-3xl font-bold mb-2">Admin Dashboard</h1>
         <p className="text-muted-foreground">AI Command Center Communication</p>
       </div>
+
+      {/* User Management Section */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Users className="h-5 w-5" />
+            User Management
+          </CardTitle>
+          <CardDescription>
+            Grant admin privileges to other users
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div>
+            <label className="text-sm font-medium mb-2 block">User Email</label>
+            <Input
+              placeholder="Enter user email to grant admin access"
+              value={newAdminEmail}
+              onChange={(e) => setNewAdminEmail(e.target.value)}
+              type="email"
+            />
+          </div>
+          
+          <Button 
+            onClick={grantAdminRole} 
+            disabled={grantingAdmin || !newAdminEmail.trim()}
+            className="w-full"
+          >
+            <UserPlus className="h-4 w-4 mr-2" />
+            {grantingAdmin ? 'Granting Access...' : 'Grant Admin Access'}
+          </Button>
+        </CardContent>
+      </Card>
 
       {/* Send Message Section */}
       <Card>
