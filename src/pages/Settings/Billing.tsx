@@ -3,19 +3,19 @@ import { Badge } from '@/components/ui/badge';
 
 const plans = [
   {
-    name: 'Free',
-    price: '$0',
-    features: ['100 documents', 'Community support']
+    name: 'Free Trial',
+    price: 'Free for 14 days',
+    features: ['Full access', 'Unlimited documents', 'All features']
   },
   {
-    name: 'Starter',
-    price: '$19',
-    features: ['Unlimited docs', 'Custom prompts']
+    name: 'Monthly',
+    price: '$14/month',
+    features: ['Unlimited docs', 'Priority support', 'Analytics']
   },
   {
-    name: 'Pro',
-    price: '$49',
-    features: ['Branding', 'Analytics', 'API access']
+    name: 'Yearly',
+    price: '$140/year',
+    features: ['Save $28/year', 'All monthly features', 'Priority support']
   }
 ];
 
