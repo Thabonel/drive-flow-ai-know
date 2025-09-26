@@ -19,6 +19,7 @@ import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 import Footer from "./layout/Footer";
 import Landing from "./pages/Landing";
+import Admin from "./pages/Admin";
 import DocumentList from "./components/DocumentList";
 
 const queryClient = new QueryClient();
@@ -136,6 +137,11 @@ const App = () => (
             <Route path="/docs" element={
               <ProtectedRoute>
                 <DocumentList />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin" element={
+              <ProtectedRoute>
+                <Admin />
               </ProtectedRoute>
             } />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

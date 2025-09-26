@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_messages: {
+        Row: {
+          admin_user_id: string
+          ai_response: string | null
+          created_at: string | null
+          id: string
+          message_text: string
+          metadata: Json | null
+          priority: string | null
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          admin_user_id: string
+          ai_response?: string | null
+          created_at?: string | null
+          id?: string
+          message_text: string
+          metadata?: Json | null
+          priority?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          admin_user_id?: string
+          ai_response?: string | null
+          created_at?: string | null
+          id?: string
+          message_text?: string
+          metadata?: Json | null
+          priority?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       agentic_memories: {
         Row: {
           agent: string
@@ -1158,6 +1194,27 @@ export type Database = {
         }
         Relationships: []
       }
+      user_roles: {
+        Row: {
+          created_at: string | null
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_settings: {
         Row: {
           created_at: string
@@ -1253,6 +1310,13 @@ export type Database = {
       handle_new_user_v2: {
         Args: Record<PropertyKey, never>
         Returns: undefined
+      }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
       }
       log_token_access_attempt: {
         Args: {
@@ -1370,7 +1434,7 @@ export type Database = {
       }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "moderator" | "user"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1497,6 +1561,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "moderator", "user"],
+    },
   },
 } as const
