@@ -10,7 +10,7 @@ const plans = [
     price: 'Free',
     period: 'for 14 days',
     description: 'Try everything with no commitment',
-    features: ['Full access to all features', 'Unlimited documents', 'Advanced AI chat', 'Custom prompts', 'Priority support', 'Analytics dashboard'],
+    features: ['Full access to all features', 'Unlimited documents', 'Advanced AI chat', '10 GB storage included', 'Custom prompts', 'Priority support'],
     popular: false,
     trial: true,
   },
@@ -19,7 +19,7 @@ const plans = [
     price: '$14',
     period: '/month',
     description: 'Pay as you go',
-    features: ['Unlimited documents', 'Advanced AI chat', 'Custom prompts', 'Priority support', 'Analytics dashboard', 'API access'],
+    features: ['Unlimited documents', 'Advanced AI chat', '10 GB storage included', 'Custom prompts', 'Priority support', 'Analytics dashboard'],
     popular: true,
   },
   {
@@ -27,7 +27,7 @@ const plans = [
     price: '$140',
     period: '/year',
     description: 'Save with annual billing',
-    features: ['Everything in Monthly', '2 months free', 'Priority support', 'Analytics dashboard', 'API access', 'Custom branding'],
+    features: ['Everything in Monthly', '10 GB storage included', '2 months free', 'Priority support', 'Analytics dashboard', 'Custom branding'],
     popular: false,
     savings: 'Save $28',
   },
@@ -248,6 +248,10 @@ export default function Landing() {
                 </CardContent>
               </Card>
             ))}
+          </div>
+          
+          <div className="text-center mt-8 text-sm text-muted-foreground">
+            <p>All plans include 10 GB storage. Additional storage: $10 per 10 GB</p>
           </div>
         </div>
       </section>
