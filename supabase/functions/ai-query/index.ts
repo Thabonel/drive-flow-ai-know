@@ -140,8 +140,11 @@ export async function getLLMResponse(prompt: string, context: string, providerOv
 }
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Origin': 'https://drive-flow-ai-know.lovable.app',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Max-Age': '86400',
+  'Vary': 'Origin',
 };
 
 serve(async (req) => {
@@ -186,7 +189,22 @@ serve(async (req) => {
       .maybeSingle();
     const providerOverride = settings?.model_preference;
 
-    const { query, knowledge_base_id } = await req.json();
+    const body = await req.json();
+    const { query, knowledge_base_id } = body;
+    
+    // Input validation
+    if (!query || typeof query !== 'string') {
+      throw new Error('Query is required and must be a string');
+    }
+    
+    if (query.length > 10000) {
+      throw new Error('Query too long (max 10000 characters)');
+    }
+    
+    if (knowledge_base_id && typeof knowledge_base_id !== 'string') {
+      throw new Error('Knowledge base ID must be a string');
+    }
+    
     console.log('Query received:', query);
     console.log('Knowledge base ID:', knowledge_base_id);
 
@@ -194,7 +212,7 @@ serve(async (req) => {
       throw new Error('Query is required');
     }
 
-    let contextDocuments = [];
+    let contextDocuments: any[] = [];
     let contextText = '';
 
     if (knowledge_base_id) {
@@ -384,9 +402,10 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('Error in ai-query function:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
     return new Response(
       JSON.stringify({ 
-        error: error.message,
+        error: errorMessage,
         response: "Sorry, I encountered an error processing your query. Please try again."
       }),
       {
