@@ -5,17 +5,17 @@ const plans = [
   {
     name: 'Free Trial',
     price: 'Free for 14 days',
-    features: ['Full access', 'Unlimited documents', 'All features']
+    features: ['Full access', 'Unlimited documents', '10 GB storage included']
   },
   {
     name: 'Monthly',
     price: '$14/month',
-    features: ['Unlimited docs', 'Priority support', 'Analytics']
+    features: ['Unlimited docs', '10 GB storage included', 'Priority support']
   },
   {
     name: 'Yearly',
     price: '$140/year',
-    features: ['Save $28/year', 'All monthly features', 'Priority support']
+    features: ['Save $28/year', '10 GB storage included', 'All features']
   }
 ];
 
@@ -45,6 +45,10 @@ export default function Billing() {
             </CardContent>
           </Card>
         ))}
+      </div>
+      
+      <div className="text-center mt-6 text-sm text-muted-foreground">
+        <p>All plans include 10 GB storage. Additional storage: $10 per 10 GB</p>
       </div>
     </div>
   );
