@@ -12,6 +12,9 @@ verify_jwt = false
 [functions."google-drive-sync"]
 verify_jwt = true
 
+[functions."parse-document"]
+verify_jwt = true
+
 [functions."seed-test-data"]
 verify_jwt = false
 

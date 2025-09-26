@@ -8,11 +8,16 @@ import {
   X, 
   Check,
   AlertCircle,
-  File
+  File,
+  FileImage,
+  FileAudio,
+  Presentation,
+  Sheet
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { DocumentParserService } from '@/services/documentParser';
 
 interface DragDropUploadProps {
   onFilesAdded: (files: File[]) => void;
@@ -32,11 +37,18 @@ const DragDropUpload = ({ onFilesAdded }: DragDropUploadProps) => {
   const { toast } = useToast();
   const { user } = useAuth();
 
-  const acceptedTypes = [
-    '.txt', '.md', '.pdf', '.docx', '.doc', '.rtf',
-    'text/*', 'application/pdf', 'application/msword',
-    'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-  ];
+  const acceptedTypes = DocumentParserService.getSupportedExtensions().concat([
+    'text/*', 
+    'application/pdf', 
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    'application/vnd.ms-excel',
+    'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+    'application/vnd.ms-powerpoint',
+    'audio/*',
+    'image/*'
+  ]);
 
   const handleDragOver = (e: DragEvent) => {
     e.preventDefault();
@@ -76,19 +88,20 @@ const DragDropUpload = ({ onFilesAdded }: DragDropUploadProps) => {
     }
 
     const validFiles = files.filter(file => {
-      const isValidType = acceptedTypes.some(type => {
-        if (type.startsWith('.')) {
-          return file.name.toLowerCase().endsWith(type);
-        }
-        return file.type.startsWith(type.split('/*')[0]);
-      });
+      const isValidType = DocumentParserService.isSupported(file.type) || 
+        acceptedTypes.some(type => {
+          if (type.startsWith('.')) {
+            return file.name.toLowerCase().endsWith(type);
+          }
+          return file.type.startsWith(type.split('/*')[0]);
+        });
       
       const isValidSize = file.size <= 20 * 1024 * 1024; // 20MB limit
       
       if (!isValidType) {
         toast({
           title: 'Invalid File Type',
-          description: `${file.name} is not a supported file type.`,
+          description: `${file.name} is not supported. Supported formats: PDF, Word, Excel, PowerPoint, audio, images, and text files.`,
           variant: 'destructive',
         });
       }
@@ -138,48 +151,51 @@ const DragDropUpload = ({ onFilesAdded }: DragDropUploadProps) => {
   const processFile = async (uploadingFile: UploadingFile) => {
     const { file } = uploadingFile;
     
-    // Simulate upload progress for text files (direct processing)
-    if (file.type.startsWith('text/') || file.name.endsWith('.md') || file.name.endsWith('.txt')) {
-      const reader = new FileReader();
-      reader.onload = async (e) => {
-        const content = e.target?.result as string;
-        
-        // Update progress
-        setUploadingFiles(prev => 
-          prev.map(f => 
-            f.id === uploadingFile.id 
-              ? { ...f, progress: 50 }
-              : f
-          )
-        );
-        
-        // Save to database
-        await saveDocument(file.name, content, 'text', uploadingFile.id);
-      };
-      reader.readAsText(file);
-    } else {
-      // For binary files, we'd typically upload to storage first
-      // For now, we'll simulate processing
-      const formData = new FormData();
-      formData.append('file', file);
+    try {
+      // Update progress to show parsing started
+      setUploadingFiles(prev => 
+        prev.map(f => 
+          f.id === uploadingFile.id 
+            ? { ...f, progress: 10 }
+            : f
+        )
+      );
+
+      // Parse document using comprehensive parser
+      const parsedDocument = await DocumentParserService.parseDocument(file);
       
-      // Simulate progress
-      for (let progress = 0; progress <= 100; progress += 20) {
-        setUploadingFiles(prev => 
-          prev.map(f => 
-            f.id === uploadingFile.id 
-              ? { ...f, progress }
-              : f
-          )
-        );
-        await new Promise(resolve => setTimeout(resolve, 200));
-      }
+      // Update progress to show parsing completed
+      setUploadingFiles(prev => 
+        prev.map(f => 
+          f.id === uploadingFile.id 
+            ? { ...f, progress: 80 }
+            : f
+        )
+      );
+
+      // Save to database with parsed content and metadata
+      await saveDocument(
+        parsedDocument.metadata.title || file.name, 
+        parsedDocument.content, 
+        parsedDocument.metadata.fileType,
+        uploadingFile.id,
+        parsedDocument.metadata
+      );
+
+    } catch (error) {
+      console.error('Document processing error:', error);
       
-      await saveDocument(file.name, '', 'binary', uploadingFile.id);
+      // Fallback: save basic file info
+      await saveDocument(
+        file.name, 
+        `File processing failed: ${error instanceof Error ? error.message : 'Unknown error'}`, 
+        'error',
+        uploadingFile.id
+      );
     }
   };
 
-  const saveDocument = async (title: string, content: string, type: string, uploadId: string) => {
+  const saveDocument = async (title: string, content: string, type: string, uploadId: string, metadata?: any) => {
     try {
       const { data, error } = await supabase
         .from('knowledge_documents')
@@ -188,10 +204,16 @@ const DragDropUpload = ({ onFilesAdded }: DragDropUploadProps) => {
           content,
           user_id: user!.id,
           google_file_id: `upload_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, // Generate unique ID for uploads
-          category: 'general',
+          category: metadata?.type || 'general',
           file_type: type,
           file_size: content.length,
-          mime_type: type === 'text' ? 'text/plain' : 'application/octet-stream'
+          mime_type: metadata?.mimeType || (type === 'text' ? 'text/plain' : 'application/octet-stream'),
+          ai_insights: metadata ? { 
+            pageCount: metadata.pageCount,
+            hasImages: metadata.hasImages,
+            extractedImages: metadata.extractedImages,
+            parsedMetadata: metadata
+          } : null
         })
         .select()
         .single();
@@ -238,6 +260,24 @@ const DragDropUpload = ({ onFilesAdded }: DragDropUploadProps) => {
     if (file.type.startsWith('text/') || file.name.endsWith('.md') || file.name.endsWith('.txt')) {
       return FileText;
     }
+    if (file.type === 'application/pdf' || file.name.endsWith('.pdf')) {
+      return FileText;
+    }
+    if (file.type.includes('word') || file.name.endsWith('.docx') || file.name.endsWith('.doc')) {
+      return FileText;
+    }
+    if (file.type.includes('sheet') || file.type.includes('excel') || file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
+      return Sheet;
+    }
+    if (file.type.includes('presentation') || file.type.includes('powerpoint') || file.name.endsWith('.pptx') || file.name.endsWith('.ppt')) {
+      return Presentation;
+    }
+    if (file.type.startsWith('audio/')) {
+      return FileAudio;
+    }
+    if (file.type.startsWith('image/')) {
+      return FileImage;
+    }
     return File;
   };
 
@@ -269,9 +309,9 @@ const DragDropUpload = ({ onFilesAdded }: DragDropUploadProps) => {
         </Button>
         
         <div className="mt-4 flex flex-wrap justify-center gap-2">
-          {acceptedTypes.slice(0, 6).map((type) => (
+          {['PDF', 'DOCX', 'XLSX', 'PPTX', 'TXT', 'MD', 'MP3', 'PNG'].map((type) => (
             <Badge key={type} variant="secondary" className="text-xs">
-              {type.startsWith('.') ? type.toUpperCase() : type.split('/')[1]?.toUpperCase()}
+              {type}
             </Badge>
           ))}
         </div>

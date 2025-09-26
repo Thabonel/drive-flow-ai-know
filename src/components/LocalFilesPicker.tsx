@@ -8,9 +8,14 @@ import {
   AlertCircle, 
   Check,
   HardDrive,
-  Info
+  Info,
+  FileImage,
+  FileAudio,
+  Presentation,
+  Sheet
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { DocumentParserService } from '@/services/documentParser';
 
 interface LocalFilesPickerProps {
   onFilesAdded: (files: File[]) => void;
@@ -47,17 +52,24 @@ const LocalFilesPicker = ({ onFilesAdded }: LocalFilesPickerProps) => {
         }));
         
         const textFiles = fileList.filter(file => 
+          DocumentParserService.isSupported(file.type) ||
           file.type.startsWith('text/') || 
           file.name.endsWith('.md') ||
           file.name.endsWith('.txt') ||
           file.name.endsWith('.pdf') ||
-          file.name.endsWith('.docx')
+          file.name.endsWith('.docx') ||
+          file.name.endsWith('.xlsx') ||
+          file.name.endsWith('.pptx') ||
+          file.name.endsWith('.mp3') ||
+          file.name.endsWith('.wav') ||
+          file.name.endsWith('.jpg') ||
+          file.name.endsWith('.png')
         );
         
         if (textFiles.length === 0) {
           toast({
             title: 'No Compatible Files',
-            description: 'No text files, PDFs, or documents found in the selected folder.',
+            description: 'No supported files found in the selected folder. Supported formats: PDF, Word, Excel, PowerPoint, audio, images, and text files.',
             variant: 'destructive',
           });
           return;
@@ -93,24 +105,31 @@ const LocalFilesPicker = ({ onFilesAdded }: LocalFilesPickerProps) => {
     
     input.onchange = (e) => {
       const files = Array.from((e.target as HTMLInputElement).files || []);
-      const textFiles = files.filter(file => 
+      const supportedFiles = files.filter(file => 
+        DocumentParserService.isSupported(file.type) ||
         file.type.startsWith('text/') || 
         file.name.endsWith('.md') ||
         file.name.endsWith('.txt') ||
         file.name.endsWith('.pdf') ||
-        file.name.endsWith('.docx')
+        file.name.endsWith('.docx') ||
+        file.name.endsWith('.xlsx') ||
+        file.name.endsWith('.pptx') ||
+        file.name.endsWith('.mp3') ||
+        file.name.endsWith('.wav') ||
+        file.name.endsWith('.jpg') ||
+        file.name.endsWith('.png')
       );
       
-      if (textFiles.length > 0) {
-        onFilesAdded(textFiles);
+      if (supportedFiles.length > 0) {
+        onFilesAdded(supportedFiles);
         toast({
           title: 'Folder Added',
-          description: `${textFiles.length} compatible file(s) found and added.`,
+          description: `${supportedFiles.length} compatible file(s) found and added.`,
         });
       } else {
         toast({
           title: 'No Compatible Files',
-          description: 'No text files, PDFs, or documents found in the selected folder.',
+          description: 'No supported files found in the selected folder. Supported formats: PDF, Word, Excel, PowerPoint, audio, images, and text files.',
           variant: 'destructive',
         });
       }
@@ -123,7 +142,7 @@ const LocalFilesPicker = ({ onFilesAdded }: LocalFilesPickerProps) => {
     const input = document.createElement('input');
     input.type = 'file';
     input.multiple = true;
-    input.accept = '.txt,.md,.pdf,.docx,.doc,.rtf,text/*';
+    input.accept = DocumentParserService.getSupportedExtensions().join(',');
     
     input.onchange = (e) => {
       const files = Array.from((e.target as HTMLInputElement).files || []);
@@ -176,7 +195,7 @@ const LocalFilesPicker = ({ onFilesAdded }: LocalFilesPickerProps) => {
       <Alert>
         <Info className="h-4 w-4" />
         <AlertDescription>
-          Access folders directly from your computer. Works with documents, text files, PDFs, and more.
+          Access folders directly from your computer. Works with PDFs, Word documents, Excel spreadsheets, PowerPoint presentations, audio files, images, and text files.
         </AlertDescription>
       </Alert>
       
@@ -222,7 +241,7 @@ const LocalFilesPicker = ({ onFilesAdded }: LocalFilesPickerProps) => {
       </div>
       
       <div className="text-xs text-muted-foreground space-y-1">
-        <p><strong>Supported formats:</strong> TXT, MD, PDF, DOCX, DOC, RTF</p>
+        <p><strong>Supported formats:</strong> PDF, Word (DOCX/DOC), Excel (XLSX/XLS), PowerPoint (PPTX/PPT), Audio (MP3/WAV), Images (JPG/PNG), Text (TXT/MD), RTF</p>
         <p><strong>Note:</strong> Files remain on your device until you choose to upload them</p>
       </div>
     </div>
