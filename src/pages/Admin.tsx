@@ -40,6 +40,7 @@ interface AnalyticsData {
 interface AppSettings {
   maintenanceMode: boolean;
   registrationEnabled: boolean;
+  emailConfirmationEnabled: boolean;
   aiQueriesEnabled: boolean;
   documentSyncEnabled: boolean;
   maxDocumentsPerUser: number;
@@ -59,6 +60,7 @@ export default function Admin() {
   const [settings, setSettings] = useState<AppSettings>({
     maintenanceMode: false,
     registrationEnabled: true,
+    emailConfirmationEnabled: true,
     aiQueriesEnabled: true,
     documentSyncEnabled: true,
     maxDocumentsPerUser: 1000,
@@ -632,6 +634,20 @@ export default function Admin() {
                     id="registration"
                     checked={settings.registrationEnabled}
                     onCheckedChange={(checked) => updateSetting('registrationEnabled', checked)}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="email-confirmation">Email Confirmation</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Require email verification for new users
+                    </p>
+                  </div>
+                  <Switch
+                    id="email-confirmation"
+                    checked={settings.emailConfirmationEnabled}
+                    onCheckedChange={(checked) => updateSetting('emailConfirmationEnabled', checked)}
                   />
                 </div>
 
