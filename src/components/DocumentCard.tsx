@@ -1,12 +1,17 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { FileText, Calendar, Tag, Brain, Edit, Trash2, Sparkles } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { FileText, Calendar, Tag, Brain, Edit, Trash2, Sparkles, BarChart3, FileSpreadsheet } from 'lucide-react';
+import { DocumentVisualizationPanel } from './DocumentVisualizationPanel';
+import { SpreadsheetViewer } from './SpreadsheetViewer';
+import { useState } from 'react';
 
 interface DocumentCardProps {
   document: {
     id: string;
     title: string;
+    content?: string;
     ai_summary?: string;
     category: string;
     created_at?: string;
@@ -14,6 +19,12 @@ interface DocumentCardProps {
     tags?: string[];
     file_type: string;
     file_size?: number;
+    metadata?: {
+      spreadsheetData?: any;
+      chartableDatasets?: any[];
+      hasImages?: boolean;
+      pageCount?: number;
+    };
   };
   onView: (doc: any) => void;
   onEdit: (doc: any) => void;
@@ -34,7 +45,18 @@ export const DocumentCard = ({
   isGeneratingInsights,
   getCategoryColor,
 }: DocumentCardProps) => {
+  const [showVisualization, setShowVisualization] = useState(false);
+  const [showSpreadsheet, setShowSpreadsheet] = useState(false);
+
+  const hasSpreadsheetData = doc.metadata?.spreadsheetData || 
+                           doc.file_type?.includes('spreadsheet') || 
+                           doc.file_type?.includes('excel') || 
+                           doc.file_type?.includes('csv');
+
+  const hasChartableData = doc.metadata?.chartableDatasets?.length > 0 || hasSpreadsheetData;
+
   return (
+    <>
     <Card className="hover:shadow-md transition-shadow">
       <CardHeader>
         <div className="flex items-start justify-between">
@@ -66,6 +88,18 @@ export const DocumentCard = ({
               {tag}
             </Badge>
           ))}
+          {hasSpreadsheetData && (
+            <Badge variant="outline" className="text-xs text-green-600">
+              <FileSpreadsheet className="h-3 w-3 mr-1" />
+              Spreadsheet
+            </Badge>
+          )}
+          {hasChartableData && (
+            <Badge variant="outline" className="text-xs text-blue-600">
+              <BarChart3 className="h-3 w-3 mr-1" />
+              Chartable
+            </Badge>
+          )}
         </div>
         
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between pt-2 gap-2">
@@ -86,6 +120,26 @@ export const DocumentCard = ({
               <Edit className="h-4 w-4 mr-2" />
               Edit
             </Button>
+            {hasSpreadsheetData && (
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => setShowSpreadsheet(true)}
+              >
+                <FileSpreadsheet className="h-4 w-4 mr-2" />
+                Spreadsheet
+              </Button>
+            )}
+            {hasChartableData && (
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => setShowVisualization(true)}
+              >
+                <BarChart3 className="h-4 w-4 mr-2" />
+                Charts
+              </Button>
+            )}
             {onDelete && (
               <Button 
                 variant="outline" 
@@ -133,5 +187,48 @@ export const DocumentCard = ({
         </div>
       </CardContent>
     </Card>
+
+    {/* Visualization Dialog */}
+    <Dialog open={showVisualization} onOpenChange={setShowVisualization}>
+      <DialogContent className="max-w-6xl max-h-[80vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Document Visualizations - {doc.title}</DialogTitle>
+        </DialogHeader>
+        <DocumentVisualizationPanel
+          documentId={doc.id}
+          documentContent={doc.content || doc.ai_summary || ''}
+          spreadsheetData={doc.metadata?.spreadsheetData}
+          onClose={() => setShowVisualization(false)}
+        />
+      </DialogContent>
+    </Dialog>
+
+    {/* Spreadsheet Dialog */}
+    {hasSpreadsheetData && (
+      <Dialog open={showSpreadsheet} onOpenChange={setShowSpreadsheet}>
+        <DialogContent className="max-w-6xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Spreadsheet Viewer - {doc.title}</DialogTitle>
+          </DialogHeader>
+          <SpreadsheetViewer
+            data={doc.metadata?.spreadsheetData || { 
+              sheets: [], 
+              metadata: { 
+                totalSheets: 0, 
+                hasFormulas: false, 
+                hasCharts: false, 
+                dataTypes: [] 
+              } 
+            }}
+            title={doc.title}
+            onGenerateCharts={(data) => {
+              setShowSpreadsheet(false);
+              setShowVisualization(true);
+            }}
+          />
+        </DialogContent>
+      </Dialog>
+    )}
+    </>
   );
 };
