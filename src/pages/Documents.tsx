@@ -228,8 +228,6 @@ const Documents = () => {
         />
       </div>
 
-      <DocumentSources onDocumentsAdded={handleDocumentsAdded} />
-
       <DocumentSearchFilter
         searchTerm={searchTerm}
         onSearchChange={setSearchTerm}
@@ -239,6 +237,8 @@ const Documents = () => {
         sortBy={sortBy}
         onSortChange={setSortBy}
       />
+
+      <DocumentSources onDocumentsAdded={handleDocumentsAdded} />
 
       {isError && (
         <div className="text-center py-8">
