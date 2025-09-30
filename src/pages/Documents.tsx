@@ -11,7 +11,6 @@ import { DocumentGrid } from '@/components/DocumentGrid';
 import { DocumentViewerModal } from '@/components/DocumentViewerModal';
 import { ConfirmationDialog } from '@/components/ConfirmationDialog';
 import { PaginationControls } from '@/components/PaginationControls';
-import DocumentSources from '@/components/DocumentSources';
 
 const Documents = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -201,21 +200,11 @@ const Documents = () => {
     return colors[category as keyof typeof colors] || 'bg-muted';
   };
 
-  const handleDocumentsAdded = (documents: any[]) => {
-    // Refresh the documents list
-    queryClient.invalidateQueries({ queryKey: ['documents', user?.id] });
-    
-    toast({
-      title: 'Documents Added',
-      description: `${documents.length} document(s) have been added successfully.`,
-    });
-  };
-
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Documents</h1>
+          <h1 className="text-3xl font-bold text-foreground">Find Documents</h1>
           <p className="text-muted-foreground">Browse and search your knowledge documents</p>
         </div>
         <CreateKnowledgeDocumentModal 
@@ -237,8 +226,6 @@ const Documents = () => {
         sortBy={sortBy}
         onSortChange={setSortBy}
       />
-
-      <DocumentSources onDocumentsAdded={handleDocumentsAdded} />
 
       {isError && (
         <div className="text-center py-8">

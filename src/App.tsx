@@ -13,6 +13,7 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import GoogleDrive from "./pages/GoogleDrive";
 import Documents from "./pages/Documents";
+import AddDocuments from "./pages/AddDocuments";
 import KnowledgeBases from "./pages/KnowledgeBases";
 import SyncStatus from "./pages/SyncStatus";
 import Settings from "./pages/Settings";
@@ -112,6 +113,11 @@ const App = () => (
             <Route path="/documents" element={
               <ProtectedRoute>
                 <Documents />
+              </ProtectedRoute>
+            } />
+            <Route path="/add-documents" element={
+              <ProtectedRoute>
+                <AddDocuments />
               </ProtectedRoute>
             } />
             <Route path="/knowledge" element={
