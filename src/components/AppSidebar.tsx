@@ -1,4 +1,4 @@
-import { Home, FolderOpen, FileText, Brain, Settings, LogOut, RefreshCw } from 'lucide-react';
+import { Home, FolderOpen, FileText, Brain, Settings, LogOut, RefreshCw, Upload } from 'lucide-react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import {
@@ -18,7 +18,8 @@ import { Button } from '@/components/ui/button';
 
 const navigationItems = [
   { title: 'Dashboard', url: '/dashboard', icon: Home },
-  { title: 'Documents', url: '/documents', icon: FileText },
+  { title: 'Find Documents', url: '/documents', icon: FileText },
+  { title: 'Add Documents', url: '/add-documents', icon: Upload },
   { title: 'Knowledge Bases', url: '/knowledge', icon: Brain },
   { title: 'Google Drive', url: '/drive', icon: FolderOpen },
   { title: 'Sync Status', url: '/sync', icon: RefreshCw },
