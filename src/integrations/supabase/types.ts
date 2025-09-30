@@ -576,6 +576,113 @@ export type Database = {
         }
         Relationships: []
       }
+      enterprise_server_audit_log: {
+        Row: {
+          action: string
+          config_id: string | null
+          created_at: string
+          details: Json | null
+          error_message: string | null
+          id: string
+          ip_address: unknown | null
+          success: boolean
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          action: string
+          config_id?: string | null
+          created_at?: string
+          details?: Json | null
+          error_message?: string | null
+          id?: string
+          ip_address?: unknown | null
+          success: boolean
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          action?: string
+          config_id?: string | null
+          created_at?: string
+          details?: Json | null
+          error_message?: string | null
+          id?: string
+          ip_address?: unknown | null
+          success?: boolean
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "enterprise_server_audit_log_config_id_fkey"
+            columns: ["config_id"]
+            isOneToOne: false
+            referencedRelation: "enterprise_server_configs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      enterprise_server_configs: {
+        Row: {
+          auth_method: Database["public"]["Enums"]["auth_method"]
+          compliance_standards: string[] | null
+          connection_status: string | null
+          created_at: string
+          encrypted_credentials: string | null
+          encryption_config: Json | null
+          host: string
+          id: string
+          is_active: boolean | null
+          last_connection_test: string | null
+          metadata: Json | null
+          name: string
+          port: number | null
+          protocol: Database["public"]["Enums"]["server_protocol"]
+          security_settings: Json | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          auth_method: Database["public"]["Enums"]["auth_method"]
+          compliance_standards?: string[] | null
+          connection_status?: string | null
+          created_at?: string
+          encrypted_credentials?: string | null
+          encryption_config?: Json | null
+          host: string
+          id?: string
+          is_active?: boolean | null
+          last_connection_test?: string | null
+          metadata?: Json | null
+          name: string
+          port?: number | null
+          protocol: Database["public"]["Enums"]["server_protocol"]
+          security_settings?: Json | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          auth_method?: Database["public"]["Enums"]["auth_method"]
+          compliance_standards?: string[] | null
+          connection_status?: string | null
+          created_at?: string
+          encrypted_credentials?: string | null
+          encryption_config?: Json | null
+          host?: string
+          id?: string
+          is_active?: boolean | null
+          last_connection_test?: string | null
+          metadata?: Json | null
+          name?: string
+          port?: number | null
+          protocol?: Database["public"]["Enums"]["server_protocol"]
+          security_settings?: Json | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       google_drive_folders: {
         Row: {
           created_at: string
@@ -1288,6 +1395,10 @@ export type Database = {
           token_type: string
         }[]
       }
+      get_decrypted_server_credentials: {
+        Args: { p_config_id: string }
+        Returns: string
+      }
       get_qa_agent_stats: {
         Args: Record<PropertyKey, never> | { p_agent_id: string }
         Returns: {
@@ -1415,6 +1526,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      store_encrypted_server_credentials: {
+        Args: { p_config_id: string; p_credentials: string }
+        Returns: undefined
+      }
       validate_encryption_key_configured: {
         Args: Record<PropertyKey, never>
         Returns: boolean
@@ -1435,6 +1550,22 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
+      auth_method:
+        | "username_password"
+        | "ssh_key"
+        | "oauth"
+        | "api_key"
+        | "certificate"
+        | "active_directory"
+      server_protocol:
+        | "smb_cifs"
+        | "nfs"
+        | "sftp"
+        | "ftp"
+        | "webdav"
+        | "s3"
+        | "azure_files"
+        | "azure_blob"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1563,6 +1694,24 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "moderator", "user"],
+      auth_method: [
+        "username_password",
+        "ssh_key",
+        "oauth",
+        "api_key",
+        "certificate",
+        "active_directory",
+      ],
+      server_protocol: [
+        "smb_cifs",
+        "nfs",
+        "sftp",
+        "ftp",
+        "webdav",
+        "s3",
+        "azure_files",
+        "azure_blob",
+      ],
     },
   },
 } as const
