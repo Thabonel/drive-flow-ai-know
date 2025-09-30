@@ -21,8 +21,6 @@ const navigationItems = [
   { title: 'Find Documents', url: '/documents', icon: FileText },
   { title: 'Add Documents', url: '/add-documents', icon: Upload },
   { title: 'Knowledge Bases', url: '/knowledge', icon: Brain },
-  { title: 'Google Drive', url: '/drive', icon: FolderOpen },
-  { title: 'Sync Status', url: '/sync', icon: RefreshCw },
 ];
 
 export function AppSidebar() {
