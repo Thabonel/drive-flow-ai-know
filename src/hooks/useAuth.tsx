@@ -42,7 +42,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signUp = async (email: string, password: string, fullName: string) => {
     const redirectUrl = `${window.location.origin}/`;
     
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -59,6 +59,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         description: error.message,
         variant: "destructive",
       });
+      return { error };
+    }
+
+    // Send confirmation email via edge function
+    if (data.user && !data.session) {
+      try {
+        const { error: emailError } = await supabase.functions.invoke('send-confirmation-email', {
+          body: {
+            email,
+            fullName,
+            confirmationUrl: redirectUrl
+          }
+        });
+
+        if (emailError) {
+          console.error('Error sending confirmation email:', emailError);
+        }
+
+        toast({
+          title: "Check Your Email",
+          description: "We've sent you a confirmation email. Please check your inbox to verify your account.",
+        });
+      } catch (emailError) {
+        console.error('Failed to send confirmation email:', emailError);
+      }
     }
 
     return { error };
