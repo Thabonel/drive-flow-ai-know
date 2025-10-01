@@ -149,7 +149,7 @@ const stats = [
 
 export default function Landing() {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-mesh">
       {/* Navigation */}
       <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
@@ -176,8 +176,10 @@ export default function Landing() {
 
       {/* Hero Section - Enhanced */}
       <section className="relative py-20 md:py-32 px-4 overflow-hidden">
-        {/* Background gradient */}
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-background to-background pointer-events-none" />
+        {/* Animated gradient orbs */}
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/20 rounded-full blur-3xl animate-float" />
+        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-secondary/20 rounded-full blur-3xl animate-float" style={{ animationDelay: '2s' }} />
+        <div className="absolute top-1/2 right-0 w-64 h-64 bg-accent/20 rounded-full blur-3xl animate-float" style={{ animationDelay: '4s' }} />
         
         <div className="container mx-auto text-center max-w-5xl relative z-10">
           <Badge variant="secondary" className="mb-6 animate-fade-in">
@@ -187,7 +189,7 @@ export default function Landing() {
           
           <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight mb-6 animate-slide-up">
             Stop Reading.
-            <span className="block text-primary mt-2">Start Asking.</span>
+            <span className="block mt-2 bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent animate-gradient-shift bg-[length:200%_auto]">Start Asking.</span>
           </h1>
           
           <p className="text-xl md:text-2xl text-muted-foreground mb-8 max-w-3xl mx-auto animate-fade-in">
@@ -195,13 +197,13 @@ export default function Landing() {
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-12 animate-slide-up">
-            <Button asChild size="lg" className="text-lg px-8 py-6 shadow-lg hover:shadow-xl transition-all">
+            <Button asChild size="lg" className="text-lg px-8 py-6 bg-gradient-to-r from-primary to-secondary hover:shadow-glow transition-all duration-300 hover:scale-105">
               <Link to="/auth">
                 Get Instant Answers Free
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Link>
             </Button>
-            <Button asChild size="lg" variant="outline" className="text-lg px-8 py-6">
+            <Button asChild size="lg" variant="outline" className="text-lg px-8 py-6 border-2 hover:bg-primary/5 hover:border-primary transition-all duration-300">
               <a href="#how-it-works">
                 See How It Works
               </a>
@@ -227,9 +229,9 @@ export default function Landing() {
           {/* Stats Section */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mt-16 animate-fade-in">
             {stats.map((stat, index) => (
-              <div key={index} className="text-center p-4 rounded-lg bg-card border hover:shadow-lg transition-shadow">
-                <stat.icon className="h-6 w-6 text-primary mx-auto mb-2" />
-                <div className="text-3xl font-bold text-foreground mb-1">{stat.value}</div>
+              <div key={index} className="text-center p-4 rounded-lg bg-card/80 backdrop-blur border hover:shadow-card transition-all hover:scale-105 group">
+                <stat.icon className="h-6 w-6 text-primary mx-auto mb-2 group-hover:scale-110 transition-transform" />
+                <div className="text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent mb-1">{stat.value}</div>
                 <div className="text-sm text-muted-foreground">{stat.label}</div>
               </div>
             ))}
@@ -238,8 +240,9 @@ export default function Landing() {
       </section>
 
       {/* How It Works Section - New */}
-      <section id="how-it-works" className="py-20 px-4 bg-muted/30">
-        <div className="container mx-auto max-w-6xl">
+      <section id="how-it-works" className="py-20 px-4 relative">
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-primary/5 to-transparent" />
+        <div className="container mx-auto max-w-6xl relative z-10">
           <div className="text-center mb-16">
             <Badge variant="secondary" className="mb-4">Simple Process</Badge>
             <h2 className="text-3xl md:text-5xl font-bold mb-4">Three Steps to Smarter Documents</h2>
@@ -270,10 +273,10 @@ export default function Landing() {
               },
             ].map((item, index) => (
               <div key={index} className="relative">
-                <Card className="h-full hover:shadow-xl transition-shadow">
+                <Card className="h-full hover:shadow-glow transition-all duration-300 hover:-translate-y-2 bg-gradient-to-br from-card to-card/50 border-2">
                   <CardContent className="p-8">
                     <div className="flex items-center justify-between mb-4">
-                      <div className="h-12 w-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xl font-bold">
+                      <div className="h-12 w-12 rounded-full bg-gradient-to-br from-primary to-secondary text-primary-foreground flex items-center justify-center text-xl font-bold shadow-card">
                         {item.step}
                       </div>
                       <item.icon className="h-8 w-8 text-primary" />
@@ -306,15 +309,16 @@ export default function Landing() {
           
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             {features.map((feature, index) => (
-              <Card key={index} className="group hover:shadow-2xl transition-all duration-300 hover:scale-105 border-2 hover:border-primary/50">
-                <CardContent className="p-8">
-                  <div className="h-14 w-14 rounded-lg bg-primary/10 flex items-center justify-center mb-6 group-hover:bg-primary group-hover:scale-110 transition-all">
-                    <feature.icon className="h-7 w-7 text-primary group-hover:text-primary-foreground transition-colors" />
+              <Card key={index} className="group hover:shadow-glow transition-all duration-300 hover:-translate-y-2 border-2 hover:border-primary/50 bg-gradient-to-br from-card via-card to-card/50 relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-primary/10 to-transparent rounded-full blur-2xl group-hover:scale-150 transition-transform" />
+                <CardContent className="p-8 relative z-10">
+                  <div className="h-14 w-14 rounded-lg bg-gradient-to-br from-primary to-secondary flex items-center justify-center mb-6 group-hover:scale-110 transition-all shadow-card">
+                    <feature.icon className="h-7 w-7 text-primary-foreground transition-colors" />
                   </div>
                   <h3 className="text-xl font-semibold mb-3">{feature.title}</h3>
                   <p className="text-muted-foreground mb-4">{feature.description}</p>
-                  <div className="flex items-center gap-2 text-sm text-primary font-medium">
-                    <TrendingUp className="h-4 w-4" />
+                  <div className="flex items-center gap-2 text-sm font-medium bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+                    <TrendingUp className="h-4 w-4 text-primary" />
                     <span>{feature.benefit}</span>
                   </div>
                 </CardContent>
@@ -325,8 +329,9 @@ export default function Landing() {
       </section>
 
       {/* Social Proof Section - Enhanced */}
-      <section className="py-20 px-4 bg-muted/30">
-        <div className="container mx-auto max-w-6xl">
+      <section className="py-20 px-4 relative">
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-secondary/5 to-transparent" />
+        <div className="container mx-auto max-w-6xl relative z-10">
           <div className="text-center mb-12">
             <Badge variant="secondary" className="mb-4">Trusted Worldwide</Badge>
             <h2 className="text-3xl md:text-5xl font-bold mb-4">Join Thousands of Happy Users</h2>
@@ -355,7 +360,7 @@ export default function Landing() {
         <div className="container mx-auto max-w-7xl">
           <div className="grid md:grid-cols-3 gap-8">
             {testimonials.map((testimonial, index) => (
-              <Card key={index} className="hover:shadow-2xl transition-shadow border-2">
+              <Card key={index} className="hover:shadow-glow transition-all duration-300 hover:scale-105 border-2 bg-gradient-to-br from-card to-card/80">
                 <CardContent className="p-8">
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center">
@@ -363,7 +368,7 @@ export default function Landing() {
                         <Star key={i} className="h-5 w-5 fill-yellow-400 text-yellow-400" />
                       ))}
                     </div>
-                    <Badge variant="secondary">{testimonial.metric}</Badge>
+                    <Badge className="bg-gradient-to-r from-primary/10 to-secondary/10">{testimonial.metric}</Badge>
                   </div>
                   <p className="text-foreground mb-6 text-lg leading-relaxed">"{testimonial.content}"</p>
                   <div className="flex items-center gap-3">
@@ -383,8 +388,9 @@ export default function Landing() {
       </section>
 
       {/* Pricing Section - Enhanced */}
-      <section id="pricing" className="py-20 px-4 bg-muted/30">
-        <div className="container mx-auto max-w-6xl">
+      <section id="pricing" className="py-20 px-4 relative">
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-accent/5 to-transparent" />
+        <div className="container mx-auto max-w-6xl relative z-10">
           <div className="text-center mb-16">
             <Badge variant="secondary" className="mb-4">Simple Pricing</Badge>
             <h2 className="text-3xl md:text-5xl font-bold mb-4">Choose Your Plan</h2>
@@ -395,15 +401,15 @@ export default function Landing() {
             {plans.map((plan, index) => (
               <Card 
                 key={index} 
-                className={`relative hover:shadow-2xl transition-all duration-300 ${
+                className={`relative transition-all duration-300 ${
                   plan.popular 
-                    ? 'border-primary border-2 shadow-xl scale-105 bg-card' 
-                    : 'hover:scale-105'
+                    ? 'border-primary border-2 shadow-glow scale-105 bg-gradient-to-br from-primary/5 via-card to-card' 
+                    : 'hover:scale-105 hover:shadow-card bg-gradient-to-br from-card to-card/80'
                 }`}
               >
                 {plan.popular && (
                   <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                    <Badge className="bg-primary text-primary-foreground px-4 py-1 text-sm font-semibold">
+                    <Badge className="bg-gradient-to-r from-primary to-secondary text-primary-foreground px-4 py-1 text-sm font-semibold shadow-glow animate-pulse-glow">
                       Most Popular
                     </Badge>
                   </div>
@@ -412,7 +418,7 @@ export default function Landing() {
                   <CardTitle className="text-2xl mb-2">{plan.name}</CardTitle>
                   <CardDescription className="text-base">{plan.description}</CardDescription>
                   <div className="mt-4">
-                    <span className="text-5xl font-bold text-foreground">{plan.price}</span>
+                    <span className="text-5xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">{plan.price}</span>
                     <span className="text-muted-foreground text-lg">{plan.period}</span>
                   </div>
                   {plan.savings && (
@@ -432,7 +438,7 @@ export default function Landing() {
                   </ul>
                   <Button 
                     asChild 
-                    className="w-full py-6 text-lg font-semibold" 
+                    className={`w-full py-6 text-lg font-semibold ${plan.popular ? 'bg-gradient-to-r from-primary to-secondary hover:shadow-glow' : ''}`}
                     variant={plan.popular ? 'default' : 'outline'}
                     size="lg"
                   >
@@ -460,14 +466,14 @@ export default function Landing() {
 
       {/* Final CTA Section - Enhanced */}
       <section className="py-24 px-4 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-background to-background pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-mesh opacity-50" />
         
         <div className="container mx-auto text-center max-w-4xl relative z-10">
-          <Badge variant="secondary" className="mb-6">
+          <Badge variant="secondary" className="mb-6 bg-gradient-to-r from-primary/10 to-secondary/10">
             <Sparkles className="h-3 w-3 mr-1" />
             Join 10,000+ professionals
           </Badge>
-          <h2 className="text-3xl md:text-5xl font-bold mb-6">
+          <h2 className="text-3xl md:text-5xl font-bold mb-6 bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent">
             Ready to Transform Your Document Workflow?
           </h2>
           <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
@@ -491,13 +497,13 @@ export default function Landing() {
           </div>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button asChild size="lg" className="text-lg px-10 py-6 shadow-xl hover:shadow-2xl transition-all">
+            <Button asChild size="lg" className="text-lg px-10 py-6 bg-gradient-to-r from-primary to-secondary hover:shadow-glow transition-all duration-300 hover:scale-105">
               <Link to="/auth">
                 Start Your Free Trial
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Link>
             </Button>
-            <Button asChild size="lg" variant="outline" className="text-lg px-10 py-6">
+            <Button asChild size="lg" variant="outline" className="text-lg px-10 py-6 border-2 hover:bg-primary/5 hover:border-primary transition-all duration-300">
               <a href="#pricing">
                 View Pricing
                 <BarChart3 className="ml-2 h-5 w-5" />
