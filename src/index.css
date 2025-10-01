@@ -17,21 +17,24 @@ All colors MUST be HSL.
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
 
-    --primary: 262 83% 58%;
+    --primary: 221 68% 33%;
     --primary-foreground: 0 0% 100%;
     
-    --primary-vibrant: 262 90% 65%;
-    --primary-glow: 280 90% 70%;
-    --primary-dark: 262 70% 45%;
+    --primary-vibrant: 262 83% 58%;
+    --primary-glow: 262 90% 65%;
+    --primary-dark: 221 68% 25%;
 
-    --secondary: 217 91% 60%;
+    --secondary: 262 83% 58%;
     --secondary-foreground: 0 0% 100%;
 
-    --muted: 220 15% 94%;
-    --muted-foreground: 220 9% 46%;
+    --muted: 210 20% 98%;
+    --muted-foreground: 217 33% 17%;
 
-    --accent: 338 100% 65%;
+    --accent: 25 95% 53%;
     --accent-foreground: 0 0% 100%;
+    
+    --success: 166 95% 30%;
+    --success-foreground: 0 0% 100%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
@@ -42,15 +45,15 @@ All colors MUST be HSL.
 
     --radius: 0.75rem;
     
-    --gradient-primary: linear-gradient(135deg, hsl(262 83% 58%) 0%, hsl(217 91% 60%) 100%);
-    --gradient-accent: linear-gradient(135deg, hsl(338 100% 65%) 0%, hsl(262 83% 58%) 100%);
-    --gradient-subtle: linear-gradient(180deg, hsl(220 25% 97%) 0%, hsl(0 0% 100%) 100%);
-    --gradient-mesh: radial-gradient(at 0% 0%, hsl(262 83% 58% / 0.2) 0px, transparent 50%),
-                     radial-gradient(at 100% 0%, hsl(217 91% 60% / 0.15) 0px, transparent 50%),
-                     radial-gradient(at 100% 100%, hsl(338 100% 65% / 0.2) 0px, transparent 50%);
+    --gradient-primary: linear-gradient(90deg, hsl(221 68% 33%) 0%, hsl(262 83% 58%) 100%);
+    --gradient-accent: linear-gradient(135deg, hsl(25 95% 53%) 0%, hsl(262 83% 58%) 100%);
+    --gradient-subtle: linear-gradient(180deg, hsl(220 25% 97%) 0%, hsl(210 20% 98%) 100%);
+    --gradient-mesh: radial-gradient(at 0% 0%, hsl(221 68% 33% / 0.1) 0px, transparent 50%),
+                     radial-gradient(at 100% 0%, hsl(262 83% 58% / 0.15) 0px, transparent 50%),
+                     radial-gradient(at 100% 100%, hsl(166 95% 30% / 0.1) 0px, transparent 50%);
     
-    --shadow-glow: 0 0 60px -10px hsl(262 83% 58% / 0.4);
-    --shadow-card: 0 4px 20px -2px hsl(262 83% 58% / 0.1);
+    --shadow-glow: 0 0 60px -10px hsl(221 68% 33% / 0.4);
+    --shadow-card: 0 4px 20px -2px hsl(221 68% 33% / 0.1);
 
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
@@ -72,17 +75,20 @@ All colors MUST be HSL.
     --popover: 222 47% 14%;
     --popover-foreground: 210 40% 98%;
 
-    --primary: 262 83% 58%;
+    --primary: 221 68% 40%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 217 32% 22%;
+    --secondary: 262 83% 58%;
     --secondary-foreground: 210 40% 98%;
 
     --muted: 217 32% 18%;
     --muted-foreground: 215 20% 65%;
 
-    --accent: 338 100% 65%;
+    --accent: 25 95% 53%;
     --accent-foreground: 0 0% 100%;
+    
+    --success: 166 95% 35%;
+    --success-foreground: 0 0% 100%;
 
     --destructive: 0 63% 31%;
     --destructive-foreground: 210 40% 98%;
@@ -91,15 +97,15 @@ All colors MUST be HSL.
     --input: 217 32% 18%;
     --ring: 262 83% 58%;
     
-    --gradient-primary: linear-gradient(135deg, hsl(262 83% 58%) 0%, hsl(217 91% 60%) 100%);
-    --gradient-accent: linear-gradient(135deg, hsl(338 100% 65%) 0%, hsl(262 83% 58%) 100%);
+    --gradient-primary: linear-gradient(90deg, hsl(221 68% 40%) 0%, hsl(262 83% 58%) 100%);
+    --gradient-accent: linear-gradient(135deg, hsl(25 95% 53%) 0%, hsl(262 83% 58%) 100%);
     --gradient-subtle: linear-gradient(180deg, hsl(222 47% 11%) 0%, hsl(222 47% 14%) 100%);
-    --gradient-mesh: radial-gradient(at 0% 0%, hsl(262 83% 58% / 0.3) 0px, transparent 50%),
-                     radial-gradient(at 100% 0%, hsl(217 91% 60% / 0.2) 0px, transparent 50%),
-                     radial-gradient(at 100% 100%, hsl(338 100% 65% / 0.3) 0px, transparent 50%);
+    --gradient-mesh: radial-gradient(at 0% 0%, hsl(221 68% 40% / 0.2) 0px, transparent 50%),
+                     radial-gradient(at 100% 0%, hsl(262 83% 58% / 0.25) 0px, transparent 50%),
+                     radial-gradient(at 100% 100%, hsl(166 95% 35% / 0.15) 0px, transparent 50%);
     
-    --shadow-glow: 0 0 80px -10px hsl(262 83% 58% / 0.6);
-    --shadow-card: 0 4px 30px -2px hsl(262 83% 58% / 0.2);
+    --shadow-glow: 0 0 80px -10px hsl(221 68% 40% / 0.6);
+    --shadow-card: 0 4px 30px -2px hsl(221 68% 40% / 0.2);
     
     --sidebar-background: 240 6% 10%;
     --sidebar-foreground: 240 5% 96%;

@@ -164,24 +164,24 @@ export default function Landing() {
       </div>
 
       {/* Navigation */}
-      <header className="relative border-b border-primary/20 bg-background/80 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50 shadow-card">
+      <header className="relative border-b border-primary/20 bg-primary/95 backdrop-blur-xl supports-[backdrop-filter]:bg-primary/90 sticky top-0 z-50 shadow-lg">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center space-x-2">
-            <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-primary to-secondary flex items-center justify-center shadow-glow">
-              <FileText className="h-5 w-5 text-primary-foreground" />
+            <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-secondary to-primary flex items-center justify-center shadow-glow">
+              <FileText className="h-5 w-5 text-white" />
             </div>
-            <span className="text-xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">DocChat</span>
-            <Badge className="ml-2 hidden sm:inline-flex bg-gradient-to-r from-primary/20 to-secondary/20 border-primary/30">AI-Powered</Badge>
+            <span className="text-xl font-bold text-white">DocChat</span>
+            <Badge className="ml-2 hidden sm:inline-flex bg-secondary/30 border-secondary/50 text-white">AI-Powered</Badge>
           </div>
           
           <nav className="hidden md:flex items-center space-x-8">
-            <a href="#features" className="text-foreground/80 hover:text-primary transition-colors font-medium">Features</a>
-            <a href="#how-it-works" className="text-foreground/80 hover:text-secondary transition-colors font-medium">How It Works</a>
-            <a href="#pricing" className="text-foreground/80 hover:text-accent transition-colors font-medium">Pricing</a>
-            <a href="#testimonials" className="text-foreground/80 hover:text-primary transition-colors font-medium">Reviews</a>
+            <a href="#features" className="text-white/90 hover:text-white transition-colors font-medium">Features</a>
+            <a href="#how-it-works" className="text-white/90 hover:text-white transition-colors font-medium">How It Works</a>
+            <a href="#pricing" className="text-white/90 hover:text-white transition-colors font-medium">Pricing</a>
+            <a href="#testimonials" className="text-white/90 hover:text-white transition-colors font-medium">Reviews</a>
           </nav>
 
-          <Button asChild className="bg-gradient-to-r from-primary to-secondary border-0 shadow-glow hover:shadow-xl transition-all">
+          <Button asChild className="bg-accent hover:bg-accent/90 border-0 text-white shadow-lg hover:shadow-xl transition-all hover:scale-105">
             <Link to="/auth">Get Started Free</Link>
           </Button>
         </div>
@@ -212,11 +212,11 @@ export default function Landing() {
             </p>
 
             <div className="flex flex-wrap gap-4 justify-center items-center pt-2">
-              <Button size="lg" className="text-lg px-8 py-6 bg-gradient-to-r from-primary via-secondary to-primary bg-[length:200%_auto] animate-gradient-shift shadow-glow hover:shadow-xl transition-all hover:scale-105 border-0">
+              <Button size="lg" className="text-lg px-8 py-6 bg-accent hover:bg-accent/90 shadow-lg hover:shadow-xl transition-all hover:scale-105 border-0 text-white">
                 Get Instant Answers Now
                 <ArrowRight className="ml-2 w-5 h-5" />
               </Button>
-              <Button size="lg" variant="outline" className="text-lg px-8 py-6 border-2 border-primary/30 bg-primary/5 hover:bg-primary/10 hover:border-primary/50 backdrop-blur-sm">
+              <Button size="lg" variant="outline" className="text-lg px-8 py-6 border-2 border-primary/30 bg-background hover:bg-muted hover:border-primary/50">
                 Watch Demo
                 <Play className="ml-2 w-5 h-5" />
               </Button>
@@ -226,15 +226,15 @@ export default function Landing() {
             <div className="flex flex-wrap gap-6 justify-center items-center pt-6 text-sm">
               <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 backdrop-blur-sm">
                 <Shield className="w-4 h-4 text-primary" />
-                <span className="font-medium">Bank-level Security</span>
+                <span className="font-medium text-primary">Bank-level Security</span>
               </div>
-              <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-secondary/10 border border-secondary/20 backdrop-blur-sm">
-                <Zap className="w-4 h-4 text-secondary" />
-                <span className="font-medium">Instant Results</span>
+              <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-success/10 border border-success/20 backdrop-blur-sm">
+                <Zap className="w-4 h-4 text-success" />
+                <span className="font-medium text-success">Instant Results</span>
               </div>
               <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-accent/10 border border-accent/20 backdrop-blur-sm">
                 <Users className="w-4 h-4 text-accent" />
-                <span className="font-medium">10,000+ Happy Users</span>
+                <span className="font-medium text-accent">10,000+ Happy Users</span>
               </div>
             </div>
           </div>
@@ -242,17 +242,13 @@ export default function Landing() {
           {/* Stats Section */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mt-16 animate-slide-up">
             {stats.map((stat, index) => {
-              const gradients = [
-                "from-primary/20 to-primary/5",
-                "from-secondary/20 to-secondary/5",
-                "from-accent/20 to-accent/5",
-                "from-primary/15 to-secondary/10"
-              ];
-              const borders = ["border-primary/30", "border-secondary/30", "border-accent/30", "border-primary/20"];
+              const colors = ["text-primary", "text-success", "text-success", "text-accent"];
+              const bgColors = ["bg-primary/10", "bg-success/10", "bg-success/10", "bg-accent/10"];
+              const borderColors = ["border-primary/20", "border-success/20", "border-success/20", "border-accent/20"];
               return (
-                <div key={index} className={`text-center p-6 rounded-2xl bg-gradient-to-br ${gradients[index]} border ${borders[index]} shadow-card backdrop-blur-xl hover:shadow-glow transition-all hover:scale-105 hover:${borders[index].replace('/30', '/50')}`}>
-                  <stat.icon className="w-8 h-8 mx-auto mb-2 animate-pulse-glow" style={{ color: index === 0 ? 'hsl(var(--primary))' : index === 1 ? 'hsl(var(--secondary))' : index === 2 ? 'hsl(var(--accent))' : 'hsl(var(--primary))' }} />
-                  <div className="text-5xl font-bold bg-gradient-to-br from-foreground to-foreground/80 bg-clip-text text-transparent mb-2">
+                <div key={index} className={`text-center p-6 rounded-2xl ${bgColors[index]} border ${borderColors[index]} shadow-card backdrop-blur-xl hover:shadow-lg transition-all hover:scale-105`}>
+                  <stat.icon className={`w-8 h-8 mx-auto mb-2 ${colors[index]}`} />
+                  <div className={`text-5xl font-bold ${colors[index]} mb-2`}>
                     {stat.value}
                   </div>
                   <div className="text-foreground/80 font-medium">{stat.label}</div>
@@ -277,20 +273,32 @@ export default function Landing() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {[
-              { icon: Upload, title: "Upload", desc: "Drop any document - PDF, Word, Excel, or text file", gradient: "from-primary/30 to-primary/10", border: "border-primary/40", glow: "shadow-[0_0_30px_rgba(138,75,255,0.3)]" },
-              { icon: MessageSquare, title: "Ask", desc: "Type your question in natural language", gradient: "from-secondary/30 to-secondary/10", border: "border-secondary/40", glow: "shadow-[0_0_30px_rgba(59,130,246,0.3)]" },
-              { icon: Sparkles, title: "Get Answers", desc: "Receive instant, accurate responses with sources", gradient: "from-accent/30 to-accent/10", border: "border-accent/40", glow: "shadow-[0_0_30px_rgba(255,56,134,0.3)]" }
+              { icon: Upload, title: "Upload", desc: "Drop any document - PDF, Word, Excel, or text file", color: "primary" },
+              { icon: MessageSquare, title: "Ask", desc: "Type your question in natural language", color: "secondary" },
+              { icon: Sparkles, title: "Get Answers", desc: "Receive instant, accurate responses with sources", color: "success" }
             ].map((step, i) => (
               <div key={i} className="relative group">
-                <div className={`text-center p-6 rounded-2xl bg-gradient-to-br ${step.gradient} border ${step.border} backdrop-blur-xl transition-all hover:scale-105 hover:${step.glow}`}>
-                  <div className={`w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br ${step.gradient} flex items-center justify-center group-hover:scale-110 transition-transform border ${step.border}`}>
-                    <step.icon className="w-8 h-8" style={{ color: i === 0 ? 'hsl(var(--primary))' : i === 1 ? 'hsl(var(--secondary))' : 'hsl(var(--accent))' }} />
+                <div className={`text-center p-6 rounded-2xl bg-card border border-border shadow-card backdrop-blur-xl transition-all hover:scale-105 hover:shadow-lg`}>
+                  <div className={`w-16 h-16 mx-auto mb-4 rounded-2xl ${
+                    step.color === 'primary' ? 'bg-primary/10 border-primary/20' :
+                    step.color === 'secondary' ? 'bg-secondary/10 border-secondary/20' :
+                    'bg-success/10 border-success/20'
+                  } flex items-center justify-center group-hover:scale-110 transition-transform border`}>
+                    <step.icon className={`w-8 h-8 ${
+                      step.color === 'primary' ? 'text-primary' :
+                      step.color === 'secondary' ? 'text-secondary' :
+                      'text-success'
+                    }`} />
                   </div>
-                  <div className={`text-7xl font-bold absolute top-4 right-4 bg-gradient-to-br ${step.gradient} bg-clip-text text-transparent`}>
+                  <div className={`text-7xl font-bold absolute top-4 right-4 ${
+                    step.color === 'primary' ? 'text-primary/10' :
+                    step.color === 'secondary' ? 'text-secondary/10' :
+                    'text-success/10'
+                  }`}>
                     {i + 1}
                   </div>
                   <h3 className="text-2xl font-bold mb-2">{step.title}</h3>
-                  <p className="text-foreground/70">{step.desc}</p>
+                  <p className="text-muted-foreground">{step.desc}</p>
                 </div>
               </div>
             ))}
@@ -312,32 +320,26 @@ export default function Landing() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {features.map((feature, i) => {
-              const gradients = [
-                "from-primary/20 to-primary/5",
-                "from-secondary/20 to-secondary/5", 
-                "from-accent/20 to-accent/5",
-                "from-primary/20 to-secondary/10",
-                "from-secondary/20 to-accent/10",
-                "from-accent/20 to-primary/10"
-              ];
-              const borders = [
-                "border-primary/30",
-                "border-secondary/30",
-                "border-accent/30", 
-                "border-primary/30",
-                "border-secondary/30",
-                "border-accent/30"
-              ];
+              const colors = ["success", "secondary", "primary", "success", "secondary", "primary"];
+              const iconColor = colors[i];
               return (
-                <div key={i} className={`group p-6 rounded-2xl bg-gradient-to-br ${gradients[i]} border ${borders[i]} backdrop-blur-xl transition-all hover:scale-105 hover:shadow-glow`}>
-                  <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${gradients[i]} border ${borders[i]} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
-                    <feature.icon className="w-7 h-7" style={{ color: i % 3 === 0 ? 'hsl(var(--primary))' : i % 3 === 1 ? 'hsl(var(--secondary))' : 'hsl(var(--accent))' }} />
+                <div key={i} className={`group p-6 rounded-2xl bg-card border border-border shadow-card backdrop-blur-xl transition-all hover:scale-105 hover:shadow-lg`}>
+                  <div className={`w-14 h-14 rounded-xl ${
+                    iconColor === 'primary' ? 'bg-primary/10 border-primary/20' :
+                    iconColor === 'secondary' ? 'bg-secondary/10 border-secondary/20' :
+                    'bg-success/10 border-success/20'
+                  } flex items-center justify-center mb-4 group-hover:scale-110 transition-transform border`}>
+                    <feature.icon className={`w-7 h-7 ${
+                      iconColor === 'primary' ? 'text-primary' :
+                      iconColor === 'secondary' ? 'text-secondary' :
+                      'text-success'
+                    }`} />
                   </div>
-                  <h3 className="text-xl font-bold mb-2">{feature.title}</h3>
-                  <p className="text-foreground/70 mb-3 text-sm">{feature.description}</p>
-                  <div className="inline-flex items-center gap-2 text-sm font-medium px-3 py-1.5 rounded-full bg-background/50 backdrop-blur-sm border border-border/50">
-                    <CheckCircle2 className="w-4 h-4" style={{ color: i % 3 === 0 ? 'hsl(var(--primary))' : i % 3 === 1 ? 'hsl(var(--secondary))' : 'hsl(var(--accent))' }} />
-                    <span>{feature.benefit}</span>
+                  <h3 className="text-xl font-bold mb-2 text-primary">{feature.title}</h3>
+                  <p className="text-muted-foreground mb-3 text-sm">{feature.description}</p>
+                  <div className="inline-flex items-center gap-2 text-sm font-medium px-3 py-1.5 rounded-full bg-success/10 border border-success/20">
+                    <CheckCircle2 className="w-4 h-4 text-success" />
+                    <span className="text-success">{feature.benefit}</span>
                   </div>
                 </div>
               );
@@ -359,37 +361,29 @@ export default function Landing() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {testimonials.map((testimonial, i) => {
-              const gradients = [
-                "from-primary/20 to-primary/5",
-                "from-secondary/20 to-secondary/5",
-                "from-accent/20 to-accent/5"
-              ];
-              const borders = ["border-primary/30", "border-secondary/30", "border-accent/30"];
-              return (
-                <div key={i} className={`p-6 rounded-2xl bg-gradient-to-br ${gradients[i]} border ${borders[i]} backdrop-blur-xl transition-all hover:scale-105 hover:shadow-glow`}>
-                  <div className="flex items-center gap-1 mb-3">
-                    {[...Array(5)].map((_, i) => (
-                      <Star key={i} className="w-4 h-4 fill-primary text-primary" />
-                    ))}
+            {testimonials.map((testimonial, i) => (
+              <div key={i} className={`p-6 rounded-2xl bg-muted/30 border border-border shadow-card backdrop-blur-xl transition-all hover:scale-105 hover:shadow-lg`}>
+                <div className="flex items-center gap-1 mb-3">
+                  {[...Array(5)].map((_, j) => (
+                    <Star key={j} className="w-4 h-4 fill-success text-success" />
+                  ))}
+                </div>
+                <p className="text-foreground/90 mb-4 italic leading-relaxed text-sm">"{testimonial.content}"</p>
+                <div className="flex items-center gap-3 pt-3 border-t border-border/50">
+                  <div className={`w-12 h-12 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center font-bold text-lg text-primary`}>
+                    {testimonial.name.split(' ').map(n => n[0]).join('')}
                   </div>
-                  <p className="text-foreground/90 mb-4 italic leading-relaxed text-sm">"{testimonial.content}"</p>
-                  <div className="flex items-center gap-3 pt-3 border-t border-border/50">
-                    <div className={`w-12 h-12 rounded-full bg-gradient-to-br ${gradients[i]} border ${borders[i]} flex items-center justify-center font-bold text-lg`}>
-                      {testimonial.name.split(' ').map(n => n[0]).join('')}
-                    </div>
-                    <div>
-                      <div className="font-bold text-sm">{testimonial.name}</div>
-                      <div className="text-xs text-muted-foreground">{testimonial.role}</div>
-                    </div>
-                  </div>
-                  <div className={`mt-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-gradient-to-r ${gradients[i]} border ${borders[i]}`}>
-                    <TrendingUp className="w-4 h-4" style={{ color: i === 0 ? 'hsl(var(--primary))' : i === 1 ? 'hsl(var(--secondary))' : 'hsl(var(--accent))' }} />
-                    <span className="text-xs font-semibold">{testimonial.metric}</span>
+                  <div>
+                    <div className="font-bold text-sm text-primary">{testimonial.name}</div>
+                    <div className="text-xs text-muted-foreground">{testimonial.role}</div>
                   </div>
                 </div>
-              );
-            })}
+                <div className={`mt-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-success/10 border border-success/20`}>
+                  <TrendingUp className="w-4 h-4 text-success" />
+                  <span className="text-xs font-semibold text-success">{testimonial.metric}</span>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </section>
@@ -410,24 +404,22 @@ export default function Landing() {
             {plans.map((plan, i) => (
               <div key={i} className={`relative p-6 rounded-2xl border transition-all hover:scale-105 backdrop-blur-xl ${
                 plan.popular 
-                  ? 'bg-gradient-to-br from-primary/30 via-primary/10 to-secondary/20 border-primary/50 shadow-glow scale-105' 
-                  : i === 0
-                  ? 'bg-gradient-to-br from-muted/50 to-background border-border/50'
-                  : 'bg-gradient-to-br from-accent/20 via-accent/10 to-transparent border-accent/30'
+                  ? 'bg-card border-secondary/50 shadow-glow scale-105 ring-2 ring-secondary/30' 
+                  : 'bg-card border-border shadow-card'
               }`}>
                 {plan.popular && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1.5 rounded-full bg-gradient-to-r from-primary via-secondary to-primary bg-[length:200%_auto] animate-gradient-shift text-white text-xs font-bold shadow-glow">
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1.5 rounded-full bg-secondary text-white text-xs font-bold shadow-lg">
                     Most Popular
                   </div>
                 )}
                 <div className="text-center mb-6">
-                  <h3 className="text-2xl font-bold mb-2">{plan.name}</h3>
+                  <h3 className="text-2xl font-bold mb-2 text-primary">{plan.name}</h3>
                   <div className="mb-3">
-                    <span className="text-4xl font-bold bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent">{plan.price}</span>
+                    <span className="text-4xl font-bold text-primary">{plan.price}</span>
                     {plan.price !== 'Free' && <span className="text-muted-foreground text-sm">{plan.period}</span>}
                   </div>
                   {plan.savings && (
-                    <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-accent/30 border border-accent/50 text-accent text-xs font-bold backdrop-blur-sm">
+                    <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-accent/10 border border-accent/30 text-accent text-xs font-bold">
                       <TrendingUp className="w-3 h-3" />
                       {plan.savings}
                     </div>
@@ -436,7 +428,7 @@ export default function Landing() {
                 <ul className="space-y-3 mb-6">
                   {plan.features.map((feature, j) => (
                     <li key={j} className="flex items-start gap-2">
-                      <Check className={`w-4 h-4 mt-0.5 flex-shrink-0 ${plan.popular ? 'text-primary' : i === 2 ? 'text-accent' : 'text-muted-foreground'}`} />
+                      <Check className="w-4 h-4 mt-0.5 flex-shrink-0 text-success" />
                       <span className="text-foreground/80 text-sm">{feature}</span>
                     </li>
                   ))}
@@ -445,12 +437,10 @@ export default function Landing() {
                   asChild
                   className={`w-full ${
                     plan.popular 
-                      ? 'bg-gradient-to-r from-primary via-secondary to-primary bg-[length:200%_auto] animate-gradient-shift border-0 shadow-glow hover:shadow-xl' 
-                      : i === 2
-                      ? 'bg-gradient-to-r from-accent/80 to-accent border-0'
+                      ? 'bg-accent hover:bg-accent/90 border-0 shadow-lg hover:shadow-xl text-white' 
                       : ''
                   }`}
-                  variant={plan.popular || i === 2 ? "default" : "outline"}
+                  variant={plan.popular ? "default" : "outline"}
                   size="lg"
                 >
                   <Link to={`/auth${plan.trial ? '' : `?plan=${plan.name.toLowerCase()}`}`}>
@@ -475,19 +465,17 @@ export default function Landing() {
       </section>
 
       {/* Final CTA */}
-      <section className="relative py-16 px-6 bg-gradient-to-br from-accent/10 via-primary/10 to-secondary/10">
+      <section className="relative py-16 px-6 bg-gradient-to-br from-primary/5 via-background to-secondary/5">
         <div className="max-w-4xl mx-auto">
-          <div className="text-center p-12 rounded-3xl bg-gradient-to-br from-primary/30 via-secondary/20 to-accent/30 border border-primary/40 shadow-glow backdrop-blur-xl">
-            <h2 className="text-4xl md:text-5xl font-bold mb-4">
-              <span className="bg-gradient-to-r from-white via-white to-white/90 bg-clip-text text-transparent">
-                Ready to Transform Your Workflow?
-              </span>
+          <div className="text-center p-12 rounded-3xl bg-gradient-to-r from-primary to-secondary shadow-glow">
+            <h2 className="text-4xl md:text-5xl font-bold mb-4 text-white">
+              Ready to Transform Your Workflow?
             </h2>
             <p className="text-lg text-white/90 mb-6 max-w-2xl mx-auto">
               Join thousands of professionals who save hours every day with AI-powered document intelligence.
             </p>
             <div className="flex flex-wrap gap-4 justify-center">
-              <Button asChild size="lg" className="text-lg px-8 py-6 bg-white text-primary hover:bg-white/90 shadow-xl hover:shadow-2xl transition-all hover:scale-105 border-0">
+              <Button asChild size="lg" className="text-lg px-8 py-6 bg-accent hover:bg-accent/90 text-white shadow-xl hover:shadow-2xl transition-all hover:scale-105 border-0">
                 <Link to="/auth">
                   Start Free Trial
                   <ArrowRight className="ml-2 w-5 h-5" />
@@ -499,7 +487,7 @@ export default function Landing() {
                 </a>
               </Button>
             </div>
-            <div className="flex flex-wrap gap-6 justify-center items-center mt-6 text-sm text-white/80">
+            <div className="flex flex-wrap gap-6 justify-center items-center mt-6 text-sm text-white/90">
               <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 backdrop-blur-sm border border-white/20">
                 <Shield className="w-4 h-4" />
                 <span>No credit card required</span>
@@ -518,14 +506,14 @@ export default function Landing() {
       </section>
 
       {/* Footer */}
-      <footer className="relative border-t border-primary/20 bg-gradient-to-br from-muted/30 to-background py-8 px-4">
+      <footer className="relative border-t border-border bg-muted py-8 px-4">
         <div className="container mx-auto">
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">
             <div className="flex items-center space-x-2">
               <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-primary to-secondary flex items-center justify-center shadow-glow">
-                <FileText className="h-5 w-5 text-primary-foreground" />
+                <FileText className="h-5 w-5 text-white" />
               </div>
-              <span className="text-xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">DocChat</span>
+              <span className="text-xl font-bold text-primary">DocChat</span>
             </div>
             
             <div className="text-center md:text-left">
@@ -540,7 +528,7 @@ export default function Landing() {
             </Link>
           </div>
           
-          <div className="mt-6 pt-6 border-t border-border/50 text-center text-xs text-muted-foreground">
+          <div className="mt-6 pt-6 border-t border-border text-center text-xs text-muted-foreground">
             <p>© 2024 DocChat. All rights reserved. Built with privacy and security in mind.</p>
           </div>
         </div>
