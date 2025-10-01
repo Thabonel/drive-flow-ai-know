@@ -18,7 +18,9 @@ import {
   Globe,
   Sparkles,
   CheckCircle2,
-  BarChart3
+  BarChart3,
+  Upload,
+  Play
 } from 'lucide-react';
 
 const plans = [
@@ -149,398 +151,396 @@ const stats = [
 
 export default function Landing() {
   return (
-    <div className="min-h-screen bg-gradient-mesh">
+    <div className="min-h-screen relative overflow-hidden">
+      {/* Gradient mesh background */}
+      <div className="fixed inset-0 bg-gradient-mesh opacity-60" />
+      <div className="fixed inset-0 bg-gradient-to-br from-primary/5 via-background to-secondary/5" />
+      
+      {/* Floating orbs */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-20 -left-20 w-[500px] h-[500px] bg-primary/30 rounded-full blur-3xl animate-float" />
+        <div className="absolute top-1/3 -right-32 w-[600px] h-[600px] bg-secondary/25 rounded-full blur-3xl animate-float" style={{ animationDelay: '2s' }} />
+        <div className="absolute -bottom-32 left-1/3 w-[500px] h-[500px] bg-accent/20 rounded-full blur-3xl animate-float" style={{ animationDelay: '4s' }} />
+      </div>
+
       {/* Navigation */}
-      <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
+      <header className="relative border-b border-primary/20 bg-background/80 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50 shadow-card">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center space-x-2">
-            <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
+            <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-primary to-secondary flex items-center justify-center shadow-glow">
               <FileText className="h-5 w-5 text-primary-foreground" />
             </div>
-            <span className="text-xl font-bold">DocChat</span>
-            <Badge variant="secondary" className="ml-2 hidden sm:inline-flex">AI-Powered</Badge>
+            <span className="text-xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">DocChat</span>
+            <Badge className="ml-2 hidden sm:inline-flex bg-gradient-to-r from-primary/20 to-secondary/20 border-primary/30">AI-Powered</Badge>
           </div>
           
           <nav className="hidden md:flex items-center space-x-8">
-            <a href="#features" className="text-foreground/80 hover:text-foreground transition-colors font-medium">Features</a>
-            <a href="#how-it-works" className="text-foreground/80 hover:text-foreground transition-colors font-medium">How It Works</a>
-            <a href="#pricing" className="text-foreground/80 hover:text-foreground transition-colors font-medium">Pricing</a>
-            <a href="#testimonials" className="text-foreground/80 hover:text-foreground transition-colors font-medium">Reviews</a>
+            <a href="#features" className="text-foreground/80 hover:text-primary transition-colors font-medium">Features</a>
+            <a href="#how-it-works" className="text-foreground/80 hover:text-secondary transition-colors font-medium">How It Works</a>
+            <a href="#pricing" className="text-foreground/80 hover:text-accent transition-colors font-medium">Pricing</a>
+            <a href="#testimonials" className="text-foreground/80 hover:text-primary transition-colors font-medium">Reviews</a>
           </nav>
 
-          <Button asChild variant="default">
+          <Button asChild className="bg-gradient-to-r from-primary to-secondary border-0 shadow-glow hover:shadow-xl transition-all">
             <Link to="/auth">Get Started Free</Link>
           </Button>
         </div>
       </header>
 
-      {/* Hero Section - Enhanced */}
-      <section className="relative py-20 md:py-32 px-4 overflow-hidden">
-        {/* Animated gradient orbs */}
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/20 rounded-full blur-3xl animate-float" />
-        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-secondary/20 rounded-full blur-3xl animate-float" style={{ animationDelay: '2s' }} />
-        <div className="absolute top-1/2 right-0 w-64 h-64 bg-accent/20 rounded-full blur-3xl animate-float" style={{ animationDelay: '4s' }} />
-        
-        <div className="container mx-auto text-center max-w-5xl relative z-10">
-          <Badge variant="secondary" className="mb-6 animate-fade-in">
-            <Sparkles className="h-3 w-3 mr-1" />
-            Trusted by 10,000+ professionals worldwide
-          </Badge>
-          
-          <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight mb-6 animate-slide-up">
-            Stop Reading.
-            <span className="block mt-2 bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent animate-gradient-shift bg-[length:200%_auto]">Start Asking.</span>
-          </h1>
-          
-          <p className="text-xl md:text-2xl text-muted-foreground mb-8 max-w-3xl mx-auto animate-fade-in">
-            Turn your documents into intelligent conversations. Get instant answers, insights, and summaries from any file—all while keeping your data completely private.
-          </p>
-          
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-12 animate-slide-up">
-            <Button asChild size="lg" className="text-lg px-8 py-6 bg-gradient-to-r from-primary to-secondary hover:shadow-glow transition-all duration-300 hover:scale-105">
-              <Link to="/auth">
-                Get Instant Answers Free
-                <ArrowRight className="ml-2 h-5 w-5" />
-              </Link>
-            </Button>
-            <Button asChild size="lg" variant="outline" className="text-lg px-8 py-6 border-2 hover:bg-primary/5 hover:border-primary transition-all duration-300">
-              <a href="#how-it-works">
-                See How It Works
-              </a>
-            </Button>
-          </div>
+      {/* Hero Section */}
+      <section className="relative pt-16 pb-20 px-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center space-y-6 animate-fade-in">
+            <div className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-gradient-to-r from-primary/20 via-secondary/20 to-accent/20 border border-primary/30 backdrop-blur-xl shadow-glow">
+              <Sparkles className="w-5 h-5 text-primary animate-pulse-glow" />
+              <span className="text-sm font-semibold bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent animate-gradient-shift bg-[length:200%_auto]">
+                AI-Powered Document Intelligence
+              </span>
+            </div>
 
-          {/* Trust indicators */}
-          <div className="flex flex-wrap items-center justify-center gap-6 text-sm text-muted-foreground mb-8">
-            <div className="flex items-center gap-2">
-              <CheckCircle2 className="h-4 w-4 text-primary" />
-              <span>No credit card required</span>
+            <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight leading-tight">
+              <span className="bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent animate-gradient-shift bg-[length:200%_auto]">
+                Stop Reading.
+              </span>
+              <br />
+              <span className="bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent">Start Asking.</span>
+            </h1>
+
+            <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
+              Transform any document into an intelligent conversation. Get instant answers, 
+              summaries, and insights from PDFs, Word docs, spreadsheets, and more.
+            </p>
+
+            <div className="flex flex-wrap gap-4 justify-center items-center pt-2">
+              <Button size="lg" className="text-lg px-8 py-6 bg-gradient-to-r from-primary via-secondary to-primary bg-[length:200%_auto] animate-gradient-shift shadow-glow hover:shadow-xl transition-all hover:scale-105 border-0">
+                Get Instant Answers Now
+                <ArrowRight className="ml-2 w-5 h-5" />
+              </Button>
+              <Button size="lg" variant="outline" className="text-lg px-8 py-6 border-2 border-primary/30 bg-primary/5 hover:bg-primary/10 hover:border-primary/50 backdrop-blur-sm">
+                Watch Demo
+                <Play className="ml-2 w-5 h-5" />
+              </Button>
             </div>
-            <div className="flex items-center gap-2">
-              <CheckCircle2 className="h-4 w-4 text-primary" />
-              <span>14-day free trial</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <CheckCircle2 className="h-4 w-4 text-primary" />
-              <span>Cancel anytime</span>
+
+            {/* Trust Indicators */}
+            <div className="flex flex-wrap gap-6 justify-center items-center pt-6 text-sm">
+              <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 backdrop-blur-sm">
+                <Shield className="w-4 h-4 text-primary" />
+                <span className="font-medium">Bank-level Security</span>
+              </div>
+              <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-secondary/10 border border-secondary/20 backdrop-blur-sm">
+                <Zap className="w-4 h-4 text-secondary" />
+                <span className="font-medium">Instant Results</span>
+              </div>
+              <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-accent/10 border border-accent/20 backdrop-blur-sm">
+                <Users className="w-4 h-4 text-accent" />
+                <span className="font-medium">10,000+ Happy Users</span>
+              </div>
             </div>
           </div>
 
           {/* Stats Section */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mt-16 animate-fade-in">
-            {stats.map((stat, index) => (
-              <div key={index} className="text-center p-4 rounded-lg bg-card/80 backdrop-blur border hover:shadow-card transition-all hover:scale-105 group">
-                <stat.icon className="h-6 w-6 text-primary mx-auto mb-2 group-hover:scale-110 transition-transform" />
-                <div className="text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent mb-1">{stat.value}</div>
-                <div className="text-sm text-muted-foreground">{stat.label}</div>
-              </div>
-            ))}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mt-16 animate-slide-up">
+            {stats.map((stat, index) => {
+              const gradients = [
+                "from-primary/20 to-primary/5",
+                "from-secondary/20 to-secondary/5",
+                "from-accent/20 to-accent/5",
+                "from-primary/15 to-secondary/10"
+              ];
+              const borders = ["border-primary/30", "border-secondary/30", "border-accent/30", "border-primary/20"];
+              return (
+                <div key={index} className={`text-center p-6 rounded-2xl bg-gradient-to-br ${gradients[index]} border ${borders[index]} shadow-card backdrop-blur-xl hover:shadow-glow transition-all hover:scale-105 hover:${borders[index].replace('/30', '/50')}`}>
+                  <stat.icon className="w-8 h-8 mx-auto mb-2 animate-pulse-glow" style={{ color: index === 0 ? 'hsl(var(--primary))' : index === 1 ? 'hsl(var(--secondary))' : index === 2 ? 'hsl(var(--accent))' : 'hsl(var(--primary))' }} />
+                  <div className="text-5xl font-bold bg-gradient-to-br from-foreground to-foreground/80 bg-clip-text text-transparent mb-2">
+                    {stat.value}
+                  </div>
+                  <div className="text-foreground/80 font-medium">{stat.label}</div>
+                </div>
+              );
+            })}
           </div>
         </div>
       </section>
 
-      {/* How It Works Section - New */}
-      <section id="how-it-works" className="py-20 px-4 relative">
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-primary/5 to-transparent" />
-        <div className="container mx-auto max-w-6xl relative z-10">
-          <div className="text-center mb-16">
-            <Badge variant="secondary" className="mb-4">Simple Process</Badge>
-            <h2 className="text-3xl md:text-5xl font-bold mb-4">Three Steps to Smarter Documents</h2>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              Transform your document workflow in minutes, not hours
-            </p>
+      {/* How It Works */}
+      <section id="how-it-works" className="relative py-16 px-6 bg-gradient-to-br from-secondary/10 via-background to-primary/10">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-12">
+            <h2 className="text-4xl md:text-5xl font-bold mb-3">
+              <span className="bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent">
+                Three Simple Steps
+              </span>
+            </h2>
+            <p className="text-lg text-muted-foreground">Get answers from your documents in seconds</p>
           </div>
-          
-          <div className="grid md:grid-cols-3 gap-8">
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {[
-              {
-                step: '1',
-                title: 'Upload Your Documents',
-                description: 'Drag and drop any file—PDFs, Word docs, spreadsheets, presentations, images, or audio files.',
-                icon: FileText,
-              },
-              {
-                step: '2',
-                title: 'Ask Questions',
-                description: 'Type your questions in plain English. No complex search syntax or technical knowledge required.',
-                icon: MessageSquare,
-              },
-              {
-                step: '3',
-                title: 'Get Instant Answers',
-                description: 'Receive accurate answers with citations. Copy, share, or dive deeper with follow-up questions.',
-                icon: Zap,
-              },
-            ].map((item, index) => (
-              <div key={index} className="relative">
-                <Card className="h-full hover:shadow-glow transition-all duration-300 hover:-translate-y-2 bg-gradient-to-br from-card to-card/50 border-2">
-                  <CardContent className="p-8">
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="h-12 w-12 rounded-full bg-gradient-to-br from-primary to-secondary text-primary-foreground flex items-center justify-center text-xl font-bold shadow-card">
-                        {item.step}
-                      </div>
-                      <item.icon className="h-8 w-8 text-primary" />
-                    </div>
-                    <h3 className="text-2xl font-semibold mb-3">{item.title}</h3>
-                    <p className="text-muted-foreground">{item.description}</p>
-                  </CardContent>
-                </Card>
-                {index < 2 && (
-                  <div className="hidden md:block absolute top-1/2 -right-4 transform -translate-y-1/2 z-10">
-                    <ArrowRight className="h-8 w-8 text-muted-foreground" />
+              { icon: Upload, title: "Upload", desc: "Drop any document - PDF, Word, Excel, or text file", gradient: "from-primary/30 to-primary/10", border: "border-primary/40", glow: "shadow-[0_0_30px_rgba(138,75,255,0.3)]" },
+              { icon: MessageSquare, title: "Ask", desc: "Type your question in natural language", gradient: "from-secondary/30 to-secondary/10", border: "border-secondary/40", glow: "shadow-[0_0_30px_rgba(59,130,246,0.3)]" },
+              { icon: Sparkles, title: "Get Answers", desc: "Receive instant, accurate responses with sources", gradient: "from-accent/30 to-accent/10", border: "border-accent/40", glow: "shadow-[0_0_30px_rgba(255,56,134,0.3)]" }
+            ].map((step, i) => (
+              <div key={i} className="relative group">
+                <div className={`text-center p-6 rounded-2xl bg-gradient-to-br ${step.gradient} border ${step.border} backdrop-blur-xl transition-all hover:scale-105 hover:${step.glow}`}>
+                  <div className={`w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br ${step.gradient} flex items-center justify-center group-hover:scale-110 transition-transform border ${step.border}`}>
+                    <step.icon className="w-8 h-8" style={{ color: i === 0 ? 'hsl(var(--primary))' : i === 1 ? 'hsl(var(--secondary))' : 'hsl(var(--accent))' }} />
                   </div>
-                )}
+                  <div className={`text-7xl font-bold absolute top-4 right-4 bg-gradient-to-br ${step.gradient} bg-clip-text text-transparent`}>
+                    {i + 1}
+                  </div>
+                  <h3 className="text-2xl font-bold mb-2">{step.title}</h3>
+                  <p className="text-foreground/70">{step.desc}</p>
+                </div>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Features Section - Enhanced */}
-      <section id="features" className="py-20 px-4">
-        <div className="container mx-auto max-w-7xl">
-          <div className="text-center mb-16">
-            <Badge variant="secondary" className="mb-4">Powerful Features</Badge>
-            <h2 className="text-3xl md:text-5xl font-bold mb-4">Everything You Need to Work Smarter</h2>
-            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-              Purpose-built for professionals who value privacy, speed, and intelligent insights
-            </p>
+      {/* Features Section */}
+      <section id="features" className="relative py-16 px-6 bg-gradient-to-br from-primary/5 via-background to-accent/5">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-12">
+            <h2 className="text-4xl md:text-5xl font-bold mb-3">
+              <span className="bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent animate-gradient-shift bg-[length:200%_auto]">
+                Powerful Features
+              </span>
+            </h2>
+            <p className="text-lg text-muted-foreground">Everything you need to work smarter with documents</p>
           </div>
-          
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {features.map((feature, index) => (
-              <Card key={index} className="group hover:shadow-glow transition-all duration-300 hover:-translate-y-2 border-2 hover:border-primary/50 bg-gradient-to-br from-card via-card to-card/50 relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-primary/10 to-transparent rounded-full blur-2xl group-hover:scale-150 transition-transform" />
-                <CardContent className="p-8 relative z-10">
-                  <div className="h-14 w-14 rounded-lg bg-gradient-to-br from-primary to-secondary flex items-center justify-center mb-6 group-hover:scale-110 transition-all shadow-card">
-                    <feature.icon className="h-7 w-7 text-primary-foreground transition-colors" />
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {features.map((feature, i) => {
+              const gradients = [
+                "from-primary/20 to-primary/5",
+                "from-secondary/20 to-secondary/5", 
+                "from-accent/20 to-accent/5",
+                "from-primary/20 to-secondary/10",
+                "from-secondary/20 to-accent/10",
+                "from-accent/20 to-primary/10"
+              ];
+              const borders = [
+                "border-primary/30",
+                "border-secondary/30",
+                "border-accent/30", 
+                "border-primary/30",
+                "border-secondary/30",
+                "border-accent/30"
+              ];
+              return (
+                <div key={i} className={`group p-6 rounded-2xl bg-gradient-to-br ${gradients[i]} border ${borders[i]} backdrop-blur-xl transition-all hover:scale-105 hover:shadow-glow`}>
+                  <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${gradients[i]} border ${borders[i]} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
+                    <feature.icon className="w-7 h-7" style={{ color: i % 3 === 0 ? 'hsl(var(--primary))' : i % 3 === 1 ? 'hsl(var(--secondary))' : 'hsl(var(--accent))' }} />
                   </div>
-                  <h3 className="text-xl font-semibold mb-3">{feature.title}</h3>
-                  <p className="text-muted-foreground mb-4">{feature.description}</p>
-                  <div className="flex items-center gap-2 text-sm font-medium bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-                    <TrendingUp className="h-4 w-4 text-primary" />
+                  <h3 className="text-xl font-bold mb-2">{feature.title}</h3>
+                  <p className="text-foreground/70 mb-3 text-sm">{feature.description}</p>
+                  <div className="inline-flex items-center gap-2 text-sm font-medium px-3 py-1.5 rounded-full bg-background/50 backdrop-blur-sm border border-border/50">
+                    <CheckCircle2 className="w-4 h-4" style={{ color: i % 3 === 0 ? 'hsl(var(--primary))' : i % 3 === 1 ? 'hsl(var(--secondary))' : 'hsl(var(--accent))' }} />
                     <span>{feature.benefit}</span>
                   </div>
-                </CardContent>
-              </Card>
-            ))}
+                </div>
+              );
+            })}
           </div>
         </div>
       </section>
 
-      {/* Social Proof Section - Enhanced */}
-      <section className="py-20 px-4 relative">
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-secondary/5 to-transparent" />
-        <div className="container mx-auto max-w-6xl relative z-10">
+      {/* Testimonials */}
+      <section id="testimonials" className="relative py-16 px-6 bg-gradient-to-br from-accent/10 via-background to-secondary/10">
+        <div className="max-w-7xl mx-auto">
           <div className="text-center mb-12">
-            <Badge variant="secondary" className="mb-4">Trusted Worldwide</Badge>
-            <h2 className="text-3xl md:text-5xl font-bold mb-4">Join Thousands of Happy Users</h2>
+            <h2 className="text-4xl md:text-5xl font-bold mb-3">
+              <span className="bg-gradient-to-r from-primary via-accent to-secondary bg-clip-text text-transparent animate-gradient-shift bg-[length:200%_auto]">
+                Loved by Professionals
+              </span>
+            </h2>
+            <p className="text-lg text-muted-foreground">See what our users are saying</p>
           </div>
-          
-          {/* Security badges */}
-          <div className="flex flex-wrap items-center justify-center gap-8 mb-16">
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <Shield className="h-6 w-6 text-primary" />
-              <span className="font-medium">SOC 2 Type II Certified</span>
-            </div>
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <Lock className="h-6 w-6 text-primary" />
-              <span className="font-medium">GDPR Compliant</span>
-            </div>
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <Shield className="h-6 w-6 text-primary" />
-              <span className="font-medium">256-bit Encryption</span>
-            </div>
-          </div>
-        </div>
-      </section>
 
-      {/* Testimonials Section - Enhanced */}
-      <section id="testimonials" className="py-20 px-4">
-        <div className="container mx-auto max-w-7xl">
-          <div className="grid md:grid-cols-3 gap-8">
-            {testimonials.map((testimonial, index) => (
-              <Card key={index} className="hover:shadow-glow transition-all duration-300 hover:scale-105 border-2 bg-gradient-to-br from-card to-card/80">
-                <CardContent className="p-8">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center">
-                      {[...Array(testimonial.rating)].map((_, i) => (
-                        <Star key={i} className="h-5 w-5 fill-yellow-400 text-yellow-400" />
-                      ))}
-                    </div>
-                    <Badge className="bg-gradient-to-r from-primary/10 to-secondary/10">{testimonial.metric}</Badge>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {testimonials.map((testimonial, i) => {
+              const gradients = [
+                "from-primary/20 to-primary/5",
+                "from-secondary/20 to-secondary/5",
+                "from-accent/20 to-accent/5"
+              ];
+              const borders = ["border-primary/30", "border-secondary/30", "border-accent/30"];
+              return (
+                <div key={i} className={`p-6 rounded-2xl bg-gradient-to-br ${gradients[i]} border ${borders[i]} backdrop-blur-xl transition-all hover:scale-105 hover:shadow-glow`}>
+                  <div className="flex items-center gap-1 mb-3">
+                    {[...Array(5)].map((_, i) => (
+                      <Star key={i} className="w-4 h-4 fill-primary text-primary" />
+                    ))}
                   </div>
-                  <p className="text-foreground mb-6 text-lg leading-relaxed">"{testimonial.content}"</p>
-                  <div className="flex items-center gap-3">
-                    <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-                      <Users className="h-6 w-6 text-primary" />
+                  <p className="text-foreground/90 mb-4 italic leading-relaxed text-sm">"{testimonial.content}"</p>
+                  <div className="flex items-center gap-3 pt-3 border-t border-border/50">
+                    <div className={`w-12 h-12 rounded-full bg-gradient-to-br ${gradients[i]} border ${borders[i]} flex items-center justify-center font-bold text-lg`}>
+                      {testimonial.name.split(' ').map(n => n[0]).join('')}
                     </div>
                     <div>
-                      <p className="font-semibold text-foreground">{testimonial.name}</p>
-                      <p className="text-sm text-muted-foreground">{testimonial.role} at {testimonial.company}</p>
+                      <div className="font-bold text-sm">{testimonial.name}</div>
+                      <div className="text-xs text-muted-foreground">{testimonial.role}</div>
                     </div>
                   </div>
-                </CardContent>
-              </Card>
-            ))}
+                  <div className={`mt-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-gradient-to-r ${gradients[i]} border ${borders[i]}`}>
+                    <TrendingUp className="w-4 h-4" style={{ color: i === 0 ? 'hsl(var(--primary))' : i === 1 ? 'hsl(var(--secondary))' : 'hsl(var(--accent))' }} />
+                    <span className="text-xs font-semibold">{testimonial.metric}</span>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       </section>
 
-      {/* Pricing Section - Enhanced */}
-      <section id="pricing" className="py-20 px-4 relative">
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-accent/5 to-transparent" />
-        <div className="container mx-auto max-w-6xl relative z-10">
-          <div className="text-center mb-16">
-            <Badge variant="secondary" className="mb-4">Simple Pricing</Badge>
-            <h2 className="text-3xl md:text-5xl font-bold mb-4">Choose Your Plan</h2>
-            <p className="text-xl text-muted-foreground">Start free, upgrade when you're ready. No hidden fees.</p>
+      {/* Pricing */}
+      <section id="pricing" className="relative py-16 px-6 bg-gradient-to-br from-primary/10 via-background to-secondary/10">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-12">
+            <h2 className="text-4xl md:text-5xl font-bold mb-3">
+              <span className="bg-gradient-to-r from-primary via-accent to-secondary bg-clip-text text-transparent animate-gradient-shift bg-[length:200%_auto]">
+                Simple, Transparent Pricing
+              </span>
+            </h2>
+            <p className="text-lg text-muted-foreground">Choose the perfect plan for your needs</p>
           </div>
-          
-          <div className="grid md:grid-cols-3 gap-8">
-            {plans.map((plan, index) => (
-              <Card 
-                key={index} 
-                className={`relative transition-all duration-300 ${
-                  plan.popular 
-                    ? 'border-primary border-2 shadow-glow scale-105 bg-gradient-to-br from-primary/5 via-card to-card' 
-                    : 'hover:scale-105 hover:shadow-card bg-gradient-to-br from-card to-card/80'
-                }`}
-              >
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl mx-auto">
+            {plans.map((plan, i) => (
+              <div key={i} className={`relative p-6 rounded-2xl border transition-all hover:scale-105 backdrop-blur-xl ${
+                plan.popular 
+                  ? 'bg-gradient-to-br from-primary/30 via-primary/10 to-secondary/20 border-primary/50 shadow-glow scale-105' 
+                  : i === 0
+                  ? 'bg-gradient-to-br from-muted/50 to-background border-border/50'
+                  : 'bg-gradient-to-br from-accent/20 via-accent/10 to-transparent border-accent/30'
+              }`}>
                 {plan.popular && (
-                  <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                    <Badge className="bg-gradient-to-r from-primary to-secondary text-primary-foreground px-4 py-1 text-sm font-semibold shadow-glow animate-pulse-glow">
-                      Most Popular
-                    </Badge>
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1.5 rounded-full bg-gradient-to-r from-primary via-secondary to-primary bg-[length:200%_auto] animate-gradient-shift text-white text-xs font-bold shadow-glow">
+                    Most Popular
                   </div>
                 )}
-                <CardHeader className="text-center pb-8 pt-8">
-                  <CardTitle className="text-2xl mb-2">{plan.name}</CardTitle>
-                  <CardDescription className="text-base">{plan.description}</CardDescription>
-                  <div className="mt-4">
-                    <span className="text-5xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">{plan.price}</span>
-                    <span className="text-muted-foreground text-lg">{plan.period}</span>
+                <div className="text-center mb-6">
+                  <h3 className="text-2xl font-bold mb-2">{plan.name}</h3>
+                  <div className="mb-3">
+                    <span className="text-4xl font-bold bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent">{plan.price}</span>
+                    {plan.price !== 'Free' && <span className="text-muted-foreground text-sm">{plan.period}</span>}
                   </div>
                   {plan.savings && (
-                    <Badge variant="secondary" className="mt-3">
+                    <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-accent/30 border border-accent/50 text-accent text-xs font-bold backdrop-blur-sm">
+                      <TrendingUp className="w-3 h-3" />
                       {plan.savings}
-                    </Badge>
+                    </div>
                   )}
-                </CardHeader>
-                <CardContent className="px-6 pb-8">
-                  <ul className="space-y-4 mb-8">
-                    {plan.features.map((feature, featureIndex) => (
-                      <li key={featureIndex} className="flex items-start gap-3">
-                        <Check className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
-                        <span className="text-foreground">{feature}</span>
-                      </li>
-                    ))}
-                  </ul>
-                  <Button 
-                    asChild 
-                    className={`w-full py-6 text-lg font-semibold ${plan.popular ? 'bg-gradient-to-r from-primary to-secondary hover:shadow-glow' : ''}`}
-                    variant={plan.popular ? 'default' : 'outline'}
-                    size="lg"
-                  >
-                    <Link to={`/auth${plan.trial ? '' : `?plan=${plan.name.toLowerCase()}`}`}>
-                      {plan.trial ? 'Start Free Trial' : 'Get Started'}
-                      <ArrowRight className="ml-2 h-5 w-5" />
-                    </Link>
-                  </Button>
-                </CardContent>
-              </Card>
+                </div>
+                <ul className="space-y-3 mb-6">
+                  {plan.features.map((feature, j) => (
+                    <li key={j} className="flex items-start gap-2">
+                      <Check className={`w-4 h-4 mt-0.5 flex-shrink-0 ${plan.popular ? 'text-primary' : i === 2 ? 'text-accent' : 'text-muted-foreground'}`} />
+                      <span className="text-foreground/80 text-sm">{feature}</span>
+                    </li>
+                  ))}
+                </ul>
+                <Button 
+                  asChild
+                  className={`w-full ${
+                    plan.popular 
+                      ? 'bg-gradient-to-r from-primary via-secondary to-primary bg-[length:200%_auto] animate-gradient-shift border-0 shadow-glow hover:shadow-xl' 
+                      : i === 2
+                      ? 'bg-gradient-to-r from-accent/80 to-accent border-0'
+                      : ''
+                  }`}
+                  variant={plan.popular || i === 2 ? "default" : "outline"}
+                  size="lg"
+                >
+                  <Link to={`/auth${plan.trial ? '' : `?plan=${plan.name.toLowerCase()}`}`}>
+                    {plan.trial ? 'Start Free Trial' : 'Get Started'}
+                    <ArrowRight className="ml-2 h-5 w-5" />
+                  </Link>
+                </Button>
+              </div>
             ))}
           </div>
           
-          <div className="text-center mt-12">
-            <p className="text-muted-foreground mb-4">
+          <div className="text-center mt-8">
+            <p className="text-muted-foreground mb-2 text-sm">
               All plans include 10 GB storage. Need more? Additional storage: $10 per 10 GB
             </p>
-            <p className="text-sm text-muted-foreground">
-              <Shield className="h-4 w-4 inline mr-1" />
+            <p className="text-xs text-muted-foreground flex items-center justify-center gap-2">
+              <Shield className="h-3 w-3" />
               30-day money-back guarantee • No long-term contracts • Cancel anytime
             </p>
           </div>
         </div>
       </section>
 
-      {/* Final CTA Section - Enhanced */}
-      <section className="py-24 px-4 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-mesh opacity-50" />
-        
-        <div className="container mx-auto text-center max-w-4xl relative z-10">
-          <Badge variant="secondary" className="mb-6 bg-gradient-to-r from-primary/10 to-secondary/10">
-            <Sparkles className="h-3 w-3 mr-1" />
-            Join 10,000+ professionals
-          </Badge>
-          <h2 className="text-3xl md:text-5xl font-bold mb-6 bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent">
-            Ready to Transform Your Document Workflow?
-          </h2>
-          <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-            Stop wasting time searching through documents. Start getting instant answers with AI-powered intelligence.
-          </p>
-          
-          {/* Value props */}
-          <div className="flex flex-wrap justify-center gap-6 mb-10">
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <CheckCircle2 className="h-5 w-5 text-primary" />
-              <span>Set up in 60 seconds</span>
+      {/* Final CTA */}
+      <section className="relative py-16 px-6 bg-gradient-to-br from-accent/10 via-primary/10 to-secondary/10">
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center p-12 rounded-3xl bg-gradient-to-br from-primary/30 via-secondary/20 to-accent/30 border border-primary/40 shadow-glow backdrop-blur-xl">
+            <h2 className="text-4xl md:text-5xl font-bold mb-4">
+              <span className="bg-gradient-to-r from-white via-white to-white/90 bg-clip-text text-transparent">
+                Ready to Transform Your Workflow?
+              </span>
+            </h2>
+            <p className="text-lg text-white/90 mb-6 max-w-2xl mx-auto">
+              Join thousands of professionals who save hours every day with AI-powered document intelligence.
+            </p>
+            <div className="flex flex-wrap gap-4 justify-center">
+              <Button asChild size="lg" className="text-lg px-8 py-6 bg-white text-primary hover:bg-white/90 shadow-xl hover:shadow-2xl transition-all hover:scale-105 border-0">
+                <Link to="/auth">
+                  Start Free Trial
+                  <ArrowRight className="ml-2 w-5 h-5" />
+                </Link>
+              </Button>
+              <Button asChild size="lg" variant="outline" className="text-lg px-8 py-6 border-2 border-white/40 bg-white/10 text-white hover:bg-white/20 hover:border-white/60 backdrop-blur-sm">
+                <a href="#pricing">
+                  Schedule Demo
+                </a>
+              </Button>
             </div>
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <CheckCircle2 className="h-5 w-5 text-primary" />
-              <span>Save 5+ hours per week</span>
-            </div>
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <CheckCircle2 className="h-5 w-5 text-primary" />
-              <span>Your data stays private</span>
+            <div className="flex flex-wrap gap-6 justify-center items-center mt-6 text-sm text-white/80">
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 backdrop-blur-sm border border-white/20">
+                <Shield className="w-4 h-4" />
+                <span>No credit card required</span>
+              </div>
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 backdrop-blur-sm border border-white/20">
+                <CheckCircle2 className="w-4 h-4" />
+                <span>14-day free trial</span>
+              </div>
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 backdrop-blur-sm border border-white/20">
+                <Users className="w-4 h-4" />
+                <span>Cancel anytime</span>
+              </div>
             </div>
           </div>
-
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button asChild size="lg" className="text-lg px-10 py-6 bg-gradient-to-r from-primary to-secondary hover:shadow-glow transition-all duration-300 hover:scale-105">
-              <Link to="/auth">
-                Start Your Free Trial
-                <ArrowRight className="ml-2 h-5 w-5" />
-              </Link>
-            </Button>
-            <Button asChild size="lg" variant="outline" className="text-lg px-10 py-6 border-2 hover:bg-primary/5 hover:border-primary transition-all duration-300">
-              <a href="#pricing">
-                View Pricing
-                <BarChart3 className="ml-2 h-5 w-5" />
-              </a>
-            </Button>
-          </div>
-
-          <p className="text-sm text-muted-foreground mt-8">
-            No credit card required • 14-day free trial • Cancel anytime
-          </p>
         </div>
       </section>
 
-      {/* Footer - Enhanced */}
-      <footer className="border-t bg-muted/30 py-12 px-4">
+      {/* Footer */}
+      <footer className="relative border-t border-primary/20 bg-gradient-to-br from-muted/30 to-background py-8 px-4">
         <div className="container mx-auto">
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">
             <div className="flex items-center space-x-2">
-              <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
+              <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-primary to-secondary flex items-center justify-center shadow-glow">
                 <FileText className="h-5 w-5 text-primary-foreground" />
               </div>
-              <span className="text-xl font-bold">DocChat</span>
+              <span className="text-xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">DocChat</span>
             </div>
             
             <div className="text-center md:text-left">
-              <p className="text-muted-foreground flex items-center gap-2 justify-center md:justify-start">
+              <p className="text-muted-foreground flex items-center gap-2 justify-center md:justify-start text-sm">
                 <Shield className="h-4 w-4 text-primary" />
                 Private by Design — Your documents stay yours. Choose where your AI runs.
               </p>
             </div>
             
-            <Link to="/settings#model-provider" className="text-sm text-muted-foreground hover:text-foreground underline transition-colors">
+            <Link to="/settings#model-provider" className="text-sm text-muted-foreground hover:text-primary underline transition-colors">
               Model Provider Settings
             </Link>
           </div>
           
-          <div className="mt-8 pt-8 border-t text-center text-sm text-muted-foreground">
+          <div className="mt-6 pt-6 border-t border-border/50 text-center text-xs text-muted-foreground">
             <p>© 2024 DocChat. All rights reserved. Built with privacy and security in mind.</p>
           </div>
         </div>
