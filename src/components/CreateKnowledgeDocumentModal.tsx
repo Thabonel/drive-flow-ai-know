@@ -159,10 +159,9 @@ export const CreateKnowledgeDocumentModal = ({ trigger }: CreateKnowledgeDocumen
     }
 
     try {
-      const { data, error } = await supabase.functions.invoke('ai-document-analysis', {
+      const { data, error } = await supabase.functions.invoke('ai-query', {
         body: {
-          query: `Generate comprehensive content for a document titled: "${formData.title}". Include key sections, important points, and actionable insights.`,
-          user_id: user!.id
+          query: `Generate comprehensive content for a document titled: "${formData.title}". Include key sections, important points, and actionable insights. Format it in markdown.`
         }
       });
 
@@ -171,6 +170,11 @@ export const CreateKnowledgeDocumentModal = ({ trigger }: CreateKnowledgeDocumen
       setFormData({
         ...formData,
         content: data.response || 'AI-generated content will appear here.'
+      });
+      
+      toast({
+        title: 'Content Generated',
+        description: 'AI has generated content based on your title.',
       });
     } catch (error) {
       console.error('Error generating content:', error);
