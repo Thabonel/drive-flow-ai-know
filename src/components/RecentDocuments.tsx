@@ -97,10 +97,10 @@ export const RecentDocuments = () => {
   }
 
   return (
-    <Card>
-      <CardHeader>
+    <Card className="h-full">
+      <CardHeader className="pb-4">
         <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center">
+          <CardTitle className="flex items-center text-xl">
             <FileText className="h-5 w-5 mr-2" />
             Recent Documents
           </CardTitle>
@@ -112,30 +112,30 @@ export const RecentDocuments = () => {
       </CardHeader>
       <CardContent>
         {!recentDocs || recentDocs.length === 0 ? (
-          <div className="text-center py-8 text-muted-foreground">
-            <FileText className="h-8 w-8 mx-auto mb-2 opacity-50" />
-            <p className="mb-2">No documents yet</p>
-            <Button variant="outline" size="sm" onClick={() => navigate('/drive')}>
+          <div className="text-center py-12 text-muted-foreground">
+            <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
+            <p className="mb-4 text-base">No documents yet</p>
+            <Button variant="outline" onClick={() => navigate('/drive')}>
               Connect Google Drive
             </Button>
           </div>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-4">
             {recentDocs.map((doc) => (
               <div
                 key={doc.id}
-                className="flex items-center justify-between p-3 border rounded-lg hover:bg-accent/50 transition-colors"
+                className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent/50 transition-colors"
               >
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center space-x-2 mb-1">
-                    <h4 className="font-medium text-sm truncate">{doc.title}</h4>
+                  <div className="flex items-center space-x-2 mb-2">
+                    <h4 className="font-medium truncate">{doc.title}</h4>
                     <Badge variant="outline" className={getFileTypeColor(doc.file_type)}>
                       {doc.file_type.toUpperCase()}
                     </Badge>
                   </div>
-                  <div className="flex items-center space-x-4 text-xs text-muted-foreground">
+                  <div className="flex items-center space-x-4 text-sm text-muted-foreground mb-2">
                     <div className="flex items-center">
-                      <Clock className="h-3 w-3 mr-1" />
+                      <Clock className="h-4 w-4 mr-1" />
                       {new Date(doc.updated_at).toLocaleDateString()}
                     </div>
                     {doc.category && (
@@ -145,29 +145,27 @@ export const RecentDocuments = () => {
                     )}
                   </div>
                   {doc.ai_summary && (
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {truncateText(doc.ai_summary, 80)}
+                    <p className="text-sm text-muted-foreground mt-2">
+                      {truncateText(doc.ai_summary, 100)}
                     </p>
                   )}
                 </div>
-                <div className="flex items-center space-x-2 ml-2">
+                <div className="flex items-center space-x-2 ml-4">
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-8 px-2"
                     onClick={() => handleViewDocument(doc)}
                     title="View document"
                   >
-                    <Eye className="h-3 w-3" />
+                    <Eye className="h-4 w-4" />
                   </Button>
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-8 px-2"
                     onClick={() => handlePinDocument(doc.id, !doc.is_pinned)}
                     title={doc.is_pinned ? "Unpin document" : "Pin document"}
                   >
-                    <Pin className={`h-3 w-3 ${doc.is_pinned ? 'fill-current text-primary' : ''}`} />
+                    <Pin className={`h-4 w-4 ${doc.is_pinned ? 'fill-current text-primary' : ''}`} />
                   </Button>
                 </div>
               </div>

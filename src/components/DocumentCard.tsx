@@ -57,31 +57,31 @@ export const DocumentCard = ({
 
   return (
     <>
-    <Card className="hover:shadow-md transition-shadow">
-      <CardHeader>
-        <div className="flex items-start justify-between">
-          <CardTitle className="text-lg line-clamp-2">{doc.title}</CardTitle>
-          <div className={`w-3 h-3 rounded-full ${getCategoryColor(doc.category)}`} />
+    <Card className="hover:shadow-lg transition-all duration-200 h-full flex flex-col">
+      <CardHeader className="pb-4">
+        <div className="flex items-start justify-between mb-2">
+          <CardTitle className="text-lg line-clamp-2 pr-4">{doc.title}</CardTitle>
+          <div className={`w-3 h-3 rounded-full flex-shrink-0 ${getCategoryColor(doc.category)}`} />
         </div>
-        <CardDescription className="line-clamp-3">
+        <CardDescription className="line-clamp-3 text-sm leading-relaxed">
           {doc.ai_summary}
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-5 flex-1 flex flex-col">
         <div className="flex items-center justify-between text-sm text-muted-foreground">
           <div className="flex items-center">
-            <Calendar className="h-4 w-4 mr-1" />
-            Created: {doc.created_at ? new Date(doc.created_at).toLocaleDateString() : 'Unknown date'}
+            <Calendar className="h-4 w-4 mr-1.5" />
+            {doc.created_at ? new Date(doc.created_at).toLocaleDateString() : 'Unknown'}
           </div>
           {doc.drive_modified_at && (
             <div className="flex items-center">
-              <Calendar className="h-4 w-4 mr-1" />
-              Modified: {new Date(doc.drive_modified_at).toLocaleDateString()}
+              <Calendar className="h-4 w-4 mr-1.5" />
+              {new Date(doc.drive_modified_at).toLocaleDateString()}
             </div>
           )}
         </div>
         
-        <div className="flex flex-wrap gap-1">
+        <div className="flex flex-wrap gap-2">
           {(doc.tags || []).map((tag, index) => (
             <Badge key={`${tag}-${index}`} variant="secondary" className="text-xs">
               <Tag className="h-3 w-3 mr-1" />
@@ -102,12 +102,13 @@ export const DocumentCard = ({
           )}
         </div>
         
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between pt-2 gap-2">
+        <div className="flex flex-col gap-3 mt-auto pt-4">
           <div className="flex flex-wrap gap-2">
             <Button 
               variant="outline" 
               size="sm"
               onClick={() => onView(doc)}
+              className="flex-1 min-w-[100px]"
             >
               <FileText className="h-4 w-4 mr-2" />
               View
@@ -116,48 +117,57 @@ export const DocumentCard = ({
               variant="outline" 
               size="sm"
               onClick={() => onEdit(doc)}
+              className="flex-1 min-w-[100px]"
             >
               <Edit className="h-4 w-4 mr-2" />
               Edit
             </Button>
-            {hasSpreadsheetData && (
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => setShowSpreadsheet(true)}
-              >
-                <FileSpreadsheet className="h-4 w-4 mr-2" />
-                Spreadsheet
-              </Button>
-            )}
-            {hasChartableData && (
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => setShowVisualization(true)}
-              >
-                <BarChart3 className="h-4 w-4 mr-2" />
-                Charts
-              </Button>
-            )}
             {onDelete && (
               <Button 
                 variant="outline" 
                 size="sm"
                 onClick={() => onDelete(doc)}
-                className="text-red-600 hover:text-red-700"
+                className="text-destructive hover:text-destructive hover:bg-destructive/10"
               >
-                <Trash2 className="h-4 w-4 mr-2" />
-                Delete
+                <Trash2 className="h-4 w-4" />
               </Button>
             )}
           </div>
-          <div className="flex gap-2">
+          
+          {(hasSpreadsheetData || hasChartableData) && (
+            <div className="flex flex-wrap gap-2">
+              {hasSpreadsheetData && (
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => setShowSpreadsheet(true)}
+                  className="flex-1 min-w-[120px]"
+                >
+                  <FileSpreadsheet className="h-4 w-4 mr-2" />
+                  Spreadsheet
+                </Button>
+              )}
+              {hasChartableData && (
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => setShowVisualization(true)}
+                  className="flex-1 min-w-[120px]"
+                >
+                  <BarChart3 className="h-4 w-4 mr-2" />
+                  Charts
+                </Button>
+              )}
+            </div>
+          )}
+          
+          <div className="flex flex-wrap gap-2">
             <Button 
-              variant="ghost" 
+              variant="secondary" 
               size="sm"
               onClick={() => onGenerateInsights(doc.id)}
               disabled={isGeneratingInsights}
+              className="flex-1 min-w-[120px]"
             >
               {isGeneratingInsights ? (
                 <>
@@ -177,9 +187,9 @@ export const DocumentCard = ({
                 variant="secondary" 
                 size="sm"
                 onClick={() => onClaudeProcess(doc.id)}
-                className="flex items-center gap-2"
+                className="flex-1 min-w-[120px]"
               >
-                <Sparkles className="h-4 w-4" />
+                <Sparkles className="h-4 w-4 mr-2" />
                 Claude MVP
               </Button>
             )}
