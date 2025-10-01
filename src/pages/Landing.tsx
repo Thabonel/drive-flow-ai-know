@@ -152,9 +152,8 @@ const stats = [
 export default function Landing() {
   return (
     <div className="min-h-screen relative overflow-hidden">
-      {/* Gradient mesh background */}
-      <div className="fixed inset-0 bg-gradient-mesh opacity-60" />
-      <div className="fixed inset-0 bg-gradient-to-br from-primary/5 via-background to-secondary/5" />
+      {/* White background */}
+      <div className="fixed inset-0 bg-white" />
       
       {/* Floating orbs */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
