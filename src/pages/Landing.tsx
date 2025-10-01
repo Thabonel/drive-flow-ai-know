@@ -155,12 +155,6 @@ export default function Landing() {
       {/* White background */}
       <div className="fixed inset-0 bg-white" />
       
-      {/* Floating orbs */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-20 -left-20 w-[500px] h-[500px] bg-primary/30 rounded-full blur-3xl animate-float" />
-        <div className="absolute top-1/3 -right-32 w-[600px] h-[600px] bg-secondary/25 rounded-full blur-3xl animate-float" style={{ animationDelay: '2s' }} />
-        <div className="absolute -bottom-32 left-1/3 w-[500px] h-[500px] bg-accent/20 rounded-full blur-3xl animate-float" style={{ animationDelay: '4s' }} />
-      </div>
 
       {/* Navigation */}
       <header className="relative border-b border-primary/20 bg-primary/95 backdrop-blur-xl supports-[backdrop-filter]:bg-primary/90 sticky top-0 z-50 shadow-lg">
@@ -259,7 +253,7 @@ export default function Landing() {
       </section>
 
       {/* How It Works */}
-      <section id="how-it-works" className="relative py-16 px-6 bg-gradient-to-br from-secondary/10 via-background to-primary/10">
+      <section id="how-it-works" className="relative py-16 px-6">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-4xl md:text-5xl font-bold mb-3">
@@ -306,7 +300,7 @@ export default function Landing() {
       </section>
 
       {/* Features Section */}
-      <section id="features" className="relative py-16 px-6 bg-gradient-to-br from-primary/5 via-background to-accent/5">
+      <section id="features" className="relative py-16 px-6">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-4xl md:text-5xl font-bold mb-3">
@@ -348,7 +342,7 @@ export default function Landing() {
       </section>
 
       {/* Testimonials */}
-      <section id="testimonials" className="relative py-16 px-6 bg-gradient-to-br from-accent/10 via-background to-secondary/10">
+      <section id="testimonials" className="relative py-16 px-6">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-4xl md:text-5xl font-bold mb-3">
@@ -388,7 +382,7 @@ export default function Landing() {
       </section>
 
       {/* Pricing */}
-      <section id="pricing" className="relative py-16 px-6 bg-gradient-to-br from-primary/10 via-background to-secondary/10">
+      <section id="pricing" className="relative py-16 px-6">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-4xl md:text-5xl font-bold mb-3">
@@ -464,7 +458,7 @@ export default function Landing() {
       </section>
 
       {/* Final CTA */}
-      <section className="relative py-16 px-6 bg-gradient-to-br from-primary/5 via-background to-secondary/5">
+      <section className="relative py-16 px-6">
         <div className="max-w-4xl mx-auto">
           <div className="text-center p-12 rounded-3xl bg-gradient-to-r from-primary to-secondary shadow-glow">
             <h2 className="text-4xl md:text-5xl font-bold mb-4 text-white">
