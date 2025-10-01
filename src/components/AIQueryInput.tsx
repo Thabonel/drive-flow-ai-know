@@ -132,26 +132,28 @@ export const AIQueryInput = ({ selectedKnowledgeBase, onClearSelection }: AIQuer
   };
 
   return (
-    <Card className="w-full">
-      <CardHeader>
-        <CardTitle className="flex items-center">
-          <Brain className="h-5 w-5 mr-2" />
-          AI Knowledge Assistant
-        </CardTitle>
-        {selectedKnowledgeBase && (
-          <div className="flex items-center space-x-2">
-            <Badge variant="secondary" className="flex items-center">
-              <Sparkles className="h-3 w-3 mr-1" />
-              {selectedKnowledgeBase.name}
-            </Badge>
-            <Button variant="ghost" size="sm" onClick={onClearSelection}>
-              ×
-            </Button>
-          </div>
-        )}
+    <Card className="w-full shadow-lg">
+      <CardHeader className="pb-4">
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center text-xl">
+            <Brain className="h-6 w-6 mr-3 text-primary" />
+            AI Knowledge Assistant
+          </CardTitle>
+          {selectedKnowledgeBase && (
+            <div className="flex items-center space-x-2">
+              <Badge variant="secondary" className="flex items-center py-1 px-3">
+                <Sparkles className="h-3 w-3 mr-1" />
+                {selectedKnowledgeBase.name}
+              </Badge>
+              <Button variant="ghost" size="sm" onClick={onClearSelection}>
+                ×
+              </Button>
+            </div>
+          )}
+        </div>
       </CardHeader>
-      <CardContent className="space-y-4">
-        <form onSubmit={handleSubmit} className="flex space-x-2">
+      <CardContent className="space-y-6 pt-2">
+        <form onSubmit={handleSubmit} className="flex space-x-3">
           <Input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
@@ -160,7 +162,7 @@ export const AIQueryInput = ({ selectedKnowledgeBase, onClearSelection }: AIQuer
               : "Ask about your documents..."
             }
             disabled={isLoading}
-            className="flex-1"
+            className="flex-1 h-12 text-base"
             onKeyDown={(e) => {
               if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
                 e.preventDefault();
@@ -169,11 +171,11 @@ export const AIQueryInput = ({ selectedKnowledgeBase, onClearSelection }: AIQuer
             }}
             maxLength={500}
           />
-          <Button type="submit" disabled={isLoading || !query.trim() || query.length < 3}>
+          <Button type="submit" disabled={isLoading || !query.trim() || query.length < 3} className="h-12 px-6">
             {isLoading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
+              <Loader2 className="h-5 w-5 animate-spin" />
             ) : (
-              <Send className="h-4 w-4" />
+              <Send className="h-5 w-5" />
             )}
           </Button>
         </form>
@@ -205,12 +207,12 @@ export const AIQueryInput = ({ selectedKnowledgeBase, onClearSelection }: AIQuer
         </div>
 
         {response && (
-          <div className="space-y-3">
-            <div className="p-4 bg-muted/50 rounded-lg">
-              <div className="flex items-start space-x-2">
-                <Brain className="h-4 w-4 mt-0.5 text-primary" />
+          <div className="space-y-4">
+            <div className="p-6 bg-muted/50 rounded-lg border border-border">
+              <div className="flex items-start space-x-3">
+                <Brain className="h-5 w-5 mt-0.5 text-primary flex-shrink-0" />
                 <div className="flex-1">
-                  <p className="text-sm whitespace-pre-wrap">{response}</p>
+                  <p className="text-base leading-relaxed whitespace-pre-wrap">{response}</p>
                 </div>
               </div>
             </div>
@@ -219,7 +221,6 @@ export const AIQueryInput = ({ selectedKnowledgeBase, onClearSelection }: AIQuer
               <Button
                 onClick={handleSaveAsDocument}
                 disabled={isSaving || !response}
-                size="sm"
                 variant="outline"
                 className="flex items-center space-x-2"
               >

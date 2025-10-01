@@ -11,7 +11,7 @@ import { AIQueryInput } from '@/components/AIQueryInput';
 import { RecentDocuments } from '@/components/RecentDocuments';
 import { DocumentList } from '@/components/DocumentList';
 import { DailyFocusModule } from '@/components/DailyFocusModule';
-import { AIAssistantSidebar } from '@/components/AIAssistantSidebar';
+
 import { CreateKnowledgeDocumentModal } from '@/components/CreateKnowledgeDocumentModal';
 
 const Index = () => {
@@ -55,14 +55,13 @@ const Index = () => {
   };
 
   return (
-    <div className="flex min-h-screen">
-      {/* Main Content */}
-      <div className="flex-1 space-y-6 pr-6">
+    <div className="min-h-screen w-full">
+      <div className="max-w-7xl mx-auto space-y-8 px-6 py-8">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">AI Command Center</h1>
-            <p className="text-muted-foreground">Welcome back, {user?.user_metadata?.full_name || user?.email}</p>
+            <h1 className="text-4xl font-bold text-foreground mb-2">AI Command Center</h1>
+            <p className="text-muted-foreground text-lg">Welcome back, {user?.user_metadata?.full_name || user?.email}</p>
           </div>
           <CreateKnowledgeDocumentModal />
         </div>
@@ -74,7 +73,7 @@ const Index = () => {
         />
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Documents</CardTitle>
@@ -120,77 +119,53 @@ const Index = () => {
           </Card>
         </div>
 
-        {/* Main Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Left Column */}
-          <div className="space-y-6">
-            <KnowledgeBasePreview onAskQuestion={handleAskQuestion} />
+        {/* Main Content */}
+        <div className="space-y-8">
+          <KnowledgeBasePreview onAskQuestion={handleAskQuestion} />
+          
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             <RecentDocuments />
-            <DocumentList />
-            
-            {/* Quick Actions */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Quick Actions</CardTitle>
-                <CardDescription>Get started with your knowledge work</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3">
+            <DailyFocusModule />
+          </div>
+          
+          <DocumentList />
+          
+          {/* Quick Actions */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Quick Actions</CardTitle>
+              <CardDescription>Get started with your knowledge work</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <Button 
                   onClick={() => navigate('/drive')}
-                  className="w-full justify-start"
+                  className="w-full justify-start h-auto py-4"
                   variant="outline"
                 >
-                  <FolderOpen className="h-4 w-4 mr-2" />
+                  <FolderOpen className="h-5 w-5 mr-2" />
                   Connect Google Drive Folders
                 </Button>
                 <Button 
                   onClick={() => navigate('/knowledge')}
-                  className="w-full justify-start"
+                  className="w-full justify-start h-auto py-4"
                   variant="outline"
                 >
-                  <Brain className="h-4 w-4 mr-2" />
+                  <Brain className="h-5 w-5 mr-2" />
                   View Knowledge Bases
                 </Button>
                 <Button 
                   onClick={() => navigate('/documents')}
-                  className="w-full justify-start"
+                  className="w-full justify-start h-auto py-4"
                   variant="outline"
                 >
-                  <FileText className="h-4 w-4 mr-2" />
+                  <FileText className="h-5 w-5 mr-2" />
                   Browse Documents
                 </Button>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Right Column */}
-          <div className="space-y-6">
-            <DailyFocusModule />
-            
-            {/* Activity Feed */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <TrendingUp className="h-5 w-5 mr-2" />
-                  Recent Activity
-                </CardTitle>
-                <CardDescription>Latest updates from your knowledge work</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-8 text-muted-foreground">
-                  <TrendingUp className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                  <p className="mb-2">No activity yet</p>
-                  <p className="text-sm">Start creating and querying your knowledge bases</p>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
-      </div>
-
-      {/* AI Assistant Sidebar */}
-      <div className="w-80 border-l bg-muted/30 p-6">
-        <AIAssistantSidebar />
       </div>
     </div>
   );

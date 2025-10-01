@@ -201,11 +201,11 @@ const Documents = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8 pb-8">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Find Documents</h1>
-          <p className="text-muted-foreground">Browse and search your knowledge documents</p>
+          <h1 className="text-4xl font-bold text-foreground mb-2">Find Documents</h1>
+          <p className="text-muted-foreground text-lg">Browse and search your knowledge documents</p>
         </div>
         <CreateKnowledgeDocumentModal 
           trigger={
@@ -228,15 +228,15 @@ const Documents = () => {
       />
 
       {isError && (
-        <div className="text-center py-8">
-          <div className="text-red-500 mb-2">Failed to load documents</div>
+        <div className="text-center py-12 border rounded-lg bg-destructive/10">
+          <div className="text-destructive mb-2 font-semibold">Failed to load documents</div>
           <div className="text-sm text-muted-foreground">
             {error instanceof Error ? error.message : 'An unknown error occurred'}
           </div>
         </div>
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         <DocumentGrid
           documents={paginatedDocuments}
           isLoading={isLoading}

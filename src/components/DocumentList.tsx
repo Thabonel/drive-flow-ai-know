@@ -86,13 +86,14 @@ export const DocumentList = () => {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <Input
         placeholder="Search documents..."
         value={search}
         onChange={(e) => setSearch(e.target.value)}
+        className="h-12 text-base"
       />
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {paginated.map((doc) => (
           <DocumentCard
             key={doc.id}
@@ -106,14 +107,13 @@ export const DocumentList = () => {
         ))}
       </div>
       {pageCount > 1 && (
-        <div className="flex justify-center items-center gap-4">
-          <Button variant="outline" size="sm" onClick={() => setPage((p) => p - 1)} disabled={page === 1}>
+        <div className="flex justify-center items-center gap-4 pt-4">
+          <Button variant="outline" onClick={() => setPage((p) => p - 1)} disabled={page === 1}>
             Previous
           </Button>
-          <span className="text-sm">Page {page} of {pageCount}</span>
+          <span className="text-sm font-medium">Page {page} of {pageCount}</span>
           <Button
             variant="outline"
-            size="sm"
             onClick={() => setPage((p) => p + 1)}
             disabled={page === pageCount}
           >
