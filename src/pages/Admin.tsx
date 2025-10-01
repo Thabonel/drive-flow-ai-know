@@ -50,6 +50,7 @@ interface AppSettings {
 export default function Admin() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState<any>(null);
   const [messageText, setMessageText] = useState('');
   const [priority, setPriority] = useState<'low' | 'normal' | 'high' | 'urgent'>('normal');
   const [messages, setMessages] = useState<AdminMessage[]>([]);
@@ -78,6 +79,7 @@ export default function Admin() {
   const checkAdminAccess = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
+      setUser(user);
       if (!user) {
         setLoading(false);
         return;
@@ -287,15 +289,23 @@ export default function Admin() {
 
   if (!isAdmin) {
     return (
-      <div className="container mx-auto px-4 py-8">
+      <div className="min-h-screen flex items-center justify-center bg-background p-4">
         <Card className="max-w-md mx-auto">
           <CardHeader className="text-center">
             <Shield className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
             <CardTitle>Access Denied</CardTitle>
             <CardDescription>
               You don't have admin privileges to access this page.
+              {!loading && !user ? ' Please sign in first.' : ''}
             </CardDescription>
           </CardHeader>
+          {!loading && !user && (
+            <CardContent className="text-center">
+              <Button onClick={() => window.location.href = '/auth'}>
+                Go to Sign In
+              </Button>
+            </CardContent>
+          )}
         </Card>
       </div>
     );
