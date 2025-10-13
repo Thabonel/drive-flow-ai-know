@@ -70,7 +70,7 @@ const Settings = () => {
       <div className="flex min-h-screen w-full">
         <AppSidebar />
         <main className="flex-1 overflow-auto">
-          <div className="w-full p-6 lg:p-8 space-y-8">
+          <div className="max-w-7xl mx-auto w-full p-6 lg:p-8 space-y-8">
             <div>
               <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
               <p className="text-muted-foreground">
@@ -86,7 +86,7 @@ const Settings = () => {
                 <TabsTrigger value="enterprise">Enterprise</TabsTrigger>
               </TabsList>
 
-              <TabsContent value="general" className="space-y-6">
+              <TabsContent value="general" className="space-y-6 w-full">
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
@@ -155,7 +155,7 @@ const Settings = () => {
 
               {/* Notifications tab hidden until email functionality is implemented */}
 
-              <TabsContent value="ai" className="space-y-6">
+              <TabsContent value="ai" className="space-y-6 w-full">
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
@@ -184,7 +184,7 @@ const Settings = () => {
                 </Card>
               </TabsContent>
 
-              <TabsContent value="security" className="space-y-6">
+              <TabsContent value="security" className="space-y-6 w-full">
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
@@ -261,7 +261,7 @@ const Settings = () => {
                 </Card>
               </TabsContent>
 
-              <TabsContent value="enterprise">
+              <TabsContent value="enterprise" className="w-full">
                 <EnterpriseServer />
               </TabsContent>
             </Tabs>

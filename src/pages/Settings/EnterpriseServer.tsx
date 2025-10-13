@@ -138,7 +138,7 @@ export default function EnterpriseServer() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="max-w-7xl mx-auto w-full space-y-6">
       <div>
         <h2 className="text-3xl font-bold tracking-tight">Enterprise Server Setup</h2>
         <p className="text-muted-foreground">
@@ -146,7 +146,7 @@ export default function EnterpriseServer() {
         </p>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
+      <div className="grid gap-6 lg:grid-cols-1 xl:grid-cols-2">
         {/* AI Assistant Chat */}
         <Card>
           <CardHeader>
@@ -159,7 +159,7 @@ export default function EnterpriseServer() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <ScrollArea className="h-[400px] rounded-md border p-4">
+            <ScrollArea className="h-[500px] rounded-md border p-4">
               {chatMessages.length === 0 ? (
                 <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
                   Ask the AI assistant for help setting up your server connection
