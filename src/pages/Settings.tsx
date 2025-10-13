@@ -79,9 +79,8 @@ const Settings = () => {
             </div>
 
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-              <TabsList className="grid w-full grid-cols-5">
+              <TabsList className="grid w-full grid-cols-4">
                 <TabsTrigger value="general">General</TabsTrigger>
-                <TabsTrigger value="notifications">Notifications</TabsTrigger>
                 <TabsTrigger value="ai">AI & Data</TabsTrigger>
                 <TabsTrigger value="security">Security</TabsTrigger>
                 <TabsTrigger value="enterprise">Enterprise</TabsTrigger>
@@ -154,46 +153,7 @@ const Settings = () => {
                 </Card>
               </TabsContent>
 
-              <TabsContent value="notifications" className="space-y-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Bell className="h-5 w-5" />
-                      Notifications
-                    </CardTitle>
-                    <CardDescription>
-                      Configure how you want to be notified
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-0.5">
-                        <Label className="text-base">Email Notifications</Label>
-                        <p className="text-sm text-muted-foreground">
-                          Receive email updates about sync status and new documents
-                        </p>
-                      </div>
-                      <Switch
-                        checked={notifications}
-                        onCheckedChange={setNotifications}
-                      />
-                    </div>
-                    <Separator />
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-0.5">
-                        <Label className="text-base">Auto Sync</Label>
-                        <p className="text-sm text-muted-foreground">
-                          Automatically sync Google Drive folders every hour
-                        </p>
-                      </div>
-                      <Switch
-                        checked={autoSync}
-                        onCheckedChange={setAutoSync}
-                      />
-                    </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
+              {/* Notifications tab hidden until email functionality is implemented */}
 
               <TabsContent value="ai" className="space-y-6">
                 <Card>
