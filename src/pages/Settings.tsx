@@ -1,6 +1,7 @@
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -30,9 +31,17 @@ import {
 const Settings = () => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const location = useLocation();
   const [notifications, setNotifications] = useState(true);
   const [autoSync, setAutoSync] = useState(false);
+  const [activeTab, setActiveTab] = useState("general");
   const { modelPreference, setModelPreference, offlineMode, setOfflineMode } = useUserSettings();
+
+  useEffect(() => {
+    if (location.hash === "#model-provider") {
+      setActiveTab("ai");
+    }
+  }, [location.hash]);
 
   const handleSaveProfile = () => {
     toast({
@@ -69,7 +78,7 @@ const Settings = () => {
               </p>
             </div>
 
-            <Tabs defaultValue="general" className="space-y-6">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
               <TabsList className="grid w-full grid-cols-5">
                 <TabsTrigger value="general">General</TabsTrigger>
                 <TabsTrigger value="notifications">Notifications</TabsTrigger>
