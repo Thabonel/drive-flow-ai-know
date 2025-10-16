@@ -204,34 +204,49 @@ export type Database = {
           agent_id: string | null
           context_summary: string | null
           created_at: string | null
+          executive_summary: string | null
           id: string
           message_count: number | null
           project_id: string | null
           started_at: string | null
+          status: string | null
+          summary_generated_at: string | null
+          tags: string[] | null
           title: string | null
           updated_at: string | null
+          user_id: string | null
         }
         Insert: {
           agent_id?: string | null
           context_summary?: string | null
           created_at?: string | null
+          executive_summary?: string | null
           id?: string
           message_count?: number | null
           project_id?: string | null
           started_at?: string | null
+          status?: string | null
+          summary_generated_at?: string | null
+          tags?: string[] | null
           title?: string | null
           updated_at?: string | null
+          user_id?: string | null
         }
         Update: {
           agent_id?: string | null
           context_summary?: string | null
           created_at?: string | null
+          executive_summary?: string | null
           id?: string
           message_count?: number | null
           project_id?: string | null
           started_at?: string | null
+          status?: string | null
+          summary_generated_at?: string | null
+          tags?: string[] | null
           title?: string | null
           updated_at?: string | null
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -1402,11 +1417,10 @@ export type Database = {
       get_qa_agent_stats: {
         Args: Record<PropertyKey, never> | { p_agent_id: string }
         Returns: {
-          avg_session_length: number
-          total_collections: number
-          total_documents: number
-          total_messages: number
-          total_sessions: number
+          agent_id: string
+          closed_tickets: number
+          open_tickets: number
+          total_tickets: number
         }[]
       }
       get_qa_agent_stats_new: {
@@ -1466,8 +1480,12 @@ export type Database = {
           | { match_count?: number; query_embedding: string }
           | { param1: string; param2: number }
         Returns: {
-          id: number
-          result: string
+          agent: string
+          content: string
+          id: string
+          memory_type: string
+          metadata: Json
+          similarity: number
         }[]
       }
       match_memories_optimized: {

@@ -22,6 +22,7 @@ import Footer from "./layout/Footer";
 import Landing from "./pages/Landing";
 import Admin from "./pages/Admin";
 import DocumentList from "./components/DocumentList";
+import Conversations from "./pages/Conversations";
 
 const queryClient = new QueryClient();
 
@@ -148,6 +149,11 @@ const App = () => (
             <Route path="/admin" element={
               <ProtectedRoute>
                 <Admin />
+              </ProtectedRoute>
+            } />
+            <Route path="/conversations" element={
+              <ProtectedRoute>
+                <Conversations />
               </ProtectedRoute>
             } />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
