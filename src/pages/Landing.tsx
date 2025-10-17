@@ -25,54 +25,59 @@ import {
 
 const plans = [
   {
-    name: 'Free Trial',
-    price: 'Free',
-    period: 'for 14 days',
-    description: 'Experience everything with zero risk',
+    name: 'Starter',
+    price: '$9',
+    period: '/month',
+    description: 'Perfect for individuals getting started',
     features: [
-      'Full access to all features', 
-      'Unlimited documents', 
-      'Advanced AI chat', 
-      '10 GB storage included', 
-      'Custom prompts', 
-      'Priority support'
+      '200 queries/month',
+      '5 GB storage',
+      'Google Drive sync',
+      'Knowledge bases (3 max)',
+      'Gemini AI (fast)',
+      'Email support'
     ],
     popular: false,
-    trial: true,
-  },
-  {
-    name: 'Monthly',
-    price: '$14',
-    period: '/month',
-    description: 'Flexible month-to-month billing',
-    features: [
-      'Unlimited documents', 
-      'Advanced AI chat', 
-      '10 GB storage included', 
-      'Custom prompts', 
-      'Priority support', 
-      'Analytics dashboard',
-      'API access'
-    ],
-    popular: true,
+    trial: false,
     savings: null,
   },
   {
-    name: 'Yearly',
-    price: '$140',
-    period: '/year',
-    description: 'Best value for committed users',
+    name: 'Pro',
+    price: '$29',
+    period: '/month',
+    description: 'For power users and professionals',
     features: [
-      'Everything in Monthly', 
-      '10 GB storage included', 
-      '2 months free', 
-      'Priority support', 
-      'Analytics dashboard', 
-      'Custom branding',
-      'Advanced integrations'
+      '1,000 queries/month',
+      '50 GB storage',
+      'Unlimited Google Drive sync',
+      'Unlimited knowledge bases',
+      'Choice of AI model (Gemini/GPT-4o)',
+      'Conversation history',
+      'Priority support',
+      'API access'
+    ],
+    popular: true,
+    trial: false,
+    savings: null,
+  },
+  {
+    name: 'Business',
+    price: '$99',
+    period: '/month',
+    description: 'For teams and organizations',
+    features: [
+      'Unlimited queries',
+      '500 GB storage',
+      'Team collaboration (5 users)',
+      'Custom AI models',
+      'Advanced analytics',
+      'White-label option',
+      'Dedicated support',
+      'SSO & enterprise features'
     ],
     popular: false,
-    savings: 'Save $28/year',
+    trial: false,
+    savings: null,
   },
 ];
 
@@ -163,8 +168,8 @@ export default function Landing() {
             <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-secondary to-primary flex items-center justify-center shadow-glow">
               <FileText className="h-5 w-5 text-white" />
             </div>
-            <span className="text-xl font-bold text-white">DocChat</span>
-            <Badge className="ml-2 hidden sm:inline-flex bg-secondary/30 border-secondary/50 text-white">AI-Powered</Badge>
+            <span className="text-xl font-bold text-white">AI Query Hub</span>
+            <Badge className="ml-2 hidden sm:inline-flex bg-secondary/30 border-secondary/50 text-white">Remembers Everything</Badge>
           </div>
           
           <nav className="hidden md:flex items-center space-x-8">
@@ -193,15 +198,15 @@ export default function Landing() {
 
             <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight leading-tight">
               <span className="bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent animate-gradient-shift bg-[length:200%_auto]">
-                Stop Reading.
+                An AI Assistant
               </span>
               <br />
-              <span className="bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent">Start Asking.</span>
+              <span className="bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent">That Remembers Everything.</span>
             </h1>
 
             <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-              Transform any document into an intelligent conversation. Get instant answers, 
-              summaries, and insights from PDFs, Word docs, spreadsheets, and more.
+              Connect your documents, chat naturally, and get instant answers. Your AI assistant learns from
+              everything you share and never forgets. Perfect memory, infinite knowledge.
             </p>
 
             <div className="flex flex-wrap gap-4 justify-center items-center pt-2">
@@ -385,6 +390,12 @@ export default function Landing() {
       <section id="pricing" className="relative py-16 px-6">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-12">
+            <div className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-gradient-to-r from-success/20 via-accent/20 to-secondary/20 border border-success/30 backdrop-blur-xl shadow-glow mb-4">
+              <Sparkles className="w-5 h-5 text-success animate-pulse-glow" />
+              <span className="text-sm font-semibold text-success">
+                14-Day Free Trial • No Credit Card Required
+              </span>
+            </div>
             <h2 className="text-4xl md:text-5xl font-bold mb-3">
               <span className="bg-gradient-to-r from-primary via-accent to-secondary bg-clip-text text-transparent animate-gradient-shift bg-[length:200%_auto]">
                 Simple, Transparent Pricing
@@ -447,11 +458,11 @@ export default function Landing() {
           
           <div className="text-center mt-8">
             <p className="text-muted-foreground mb-2 text-sm">
-              All plans include 10 GB storage. Need more? Additional storage: $10 per 10 GB
+              All plans start with a 14-day free trial. Need more queries? Additional queries: $0.02 each
             </p>
             <p className="text-xs text-muted-foreground flex items-center justify-center gap-2">
               <Shield className="h-3 w-3" />
-              30-day money-back guarantee • No long-term contracts • Cancel anytime
+              Cancel anytime • No long-term contracts • 17% discount on annual plans
             </p>
           </div>
         </div>
@@ -506,23 +517,23 @@ export default function Landing() {
               <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-primary to-secondary flex items-center justify-center shadow-glow">
                 <FileText className="h-5 w-5 text-white" />
               </div>
-              <span className="text-xl font-bold text-primary">DocChat</span>
+              <span className="text-xl font-bold text-primary">AI Query Hub</span>
             </div>
-            
+
             <div className="text-center md:text-left">
               <p className="text-muted-foreground flex items-center gap-2 justify-center md:justify-start text-sm">
                 <Shield className="h-4 w-4 text-primary" />
                 Private by Design — Your documents stay yours. Choose where your AI runs.
               </p>
             </div>
-            
+
             <Link to="/settings#model-provider" className="text-sm text-muted-foreground hover:text-primary underline transition-colors">
               Model Provider Settings
             </Link>
           </div>
-          
+
           <div className="mt-6 pt-6 border-t border-border text-center text-xs text-muted-foreground">
-            <p>© 2024 DocChat. All rights reserved. Built with privacy and security in mind.</p>
+            <p>© 2024 AI Query Hub. All rights reserved. Built with privacy and security in mind.</p>
           </div>
         </div>
       </footer>
