@@ -362,7 +362,7 @@ export function ConversationChat({ conversationId: initialConversationId, onConv
         </div>
       </div>
 
-      <Card className="flex-1 flex flex-col">
+      <Card className="flex-1 flex flex-col mb-24">
         <ScrollArea className="flex-1 p-4" ref={scrollRef}>
           {messages.length === 0 ? (
             <div className="flex items-center justify-center h-full text-muted-foreground">
