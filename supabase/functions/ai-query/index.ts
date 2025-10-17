@@ -3,39 +3,40 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const openRouterApiKey = Deno.env.get('OPENROUTER_API_KEY');
+const anthropicApiKey = Deno.env.get('ANTHROPIC_API_KEY');
 
-async function geminiCompletion(prompt: string, context: string) {
-  const apiKey = Deno.env.get("LOVABLE_API_KEY");
-  
-  if (!apiKey) {
-    throw new Error('Lovable AI Gateway not available');
+async function claudeCompletion(prompt: string, context: string) {
+  if (!anthropicApiKey) {
+    throw new Error('Anthropic API key not available');
   }
 
-  const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+  const response = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${apiKey}`,
+      'x-api-key': anthropicApiKey,
+      'anthropic-version': '2023-06-01',
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'google/gemini-2.5-flash',
+      model: 'claude-haiku-4-5',
+      max_tokens: 4096,
+      system: context,
       messages: [
-        { role: 'system', content: context },
         { role: 'user', content: prompt },
       ],
     }),
   });
-  
+
   if (!response.ok) {
-    console.error('Gemini API error:', response.status, response.statusText);
+    console.error('Claude API error:', response.status, response.statusText);
     const errorData = await response.text();
-    console.error('Gemini error details:', errorData);
-    throw new Error(`Gemini API error: ${response.status}`);
+    console.error('Claude error details:', errorData);
+    throw new Error(`Claude API error: ${response.status}`);
   }
-  
+
   const data = await response.json();
-  console.log('Gemini response structure:', Object.keys(data));
-  return data.choices?.[0]?.message?.content ?? '';
+  console.log('Claude response structure:', Object.keys(data));
+  return data.content?.[0]?.text ?? '';
 }
 
 
@@ -79,9 +80,9 @@ export async function getLLMResponse(prompt: string, context: string, providerOv
   const useOpenRouter = Deno.env.get('USE_OPENROUTER') === 'true';
   const useLocalLLM = Deno.env.get('USE_LOCAL_LLM') === 'true';
 
-  // Define fallback order - Gemini first, then other providers
+  // Define fallback order - Claude first, then other providers
   const providers = [];
-  
+
   if (providerEnv) {
     providers.push(providerEnv);
   } else if (useOpenRouter) {
@@ -89,12 +90,12 @@ export async function getLLMResponse(prompt: string, context: string, providerOv
   } else if (useLocalLLM) {
     providers.push('ollama');
   } else {
-    providers.push('gemini'); // Default to Gemini instead of Anthropic
+    providers.push('claude'); // Default to Claude
   }
-  
-  // Add fallbacks - Gemini is always available through Lovable Gateway
-  if (!providers.includes('gemini')) {
-    providers.push('gemini');
+
+  // Add fallbacks based on available API keys
+  if (!providers.includes('claude') && anthropicApiKey) {
+    providers.push('claude');
   }
   if (!providers.includes('openrouter') && openRouterApiKey) {
     providers.push('openrouter');
@@ -109,10 +110,14 @@ export async function getLLMResponse(prompt: string, context: string, providerOv
   for (const provider of providers) {
     try {
       console.log('Trying AI provider:', provider);
-      
+
       switch (provider) {
-        case 'gemini':
-          return await geminiCompletion(prompt, context);
+        case 'claude':
+          if (!anthropicApiKey) {
+            console.log('Anthropic API key not available, skipping');
+            continue;
+          }
+          return await claudeCompletion(prompt, context);
         case 'openrouter':
           if (!openRouterApiKey) {
             console.log('OpenRouter API key not available, skipping');
@@ -140,11 +145,10 @@ export async function getLLMResponse(prompt: string, context: string, providerOv
 }
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': 'https://drive-flow-ai-know.lovable.app',
+  'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
   'Access-Control-Max-Age': '86400',
-  'Vary': 'Origin',
 };
 
 serve(async (req) => {
@@ -182,31 +186,6 @@ serve(async (req) => {
     const user_id = user.id;
     console.log('Authenticated user ID:', user_id);
 
-    // Check usage limits before processing query
-    const { data: limitCheck, error: limitError } = await supabaseService
-      .rpc('check_query_limit', { p_user_id: user_id });
-
-    if (limitError) {
-      console.error('Error checking query limit:', limitError);
-    }
-
-    if (limitCheck && !limitCheck.allowed) {
-      return new Response(
-        JSON.stringify({
-          error: limitCheck.reason,
-          limit: limitCheck.limit,
-          used: limitCheck.used,
-          plan_type: limitCheck.plan_type,
-          response: limitCheck.reason === 'Rate limit exceeded (100 queries/hour)'
-            ? "You've reached the rate limit of 100 queries per hour. Please try again in a few minutes."
-            : `You've reached your monthly query limit of ${limitCheck.limit} queries. Please upgrade your plan to continue.`
-        }),
-        {
-          status: 429,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
-      );
-    }
 
     const { data: settings } = await supabaseService
       .from('user_settings')
