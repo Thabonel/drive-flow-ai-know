@@ -167,40 +167,38 @@ export function ConversationChat({ conversationId: initialConversationId, onConv
 
       // Update conversation message count and title if first message
       if (messages.length === 0 && conversationId) {
-        // Generate AI title for the conversation
-        try {
-          const titleResponse = await supabase.functions.invoke('ai-query', {
-            body: {
-              query: `Based on this user message, generate a short, descriptive title (max 6 words) for this conversation. Only respond with the title, nothing else: "${userMessage}"`,
-            },
-          });
+        // Use first message as title immediately (non-blocking)
+        const fallbackTitle = userMessage.slice(0, 50) + (userMessage.length > 50 ? '…' : '');
 
-          const generatedTitle = titleResponse.data?.response?.trim() || userMessage.slice(0, 100);
+        await supabase
+          .from('conversations')
+          .update({
+            title: fallbackTitle,
+            message_count: 2,
+          })
+          .eq('id', conversationId);
 
-          await supabase
-            .from('conversations')
-            .update({
-              title: generatedTitle,
-              message_count: 2,
-            })
-            .eq('id', conversationId);
+        // Update local state
+        setConversationTitle(fallbackTitle);
 
-          // Update local state
-          setConversationTitle(generatedTitle);
-        } catch (error) {
-          // Fallback to user message if AI title generation fails
-          const fallbackTitle = userMessage.slice(0, 100);
-          await supabase
-            .from('conversations')
-            .update({
-              title: fallbackTitle,
-              message_count: 2,
-            })
-            .eq('id', conversationId);
-
-          // Update local state
-          setConversationTitle(fallbackTitle);
-        }
+        // Generate AI title in background (non-blocking, won't fail the main query)
+        supabase.functions.invoke('ai-query', {
+          body: {
+            query: `Based on this user message, generate a short, descriptive title (max 6 words) for this conversation. Only respond with the title, nothing else: "${userMessage.slice(0, 200)}"`,
+          },
+        }).then(({ data: titleData }) => {
+          if (titleData?.response) {
+            const generatedTitle = titleData.response.trim();
+            // Update with AI-generated title
+            supabase
+              .from('conversations')
+              .update({ title: generatedTitle })
+              .eq('id', conversationId)
+              .then(() => setConversationTitle(generatedTitle));
+          }
+        }).catch(() => {
+          // Silently fail - we already have the fallback title
+        });
       } else if (conversationId) {
         await supabase
           .from('conversations')
