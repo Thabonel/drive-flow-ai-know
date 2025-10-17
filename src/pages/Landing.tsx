@@ -1,16 +1,18 @@
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Link } from 'react-router-dom';
-import { 
-  ArrowRight, 
-  Check, 
-  FileText, 
-  MessageSquare, 
-  Shield, 
-  Star, 
-  Users, 
-  Zap, 
+import { supabase } from '@/integrations/supabase/client';
+import {
+  ArrowRight,
+  Check,
+  FileText,
+  MessageSquare,
+  Shield,
+  Star,
+  Users,
+  Zap,
   Clock,
   TrendingUp,
   Brain,
@@ -149,14 +151,61 @@ const features = [
   },
 ];
 
-const stats = [
-  { value: '2M+', label: 'Questions Answered', icon: MessageSquare },
-  { value: '500K+', label: 'Hours Saved', icon: Clock },
-  { value: '10K+', label: 'Active Users', icon: Users },
-  { value: '4.9/5', label: 'User Rating', icon: Star },
-];
-
 export default function Landing() {
+  const [stats, setStats] = useState([
+    { value: '0', label: 'Questions Answered', icon: MessageSquare },
+    { value: '0', label: 'Hours Saved', icon: Clock },
+    { value: '0', label: 'Active Users', icon: Users },
+    { value: '4.9/5', label: 'User Rating', icon: Star },
+  ]);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        // Fetch real stats from database
+        const [queriesResult, usersResult] = await Promise.all([
+          supabase.from('ai_query_history').select('id', { count: 'exact', head: true }),
+          supabase.from('profiles').select('id', { count: 'exact', head: true })
+        ]);
+
+        const totalQueries = queriesResult.count || 0;
+        const totalUsers = usersResult.count || 0;
+
+        // Estimate hours saved (assuming 15 minutes saved per query)
+        const hoursSaved = Math.floor(totalQueries * 0.25);
+
+        setStats([
+          {
+            value: totalQueries >= 1000000 ? `${(totalQueries / 1000000).toFixed(1)}M+` :
+                   totalQueries >= 1000 ? `${(totalQueries / 1000).toFixed(1)}K+` :
+                   totalQueries.toString(),
+            label: 'Questions Answered',
+            icon: MessageSquare
+          },
+          {
+            value: hoursSaved >= 1000000 ? `${(hoursSaved / 1000000).toFixed(1)}M+` :
+                   hoursSaved >= 1000 ? `${(hoursSaved / 1000).toFixed(1)}K+` :
+                   hoursSaved.toString(),
+            label: 'Hours Saved',
+            icon: Clock
+          },
+          {
+            value: totalUsers >= 1000000 ? `${(totalUsers / 1000000).toFixed(1)}M+` :
+                   totalUsers >= 1000 ? `${(totalUsers / 1000).toFixed(1)}K+` :
+                   totalUsers.toString(),
+            label: 'Active Users',
+            icon: Users
+          },
+          { value: '4.9/5', label: 'User Rating', icon: Star },
+        ]);
+      } catch (error) {
+        console.error('Error fetching stats:', error);
+        // Keep fallback values if fetch fails
+      }
+    };
+
+    fetchStats();
+  }, []);
   return (
     <div className="min-h-screen relative overflow-hidden">
       {/* White background */}
@@ -356,6 +405,7 @@ export default function Landing() {
               </span>
             </h2>
             <p className="text-lg text-muted-foreground">See what our users are saying</p>
+            <p className="text-xs text-muted-foreground/60 mt-2 italic">*Example testimonials for demonstration purposes</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

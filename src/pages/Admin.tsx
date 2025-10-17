@@ -263,20 +263,49 @@ export default function Admin() {
   };
 
   const fetchSettings = async () => {
-    // In a real app, these would come from a settings table
-    // For now, using default values
     try {
-      // You could fetch from a settings table here
-      console.log('Settings loaded with defaults');
+      const { data, error } = await supabase.functions.invoke('admin-settings', {
+        body: { method: 'GET' }
+      });
+
+      if (error) throw error;
+
+      if (data?.settings) {
+        setSettings(prev => ({
+          ...prev,
+          ...data.settings
+        }));
+        console.log('Settings loaded from database');
+      } else {
+        console.log('No settings found, using defaults');
+      }
     } catch (error) {
       console.error('Error fetching settings:', error);
+      // Keep using default values if fetch fails
     }
   };
 
   const updateSetting = async (key: keyof AppSettings, value: any) => {
     setSettings(prev => ({ ...prev, [key]: value }));
-    // In a real app, you'd save this to a database
-    toast.success('Setting updated successfully');
+
+    try {
+      const { error } = await supabase.functions.invoke('admin-settings', {
+        body: {
+          method: 'UPDATE',
+          settingKey: key,
+          settingValue: value
+        }
+      });
+
+      if (error) throw error;
+
+      toast.success('Setting updated successfully');
+    } catch (error) {
+      console.error('Error updating setting:', error);
+      toast.error('Failed to save setting to database');
+      // Revert the local state change
+      loadSettings();
+    }
   };
 
   if (loading) {
