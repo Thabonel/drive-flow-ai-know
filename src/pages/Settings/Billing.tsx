@@ -23,7 +23,7 @@ const plans = [
     name: 'Business',
     price: '$150/month',
     priceId: 'business',
-    features: ['Unlimited queries', '500 GB storage', 'Team collaboration (5 users)', 'Advanced analytics', 'Dedicated support']
+    features: ['Includes 5 team members', 'Additional users $10/month each', 'Unlimited queries per user', '500 GB storage', 'Team admin controls', 'Dedicated support']
   }
 ];
 
