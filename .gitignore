@@ -22,3 +22,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Python (research-agent only, keep root clean for Netlify)
+/requirements.txt
+/serve.py
+*.backup
