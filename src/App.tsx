@@ -25,6 +25,11 @@ import Admin from "./pages/Admin";
 import DocumentList from "./components/DocumentList";
 import Conversations from "./pages/Conversations";
 import MicrosoftCallback from "./pages/MicrosoftCallback";
+import Terms from "./pages/Terms";
+import Privacy from "./pages/Privacy";
+import Disclaimer from "./pages/Disclaimer";
+import DataPolicy from "./pages/DataPolicy";
+import AcceptableUse from "./pages/AcceptableUse";
 
 const queryClient = new QueryClient();
 
@@ -160,6 +165,11 @@ const App = () => (
                 <Conversations />
               </ProtectedRoute>
             } />
+            <Route path="/terms" element={<Terms />} />
+            <Route path="/privacy" element={<Privacy />} />
+            <Route path="/disclaimer" element={<Disclaimer />} />
+            <Route path="/data-policy" element={<DataPolicy />} />
+            <Route path="/acceptable-use" element={<AcceptableUse />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
