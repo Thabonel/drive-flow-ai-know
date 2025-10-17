@@ -11,6 +11,7 @@ import { AppSidebar } from "@/components/AppSidebar";
 import Header from "./layout/Header";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
+import ResetPassword from "./pages/ResetPassword";
 import GoogleDrive from "./pages/GoogleDrive";
 import Documents from "./pages/Documents";
 import AddDocuments from "./pages/AddDocuments";
@@ -100,6 +101,7 @@ const App = () => (
                 <Auth />
               </PublicRoute>
             } />
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/" element={<Landing />} />
             <Route path="/dashboard" element={
               <ProtectedRoute>
