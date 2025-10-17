@@ -3,9 +3,10 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Loader2, Send, Archive, Trash2 } from 'lucide-react';
+import { Loader2, Send, Archive, Trash2, Edit2, Check, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 
@@ -30,6 +31,9 @@ export function ConversationChat({ conversationId: initialConversationId, onConv
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSummarizing, setIsSummarizing] = useState(false);
+  const [conversationTitle, setConversationTitle] = useState('AI Assistant');
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [editedTitle, setEditedTitle] = useState('');
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -46,6 +50,17 @@ export function ConversationChat({ conversationId: initialConversationId, onConv
 
   const loadMessages = async () => {
     if (!conversationId) return;
+
+    // Load conversation details to get the title
+    const { data: conversation, error: convError } = await supabase
+      .from('conversations')
+      .select('title')
+      .eq('id', conversationId)
+      .single();
+
+    if (!convError && conversation) {
+      setConversationTitle(conversation.title || 'AI Assistant');
+    }
 
     const { data, error } = await supabase
       .from('messages')
@@ -152,13 +167,40 @@ export function ConversationChat({ conversationId: initialConversationId, onConv
 
       // Update conversation message count and title if first message
       if (messages.length === 0 && conversationId) {
-        await supabase
-          .from('conversations')
-          .update({
-            title: userMessage.slice(0, 100),
-            message_count: 2,
-          })
-          .eq('id', conversationId);
+        // Generate AI title for the conversation
+        try {
+          const titleResponse = await supabase.functions.invoke('ai-query', {
+            body: {
+              query: `Based on this user message, generate a short, descriptive title (max 6 words) for this conversation. Only respond with the title, nothing else: "${userMessage}"`,
+            },
+          });
+
+          const generatedTitle = titleResponse.data?.response?.trim() || userMessage.slice(0, 100);
+
+          await supabase
+            .from('conversations')
+            .update({
+              title: generatedTitle,
+              message_count: 2,
+            })
+            .eq('id', conversationId);
+
+          // Update local state
+          setConversationTitle(generatedTitle);
+        } catch (error) {
+          // Fallback to user message if AI title generation fails
+          const fallbackTitle = userMessage.slice(0, 100);
+          await supabase
+            .from('conversations')
+            .update({
+              title: fallbackTitle,
+              message_count: 2,
+            })
+            .eq('id', conversationId);
+
+          // Update local state
+          setConversationTitle(fallbackTitle);
+        }
       } else if (conversationId) {
         await supabase
           .from('conversations')
@@ -222,10 +264,70 @@ export function ConversationChat({ conversationId: initialConversationId, onConv
     navigate('/conversations');
   };
 
+  const handleEditTitle = () => {
+    setEditedTitle(conversationTitle);
+    setIsEditingTitle(true);
+  };
+
+  const handleSaveTitle = async () => {
+    if (!conversationId || !editedTitle.trim()) {
+      setIsEditingTitle(false);
+      return;
+    }
+
+    const { error } = await supabase
+      .from('conversations')
+      .update({ title: editedTitle.trim() })
+      .eq('id', conversationId);
+
+    if (error) {
+      toast.error('Failed to update title');
+      return;
+    }
+
+    setConversationTitle(editedTitle.trim());
+    setIsEditingTitle(false);
+    toast.success('Title updated');
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditingTitle(false);
+    setEditedTitle('');
+  };
+
   return (
     <div className="flex flex-col h-full">
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-2xl font-bold">AI Assistant</h2>
+        {isEditingTitle ? (
+          <div className="flex items-center gap-2 flex-1 mr-4">
+            <Input
+              value={editedTitle}
+              onChange={(e) => setEditedTitle(e.target.value)}
+              className="max-w-md"
+              placeholder="Conversation title..."
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleSaveTitle();
+                if (e.key === 'Escape') handleCancelEdit();
+              }}
+              autoFocus
+            />
+            <Button size="sm" variant="ghost" onClick={handleSaveTitle}>
+              <Check className="h-4 w-4" />
+            </Button>
+            <Button size="sm" variant="ghost" onClick={handleCancelEdit}>
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2">
+            <h2 className="text-2xl font-bold">{conversationTitle}</h2>
+            {conversationId && (
+              <Button size="sm" variant="ghost" onClick={handleEditTitle}>
+                <Edit2 className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
+        )}
         <div className="flex gap-2">
           {conversationId && messages.length > 0 && (
             <>
