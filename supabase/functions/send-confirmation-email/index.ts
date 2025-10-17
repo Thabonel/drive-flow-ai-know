@@ -26,9 +26,9 @@ const handler = async (req: Request): Promise<Response> => {
     console.log('Sending confirmation email to:', email);
 
     const emailResponse = await resend.emails.send({
-      from: "DocChat <onboarding@resend.dev>",
+      from: "AI Query Hub <onboarding@resend.dev>",
       to: [email],
-      subject: "Welcome to DocChat - Confirm Your Email",
+      subject: "Welcome to AI Query Hub - Confirm Your Email",
       html: `
         <!DOCTYPE html>
         <html>
@@ -97,12 +97,12 @@ const handler = async (req: Request): Promise<Response> => {
           <body>
             <div class="container">
               <div class="header">
-                <h1>🎉 Welcome to DocChat!</h1>
+                <h1>Welcome to AI Query Hub!</h1>
               </div>
               <div class="content">
                 <h2 style="margin-top: 0;">Hi ${fullName},</h2>
-                <p>Thank you for signing up for DocChat! We're excited to have you on board.</p>
-                <p>To complete your registration and start chatting with your documents using AI, please confirm your email address by clicking the button below:</p>
+                <p>Thank you for signing up for AI Query Hub! We're excited to have you on board.</p>
+                <p>To complete your registration and start using your AI assistant that remembers everything, please confirm your email address by clicking the button below:</p>
                 <div style="text-align: center; margin: 30px 0;">
                   <a href="${confirmationUrl}" class="button">Confirm Email Address</a>
                 </div>
@@ -121,16 +121,16 @@ const handler = async (req: Request): Promise<Response> => {
                   <li>Create AI-powered summaries and insights</li>
                 </ul>
                 <p style="color: #888; font-size: 14px; margin-top: 30px;">
-                  If you didn't create an account with DocChat, you can safely ignore this email.
+                  If you didn't create an account with AI Query Hub, you can safely ignore this email.
                 </p>
               </div>
               <div class="footer">
                 <p>
-                  <strong>DocChat</strong><br>
-                  AI-Powered Document Intelligence
+                  <strong>AI Query Hub</strong><br>
+                  An AI Assistant That Remembers Everything
                 </p>
                 <p style="margin-top: 10px;">
-                  Questions? <a href="mailto:support@docchat.com">Contact Support</a>
+                  Questions? <a href="mailto:support@aiqueryhub.com">Contact Support</a>
                 </p>
               </div>
             </div>

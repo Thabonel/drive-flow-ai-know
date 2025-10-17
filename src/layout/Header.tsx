@@ -30,7 +30,7 @@ const Header = () => {
     <header className="h-12 flex items-center justify-between border-b bg-background px-4 relative">
       <div className="flex items-center gap-4">
         <SidebarTrigger />
-        <h2 className="text-lg font-semibold text-foreground hidden sm:block">DocChat</h2>
+        <h2 className="text-lg font-semibold text-foreground hidden sm:block">AI Query Hub</h2>
       </div>
       
       <div className="flex items-center gap-2">
