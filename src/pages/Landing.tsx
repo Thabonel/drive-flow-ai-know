@@ -26,7 +26,7 @@ import {
 const plans = [
   {
     name: 'Starter',
-    price: '$14',
+    price: '$9',
     period: '/month',
     description: 'Perfect for individuals getting started',
     features: [
