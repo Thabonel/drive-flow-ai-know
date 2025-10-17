@@ -8,19 +8,22 @@ import { ShoppingCart, Zap } from 'lucide-react';
 
 const plans = [
   {
-    name: 'Free Trial',
-    price: 'Free for 14 days',
-    features: ['Full access', 'Unlimited documents', '10 GB storage included']
-  },
-  {
-    name: 'Monthly',
+    name: 'Starter',
     price: '$14/month',
-    features: ['Unlimited docs', '10 GB storage included', 'Priority support']
+    priceId: 'starter',
+    features: ['200 queries/month', '5 GB storage', 'Google Drive sync', 'Knowledge bases (3 max)', 'Email support']
   },
   {
-    name: 'Yearly',
-    price: '$140/year',
-    features: ['Save $28/year', '10 GB storage included', 'All features']
+    name: 'Pro',
+    price: '$45/month',
+    priceId: 'pro',
+    features: ['1,000 queries/month', '50 GB storage', 'Unlimited knowledge bases', 'Choice of AI model', 'Priority support', 'API access']
+  },
+  {
+    name: 'Business',
+    price: '$150/month',
+    priceId: 'business',
+    features: ['Unlimited queries', '500 GB storage', 'Team collaboration (5 users)', 'Advanced analytics', 'Dedicated support']
   }
 ];
 
