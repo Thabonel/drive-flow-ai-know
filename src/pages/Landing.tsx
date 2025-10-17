@@ -19,8 +19,7 @@ import {
   Sparkles,
   CheckCircle2,
   BarChart3,
-  Upload,
-  Play
+  Upload
 } from 'lucide-react';
 
 const plans = [
@@ -165,14 +164,14 @@ export default function Landing() {
       
 
       {/* Navigation */}
-      <header className="relative border-b border-primary/20 bg-primary/95 backdrop-blur-xl supports-[backdrop-filter]:bg-primary/90 sticky top-0 z-50 shadow-lg">
+      <header className="relative border-b border-primary bg-primary sticky top-0 z-50 shadow-lg">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-secondary to-primary flex items-center justify-center shadow-glow">
               <FileText className="h-5 w-5 text-white" />
             </div>
             <span className="text-xl font-bold text-white">AI Query Hub</span>
-            <Badge className="ml-2 hidden sm:inline-flex bg-secondary/30 border-secondary/50 text-white">Remembers Everything</Badge>
+            <Badge className="ml-2 hidden sm:inline-flex bg-secondary border-secondary text-white">Remembers Everything</Badge>
           </div>
           
           <nav className="hidden md:flex items-center space-x-8">
@@ -213,29 +212,27 @@ export default function Landing() {
             </p>
 
             <div className="flex flex-wrap gap-4 justify-center items-center pt-2">
-              <Button size="lg" className="text-lg px-8 py-6 bg-accent hover:bg-accent/90 shadow-lg hover:shadow-xl transition-all hover:scale-105 border-0 text-white">
-                Get Instant Answers Now
-                <ArrowRight className="ml-2 w-5 h-5" />
-              </Button>
-              <Button size="lg" variant="outline" className="text-lg px-8 py-6 border-2 border-primary/30 bg-background hover:bg-muted hover:border-primary/50">
-                Watch Demo
-                <Play className="ml-2 w-5 h-5" />
+              <Button asChild size="lg" className="text-lg px-8 py-6 bg-accent hover:bg-accent/90 shadow-lg hover:shadow-xl transition-all hover:scale-105 border-0 text-white">
+                <Link to="/auth">
+                  Get Started Free
+                  <ArrowRight className="ml-2 w-5 h-5" />
+                </Link>
               </Button>
             </div>
 
             {/* Trust Indicators */}
             <div className="flex flex-wrap gap-6 justify-center items-center pt-6 text-sm">
-              <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 backdrop-blur-sm">
-                <Shield className="w-4 h-4 text-primary" />
-                <span className="font-medium text-primary">Bank-level Security</span>
+              <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-primary border border-primary">
+                <Shield className="w-4 h-4 text-white" />
+                <span className="font-medium text-white">Bank-level Security</span>
               </div>
-              <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-success/10 border border-success/20 backdrop-blur-sm">
-                <Zap className="w-4 h-4 text-success" />
-                <span className="font-medium text-success">Instant Results</span>
+              <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-success border border-success">
+                <Zap className="w-4 h-4 text-white" />
+                <span className="font-medium text-white">Instant Results</span>
               </div>
-              <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-accent/10 border border-accent/20 backdrop-blur-sm">
-                <Users className="w-4 h-4 text-accent" />
-                <span className="font-medium text-accent">10,000+ Happy Users</span>
+              <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-accent border border-accent">
+                <Users className="w-4 h-4 text-white" />
+                <span className="font-medium text-white">10,000 Happy Users</span>
               </div>
             </div>
           </div>
@@ -243,11 +240,11 @@ export default function Landing() {
           {/* Stats Section */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mt-16 animate-slide-up">
             {stats.map((stat, index) => {
-              const colors = ["text-primary", "text-success", "text-success", "text-accent"];
-              const bgColors = ["bg-primary/10", "bg-success/10", "bg-success/10", "bg-accent/10"];
-              const borderColors = ["border-primary/20", "border-success/20", "border-success/20", "border-accent/20"];
+              const colors = ["text-white", "text-white", "text-white", "text-white"];
+              const bgColors = ["bg-primary", "bg-success", "bg-success", "bg-accent"];
+              const borderColors = ["border-primary", "border-success", "border-success", "border-accent"];
               return (
-                <div key={index} className={`text-center p-6 rounded-2xl ${bgColors[index]} border ${borderColors[index]} shadow-card backdrop-blur-xl hover:shadow-lg transition-all hover:scale-105`}>
+                <div key={index} className={`text-center p-6 rounded-2xl ${bgColors[index]} border ${borderColors[index]} shadow-card hover:shadow-lg transition-all hover:scale-105`}>
                   <stat.icon className={`w-8 h-8 mx-auto mb-2 ${colors[index]}`} />
                   <div className={`text-5xl font-bold ${colors[index]} mb-2`}>
                     {stat.value}
