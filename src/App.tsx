@@ -24,6 +24,7 @@ import Landing from "./pages/Landing";
 import Admin from "./pages/Admin";
 import DocumentList from "./components/DocumentList";
 import Conversations from "./pages/Conversations";
+import MicrosoftCallback from "./pages/MicrosoftCallback";
 
 const queryClient = new QueryClient();
 
@@ -102,6 +103,7 @@ const App = () => (
               </PublicRoute>
             } />
             <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/auth/microsoft/callback" element={<MicrosoftCallback />} />
             <Route path="/" element={<Landing />} />
             <Route path="/dashboard" element={
               <ProtectedRoute>
