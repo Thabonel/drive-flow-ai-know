@@ -17,7 +17,7 @@ type Message = {
 };
 
 type ServerConfig = {
-  protocol: "smb_cifs" | "nfs" | "sftp" | "ftp" | "webdav" | "s3" | "azure_files" | "azure_blob";
+  protocol: "sftp" | "webdav" | "s3" | "azure_files" | "azure_blob";
   host: string;
   port: string;
   authMethod: "username_password" | "ssh_key" | "oauth" | "api_key" | "certificate" | "active_directory";
@@ -229,14 +229,11 @@ export default function EnterpriseServer() {
                   <SelectValue placeholder="Select protocol" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="sftp">SFTP</SelectItem>
-                  <SelectItem value="ftp">FTP</SelectItem>
-                  <SelectItem value="smb_cifs">SMB/CIFS</SelectItem>
-                  <SelectItem value="webdav">WebDAV</SelectItem>
-                  <SelectItem value="nfs">NFS</SelectItem>
                   <SelectItem value="s3">Amazon S3</SelectItem>
                   <SelectItem value="azure_files">Azure Files</SelectItem>
                   <SelectItem value="azure_blob">Azure Blob</SelectItem>
+                  <SelectItem value="sftp">SFTP</SelectItem>
+                  <SelectItem value="webdav">WebDAV</SelectItem>
                 </SelectContent>
               </Select>
             </div>
