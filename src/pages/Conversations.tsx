@@ -105,8 +105,8 @@ export default function Conversations() {
   };
 
   return (
-    <div className="container mx-auto p-6 h-[calc(100vh-4rem)] pb-16">
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full">
+    <div className="container mx-auto p-6 h-[calc(100vh-4rem)]">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full pb-24">
         {/* Sidebar */}
         <Card className="lg:col-span-1">
           <CardHeader>
