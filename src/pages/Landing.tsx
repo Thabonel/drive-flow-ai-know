@@ -191,9 +191,9 @@ export default function Landing() {
       <section className="relative pt-16 pb-20 px-6">
         <div className="max-w-7xl mx-auto">
           <div className="text-center space-y-6 animate-fade-in">
-            <div className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-gradient-to-r from-primary/20 via-secondary/20 to-accent/20 border border-primary/30 backdrop-blur-xl shadow-glow">
+            <div className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-primary/20 border border-primary/30 backdrop-blur-xl shadow-glow">
               <Sparkles className="w-5 h-5 text-primary animate-pulse-glow" />
-              <span className="text-sm font-semibold bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent animate-gradient-shift bg-[length:200%_auto]">
+              <span className="text-sm font-semibold text-primary">
                 AI-Powered Document Intelligence
               </span>
             </div>
@@ -249,7 +249,7 @@ export default function Landing() {
                   <div className={`text-5xl font-bold ${colors[index]} mb-2`}>
                     {stat.value}
                   </div>
-                  <div className="text-foreground/80 font-medium">{stat.label}</div>
+                  <div className="text-white font-medium">{stat.label}</div>
                 </div>
               );
             })}
@@ -271,7 +271,7 @@ export default function Landing() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {[
-              { icon: Upload, title: "Upload", desc: "Drop any document - PDF, Word, Excel, or text file", color: "primary" },
+              { icon: Upload, title: "Upload", desc: "Use any document", color: "primary" },
               { icon: MessageSquare, title: "Ask", desc: "Type your question in natural language", color: "secondary" },
               { icon: Sparkles, title: "Get Answers", desc: "Receive instant, accurate responses with sources", color: "success" }
             ].map((step, i) => (
@@ -390,7 +390,7 @@ export default function Landing() {
       <section id="pricing" className="relative py-16 px-6">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-12">
-            <div className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-gradient-to-r from-success/20 via-accent/20 to-secondary/20 border border-success/30 backdrop-blur-xl shadow-glow mb-4">
+            <div className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-success/20 border border-success/30 backdrop-blur-xl shadow-glow mb-4">
               <Sparkles className="w-5 h-5 text-success animate-pulse-glow" />
               <span className="text-sm font-semibold text-success">
                 14-Day Free Trial • No Credit Card Required
@@ -532,8 +532,38 @@ export default function Landing() {
             </Link>
           </div>
 
-          <div className="mt-6 pt-6 border-t border-border text-center text-xs text-muted-foreground">
-            <p>© 2024 AI Query Hub. All rights reserved. Built with privacy and security in mind.</p>
+          <div className="mt-8 pt-6 border-t border-border">
+            <div className="flex flex-wrap justify-center gap-4 mb-4">
+              <a href="/terms" className="text-xs text-muted-foreground hover:text-primary underline transition-colors">
+                Terms of Service
+              </a>
+              <a href="/privacy" className="text-xs text-muted-foreground hover:text-primary underline transition-colors">
+                Privacy Policy
+              </a>
+              <a href="/disclaimer" className="text-xs text-muted-foreground hover:text-primary underline transition-colors">
+                Disclaimer
+              </a>
+              <a href="/data-policy" className="text-xs text-muted-foreground hover:text-primary underline transition-colors">
+                Data Policy
+              </a>
+              <a href="/acceptable-use" className="text-xs text-muted-foreground hover:text-primary underline transition-colors">
+                Acceptable Use Policy
+              </a>
+            </div>
+
+            <div className="text-center text-xs text-muted-foreground max-w-4xl mx-auto space-y-2">
+              <p className="font-semibold text-foreground">Important Legal Disclaimer</p>
+              <p>
+                AI Query Hub is provided "as is" without warranties of any kind. While we implement industry-standard security measures,
+                <strong className="text-foreground"> we are not responsible for any data loss, corruption, unauthorized access, or breaches</strong> that may occur through the use of our service.
+                Users are solely responsible for maintaining backups of their important documents and data.
+              </p>
+              <p>
+                By using AI Query Hub, you acknowledge that you upload and store data at your own risk. We strongly recommend maintaining separate backups
+                of all critical documents. Our service is not intended as a primary data storage solution. See our Terms of Service and Data Policy for complete details.
+              </p>
+              <p className="pt-2">© 2024 AI Query Hub. All rights reserved. Built with privacy and security in mind.</p>
+            </div>
           </div>
         </div>
       </footer>
