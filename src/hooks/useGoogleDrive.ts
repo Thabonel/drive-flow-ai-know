@@ -135,34 +135,60 @@ export const useGoogleDrive = () => {
   const signIn = useCallback(async () => {
     try {
       const clientId = await getClientId();
+
+      // Show a helpful message
+      toast({
+        title: 'Opening Google Sign-In',
+        description: 'Please sign in with your Google account and grant access to Google Drive',
+      });
+
       const tokenClient = window.google.accounts.oauth2.initTokenClient({
         client_id: clientId,
         scope: 'https://www.googleapis.com/auth/drive.readonly',
         callback: async (response: any) => {
           console.log('OAuth response received:', response);
-          if (response.access_token) {
-            window.gapi.client.setToken(response);
-            await storeTokens(response);
-            setIsAuthenticated(true);
-            await loadDriveItems();
-            
+
+          if (response.error) {
+            console.error('OAuth error:', response);
             toast({
-              title: 'Success',
-              description: 'Successfully connected to Google Drive',
+              title: 'Authentication Failed',
+              description: response.error_description || 'Failed to connect to Google Drive',
+              variant: 'destructive',
+            });
+            return;
+          }
+
+          if (response.access_token) {
+            // Set the token in the Google API client
+            window.gapi.client.setToken(response);
+
+            // Store tokens securely in database
+            await storeTokens(response);
+
+            // Update authentication state
+            setIsAuthenticated(true);
+
+            // Load user's Drive items
+            await loadDriveItems();
+
+            toast({
+              title: 'Connected Successfully!',
+              description: 'You can now browse and sync your Google Drive folders',
             });
           } else {
             console.error('No access token in response:', response);
-            throw new Error('No access token received');
+            throw new Error('No access token received from Google');
           }
         },
       });
-      
+
+      // Request access token with consent prompt (shows permission screen)
       tokenClient.requestAccessToken({ prompt: 'consent' });
     } catch (error) {
       console.error('Error signing in:', error);
       toast({
-        title: 'Error',
-        description: 'Failed to sign in to Google Drive',
+        title: 'Connection Error',
+        description: error instanceof Error ? error.message : 'Failed to connect to Google Drive. Please try again.',
         variant: 'destructive',
       });
     }
