@@ -9,7 +9,7 @@ import { ShoppingCart, Zap } from 'lucide-react';
 const plans = [
   {
     name: 'Starter',
-    price: '$14/month',
+    price: '$9/month',
     priceId: 'starter',
     features: ['200 queries/month', '5 GB storage', 'Google Drive sync', 'Knowledge bases (3 max)', 'Email support']
   },

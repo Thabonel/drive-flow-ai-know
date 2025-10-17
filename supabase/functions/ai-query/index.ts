@@ -182,6 +182,32 @@ serve(async (req) => {
     const user_id = user.id;
     console.log('Authenticated user ID:', user_id);
 
+    // Check usage limits before processing query
+    const { data: limitCheck, error: limitError } = await supabaseService
+      .rpc('check_query_limit', { p_user_id: user_id });
+
+    if (limitError) {
+      console.error('Error checking query limit:', limitError);
+    }
+
+    if (limitCheck && !limitCheck.allowed) {
+      return new Response(
+        JSON.stringify({
+          error: limitCheck.reason,
+          limit: limitCheck.limit,
+          used: limitCheck.used,
+          plan_type: limitCheck.plan_type,
+          response: limitCheck.reason === 'Rate limit exceeded (100 queries/hour)'
+            ? "You've reached the rate limit of 100 queries per hour. Please try again in a few minutes."
+            : `You've reached your monthly query limit of ${limitCheck.limit} queries. Please upgrade your plan to continue.`
+        }),
+        {
+          status: 429,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
+    }
+
     const { data: settings } = await supabaseService
       .from('user_settings')
       .select('model_preference')
@@ -369,10 +395,19 @@ serve(async (req) => {
       aiAnswer = "I'm sorry, I couldn't generate a response to your question. Please try rephrasing or try again.";
     }
 
+    // Increment query count for usage tracking
+    try {
+      await supabaseService.rpc('increment_query_count', { p_user_id: user_id });
+      console.log('Query count incremented');
+    } catch (countError) {
+      console.error('Failed to increment query count:', countError);
+      // Don't fail the main request
+    }
+
     // Save query to history
     try {
       console.log('Saving query to history...');
-      
+
       await supabaseService
         .from('ai_query_history')
         .insert({
@@ -382,7 +417,7 @@ serve(async (req) => {
           knowledge_base_id: knowledge_base_id || null,
           context_documents_count: contextDocuments.length
         });
-        
+
       console.log('Query history saved successfully');
     } catch (historyError) {
       console.error('Failed to save query history:', historyError);
