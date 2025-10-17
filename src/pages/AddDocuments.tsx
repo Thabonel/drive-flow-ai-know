@@ -16,6 +16,8 @@ import { useQuery, useMutation } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import GoogleDrivePicker from '@/components/GoogleDrivePicker';
 import GoogleAuthStatus from '@/components/GoogleAuthStatus';
+import MicrosoftDrivePicker from '@/components/MicrosoftDrivePicker';
+import MicrosoftAuthStatus from '@/components/MicrosoftAuthStatus';
 import DragDropUpload from '@/components/DragDropUpload';
 import LocalFilesPicker from '@/components/LocalFilesPicker';
 
@@ -221,7 +223,7 @@ export default function AddDocuments() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="upload" className="flex items-center gap-2">
             <Upload className="h-4 w-4" />
             Upload Files
@@ -233,6 +235,10 @@ export default function AddDocuments() {
           <TabsTrigger value="google" className="flex items-center gap-2">
             <Cloud className="h-4 w-4" />
             Google Drive
+          </TabsTrigger>
+          <TabsTrigger value="microsoft" className="flex items-center gap-2">
+            <Cloud className="h-4 w-4" />
+            Microsoft 365
           </TabsTrigger>
         </TabsList>
 
@@ -338,6 +344,122 @@ export default function AddDocuments() {
                   <FolderOpen className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
                   <h3 className="text-lg font-medium text-foreground mb-2">No folders connected</h3>
                   <p className="text-muted-foreground">Add your first Google Drive folder to get started</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {folders.data?.map((folder) => {
+                    const activeSyncJob = getActiveSyncJob(folder.id);
+                    const isSyncing = !!activeSyncJob;
+
+                    return (
+                      <div key={folder.id} className="flex items-center justify-between p-4 border rounded-lg">
+                        <div className="flex items-center space-x-4">
+                          <FolderOpen className="h-8 w-8 text-primary" />
+                          <div>
+                            <h4 className="font-medium text-foreground">{folder.folder_name}</h4>
+                            <p className="text-sm text-muted-foreground">{folder.folder_path}</p>
+                            <div className="flex items-center space-x-2 mt-1">
+                              <Badge variant={isSyncing ? 'default' : folder.is_active ? 'default' : 'secondary'}>
+                                {isSyncing ? (
+                                  <>Syncing</>
+                                ) : folder.is_active ? (
+                                  <>
+                                    <CheckCircle className="h-3 w-3 mr-1" />
+                                    Active
+                                  </>
+                                ) : (
+                                  <>
+                                    <XCircle className="h-3 w-3 mr-1" />
+                                    Inactive
+                                  </>
+                                )}
+                              </Badge>
+                              {folder.last_synced_at && (
+                                <span className="text-xs text-muted-foreground">
+                                  Last sync: {new Date(folder.last_synced_at).toLocaleString()}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleSyncFolder(folder.id)}
+                            disabled={isSyncing}
+                          >
+                            <RefreshCw className={`h-4 w-4 mr-2 ${isSyncing ? 'animate-spin' : ''}`} />
+                            Sync
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleRemoveFolder(folder.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="microsoft" className="space-y-4 mt-6">
+          <MicrosoftAuthStatus />
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Add Files & Folders</CardTitle>
+              <CardDescription>
+                Connect files and folders from your OneDrive or SharePoint to start syncing
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-4">
+                <div>
+                  <MicrosoftDrivePicker onItemsSelected={handleItemsFromPicker} />
+                  <p className="text-sm text-muted-foreground mt-2">
+                    Browse and select files/folders directly from your Microsoft 365 account
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Connected Folders & Sync Status</CardTitle>
+                  <CardDescription>
+                    Manage your connected Microsoft 365 folders and sync status
+                  </CardDescription>
+                </div>
+                {folders.data && folders.data.length > 0 && (
+                  <Button
+                    onClick={() => syncAllFolders.mutate()}
+                    disabled={syncAllFolders.isPending}
+                    variant="default"
+                  >
+                    <RefreshCw className={`h-4 w-4 mr-2 ${syncAllFolders.isPending ? 'animate-spin' : ''}`} />
+                    {syncAllFolders.isPending ? 'Syncing All...' : 'Sync All Folders'}
+                  </Button>
+                )}
+              </div>
+            </CardHeader>
+            <CardContent>
+              {folders.isLoading ? (
+                <div className="text-center py-8">Loading...</div>
+              ) : (!folders.data || folders.data.length === 0) ? (
+                <div className="text-center py-8">
+                  <FolderOpen className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                  <h3 className="text-lg font-medium text-foreground mb-2">No folders connected</h3>
+                  <p className="text-muted-foreground">Add your first Microsoft 365 folder to get started</p>
                 </div>
               ) : (
                 <div className="space-y-4">
