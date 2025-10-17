@@ -26,7 +26,7 @@ import {
 const plans = [
   {
     name: 'Starter',
-    price: '$9',
+    price: '$14',
     period: '/month',
     description: 'Perfect for individuals getting started',
     features: [
@@ -40,10 +40,11 @@ const plans = [
     popular: false,
     trial: false,
     savings: null,
+    priceId: 'starter',
   },
   {
     name: 'Pro',
-    price: '$29',
+    price: '$45',
     period: '/month',
     description: 'For power users and professionals',
     features: [
@@ -59,10 +60,11 @@ const plans = [
     popular: true,
     trial: false,
     savings: null,
+    priceId: 'pro',
   },
   {
     name: 'Business',
-    price: '$99',
+    price: '$150',
     period: '/month',
     description: 'For teams and organizations',
     features: [
@@ -78,6 +80,7 @@ const plans = [
     popular: false,
     trial: false,
     savings: null,
+    priceId: 'business',
   },
 ];
 
