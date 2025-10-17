@@ -68,14 +68,14 @@ const plans = [
     period: '/month',
     description: 'For teams and organizations',
     features: [
-      'Unlimited queries',
-      '500 GB storage',
-      'Team collaboration (5 users)',
+      'Includes 5 team members',
+      'Additional users $10/month each',
+      'Unlimited queries per user',
+      '500 GB shared storage',
+      'Team collaboration & admin controls',
       'Custom AI models',
       'Advanced analytics',
-      'White-label option',
-      'Dedicated support',
-      'SSO & enterprise features'
+      'Dedicated support'
     ],
     popular: false,
     trial: false,
