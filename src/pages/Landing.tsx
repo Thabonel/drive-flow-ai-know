@@ -286,7 +286,9 @@ export default function Landing() {
             </div>
           </div>
 
-          {/* Stats Section */}
+          {/* Stats Section - Commented out until we have real user numbers
+          Showing "0 Questions Answered, 0 Hours Saved, 0 Active Users" kills credibility
+          Will uncomment when we have actual usage data to showcase
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mt-16 animate-slide-up">
             {stats.map((stat, index) => {
               const colors = ["text-white", "text-white", "text-white", "text-white"];
@@ -303,6 +305,7 @@ export default function Landing() {
               );
             })}
           </div>
+          */}
         </div>
       </section>
 
@@ -535,11 +538,13 @@ export default function Landing() {
                   <ArrowRight className="ml-2 w-5 h-5" />
                 </Link>
               </Button>
+              {/* Schedule Demo - Commented out until we have significant user numbers to showcase
               <Button asChild size="lg" variant="outline" className="text-lg px-8 py-6 border-2 border-white/40 bg-white/10 text-white hover:bg-white/20 hover:border-white/60 backdrop-blur-sm">
                 <a href="#pricing">
                   Schedule Demo
                 </a>
               </Button>
+              */}
             </div>
             <div className="flex flex-wrap gap-6 justify-center items-center mt-6 text-sm text-white/90">
               <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 backdrop-blur-sm border border-white/20">

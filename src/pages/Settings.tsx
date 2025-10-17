@@ -8,13 +8,12 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { AppSidebar } from "@/components/AppSidebar";
 import { SidebarProvider } from "@/components/ui/sidebar";
-import { useUserSettings, ModelPreference } from "@/hooks/useUserSettings";
+import { useUserSettings } from "@/hooks/useUserSettings";
 import EnterpriseServer from "./Settings/EnterpriseServer";
 import { 
   User, 
@@ -35,7 +34,7 @@ const Settings = () => {
   const [notifications, setNotifications] = useState(true);
   const [autoSync, setAutoSync] = useState(false);
   const [activeTab, setActiveTab] = useState("general");
-  const { modelPreference, setModelPreference, offlineMode, setOfflineMode } = useUserSettings();
+  const { offlineMode, setOfflineMode } = useUserSettings();
 
   useEffect(() => {
     if (location.hash === "#model-provider") {
@@ -160,26 +159,20 @@ const Settings = () => {
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <Brain className="h-5 w-5" />
-                      Model Provider
+                      AI Model
                     </CardTitle>
                     <CardDescription>
-                      Choose the AI model provider used for analysis
+                      Your queries are powered by Claude (Anthropic)
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <Select
-                      value={modelPreference}
-                      onValueChange={(val) => setModelPreference(val as ModelPreference)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select provider" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="anthropic">Claude (Anthropic)</SelectItem>
-                        <SelectItem value="openrouter">OpenRouter (Regional)</SelectItem>
-                        <SelectItem value="ollama">Local (Ollama)</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <div className="flex items-center justify-between p-4 border rounded-lg bg-muted/50">
+                      <div>
+                        <p className="font-medium">Claude Haiku 4.5</p>
+                        <p className="text-sm text-muted-foreground">Fast, accurate responses with enterprise-grade privacy</p>
+                      </div>
+                      <Badge variant="default">Active</Badge>
+                    </div>
                   </CardContent>
                 </Card>
               </TabsContent>
