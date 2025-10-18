@@ -55,17 +55,20 @@ export default function EnterpriseServer() {
     setLoading(true);
 
     try {
-      const { data, error } = await supabase.functions.invoke('enterprise-server-setup', {
+      // Use the main ai-query function instead of enterprise-specific one
+      const systemContext = `You are an AI assistant helping configure enterprise server connections. Current config: Protocol: ${serverConfig.protocol}, Host: ${serverConfig.host || 'not set'}, Auth: ${serverConfig.authMethod}. Guide the user step-by-step with setup.`;
+
+      const { data, error } = await supabase.functions.invoke('ai-query', {
         body: {
-          message: userMessage,
-          conversationHistory: newMessages.slice(0, -1),
-          serverConfig
+          query: `${systemContext}\n\nUser question: ${userMessage}`,
+          conversationContext: newMessages.slice(0, -1).map(m => ({ role: m.role, content: m.content }))
         }
       });
 
       if (error) throw error;
 
-      setChatMessages([...newMessages, { role: 'assistant', content: data.response }]);
+      const aiResponse = data?.response || 'Sorry, I could not help with that. Please try again.';
+      setChatMessages([...newMessages, { role: 'assistant', content: aiResponse }]);
     } catch (error) {
       console.error('Error sending message:', error);
       toast({
