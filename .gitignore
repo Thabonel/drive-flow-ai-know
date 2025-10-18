@@ -48,3 +48,5 @@ supabase/.temp/
 # Test files with potentially sensitive data
 test-apis.js
 *.test.env
+tests/quick-test.js
+**/quick-test.js
