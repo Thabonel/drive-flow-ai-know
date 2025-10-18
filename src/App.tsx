@@ -52,7 +52,6 @@ function AppLayout({ children }: { children: React.ReactNode }) {
             <div className="p-6">{children}</div>
           </main>
         </div>
-        <Footer />
       </div>
     </SidebarProvider>
   );

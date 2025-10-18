@@ -167,38 +167,53 @@ export function ConversationChat({ conversationId: initialConversationId, onConv
 
       // Update conversation message count and title if first message
       if (messages.length === 0 && conversationId) {
-        // Use first message as title immediately (non-blocking)
-        const fallbackTitle = userMessage.slice(0, 50) + (userMessage.length > 50 ? '…' : '');
+        // Generate AI title immediately
+        try {
+          const { data: titleData } = await supabase.functions.invoke('ai-query', {
+            body: {
+              query: `Generate a short, descriptive title (maximum 6 words) for a conversation that starts with: "${userMessage.slice(0, 200)}". Respond with ONLY the title, no quotes or extra text.`,
+            },
+          });
 
-        await supabase
-          .from('conversations')
-          .update({
-            title: fallbackTitle,
-            message_count: 2,
-          })
-          .eq('id', conversationId);
+          let finalTitle = 'New Conversation';
 
-        // Update local state
-        setConversationTitle(fallbackTitle);
-
-        // Generate AI title in background (non-blocking, won't fail the main query)
-        supabase.functions.invoke('ai-query', {
-          body: {
-            query: `Based on this user message, generate a short, descriptive title (max 6 words) for this conversation. Only respond with the title, nothing else: "${userMessage.slice(0, 200)}"`,
-          },
-        }).then(({ data: titleData }) => {
           if (titleData?.response) {
-            const generatedTitle = titleData.response.trim();
-            // Update with AI-generated title
-            supabase
-              .from('conversations')
-              .update({ title: generatedTitle })
-              .eq('id', conversationId)
-              .then(() => setConversationTitle(generatedTitle));
+            // Clean up the AI response - remove quotes and extra text
+            finalTitle = titleData.response
+              .trim()
+              .replace(/^["']|["']$/g, '') // Remove surrounding quotes
+              .split('\n')[0] // Take first line only
+              .slice(0, 60); // Max 60 chars
           }
-        }).catch(() => {
-          // Silently fail - we already have the fallback title
-        });
+
+          // If AI title is too short or looks wrong, use fallback
+          if (finalTitle.length < 3 || finalTitle.toLowerCase() === 'new conversation') {
+            finalTitle = userMessage.slice(0, 50) + (userMessage.length > 50 ? '…' : '');
+          }
+
+          await supabase
+            .from('conversations')
+            .update({
+              title: finalTitle,
+              message_count: 2,
+            })
+            .eq('id', conversationId);
+
+          setConversationTitle(finalTitle);
+        } catch (error) {
+          // If AI title generation fails, use first message as fallback
+          const fallbackTitle = userMessage.slice(0, 50) + (userMessage.length > 50 ? '…' : '');
+
+          await supabase
+            .from('conversations')
+            .update({
+              title: fallbackTitle,
+              message_count: 2,
+            })
+            .eq('id', conversationId);
+
+          setConversationTitle(fallbackTitle);
+        }
       } else if (conversationId) {
         await supabase
           .from('conversations')
