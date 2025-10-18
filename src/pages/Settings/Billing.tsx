@@ -6,30 +6,27 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { ShoppingCart, Zap, Loader2 } from 'lucide-react';
+import { STRIPE_PRICE_IDS } from '@/lib/stripe-config';
 
 const plans = [
   {
     name: 'Starter',
     price: '$9/month',
-    // TODO: Replace with actual Stripe Price ID from your Stripe Dashboard
-    // Example: price_1ABC123xyz...
-    priceId: 'price_starter_placeholder',
+    priceId: STRIPE_PRICE_IDS.starter,
     planType: 'starter',
     features: ['200 queries/month', '5 GB storage', 'Google Drive sync', 'Knowledge bases (3 max)', 'Email support']
   },
   {
     name: 'Pro',
     price: '$45/month',
-    // TODO: Replace with actual Stripe Price ID from your Stripe Dashboard
-    priceId: 'price_pro_placeholder',
+    priceId: STRIPE_PRICE_IDS.pro,
     planType: 'pro',
     features: ['1,000 queries/month', '50 GB storage', 'Unlimited knowledge bases', 'Choice of AI model', 'Priority support', 'API access']
   },
   {
     name: 'Business',
     price: '$150/month',
-    // TODO: Replace with actual Stripe Price ID from your Stripe Dashboard
-    priceId: 'price_business_placeholder',
+    priceId: STRIPE_PRICE_IDS.business,
     planType: 'business',
     features: ['Includes 5 team members', 'Additional users $10/month each', 'Unlimited queries per user', '500 GB storage', 'Team admin controls', 'Dedicated support']
   }
