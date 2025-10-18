@@ -134,15 +134,29 @@ export function ConversationChat({ conversationId: initialConversationId, onConv
 
     const userMessage = input.trim();
     setInput('');
+
+    // Immediately show user message in UI (optimistic update)
+    const tempUserMessage: Message = {
+      id: `temp-${Date.now()}`,
+      role: 'user',
+      content: userMessage,
+      sequence_number: messages.length,
+      timestamp: new Date().toISOString(),
+    };
+
+    setMessages(prev => [...prev, tempUserMessage]);
     setIsLoading(true);
 
     try {
-      // Save user message
+      // Save user message to database
       const savedUserMsg = await saveMessage('user', userMessage, messages);
 
-      // Create updated messages array with user message
-      const messagesWithUser = savedUserMsg ? [...messages, savedUserMsg as Message] : messages;
+      // Create updated messages array with saved user message
+      const messagesWithUser = savedUserMsg
+        ? [...messages, savedUserMsg as Message]
+        : [...messages, tempUserMessage];
 
+      // Update with real saved message (replaces temp)
       if (savedUserMsg) {
         setMessages(messagesWithUser);
       }
