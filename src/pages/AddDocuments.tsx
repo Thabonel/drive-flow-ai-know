@@ -20,6 +20,7 @@ import MicrosoftDrivePicker from '@/components/MicrosoftDrivePicker';
 import MicrosoftAuthStatus from '@/components/MicrosoftAuthStatus';
 import DragDropUpload from '@/components/DragDropUpload';
 import LocalFilesPicker from '@/components/LocalFilesPicker';
+import { S3Setup } from '@/components/S3Setup';
 
 export default function AddDocuments() {
   const navigate = useNavigate();
@@ -223,7 +224,7 @@ export default function AddDocuments() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="upload" className="flex items-center gap-2">
             <Upload className="h-4 w-4" />
             Upload Files
@@ -239,6 +240,10 @@ export default function AddDocuments() {
           <TabsTrigger value="microsoft" className="flex items-center gap-2">
             <Cloud className="h-4 w-4" />
             Microsoft 365
+          </TabsTrigger>
+          <TabsTrigger value="s3" className="flex items-center gap-2">
+            <HardDrive className="h-4 w-4" />
+            Amazon S3
           </TabsTrigger>
         </TabsList>
 
@@ -523,6 +528,10 @@ export default function AddDocuments() {
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="s3" className="space-y-4 mt-6">
+          <S3Setup />
         </TabsContent>
       </Tabs>
     </div>
