@@ -133,32 +133,37 @@ export function ConversationChat({ conversationId: initialConversationId, onConv
     if (!input.trim() || isLoading) return;
 
     const userMessage = input.trim();
+
+    // CRITICAL: Clear input IMMEDIATELY before any async operations
+    // This makes the UI feel instant, just like Claude
     setInput('');
 
-    // Immediately show user message in UI (optimistic update)
+    // Create temporary message for optimistic UI update
     const tempUserMessage: Message = {
-      id: `temp-${Date.now()}`,
+      id: `temp-user-${Date.now()}`,
       role: 'user',
       content: userMessage,
       sequence_number: messages.length,
       timestamp: new Date().toISOString(),
     };
 
-    setMessages(prev => [...prev, tempUserMessage]);
+    // Show user message immediately in the UI
+    const updatedMessages = [...messages, tempUserMessage];
+    setMessages(updatedMessages);
     setIsLoading(true);
 
     try {
-      // Save user message to database
+      // Save user message to database in the background
       const savedUserMsg = await saveMessage('user', userMessage, messages);
 
-      // Create updated messages array with saved user message
-      const messagesWithUser = savedUserMsg
-        ? [...messages, savedUserMsg as Message]
-        : [...messages, tempUserMessage];
+      // Prepare messages array with the saved message
+      const messagesWithSavedUser = savedUserMsg
+        ? messages.concat(savedUserMsg as Message)
+        : updatedMessages;
 
-      // Update with real saved message (replaces temp)
+      // Replace temp message with saved one (if successful)
       if (savedUserMsg) {
-        setMessages(messagesWithUser);
+        setMessages(messagesWithSavedUser);
       }
 
       // Get AI response with conversation context - include the current user message
