@@ -8,6 +8,7 @@ export const useGoogleDrive = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [driveItems, setDriveItems] = useState<DriveItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isSigningIn, setIsSigningIn] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -133,6 +134,7 @@ export const useGoogleDrive = () => {
   }, [loadScript, handleCredentialResponse, toast]);
 
   const signIn = useCallback(async () => {
+    setIsSigningIn(true);
     try {
       const clientId = await getClientId();
 
@@ -155,6 +157,7 @@ export const useGoogleDrive = () => {
               description: response.error_description || 'Failed to connect to Google Drive',
               variant: 'destructive',
             });
+            setIsSigningIn(false);
             return;
           }
 
@@ -175,8 +178,10 @@ export const useGoogleDrive = () => {
               title: 'Connected Successfully!',
               description: 'You can now browse and sync your Google Drive folders',
             });
+            setIsSigningIn(false);
           } else {
             console.error('No access token in response:', response);
+            setIsSigningIn(false);
             throw new Error('No access token received from Google');
           }
         },
@@ -191,6 +196,7 @@ export const useGoogleDrive = () => {
         description: error instanceof Error ? error.message : 'Failed to connect to Google Drive. Please try again.',
         variant: 'destructive',
       });
+      setIsSigningIn(false);
     }
   }, [getClientId, loadDriveItems, toast, storeTokens]);
 
@@ -198,6 +204,7 @@ export const useGoogleDrive = () => {
     isAuthenticated,
     driveItems,
     isLoading,
+    isSigningIn,
     initializeGoogleDrive,
     signIn,
     loadDriveItems

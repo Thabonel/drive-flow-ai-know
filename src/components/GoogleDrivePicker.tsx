@@ -13,7 +13,7 @@ interface GoogleDrivePickerProps {
 
 const GoogleDrivePicker = ({ onItemsSelected }: GoogleDrivePickerProps) => {
   const [isOpen, setIsOpen] = useState(false);
-  const { isAuthenticated, driveItems, isLoading, initializeGoogleDrive, signIn } = useGoogleDrive();
+  const { isAuthenticated, driveItems, isLoading, isSigningIn, initializeGoogleDrive, signIn } = useGoogleDrive();
 
   const handleConfirmSelection = (selectedItems: DriveItem[]) => {
     const formattedItems: SelectedDriveItem[] = selectedItems.map(item => ({
@@ -51,11 +51,11 @@ const GoogleDrivePicker = ({ onItemsSelected }: GoogleDrivePickerProps) => {
         </DialogHeader>
         
         {!isAuthenticated ? (
-          <GoogleAuthCard onSignIn={signIn} />
+          <GoogleAuthCard onSignIn={signIn} isLoading={isSigningIn} />
         ) : (
-          <DriveItemsList 
-            items={driveItems} 
-            isLoading={isLoading} 
+          <DriveItemsList
+            items={driveItems}
+            isLoading={isLoading}
             onConfirmSelection={handleConfirmSelection}
           />
         )}

@@ -1,12 +1,13 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Cloud } from 'lucide-react';
+import { Cloud, Loader2 } from 'lucide-react';
 
 interface GoogleAuthCardProps {
   onSignIn: () => void;
+  isLoading?: boolean;
 }
 
-const GoogleAuthCard = ({ onSignIn }: GoogleAuthCardProps) => {
+const GoogleAuthCard = ({ onSignIn, isLoading = false }: GoogleAuthCardProps) => {
   return (
     <Card>
       <CardHeader>
@@ -25,9 +26,18 @@ const GoogleAuthCard = ({ onSignIn }: GoogleAuthCardProps) => {
           </ol>
           <p className="text-xs mt-2">We only request read-only access - we cannot modify or delete your files.</p>
         </div>
-        <Button onClick={onSignIn} size="lg" className="w-full">
-          <Cloud className="h-4 w-4 mr-2" />
-          Connect Google Drive
+        <Button onClick={onSignIn} size="lg" className="w-full" disabled={isLoading}>
+          {isLoading ? (
+            <>
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              Connecting...
+            </>
+          ) : (
+            <>
+              <Cloud className="h-4 w-4 mr-2" />
+              Connect Google Drive
+            </>
+          )}
         </Button>
       </CardContent>
     </Card>
