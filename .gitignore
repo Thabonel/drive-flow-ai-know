@@ -27,3 +27,24 @@ dist-ssr
 /requirements.txt
 /serve.py
 *.backup
+
+# Environment files (NEVER commit these)
+.env
+.env.local
+.env.production
+.env.*.local
+
+# Supabase temp files
+supabase/.temp/
+.temp/
+
+# NEVER commit secrets or keys
+**/secrets.json
+**/*encryption_key*.sql
+**/*secret*.sql
+**/*password*.sql
+**/credentials.json
+
+# Test files with potentially sensitive data
+test-apis.js
+*.test.env
