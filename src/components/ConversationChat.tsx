@@ -167,7 +167,7 @@ export function ConversationChat({ conversationId: initialConversationId, onConv
       }
 
       // Get AI response with conversation context - include the current user message
-      const conversationContext = messagesWithUser.map(msg => ({
+      const conversationContext = messagesWithSavedUser.map(msg => ({
         role: msg.role,
         content: msg.content,
       }));
@@ -184,9 +184,9 @@ export function ConversationChat({ conversationId: initialConversationId, onConv
       const aiResponse = data?.response || 'Sorry, I could not process your request.';
 
       // Save AI response with updated message count
-      const savedAiMsg = await saveMessage('assistant', aiResponse, messagesWithUser);
+      const savedAiMsg = await saveMessage('assistant', aiResponse, messagesWithSavedUser);
       if (savedAiMsg) {
-        setMessages([...messagesWithUser, savedAiMsg as Message]);
+        setMessages([...messagesWithSavedUser, savedAiMsg as Message]);
       }
 
       // Update conversation message count and title if first message
