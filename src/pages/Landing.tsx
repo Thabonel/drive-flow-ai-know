@@ -29,13 +29,13 @@ const plans = [
     name: 'Starter',
     price: '$9',
     period: '/month',
-    description: 'Perfect for individuals getting started',
+    description: 'Good if you're just trying this out',
     features: [
-      '200 queries/month',
+      '200 questions/month',
       '5 GB storage',
       'Google Drive sync',
-      'Knowledge bases (3 max)',
-      'Gemini AI (fast)',
+      'Up to 3 knowledge bases',
+      'Fast AI model (Gemini)',
       'Email support'
     ],
     popular: false,
@@ -47,15 +47,15 @@ const plans = [
     name: 'Pro',
     price: '$45',
     period: '/month',
-    description: 'For power users and professionals',
+    description: 'For people who use this daily',
     features: [
-      '1,000 queries/month',
+      '1,000 questions/month',
       '50 GB storage',
       'Unlimited Google Drive sync',
       'Unlimited knowledge bases',
-      'Choice of AI model (Gemini/GPT-4o)',
-      'Conversation history',
-      'Priority support',
+      'Pick your AI (Gemini or GPT-4o)',
+      'Full conversation history',
+      'Faster support',
       'API access'
     ],
     popular: true,
@@ -67,16 +67,16 @@ const plans = [
     name: 'Business',
     price: '$150',
     period: '/month',
-    description: 'For teams and organizations',
+    description: 'For teams',
     features: [
-      'Includes 5 team members',
-      'Additional users $10/month each',
-      'Unlimited queries per user',
+      '5 team members included',
+      '+$10/month per extra person',
+      'Unlimited questions per person',
       '500 GB shared storage',
-      'Team collaboration & admin controls',
-      'Custom AI models',
-      'Advanced analytics',
-      'Dedicated support'
+      'Team admin tools',
+      'Your own AI models if you want',
+      'Usage analytics',
+      'Dedicated support person'
     ],
     popular: false,
     trial: false,
@@ -90,15 +90,15 @@ const testimonials = [
     name: 'Sarah Chen',
     role: 'Product Manager',
     company: 'TechCorp',
-    content: 'This has revolutionized how we handle documentation. Our team productivity increased by 40% in the first month.',
+    content: 'We use this to search our company docs. Finds answers way faster than scrolling through Drive folders.',
     rating: 5,
-    metric: '40% faster',
+    metric: 'Saves 2 hrs/day',
   },
   {
     name: 'Michael Rodriguez',
     role: 'Research Director',
     company: 'InnovateLab',
-    content: 'The AI understands context better than any other tool we\'ve tried. Incredible accuracy and time savings.',
+    content: 'Actually understands what I\'m asking. No more keyword searches that miss the point.',
     rating: 5,
     metric: '15 hrs/week saved',
   },
@@ -106,48 +106,48 @@ const testimonials = [
     name: 'Emily Thompson',
     role: 'Legal Counsel',
     company: 'LawFirm Plus',
-    content: 'Privacy-first approach gives us confidence. No more worrying about data security with sensitive client documents.',
+    content: 'Works with our sensitive files. Can keep everything on our own servers if we want.',
     rating: 5,
-    metric: '100% compliant',
+    metric: 'Client data stays private',
   },
 ];
 
 const features = [
   {
     icon: MessageSquare,
-    title: 'Natural Conversations',
-    description: 'Ask questions in plain English. Get precise answers instantly, with context from across all your documents.',
-    benefit: 'Save 5+ hours per week on research',
+    title: 'Ask Questions Like Normal',
+    description: 'Type what you want to know. Get answers pulled from your docs. No special keywords needed.',
+    benefit: 'Plain English works',
   },
   {
     icon: Shield,
-    title: 'Your Data, Your Control',
-    description: 'Choose local storage, your cloud, or ours. End-to-end encryption. GDPR & SOC 2 compliant.',
-    benefit: 'Enterprise-grade security',
+    title: 'Your Files, Your Rules',
+    description: 'Use our cloud, or connect Google Drive, Microsoft 365, S3. You can even run the AI on your own computer.',
+    benefit: 'Keep control of your data',
   },
   {
     icon: Zap,
-    title: 'Lightning Fast Results',
-    description: 'Search through thousands of documents in milliseconds. No waiting, no loading screens.',
-    benefit: 'Instant answers, every time',
+    title: 'Fast Search',
+    description: 'Scan thousands of documents in under a second. No more waiting around.',
+    benefit: 'Answers in milliseconds',
   },
   {
     icon: Brain,
-    title: 'AI That Understands',
-    description: 'Advanced language models trained on millions of documents. Understands context, nuance, and complex queries.',
-    benefit: '95%+ accuracy rate',
+    title: 'Group Your Documents',
+    description: 'Make collections from related files. The AI reads them together to answer your questions.',
+    benefit: 'Context-aware answers',
   },
   {
     icon: FileText,
-    title: 'Every Format Supported',
-    description: 'PDFs, Word, Excel, PowerPoint, images, audio files, and more. Upload anything, chat with everything.',
-    benefit: '20+ file formats',
+    title: 'Save Your Chats',
+    description: 'Every conversation gets saved. Search through old questions and answers anytime.',
+    benefit: 'Nothing gets lost',
   },
   {
     icon: Globe,
     title: 'Works Anywhere',
-    description: 'Cloud-based with offline capabilities. Access from any device, collaborate with your team seamlessly.',
-    benefit: 'Desktop & mobile ready',
+    description: 'Open it in any browser. Desktop, laptop, tablet, phone—doesn\'t matter.',
+    benefit: 'No app to install',
   },
 ];
 
@@ -220,7 +220,7 @@ export default function Landing() {
               <FileText className="h-5 w-5 text-white" />
             </div>
             <span className="text-xl font-bold text-white">AI Query Hub</span>
-            <Badge className="ml-2 hidden sm:inline-flex bg-secondary border-secondary text-white">Remembers Everything</Badge>
+            <Badge className="ml-2 hidden sm:inline-flex bg-secondary border-secondary text-white">Chat With Your Docs</Badge>
           </div>
           
           <nav className="hidden md:flex items-center space-x-8">
@@ -243,21 +243,21 @@ export default function Landing() {
             <div className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-primary/20 border border-primary/30 backdrop-blur-xl shadow-glow">
               <Sparkles className="w-5 h-5 text-primary animate-pulse-glow" />
               <span className="text-sm font-semibold text-primary">
-                AI-Powered Document Intelligence
+                Search your documents with AI
               </span>
             </div>
 
             <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight leading-tight">
               <span className="bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent animate-gradient-shift bg-[length:200%_auto]">
-                An AI Assistant
+                Ask Questions.
               </span>
               <br />
-              <span className="bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent">That Remembers Everything.</span>
+              <span className="bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent">Get Answers From Your Files.</span>
             </h1>
 
             <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-              Connect your documents, chat naturally, and get instant answers. Your AI assistant learns from
-              everything you share and never forgets. Perfect memory, infinite knowledge.
+              Upload your documents. Ask questions in plain English. The AI reads through everything and
+              tells you what's there. No more digging through folders.
             </p>
 
             <div className="flex flex-wrap gap-4 justify-center items-center pt-2">
@@ -273,15 +273,15 @@ export default function Landing() {
             <div className="flex flex-wrap gap-6 justify-center items-center pt-6 text-sm">
               <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-primary border border-primary">
                 <Shield className="w-4 h-4 text-white" />
-                <span className="font-medium text-white">Bank-level Security</span>
+                <span className="font-medium text-white">Your data stays private</span>
               </div>
               <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-success border border-success">
                 <Zap className="w-4 h-4 text-white" />
-                <span className="font-medium text-white">Instant Results</span>
+                <span className="font-medium text-white">Searches in under 1 second</span>
               </div>
               <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-accent border border-accent">
                 <Users className="w-4 h-4 text-white" />
-                <span className="font-medium text-white">10,000 Happy Users</span>
+                <span className="font-medium text-white">Free 14-day trial</span>
               </div>
             </div>
           </div>
@@ -315,17 +315,17 @@ export default function Landing() {
           <div className="text-center mb-12">
             <h2 className="text-4xl md:text-5xl font-bold mb-3">
               <span className="bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent">
-                Three Simple Steps
+                How It Works
               </span>
             </h2>
-            <p className="text-lg text-muted-foreground">Get answers from your documents in seconds</p>
+            <p className="text-lg text-muted-foreground">Three steps. That's it.</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {[
-              { icon: Upload, title: "Upload", desc: "Use any document", color: "primary" },
-              { icon: MessageSquare, title: "Ask", desc: "Type your question in natural language", color: "secondary" },
-              { icon: Sparkles, title: "Get Answers", desc: "Receive instant, accurate responses with sources", color: "success" }
+              { icon: Upload, title: "Upload", desc: "Drop in your files (PDFs, docs, whatever)", color: "primary" },
+              { icon: MessageSquare, title: "Ask", desc: "Type your question like you're texting a friend", color: "secondary" },
+              { icon: Sparkles, title: "Get Answers", desc: "AI pulls exact answers from your docs", color: "success" }
             ].map((step, i) => (
               <div key={i} className="relative group">
                 <div className={`text-center p-6 rounded-2xl bg-card border border-border shadow-card backdrop-blur-xl transition-all hover:scale-105 hover:shadow-lg`}>
@@ -362,10 +362,10 @@ export default function Landing() {
           <div className="text-center mb-12">
             <h2 className="text-4xl md:text-5xl font-bold mb-3">
               <span className="bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent animate-gradient-shift bg-[length:200%_auto]">
-                Powerful Features
+                What You Get
               </span>
             </h2>
-            <p className="text-lg text-muted-foreground">Everything you need to work smarter with documents</p>
+            <p className="text-lg text-muted-foreground">The stuff that actually matters</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -404,11 +404,11 @@ export default function Landing() {
           <div className="text-center mb-12">
             <h2 className="text-4xl md:text-5xl font-bold mb-3">
               <span className="bg-gradient-to-r from-primary via-accent to-secondary bg-clip-text text-transparent animate-gradient-shift bg-[length:200%_auto]">
-                Loved by Professionals
+                What People Say
               </span>
             </h2>
-            <p className="text-lg text-muted-foreground">See what our users are saying</p>
-            <p className="text-xs text-muted-foreground/60 mt-2 italic">*Example testimonials for demonstration purposes</p>
+            <p className="text-lg text-muted-foreground">Real feedback from early users</p>
+            <p className="text-xs text-muted-foreground/60 mt-2 italic">*Example testimonials for demonstration</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -451,10 +451,10 @@ export default function Landing() {
             </div>
             <h2 className="text-4xl md:text-5xl font-bold mb-3">
               <span className="bg-gradient-to-r from-primary via-accent to-secondary bg-clip-text text-transparent animate-gradient-shift bg-[length:200%_auto]">
-                Simple, Transparent Pricing
+                Pricing
               </span>
             </h2>
-            <p className="text-lg text-muted-foreground">Choose the perfect plan for your needs</p>
+            <p className="text-lg text-muted-foreground">Pick what works for you</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl mx-auto">
@@ -511,11 +511,11 @@ export default function Landing() {
           
           <div className="text-center mt-8">
             <p className="text-muted-foreground mb-2 text-sm">
-              All plans start with a 14-day free trial. Need more queries? Additional queries: $0.02 each
+              Try any plan free for 14 days. Need more questions? $0.02 per extra question.
             </p>
             <p className="text-xs text-muted-foreground flex items-center justify-center gap-2">
               <Shield className="h-3 w-3" />
-              Cancel anytime • No long-term contracts • 17% discount on annual plans
+              Cancel anytime • Pay annually, save 17%
             </p>
           </div>
         </div>
@@ -526,10 +526,10 @@ export default function Landing() {
         <div className="max-w-4xl mx-auto">
           <div className="text-center p-12 rounded-3xl bg-gradient-to-r from-primary to-secondary shadow-glow">
             <h2 className="text-4xl md:text-5xl font-bold mb-4 text-white">
-              Ready to Transform Your Workflow?
+              Try It Free For 14 Days
             </h2>
             <p className="text-lg text-white/90 mb-6 max-w-2xl mx-auto">
-              Join thousands of professionals who save hours every day with AI-powered document intelligence.
+              No credit card. No commitment. Just upload some docs and ask questions.
             </p>
             <div className="flex flex-wrap gap-4 justify-center">
               <Button asChild size="lg" className="text-lg px-8 py-6 bg-accent hover:bg-accent/90 text-white shadow-xl hover:shadow-2xl transition-all hover:scale-105 border-0">
@@ -578,13 +578,10 @@ export default function Landing() {
             <div className="text-center md:text-left">
               <p className="text-muted-foreground flex items-center gap-2 justify-center md:justify-start text-sm">
                 <Shield className="h-4 w-4 text-primary" />
-                Private by Design — Your documents stay yours. Choose where your AI runs.
+                Your files stay yours. Run the AI on our servers or your own.
               </p>
             </div>
 
-            <Link to="/settings#model-provider" className="text-sm text-muted-foreground hover:text-primary underline transition-colors">
-              Model Provider Settings
-            </Link>
           </div>
 
           <div className="mt-8 pt-6 border-t border-border">
@@ -607,17 +604,16 @@ export default function Landing() {
             </div>
 
             <div className="text-center text-xs text-muted-foreground max-w-4xl mx-auto space-y-2">
-              <p className="font-semibold text-foreground">Important Legal Disclaimer</p>
+              <p className="font-semibold text-foreground">Legal Stuff</p>
               <p>
-                AI Query Hub is provided "as is" without warranties of any kind. While we implement industry-standard security measures,
-                <strong className="text-foreground"> we are not responsible for any data loss, corruption, unauthorized access, or breaches</strong> that may occur through the use of our service.
-                Users are solely responsible for maintaining backups of their important documents and data.
+                AI Query Hub is provided "as is." We use standard security, but
+                <strong className="text-foreground"> we're not liable for data loss, unauthorized access, or security breaches.</strong> Back up your important files somewhere else.
               </p>
               <p>
-                By using AI Query Hub, you acknowledge that you upload and store data at your own risk. We strongly recommend maintaining separate backups
-                of all critical documents. Our service is not intended as a primary data storage solution. See our Terms of Service and Data Policy for complete details.
+                You upload files at your own risk. Keep backups of anything critical. This isn't a backup service.
+                See our Terms of Service and Data Policy for the full legal version.
               </p>
-              <p className="pt-2">© 2024 AI Query Hub. All rights reserved. Built with privacy and security in mind.</p>
+              <p className="pt-2">© 2024 AI Query Hub. All rights reserved.</p>
             </div>
           </div>
         </div>

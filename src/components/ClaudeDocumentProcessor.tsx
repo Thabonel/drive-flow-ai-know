@@ -194,10 +194,10 @@ export const ClaudeDocumentProcessor = ({
                   Extracted Data & Analysis
                 </h4>
                 <div className="text-sm text-muted-foreground">
-                  <p>Claude MVP has extracted structured data from this document including tables, figures, and patterns.</p>
+                  <p>Claude pulled out tables, figures, and key data from this document.</p>
                   <p className="mt-2">
-                    <Badge variant="secondary" className="mr-2">Advanced Processing Complete</Badge>
-                    Data is now integrated into your knowledge base.
+                    <Badge variant="secondary" className="mr-2">Processing Complete</Badge>
+                    Data added to your knowledge base.
                   </p>
                 </div>
               </div>
@@ -208,7 +208,7 @@ export const ClaudeDocumentProcessor = ({
         <div className="text-xs text-muted-foreground mt-4 p-3 bg-muted/30 rounded">
           <p className="flex items-center">
             <Sparkles className="h-3 w-3 mr-1" />
-            <strong>Claude MVP</strong> uses advanced AI to extract insights from PDFs, spreadsheets, and documents with superior accuracy.
+            <strong>Claude AI</strong> reads PDFs, spreadsheets, and docs. Pulls out the important stuff.
           </p>
         </div>
       </CardContent>

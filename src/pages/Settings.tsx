@@ -73,7 +73,7 @@ const Settings = () => {
             <div>
               <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
               <p className="text-muted-foreground">
-                Manage your account and application preferences
+                Change your account and app settings
               </p>
             </div>
 
@@ -93,7 +93,7 @@ const Settings = () => {
                       Profile Information
                     </CardTitle>
                     <CardDescription>
-                      Update your personal information and account details
+                      Edit your profile info
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">

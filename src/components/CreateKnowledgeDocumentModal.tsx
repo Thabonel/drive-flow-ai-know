@@ -161,7 +161,7 @@ export const CreateKnowledgeDocumentModal = ({ trigger }: CreateKnowledgeDocumen
     try {
       const { data, error } = await supabase.functions.invoke('ai-query', {
         body: {
-          query: `Generate comprehensive content for a document titled: "${formData.title}". Include key sections, important points, and actionable insights. Format it in markdown.`
+          query: `Write content for a document titled: "${formData.title}". Include main sections, key points, and useful info. Use markdown format.`
         }
       });
 
