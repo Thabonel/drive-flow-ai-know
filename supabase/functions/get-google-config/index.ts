@@ -11,6 +11,7 @@ serve(async (req) => {
   }
 
   try {
+    // Get Google OAuth configuration from environment
     const googleApiKey = Deno.env.get('GOOGLE_API_KEY');
     const googleClientId = Deno.env.get('GOOGLE_CLIENT_ID');
 
