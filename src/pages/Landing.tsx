@@ -29,7 +29,7 @@ const plans = [
     name: 'Starter',
     price: '$9',
     period: '/month',
-    description: 'Good if you're just trying this out',
+    description: 'Good if you are just trying this out',
     features: [
       '200 questions/month',
       '5 GB storage',
@@ -324,7 +324,7 @@ export default function Landing() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {[
               { icon: Upload, title: "Upload", desc: "Drop in your files (PDFs, docs, whatever)", color: "primary" },
-              { icon: MessageSquare, title: "Ask", desc: "Type your question like you're texting a friend", color: "secondary" },
+              { icon: MessageSquare, title: "Ask", desc: "Type your question like texting a friend", color: "secondary" },
               { icon: Sparkles, title: "Get Answers", desc: "AI pulls exact answers from your docs", color: "success" }
             ].map((step, i) => (
               <div key={i} className="relative group">
@@ -607,7 +607,7 @@ export default function Landing() {
               <p className="font-semibold text-foreground">Legal Stuff</p>
               <p>
                 AI Query Hub is provided "as is." We use standard security, but
-                <strong className="text-foreground"> we're not liable for data loss, unauthorized access, or security breaches.</strong> Back up your important files somewhere else.
+                <strong className="text-foreground"> we are not liable for data loss, unauthorized access, or security breaches.</strong> Back up your important files somewhere else.
               </p>
               <p>
                 You upload files at your own risk. Keep backups of anything critical. This isn't a backup service.
