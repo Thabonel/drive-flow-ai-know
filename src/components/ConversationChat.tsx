@@ -102,11 +102,12 @@ export function ConversationChat({ conversationId: initialConversationId, onConv
     return data.id;
   };
 
-  const saveMessage = async (role: 'user' | 'assistant', content: string) => {
+  const saveMessage = async (role: 'user' | 'assistant', content: string, currentMessages: Message[] = messages) => {
     const currentConvId = conversationId || await createConversation();
     if (!currentConvId) return null;
 
-    const sequenceNumber = messages.length;
+    // Use the current messages array length for accurate sequence numbering
+    const sequenceNumber = currentMessages.length;
 
     const { data, error } = await supabase
       .from('messages')
@@ -137,19 +138,20 @@ export function ConversationChat({ conversationId: initialConversationId, onConv
 
     try {
       // Save user message
-      const savedUserMsg = await saveMessage('user', userMessage);
+      const savedUserMsg = await saveMessage('user', userMessage, messages);
+
+      // Create updated messages array with user message
+      const messagesWithUser = savedUserMsg ? [...messages, savedUserMsg as Message] : messages;
+
       if (savedUserMsg) {
-        setMessages(prev => [...prev, savedUserMsg as Message]);
+        setMessages(messagesWithUser);
       }
 
       // Get AI response with conversation context - include the current user message
-      const conversationContext = [
-        ...messages.map(msg => ({
-          role: msg.role,
-          content: msg.content,
-        })),
-        { role: 'user', content: userMessage } // Add current message to context
-      ];
+      const conversationContext = messagesWithUser.map(msg => ({
+        role: msg.role,
+        content: msg.content,
+      }));
 
       const { data, error } = await supabase.functions.invoke('ai-query', {
         body: {
@@ -162,10 +164,10 @@ export function ConversationChat({ conversationId: initialConversationId, onConv
 
       const aiResponse = data?.response || 'Sorry, I could not process your request.';
 
-      // Save AI response
-      const savedAiMsg = await saveMessage('assistant', aiResponse);
+      // Save AI response with updated message count
+      const savedAiMsg = await saveMessage('assistant', aiResponse, messagesWithUser);
       if (savedAiMsg) {
-        setMessages(prev => [...prev, savedAiMsg as Message]);
+        setMessages([...messagesWithUser, savedAiMsg as Message]);
       }
 
       // Update conversation message count and title if first message
