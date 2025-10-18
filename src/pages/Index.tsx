@@ -60,8 +60,8 @@ const Index = () => {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-4xl font-bold text-foreground mb-2">AI Command Center</h1>
-            <p className="text-muted-foreground text-lg">Welcome back, {user?.user_metadata?.full_name || user?.email}</p>
+            <h1 className="text-4xl font-bold text-foreground mb-2">Dashboard</h1>
+            <p className="text-muted-foreground text-lg">Hey {user?.user_metadata?.full_name || user?.email?.split('@')[0]}</p>
           </div>
           <CreateKnowledgeDocumentModal />
         </div>
@@ -76,34 +76,34 @@ const Index = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Documents</CardTitle>
+              <CardTitle className="text-sm font-medium">Documents</CardTitle>
               <FileText className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stats?.docCount ?? 0}</div>
-              <p className="text-xs text-muted-foreground">From your Google Drive</p>
+              <p className="text-xs text-muted-foreground">Files you can search</p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Knowledge Bases</CardTitle>
+              <CardTitle className="text-sm font-medium">Collections</CardTitle>
               <Brain className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stats?.baseCount ?? 0}</div>
-              <p className="text-xs text-muted-foreground">AI-generated collections</p>
+              <p className="text-xs text-muted-foreground">Grouped docs</p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Connected Folders</CardTitle>
+              <CardTitle className="text-sm font-medium">Folders Synced</CardTitle>
               <FolderOpen className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stats?.folderCount ?? 0}</div>
-              <p className="text-xs text-muted-foreground">Google Drive folders</p>
+              <p className="text-xs text-muted-foreground">From Google Drive</p>
             </CardContent>
           </Card>
 
@@ -114,7 +114,7 @@ const Index = () => {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stats?.lastSync ? new Date(stats.lastSync).toLocaleDateString() : 'Never'}</div>
-              <p className="text-xs text-muted-foreground">{stats?.lastSync ? 'Most recent sync' : 'No syncs yet'}</p>
+              <p className="text-xs text-muted-foreground">{stats?.lastSync ? 'Latest update' : 'Not synced yet'}</p>
             </CardContent>
           </Card>
         </div>
@@ -134,33 +134,33 @@ const Index = () => {
           <Card>
             <CardHeader>
               <CardTitle>Quick Actions</CardTitle>
-              <CardDescription>Get started with your knowledge work</CardDescription>
+              <CardDescription>Common stuff you might need</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <Button 
+                <Button
                   onClick={() => navigate('/drive')}
                   className="w-full justify-start h-auto py-4"
                   variant="outline"
                 >
                   <FolderOpen className="h-5 w-5 mr-2" />
-                  Connect Google Drive Folders
+                  Sync Google Drive
                 </Button>
-                <Button 
+                <Button
                   onClick={() => navigate('/knowledge')}
                   className="w-full justify-start h-auto py-4"
                   variant="outline"
                 >
                   <Brain className="h-5 w-5 mr-2" />
-                  View Knowledge Bases
+                  View Collections
                 </Button>
-                <Button 
+                <Button
                   onClick={() => navigate('/documents')}
                   className="w-full justify-start h-auto py-4"
                   variant="outline"
                 >
                   <FileText className="h-5 w-5 mr-2" />
-                  Browse Documents
+                  See All Documents
                 </Button>
               </div>
             </CardContent>

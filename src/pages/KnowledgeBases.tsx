@@ -421,9 +421,9 @@ const KnowledgeBases = () => {
                 <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mx-auto mb-3">
                   <Brain className="h-6 w-6 text-green-600" />
                 </div>
-                <h4 className="font-medium text-foreground mb-2">Content Synthesis</h4>
+                <h4 className="font-medium text-foreground mb-2">Combine Related Docs</h4>
                 <p className="text-sm text-muted-foreground">
-                  Related content is merged and synthesized into comprehensive knowledge bases
+                  Group similar files together so the AI can read them all at once
                 </p>
               </div>
               
@@ -431,9 +431,9 @@ const KnowledgeBases = () => {
                 <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mx-auto mb-3">
                   <Lightbulb className="h-6 w-6 text-purple-600" />
                 </div>
-                <h4 className="font-medium text-foreground mb-2">Actionable Insights</h4>
+                <h4 className="font-medium text-foreground mb-2">Get Answers</h4>
                 <p className="text-sm text-muted-foreground">
-                  Generated knowledge bases provide actionable insights and recommendations
+                  Ask questions and get answers based on everything in the collection
                 </p>
               </div>
             </div>
