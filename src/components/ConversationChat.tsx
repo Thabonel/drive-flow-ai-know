@@ -142,11 +142,14 @@ export function ConversationChat({ conversationId: initialConversationId, onConv
         setMessages(prev => [...prev, savedUserMsg as Message]);
       }
 
-      // Get AI response with conversation context
-      const conversationContext = messages.map(msg => ({
-        role: msg.role,
-        content: msg.content,
-      }));
+      // Get AI response with conversation context - include the current user message
+      const conversationContext = [
+        ...messages.map(msg => ({
+          role: msg.role,
+          content: msg.content,
+        })),
+        { role: 'user', content: userMessage } // Add current message to context
+      ];
 
       const { data, error } = await supabase.functions.invoke('ai-query', {
         body: {
