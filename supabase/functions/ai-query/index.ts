@@ -189,10 +189,11 @@ serve(async (req) => {
 
     const { data: settings } = await supabaseService
       .from('user_settings')
-      .select('model_preference')
+      .select('model_preference, personal_prompt')
       .eq('user_id', user_id)
       .maybeSingle();
     const providerOverride = settings?.model_preference;
+    const personalPrompt = settings?.personal_prompt || '';
 
     const body = await req.json();
     const { query, knowledge_base_id } = body;
@@ -350,7 +351,7 @@ serve(async (req) => {
     }
 
     // Generate AI response
-    const systemMessage = `You are an AI assistant that helps analyze and answer questions about the user's knowledge documents.
+    let systemMessage = `You are an AI assistant that helps analyze and answer questions about the user's knowledge documents.
     You have access to their document summaries, content, and knowledge bases.
 
     IMPORTANT INSTRUCTIONS:
@@ -363,6 +364,11 @@ serve(async (req) => {
     Provide helpful, specific answers based on the available context.
     If you can't find relevant information in the provided documents, say so clearly.
     Be concise but comprehensive in your responses.`;
+
+    // Add personal prompt if user has one
+    if (personalPrompt) {
+      systemMessage += `\n\nUSER PREFERENCES:\n${personalPrompt}`;
+    }
 
     const userPrompt = `Context from my documents:\n${documentContext}\n\nQuestion: ${query}`;
 

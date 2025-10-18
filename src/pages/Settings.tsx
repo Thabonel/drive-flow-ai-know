@@ -15,12 +15,13 @@ import { AppSidebar } from "@/components/AppSidebar";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { useUserSettings } from "@/hooks/useUserSettings";
 import EnterpriseServer from "./Settings/EnterpriseServer";
-import { 
-  User, 
-  Bell, 
-  Shield, 
-  Trash2, 
-  Download, 
+import { PersonalPrompt } from "@/components/PersonalPrompt";
+import {
+  User,
+  Bell,
+  Shield,
+  Trash2,
+  Download,
   Upload,
   Brain,
   Database,
@@ -155,6 +156,8 @@ const Settings = () => {
               {/* Notifications tab hidden until email functionality is implemented */}
 
               <TabsContent value="ai" className="space-y-6 w-full">
+                <PersonalPrompt />
+
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
