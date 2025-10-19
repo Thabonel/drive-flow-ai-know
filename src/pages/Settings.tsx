@@ -15,6 +15,7 @@ import { AppSidebar } from "@/components/AppSidebar";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { useUserSettings } from "@/hooks/useUserSettings";
 import EnterpriseServer from "./Settings/EnterpriseServer";
+import Billing from "./Settings/Billing";
 import { PersonalPrompt } from "@/components/PersonalPrompt";
 import {
   User,
@@ -25,7 +26,8 @@ import {
   Upload,
   Brain,
   Database,
-  Server
+  Server,
+  CreditCard
 } from "lucide-react";
 
 const Settings = () => {
@@ -79,8 +81,9 @@ const Settings = () => {
             </div>
 
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-              <TabsList className="grid w-full grid-cols-4">
+              <TabsList className="grid w-full grid-cols-5">
                 <TabsTrigger value="general">General</TabsTrigger>
+                <TabsTrigger value="billing">Billing</TabsTrigger>
                 <TabsTrigger value="ai">AI & Data</TabsTrigger>
                 <TabsTrigger value="security">Security</TabsTrigger>
                 <TabsTrigger value="enterprise">Enterprise</TabsTrigger>
@@ -154,6 +157,10 @@ const Settings = () => {
               </TabsContent>
 
               {/* Notifications tab hidden until email functionality is implemented */}
+
+              <TabsContent value="billing" className="space-y-6 w-full">
+                <Billing />
+              </TabsContent>
 
               <TabsContent value="ai" className="space-y-6 w-full">
                 <PersonalPrompt />
