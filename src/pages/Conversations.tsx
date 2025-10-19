@@ -104,6 +104,14 @@ export default function Conversations() {
     loadConversations();
   };
 
+  const handleConversationDeleted = () => {
+    // Reset state to show "no conversation selected" screen
+    setSelectedConversation(null);
+    setIsCreating(false);
+    // Reload the conversation list to remove deleted item
+    loadConversations();
+  };
+
   return (
     <div className="container mx-auto p-6 h-[calc(100vh-4rem)]">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full pb-24">
@@ -204,6 +212,7 @@ export default function Conversations() {
             <ConversationChat
               conversationId={selectedConversation || undefined}
               onConversationCreated={handleConversationCreated}
+              onConversationDeleted={handleConversationDeleted}
             />
           ) : (
             <Card className="h-full flex items-center justify-center">
