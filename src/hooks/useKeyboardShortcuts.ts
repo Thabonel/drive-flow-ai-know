@@ -13,14 +13,24 @@ interface KeyboardShortcut {
 export const useKeyboardShortcuts = (shortcuts: KeyboardShortcut[]) => {
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
+      // Don't trigger shortcuts when typing in inputs or textareas
+      const target = event.target as HTMLElement;
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) {
+        return;
+      }
+
       const shortcut = shortcuts.find(s => {
         const keyMatch = s.key.toLowerCase() === event.key.toLowerCase();
-        const ctrlMatch = (s.ctrlKey ?? false) === event.ctrlKey;
-        const metaMatch = (s.metaKey ?? false) === event.metaKey;
+
+        // For Ctrl shortcuts, accept either Ctrl (Windows/Linux) or Cmd (Mac)
+        const modifierMatch = s.ctrlKey
+          ? (event.ctrlKey || event.metaKey)
+          : (s.metaKey ? event.metaKey : true);
+
         const shiftMatch = (s.shiftKey ?? false) === event.shiftKey;
         const altMatch = (s.altKey ?? false) === event.altKey;
-        
-        return keyMatch && ctrlMatch && metaMatch && shiftMatch && altMatch;
+
+        return keyMatch && modifierMatch && shiftMatch && altMatch;
       });
 
       if (shortcut) {
