@@ -3,18 +3,32 @@ import Stripe from "https://esm.sh/stripe@14.21.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
-  apiVersion: "2023-10-16",
+  apiVersion: "2025-02-24",
   httpClient: Stripe.createFetchHttpClient(),
 });
 
 const cryptoProvider = Stripe.createSubtleCryptoProvider();
 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, stripe-signature',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+};
+
 serve(async (req) => {
+  // Handle CORS preflight requests
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+
   const signature = req.headers.get("Stripe-Signature");
   const webhookSecret = Deno.env.get("STRIPE_WEBHOOK_SECRET");
 
   if (!signature || !webhookSecret) {
-    return new Response("Webhook signature or secret missing", { status: 400 });
+    return new Response(JSON.stringify({ error: "Webhook signature or secret missing" }), {
+      status: 400,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
   }
 
   try {
@@ -134,13 +148,13 @@ serve(async (req) => {
 
     return new Response(JSON.stringify({ received: true }), {
       status: 200,
-      headers: { "Content-Type": "application/json" },
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
     console.error("Webhook error:", error);
     return new Response(
       JSON.stringify({ error: error.message }),
-      { status: 400, headers: { "Content-Type": "application/json" } }
+      { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 });
