@@ -9,20 +9,30 @@ export const STRIPE_PRICE_IDS = {
 } as const;
 
 export const PLAN_LIMITS = {
+  free: {
+    queriesPerHour: 100, // Abuse prevention only
+    queriesPerDay: 1000, // Prevents exploitation
+    storageGB: 5,
+    knowledgeBases: 3,
+    users: 1,
+  },
   starter: {
-    queriesPerMonth: 200,
+    queriesPerHour: 100,
+    queriesPerDay: -1, // unlimited
     storageGB: 5,
     knowledgeBases: 3,
     users: 1,
   },
   pro: {
-    queriesPerMonth: 1000,
+    queriesPerHour: 500, // Higher rate limit for paid users
+    queriesPerDay: -1, // unlimited
     storageGB: 50,
     knowledgeBases: -1, // unlimited
     users: 1,
   },
   business: {
-    queriesPerMonth: -1, // unlimited per user
+    queriesPerHour: -1, // no rate limits
+    queriesPerDay: -1, // unlimited
     storageGB: 500,
     knowledgeBases: -1, // unlimited
     users: 5, // base includes 5 users
