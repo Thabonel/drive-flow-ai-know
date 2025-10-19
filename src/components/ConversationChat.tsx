@@ -21,9 +21,10 @@ interface Message {
 interface ConversationChatProps {
   conversationId?: string;
   onConversationCreated?: (id: string) => void;
+  onConversationDeleted?: () => void;
 }
 
-export function ConversationChat({ conversationId: initialConversationId, onConversationCreated }: ConversationChatProps) {
+export function ConversationChat({ conversationId: initialConversationId, onConversationCreated, onConversationDeleted }: ConversationChatProps) {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [conversationId, setConversationId] = useState<string | null>(initialConversationId || null);
@@ -41,6 +42,24 @@ export function ConversationChat({ conversationId: initialConversationId, onConv
       loadMessages();
     }
   }, [conversationId]);
+
+  // React to prop changes when user selects a different conversation
+  useEffect(() => {
+    if (initialConversationId !== conversationId) {
+      // Reset state for the new conversation
+      setConversationId(initialConversationId || null);
+      setMessages([]);
+      setInput('');
+      setConversationTitle('AI Assistant');
+      setIsEditingTitle(false);
+      setEditedTitle('');
+
+      // Load messages if conversation ID exists
+      if (initialConversationId) {
+        // loadMessages will be triggered by the conversationId useEffect above
+      }
+    }
+  }, [initialConversationId]);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -266,17 +285,25 @@ export function ConversationChat({ conversationId: initialConversationId, onConv
         body: { conversationId },
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase function error:', error);
+        throw error;
+      }
+
+      console.log('Summarize response:', data);
 
       if (data?.success) {
         toast.success('Conversation saved and summarized!');
         navigate('/conversations');
       } else {
-        throw new Error(data?.error || 'Summarization failed');
+        const errorMessage = data?.error || 'Summarization failed';
+        console.error('Summarization failed:', data);
+        throw new Error(errorMessage);
       }
     } catch (error) {
       console.error('Error summarizing:', error);
-      toast.error('Failed to summarize conversation');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to summarize conversation';
+      toast.error(errorMessage);
     } finally {
       setIsSummarizing(false);
     }
@@ -298,7 +325,14 @@ export function ConversationChat({ conversationId: initialConversationId, onConv
     }
 
     toast.success('Conversation deleted');
-    navigate('/conversations');
+
+    // Notify parent component to handle cleanup
+    if (onConversationDeleted) {
+      onConversationDeleted();
+    } else {
+      // Fallback to navigation if no callback provided
+      navigate('/conversations');
+    }
   };
 
   const handleEditTitle = () => {

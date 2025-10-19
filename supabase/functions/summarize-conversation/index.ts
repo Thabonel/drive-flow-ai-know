@@ -7,6 +7,108 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// LLM provider functions
+const anthropicApiKey = Deno.env.get('ANTHROPIC_API_KEY');
+const openRouterApiKey = Deno.env.get('OPENROUTER_API_KEY');
+
+async function claudeCompletion(systemPrompt: string, userPrompt: string) {
+  if (!anthropicApiKey) {
+    throw new Error('Anthropic API key not available');
+  }
+
+  const response = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'x-api-key': anthropicApiKey,
+      'anthropic-version': '2023-06-01',
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 4096,
+      system: systemPrompt,
+      messages: [
+        { role: 'user', content: userPrompt },
+      ],
+    }),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.text();
+    console.error('Claude API error:', response.status, errorData);
+    throw new Error(`Claude API error: ${response.status}`);
+  }
+
+  const data = await response.json();
+  return data.content?.[0]?.text ?? '';
+}
+
+async function openRouterCompletion(systemPrompt: string, userPrompt: string) {
+  if (!openRouterApiKey) {
+    throw new Error('OpenRouter API key not available');
+  }
+
+  const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${openRouterApiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: 'openai/gpt-4o',
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt },
+      ],
+    }),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.text();
+    console.error('OpenRouter API error:', response.status, errorData);
+    throw new Error(`OpenRouter API error: ${response.status}`);
+  }
+
+  const data = await response.json();
+  return data.choices?.[0]?.message?.content ?? '';
+}
+
+async function getLLMResponse(systemPrompt: string, userPrompt: string) {
+  // Try providers in order: Claude -> OpenRouter
+  const providers = [
+    { name: 'claude', fn: claudeCompletion, available: !!anthropicApiKey },
+    { name: 'openrouter', fn: openRouterCompletion, available: !!openRouterApiKey },
+  ];
+
+  console.log('Available API keys:', {
+    anthropic: !!anthropicApiKey,
+    openrouter: !!openRouterApiKey,
+  });
+
+  let lastError: Error | null = null;
+
+  for (const provider of providers) {
+    if (!provider.available) {
+      console.log(`${provider.name} not available, skipping`);
+      continue;
+    }
+
+    try {
+      console.log(`Trying ${provider.name} for summarization`);
+      const result = await provider.fn(systemPrompt, userPrompt);
+      console.log(`${provider.name} succeeded`);
+      return result;
+    } catch (error) {
+      console.error(`${provider.name} failed:`, error);
+      lastError = error as Error;
+      // Continue to next provider
+    }
+  }
+
+  console.error('All providers failed or unavailable');
+  throw lastError || new Error('No AI providers available');
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -15,11 +117,6 @@ serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
-
-    if (!lovableApiKey) {
-      throw new Error('LOVABLE_API_KEY not configured');
-    }
 
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
@@ -79,19 +176,8 @@ serve(async (req) => {
       ?.map(msg => `${msg.role === 'user' ? 'User' : 'Assistant'}: ${msg.content}`)
       .join('\n\n') || '';
 
-    // Call Lovable AI to generate summary
-    const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${lovableApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
-        messages: [
-          {
-            role: 'system',
-            content: `You are an executive assistant analyzing a conversation to create a comprehensive summary. 
+    // Prepare prompts for AI analysis
+    const systemPrompt = `You are an executive assistant analyzing a conversation to create a comprehensive summary.
 Your task is to:
 1. Generate a 2-3 paragraph executive summary highlighting the main purpose and outcomes
 2. List 3-5 key topics discussed
@@ -104,28 +190,12 @@ Format your response as JSON:
   "keyTopics": ["topic1", "topic2", ...],
   "actionItems": ["action1", "action2", ...],
   "tags": ["tag1", "tag2", ...]
-}`
-          },
-          {
-            role: 'user',
-            content: `Please analyze this conversation:\n\n${conversationText}`
-          }
-        ],
-      }),
-    });
+}`;
 
-    if (!aiResponse.ok) {
-      if (aiResponse.status === 429) {
-        throw new Error('Rate limit exceeded. Please try again later.');
-      }
-      if (aiResponse.status === 402) {
-        throw new Error('Payment required. Please add credits to your Lovable AI workspace.');
-      }
-      throw new Error(`AI analysis failed: ${aiResponse.statusText}`);
-    }
+    const userPrompt = `Please analyze this conversation:\n\n${conversationText}`;
 
-    const aiData = await aiResponse.json();
-    const aiContent = aiData.choices?.[0]?.message?.content;
+    // Call AI with provider fallback
+    const aiContent = await getLLMResponse(systemPrompt, userPrompt);
 
     if (!aiContent) {
       throw new Error('No response from AI');
@@ -214,10 +284,22 @@ ${analysisResult.actionItems?.length > 0
     );
   } catch (error) {
     console.error('Error in summarize-conversation:', error);
+
+    // Detailed error logging
+    if (error instanceof Error) {
+      console.error('Error name:', error.name);
+      console.error('Error message:', error.message);
+      console.error('Error stack:', error.stack);
+    }
+
     return new Response(
-      JSON.stringify({ 
+      JSON.stringify({
         error: error instanceof Error ? error.message : 'Unknown error',
         success: false,
+        details: error instanceof Error ? {
+          name: error.name,
+          message: error.message,
+        } : null,
       }),
       {
         status: error instanceof Error && error.message === 'Unauthorized' ? 401 : 500,
