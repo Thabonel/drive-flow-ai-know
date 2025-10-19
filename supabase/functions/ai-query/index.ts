@@ -186,6 +186,29 @@ serve(async (req) => {
     const user_id = user.id;
     console.log('Authenticated user ID:', user_id);
 
+    // Simple rate limiting: 100 queries/hour to prevent abuse
+    try {
+      const rateCheck = await supabaseService.rpc('check_query_limit', { p_user_id: user_id });
+
+      if (rateCheck.data && !rateCheck.data.allowed) {
+        console.warn(`User ${user_id} rate limited: ${rateCheck.data.queries_this_hour} queries this hour`);
+
+        return new Response(
+          JSON.stringify({
+            error: 'Rate limit exceeded',
+            response: 'You\'ve made too many queries in the past hour. Please take a short break and try again in a few minutes.',
+            queries_this_hour: rateCheck.data.queries_this_hour
+          }),
+          {
+            status: 429, // Too Many Requests
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          }
+        );
+      }
+    } catch (rateLimitError) {
+      console.error('Error checking rate limit:', rateLimitError);
+      // Fail open - don't block users if rate check fails
+    }
 
     const { data: settings } = await supabaseService
       .from('user_settings')
