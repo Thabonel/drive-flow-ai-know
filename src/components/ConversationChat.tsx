@@ -287,6 +287,11 @@ export function ConversationChat({ conversationId: initialConversationId, onConv
 
       if (error) {
         console.error('Supabase function error:', error);
+        console.error('Error details:', JSON.stringify(error, null, 2));
+
+        // Show detailed error message
+        const errorMsg = error.message || 'Edge Function returned an error';
+        toast.error(`Summarization failed: ${errorMsg}`);
         throw error;
       }
 
@@ -298,12 +303,20 @@ export function ConversationChat({ conversationId: initialConversationId, onConv
       } else {
         const errorMessage = data?.error || 'Summarization failed';
         console.error('Summarization failed:', data);
+        console.error('Error details from function:', data?.details);
+
+        // Show the actual error from the Edge Function
+        toast.error(`Failed: ${errorMessage}`);
         throw new Error(errorMessage);
       }
     } catch (error) {
       console.error('Error summarizing:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Failed to summarize conversation';
-      toast.error(errorMessage);
+
+      // Only show toast if we haven't already shown one above
+      if (error instanceof Error && !error.message.includes('Edge Function')) {
+        const errorMessage = error.message || 'Failed to summarize conversation';
+        toast.error(errorMessage);
+      }
     } finally {
       setIsSummarizing(false);
     }
