@@ -123,21 +123,26 @@ serve(async (req) => {
       throw new Error('No authorization header');
     }
 
+    // Create client with user's auth token for getUser
+    const supabaseClient = createClient(supabaseUrl, supabaseServiceKey);
+
+    const { data: { user }, error: userError } = await supabaseClient.auth.getUser(
+      authHeader.replace('Bearer ', '')
+    );
+
+    if (userError || !user) {
+      console.error('Auth error:', userError);
+      throw new Error('Unauthorized');
+    }
+
+    console.log('User authenticated:', user.id);
+
+    // Create admin client for database operations
     const supabase = createClient(supabaseUrl, supabaseServiceKey, {
       auth: {
         persistSession: false,
       },
-      global: {
-        headers: {
-          Authorization: authHeader,
-        },
-      },
     });
-
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    if (userError || !user) {
-      throw new Error('Unauthorized');
-    }
 
     const { conversationId } = await req.json();
 
