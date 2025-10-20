@@ -70,6 +70,8 @@ export function ConversationChat({ conversationId: initialConversationId, onConv
   const loadMessages = async () => {
     if (!conversationId) return;
 
+    console.log('Loading messages for conversation:', conversationId);
+
     // Load conversation details to get the title
     const { data: conversation, error: convError } = await supabase
       .from('conversations')
@@ -93,6 +95,7 @@ export function ConversationChat({ conversationId: initialConversationId, onConv
       return;
     }
 
+    console.log('Loaded messages:', data?.length, data);
     setMessages((data || []) as Message[]);
   };
 
@@ -128,6 +131,8 @@ export function ConversationChat({ conversationId: initialConversationId, onConv
     // Use the current messages array length for accurate sequence numbering
     const sequenceNumber = currentMessages.length;
 
+    console.log(`Saving ${role} message with sequence ${sequenceNumber}:`, content.substring(0, 50));
+
     const { data, error } = await supabase
       .from('messages')
       .insert({
@@ -144,6 +149,7 @@ export function ConversationChat({ conversationId: initialConversationId, onConv
       return null;
     }
 
+    console.log('Message saved successfully:', data.id, 'sequence:', data.sequence_number);
     return data;
   };
 
