@@ -45,9 +45,12 @@ export function ConversationChat({ conversationId: initialConversationId, onConv
 
   // React to prop changes when user selects a different conversation
   useEffect(() => {
-    if (initialConversationId !== conversationId) {
+    // Only update if the prop is defined and different from current state
+    // Don't reset when initialConversationId becomes defined from undefined (new conversation creation)
+    if (initialConversationId && initialConversationId !== conversationId && conversationId !== null) {
+      console.log('Switching conversation from', conversationId, 'to', initialConversationId);
       // Reset state for the new conversation
-      setConversationId(initialConversationId || null);
+      setConversationId(initialConversationId);
       setMessages([]);
       setInput('');
       setConversationTitle('AI Assistant');
@@ -55,9 +58,7 @@ export function ConversationChat({ conversationId: initialConversationId, onConv
       setEditedTitle('');
 
       // Load messages if conversation ID exists
-      if (initialConversationId) {
-        // loadMessages will be triggered by the conversationId useEffect above
-      }
+      // loadMessages will be triggered by the conversationId useEffect above
     }
   }, [initialConversationId]);
 
