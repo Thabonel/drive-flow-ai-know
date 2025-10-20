@@ -113,11 +113,11 @@ export default function Conversations() {
   };
 
   return (
-    <div className="container mx-auto p-6 h-[calc(100vh-4rem)]">
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full pb-24">
+    <div className="container mx-auto p-6 h-screen max-h-screen overflow-hidden">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full">
         {/* Sidebar */}
-        <Card className="lg:col-span-1">
-          <CardHeader>
+        <Card className="lg:col-span-1 h-full flex flex-col overflow-hidden">
+          <CardHeader className="flex-shrink-0">
             <div className="flex justify-between items-center">
               <CardTitle>Conversations</CardTitle>
               <Button size="sm" onClick={handleNewConversation}>
@@ -127,8 +127,8 @@ export default function Conversations() {
             </div>
             <CardDescription>Your AI conversation history</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="relative">
+          <CardContent className="space-y-4 flex-1 flex flex-col overflow-hidden">
+            <div className="relative flex-shrink-0">
               <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search conversations..."
@@ -138,8 +138,8 @@ export default function Conversations() {
               />
             </div>
 
-            <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'active' | 'archived')}>
-              <TabsList className="grid w-full grid-cols-2">
+            <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'active' | 'archived')} className="flex-1 flex flex-col overflow-hidden">
+              <TabsList className="grid w-full grid-cols-2 flex-shrink-0">
                 <TabsTrigger value="active">
                   <MessageSquare className="h-4 w-4 mr-2" />
                   Active
@@ -150,8 +150,8 @@ export default function Conversations() {
                 </TabsTrigger>
               </TabsList>
 
-              <TabsContent value={activeTab} className="mt-4">
-                <ScrollArea className="h-[calc(100vh-20rem)]">
+              <TabsContent value={activeTab} className="mt-4 flex-1 overflow-hidden">
+                <ScrollArea className="h-full">
                   <div className="space-y-2">
                     {filteredConversations.length === 0 ? (
                       <p className="text-sm text-muted-foreground text-center py-8">
@@ -207,7 +207,7 @@ export default function Conversations() {
         </Card>
 
         {/* Chat Area */}
-        <div className="lg:col-span-2">
+        <div className="lg:col-span-2 h-full overflow-hidden">
           {selectedConversation || isCreating ? (
             <ConversationChat
               conversationId={selectedConversation || undefined}
@@ -215,7 +215,7 @@ export default function Conversations() {
               onConversationDeleted={handleConversationDeleted}
             />
           ) : (
-            <Card className="h-full flex items-center justify-center">
+            <Card className="h-full flex items-center justify-center overflow-hidden">
               <CardContent className="text-center space-y-4">
                 <MessageSquare className="h-16 w-16 mx-auto text-muted-foreground" />
                 <div>
