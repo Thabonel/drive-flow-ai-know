@@ -18,6 +18,7 @@ import EnterpriseServer from "./Settings/EnterpriseServer";
 import Billing from "./Settings/Billing";
 import { PersonalPrompt } from "@/components/PersonalPrompt";
 import { supabase } from "@/integrations/supabase/client";
+import { useTheme } from "@/components/ThemeProvider";
 import {
   User,
   Bell,
@@ -28,7 +29,9 @@ import {
   Brain,
   Database,
   Server,
-  CreditCard
+  CreditCard,
+  Palette,
+  Check
 } from "lucide-react";
 
 const Settings = () => {
@@ -39,6 +42,7 @@ const Settings = () => {
   const [autoSync, setAutoSync] = useState(false);
   const [activeTab, setActiveTab] = useState("general");
   const { offlineMode, setOfflineMode } = useUserSettings();
+  const { theme, setTheme } = useTheme();
 
   useEffect(() => {
     if (location.hash === "#model-provider") {
@@ -182,6 +186,51 @@ const Settings = () => {
                     <Button onClick={handleSaveProfile} disabled={isSavingProfile}>
                       {isSavingProfile ? 'Saving...' : 'Save Changes'}
                     </Button>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Palette className="h-5 w-5" />
+                      Appearance
+                    </CardTitle>
+                    <CardDescription>
+                      Customize the look and feel of the application
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <Label>Theme</Label>
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                        {[
+                          { value: "system", label: "System preference", icon: "💻" },
+                          { value: "light", label: "Light", icon: "☀️" },
+                          { value: "pure-light", label: "Pure Light", icon: "✨" },
+                          { value: "dark", label: "Dark", icon: "🌙" },
+                          { value: "magic-blue", label: "Magic Blue", icon: "🔷" },
+                          { value: "classic-dark", label: "Classic Dark", icon: "⬛" },
+                        ].map(({ value, label, icon }) => (
+                          <button
+                            key={value}
+                            onClick={() => setTheme(value as any)}
+                            className={`
+                              flex items-center gap-2 p-3 rounded-lg border-2 transition-all
+                              hover:border-primary hover:bg-accent/50
+                              ${theme === value ? 'border-primary bg-accent' : 'border-border'}
+                            `}
+                          >
+                            <span className="text-xl">{icon}</span>
+                            <div className="flex-1 text-left">
+                              <div className="font-medium text-sm">{label}</div>
+                            </div>
+                            {theme === value && (
+                              <Check className="h-4 w-4 text-primary" />
+                            )}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
                   </CardContent>
                 </Card>
 

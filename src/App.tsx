@@ -7,6 +7,7 @@ import { SidebarProvider } from "@/components/ui/sidebar";
 import { offlineEnabled } from "@/lib/ai";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { useKeyboardShortcuts, globalShortcuts } from "@/hooks/useKeyboardShortcuts";
+import { ThemeProvider } from "@/components/ThemeProvider";
 import { AppSidebar } from "@/components/AppSidebar";
 import Header from "./layout/Header";
 import Index from "./pages/Index";
@@ -95,11 +96,12 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <AuthProvider>
+    <ThemeProvider defaultTheme="system" storageKey="aiqueryhub-theme">
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <AuthProvider>
           <Routes>
             <Route path="/auth" element={
               <PublicRoute>
@@ -175,6 +177,7 @@ const App = () => (
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
+    </ThemeProvider>
   </QueryClientProvider>
 );
 
