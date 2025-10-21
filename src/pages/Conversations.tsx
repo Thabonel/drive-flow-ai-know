@@ -112,6 +112,16 @@ export default function Conversations() {
     loadConversations();
   };
 
+  const handleConversationSummarized = () => {
+    // Switch to archived tab to show the summarized conversation
+    setActiveTab('archived');
+    // Reset selection to show empty state
+    setSelectedConversation(null);
+    setIsCreating(false);
+    // Reload the conversation list
+    loadConversations();
+  };
+
   return (
     <div className="container mx-auto p-6 h-screen max-h-screen overflow-hidden">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full">
@@ -213,6 +223,7 @@ export default function Conversations() {
               conversationId={selectedConversation || undefined}
               onConversationCreated={handleConversationCreated}
               onConversationDeleted={handleConversationDeleted}
+              onConversationSummarized={handleConversationSummarized}
             />
           ) : (
             <Card className="h-full flex items-center justify-center overflow-hidden">
