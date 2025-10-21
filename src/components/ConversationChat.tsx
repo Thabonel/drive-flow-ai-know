@@ -140,8 +140,9 @@ export function ConversationChat({ conversationId: initialConversationId, onConv
     return data.id;
   };
 
-  const saveMessage = async (role: 'user' | 'assistant', content: string, currentMessages: Message[] = messages) => {
-    const currentConvId = conversationId || await createConversation();
+  const saveMessage = async (role: 'user' | 'assistant', content: string, currentMessages: Message[] = messages, explicitConvId?: string) => {
+    // Use explicit conversation ID if provided, otherwise fall back to state or create new
+    const currentConvId = explicitConvId || conversationId || await createConversation();
     if (!currentConvId) return null;
 
     // Use the current messages array length for accurate sequence numbering
@@ -197,9 +198,22 @@ export function ConversationChat({ conversationId: initialConversationId, onConv
     isSubmittingRef.current = true;
 
     try {
-      // Save user message to database in the background
-      // FIX: Pass updatedMessages instead of stale messages closure
-      const savedUserMsg = await saveMessage('user', userMessage, updatedMessages);
+      // CRITICAL: Ensure conversation exists and get ID ONCE
+      // Store in local variable to ensure both messages use the SAME conversation
+      let currentConvId = conversationId;
+      if (!currentConvId) {
+        currentConvId = await createConversation();
+        if (!currentConvId) {
+          toast.error('Failed to create conversation');
+          return;
+        }
+        console.log('Created new conversation:', currentConvId);
+      } else {
+        console.log('Using existing conversation:', currentConvId);
+      }
+
+      // Save user message to database - pass explicit conversation ID
+      const savedUserMsg = await saveMessage('user', userMessage, updatedMessages, currentConvId);
 
       // Prepare messages array with the saved message
       // FIX: Build from updatedMessages, not stale messages closure
@@ -229,14 +243,14 @@ export function ConversationChat({ conversationId: initialConversationId, onConv
 
       const aiResponse = data?.response || 'Sorry, I could not process your request.';
 
-      // Save AI response with updated message count
-      const savedAiMsg = await saveMessage('assistant', aiResponse, messagesWithSavedUser);
+      // Save AI response - pass same conversation ID to ensure both messages in same conversation
+      const savedAiMsg = await saveMessage('assistant', aiResponse, messagesWithSavedUser, currentConvId);
       if (savedAiMsg) {
         setMessages([...messagesWithSavedUser, savedAiMsg as Message]);
       }
 
       // Update conversation message count and title if first message
-      if (messages.length === 0 && conversationId) {
+      if (messages.length === 0 && currentConvId) {
         // Generate AI title immediately
         try {
           const { data: titleData } = await supabase.functions.invoke('ai-query', {
@@ -267,7 +281,7 @@ export function ConversationChat({ conversationId: initialConversationId, onConv
               title: finalTitle,
               message_count: 2,
             })
-            .eq('id', conversationId);
+            .eq('id', currentConvId);
 
           setConversationTitle(finalTitle);
         } catch (error) {
@@ -280,17 +294,17 @@ export function ConversationChat({ conversationId: initialConversationId, onConv
               title: fallbackTitle,
               message_count: 2,
             })
-            .eq('id', conversationId);
+            .eq('id', currentConvId);
 
           setConversationTitle(fallbackTitle);
         }
-      } else if (conversationId) {
+      } else if (currentConvId) {
         await supabase
           .from('conversations')
           .update({
             message_count: messages.length + 2,
           })
-          .eq('id', conversationId);
+          .eq('id', currentConvId);
       }
     } catch (error) {
       console.error('Error:', error);
