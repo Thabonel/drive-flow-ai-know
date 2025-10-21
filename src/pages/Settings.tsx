@@ -45,24 +45,54 @@ const Settings = () => {
     }
   }, [location.hash]);
 
-  const handleSaveProfile = () => {
-    toast({
-      title: 'Profile Updated',
-      description: 'Your profile settings have been saved.',
-    });
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+
+  const handleSaveProfile = async () => {
+    if (!user) return;
+
+    setIsSavingProfile(true);
+    try {
+      const fullNameInput = document.getElementById('full-name') as HTMLInputElement;
+      const bioInput = document.getElementById('bio') as HTMLTextAreaElement;
+
+      const { error } = await supabase.auth.updateUser({
+        data: {
+          full_name: fullNameInput?.value || '',
+          bio: bioInput?.value || '',
+        }
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: 'Profile Updated',
+        description: 'Your profile settings have been saved successfully.',
+      });
+    } catch (error) {
+      console.error('Error saving profile:', error);
+      toast({
+        title: 'Update Failed',
+        description: 'Failed to save profile. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSavingProfile(false);
+    }
   };
 
   const handleExportData = () => {
+    // TODO: Implement data export functionality
     toast({
-      title: 'Export Started',
-      description: 'Your data export will be available shortly.',
+      title: 'Coming Soon',
+      description: 'Data export functionality will be available in a future update.',
     });
   };
 
   const handleDeleteAccount = () => {
+    // TODO: Implement account deletion workflow
     toast({
       title: 'Account Deletion',
-      description: 'Please contact support to delete your account.',
+      description: 'Please contact support@aiqueryhub.com to delete your account.',
       variant: 'destructive',
     });
   };
@@ -129,7 +159,9 @@ const Settings = () => {
                         rows={3}
                       />
                     </div>
-                    <Button onClick={handleSaveProfile}>Save Changes</Button>
+                    <Button onClick={handleSaveProfile} disabled={isSavingProfile}>
+                      {isSavingProfile ? 'Saving...' : 'Save Changes'}
+                    </Button>
                   </CardContent>
                 </Card>
 
