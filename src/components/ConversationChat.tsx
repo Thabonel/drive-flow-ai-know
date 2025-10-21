@@ -22,9 +22,10 @@ interface ConversationChatProps {
   conversationId?: string;
   onConversationCreated?: (id: string) => void;
   onConversationDeleted?: () => void;
+  onConversationSummarized?: () => void;
 }
 
-export function ConversationChat({ conversationId: initialConversationId, onConversationCreated, onConversationDeleted }: ConversationChatProps) {
+export function ConversationChat({ conversationId: initialConversationId, onConversationCreated, onConversationDeleted, onConversationSummarized }: ConversationChatProps) {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [conversationId, setConversationId] = useState<string | null>(initialConversationId || null);
@@ -317,13 +318,17 @@ export function ConversationChat({ conversationId: initialConversationId, onConv
   };
 
   const handleSummarize = async () => {
+    console.log('handleSummarize called - conversationId:', conversationId, 'messages:', messages.length);
+
     if (!conversationId || messages.length === 0) {
-      toast.error('No conversation to summarize');
+      console.error('Cannot summarize - conversationId:', conversationId, 'message count:', messages.length);
+      toast.error(`No conversation to summarize${!conversationId ? ' (no conversation ID)' : ''}`);
       return;
     }
 
     setIsSummarizing(true);
     try {
+      console.log('Invoking summarize-conversation with ID:', conversationId);
       const { data, error } = await supabase.functions.invoke('summarize-conversation', {
         body: { conversationId },
       });
@@ -342,7 +347,14 @@ export function ConversationChat({ conversationId: initialConversationId, onConv
 
       if (data?.success) {
         toast.success('Conversation saved and summarized!');
-        navigate('/conversations');
+
+        // Notify parent to reload conversation list and switch to archived tab
+        if (onConversationSummarized) {
+          onConversationSummarized();
+        } else {
+          // Fallback to navigation if no callback provided
+          navigate('/conversations');
+        }
       } else {
         const errorMessage = data?.error || 'Summarization failed';
         console.error('Summarization failed:', data);
