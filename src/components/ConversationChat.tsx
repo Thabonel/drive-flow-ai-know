@@ -36,9 +36,11 @@ export function ConversationChat({ conversationId: initialConversationId, onConv
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [editedTitle, setEditedTitle] = useState('');
   const scrollRef = useRef<HTMLDivElement>(null);
+  const isSubmittingRef = useRef(false);
 
   useEffect(() => {
-    if (conversationId) {
+    // Don't load messages if we're actively submitting (prevents race condition)
+    if (conversationId && !isSubmittingRef.current) {
       loadMessages();
     }
   }, [conversationId]);
@@ -97,7 +99,20 @@ export function ConversationChat({ conversationId: initialConversationId, onConv
     }
 
     console.log('Loaded messages:', data?.length, data);
-    setMessages((data || []) as Message[]);
+
+    // Defensive: only update if DB has equal/more messages than local state
+    // This prevents overwriting newer local messages during submission race conditions
+    setMessages(currentMessages => {
+      if (!data) return currentMessages;
+
+      // If we're submitting and have more messages locally, keep local state
+      if (isSubmittingRef.current && currentMessages.length > data.length) {
+        console.log('Skipping loadMessages overwrite - submission in progress with newer local state');
+        return currentMessages;
+      }
+
+      return data as Message[];
+    });
   };
 
   const createConversation = async () => {
@@ -178,13 +193,18 @@ export function ConversationChat({ conversationId: initialConversationId, onConv
     setMessages(updatedMessages);
     setIsLoading(true);
 
+    // Guard against loadMessages race condition
+    isSubmittingRef.current = true;
+
     try {
       // Save user message to database in the background
-      const savedUserMsg = await saveMessage('user', userMessage, messages);
+      // FIX: Pass updatedMessages instead of stale messages closure
+      const savedUserMsg = await saveMessage('user', userMessage, updatedMessages);
 
       // Prepare messages array with the saved message
+      // FIX: Build from updatedMessages, not stale messages closure
       const messagesWithSavedUser = savedUserMsg
-        ? messages.concat(savedUserMsg as Message)
+        ? updatedMessages.slice(0, -1).concat(savedUserMsg as Message)
         : updatedMessages;
 
       // Replace temp message with saved one (if successful)
@@ -277,6 +297,8 @@ export function ConversationChat({ conversationId: initialConversationId, onConv
       toast.error('Failed to get response');
     } finally {
       setIsLoading(false);
+      // Always clear the submission flag, even on error
+      isSubmittingRef.current = false;
     }
   };
 
