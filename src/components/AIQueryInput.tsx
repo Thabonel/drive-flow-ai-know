@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,7 +7,7 @@ import { Brain, Send, Sparkles, Loader2, Save, FileText } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 
 interface AIQueryInputProps {
   selectedKnowledgeBase?: { id: string; name: string };
@@ -36,12 +36,60 @@ export const AIQueryInput = ({ selectedKnowledgeBase, onClearSelection }: AIQuer
     }
   });
 
-  const quickPrompts = [
-    "What are my key marketing messages?",
-    "Summarize all my planning docs",
-    "What should I focus on today?",
-    "Find insights from recent documents"
-  ];
+  // Fetch recent documents to generate contextual prompts
+  const { data: recentDocs } = useQuery({
+    queryKey: ['recent-documents-for-prompts', user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('knowledge_documents')
+        .select('category, tags, title')
+        .eq('user_id', user!.id)
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user,
+  });
+
+  // Generate smart prompts based on user's actual documents
+  const generateQuickPrompts = (): string[] => {
+    if (!recentDocs || recentDocs.length === 0) {
+      // Fallback prompts if user has no documents yet
+      return [
+        "How can I organize my documents?",
+        "What types of documents can I upload?",
+        "Help me get started with knowledge bases",
+        "Explain the AI features"
+      ];
+    }
+
+    const prompts: string[] = [];
+
+    // Extract unique categories and tags
+    const categories = [...new Set(recentDocs.map(d => d.category).filter(Boolean))];
+    const allTags = recentDocs.flatMap(d => d.tags || []);
+    const topTags = [...new Set(allTags)].slice(0, 3);
+
+    // Generate prompts based on actual content
+    if (categories.length > 0) {
+      const cat = categories[0];
+      prompts.push(`Summarize my ${cat} documents`);
+    }
+
+    if (topTags.length > 0) {
+      prompts.push(`What are the key points about ${topTags[0]}?`);
+    }
+
+    // Always include these useful generic prompts
+    prompts.push("What should I focus on based on my documents?");
+    prompts.push("Find connections between my recent documents");
+
+    return prompts.slice(0, 4); // Return max 4 prompts
+  };
+
+  const quickPrompts = generateQuickPrompts();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
