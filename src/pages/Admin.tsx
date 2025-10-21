@@ -10,10 +10,10 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import { 
-  Shield, Send, MessageSquare, Clock, CheckCircle, Users, UserPlus, 
-  BarChart3, Activity, Database, FileText, Brain, Settings, 
-  TrendingUp, AlertTriangle, Eye, Globe 
+import {
+  Shield, Send, MessageSquare, Clock, CheckCircle, Users, UserPlus,
+  BarChart3, Activity, Database, FileText, Brain, Settings,
+  TrendingUp, AlertTriangle, Eye, Globe, AlertCircle
 } from 'lucide-react';
 
 interface AdminMessage {
@@ -45,6 +45,7 @@ interface AppSettings {
   documentSyncEnabled: boolean;
   maxDocumentsPerUser: number;
   maxQueriesPerDay: number;
+  aiProvider: string;
 }
 
 export default function Admin() {
@@ -58,6 +59,7 @@ export default function Admin() {
   const [newAdminEmail, setNewAdminEmail] = useState('');
   const [grantingAdmin, setGrantingAdmin] = useState(false);
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
+  const [settingsLoadError, setSettingsLoadError] = useState(false);
   const [settings, setSettings] = useState<AppSettings>({
     maintenanceMode: false,
     registrationEnabled: true,
@@ -65,7 +67,8 @@ export default function Admin() {
     aiQueriesEnabled: true,
     documentSyncEnabled: true,
     maxDocumentsPerUser: 1000,
-    maxQueriesPerDay: 100
+    maxQueriesPerDay: 100,
+    aiProvider: 'claude'
   });
   const [activeTab, setActiveTab] = useState('overview');
 
@@ -275,12 +278,15 @@ export default function Admin() {
           ...prev,
           ...data.settings
         }));
+        setSettingsLoadError(false);
         console.log('Settings loaded from database');
       } else {
+        setSettingsLoadError(true);
         console.log('No settings found, using defaults');
       }
     } catch (error) {
       console.error('Error fetching settings:', error);
+      setSettingsLoadError(true);
       // Keep using default values if fetch fails
     }
   };
@@ -637,6 +643,21 @@ export default function Admin() {
         </TabsContent>
 
         <TabsContent value="settings" className="space-y-6">
+          {/* Settings Load Error Warning */}
+          {settingsLoadError && (
+            <Card className="border-yellow-500 bg-yellow-50">
+              <CardHeader>
+                <CardTitle className="text-yellow-800 flex items-center gap-2">
+                  <AlertCircle className="h-5 w-5" />
+                  Settings Load Warning
+                </CardTitle>
+                <CardDescription className="text-yellow-700">
+                  Unable to load settings from database. Using default values. Changes you make will be saved to the database.
+                </CardDescription>
+              </CardHeader>
+            </Card>
+          )}
+
           {/* App Settings */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <Card>
@@ -716,6 +737,47 @@ export default function Admin() {
                     checked={settings.documentSyncEnabled}
                     onCheckedChange={(checked) => updateSetting('documentSyncEnabled', checked)}
                   />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="ai-provider">AI Provider</Label>
+                  <Select
+                    value={settings.aiProvider}
+                    onValueChange={(value) => updateSetting('aiProvider', value)}
+                  >
+                    <SelectTrigger id="ai-provider">
+                      <SelectValue placeholder="Select AI provider..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="claude">
+                        <div className="flex flex-col">
+                          <span className="font-medium">Claude (Anthropic)</span>
+                          <span className="text-xs text-muted-foreground">Recommended - High quality responses</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="gemini">
+                        <div className="flex flex-col">
+                          <span className="font-medium">Gemini (Lovable Gateway)</span>
+                          <span className="text-xs text-muted-foreground">Always available, fast responses</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="openrouter">
+                        <div className="flex flex-col">
+                          <span className="font-medium">OpenRouter</span>
+                          <span className="text-xs text-muted-foreground">Multiple model access via API</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="ollama">
+                        <div className="flex flex-col">
+                          <span className="font-medium">Local Ollama</span>
+                          <span className="text-xs text-muted-foreground">Requires Ollama on localhost:11434</span>
+                        </div>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-sm text-muted-foreground">
+                    Choose which AI provider powers queries for all users
+                  </p>
                 </div>
               </CardContent>
             </Card>

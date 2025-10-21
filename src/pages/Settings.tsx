@@ -17,6 +17,7 @@ import { useUserSettings } from "@/hooks/useUserSettings";
 import EnterpriseServer from "./Settings/EnterpriseServer";
 import Billing from "./Settings/Billing";
 import { PersonalPrompt } from "@/components/PersonalPrompt";
+import { supabase } from "@/integrations/supabase/client";
 import {
   User,
   Bell,
@@ -46,6 +47,25 @@ const Settings = () => {
   }, [location.hash]);
 
   const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const [googleDriveConnected, setGoogleDriveConnected] = useState(false);
+
+  // Check Google Drive connection status
+  useEffect(() => {
+    const checkGoogleDriveStatus = async () => {
+      if (!user) return;
+
+      const { data, error } = await supabase
+        .from('user_google_tokens')
+        .select('id')
+        .eq('user_id', user.id)
+        .limit(1)
+        .single();
+
+      setGoogleDriveConnected(!error && !!data);
+    };
+
+    checkGoogleDriveStatus();
+  }, [user]);
 
   const handleSaveProfile = async () => {
     if (!user) return;
@@ -196,27 +216,6 @@ const Settings = () => {
 
               <TabsContent value="ai" className="space-y-6 w-full">
                 <PersonalPrompt />
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Brain className="h-5 w-5" />
-                      AI Model
-                    </CardTitle>
-                    <CardDescription>
-                      Your queries are powered by Claude (Anthropic)
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex items-center justify-between p-4 border rounded-lg bg-muted/50">
-                      <div>
-                        <p className="font-medium">Claude Haiku 4.5</p>
-                        <p className="text-sm text-muted-foreground">Fast, accurate responses with enterprise-grade privacy</p>
-                      </div>
-                      <Badge variant="default">Active</Badge>
-                    </div>
-                  </CardContent>
-                </Card>
               </TabsContent>
 
               <TabsContent value="security" className="space-y-6 w-full">
@@ -262,10 +261,14 @@ const Settings = () => {
                           </div>
                           <div>
                             <p className="font-medium">Google Drive</p>
-                            <p className="text-sm text-muted-foreground">Connected</p>
+                            <p className="text-sm text-muted-foreground">
+                              {googleDriveConnected ? 'Connected' : 'Not Connected'}
+                            </p>
                           </div>
                         </div>
-                        <Badge variant="default">Active</Badge>
+                        <Badge variant={googleDriveConnected ? "default" : "secondary"}>
+                          {googleDriveConnected ? 'Active' : 'Inactive'}
+                        </Badge>
                       </div>
                     </div>
                   </CardContent>
