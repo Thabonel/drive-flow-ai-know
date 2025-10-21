@@ -42,7 +42,7 @@ function AppLayout({ children }: { children: React.ReactNode }) {
     <SidebarProvider>
       <div className="min-h-screen flex flex-col w-full">
         {offline && (
-          <div className="bg-yellow-300 text-yellow-900 text-center py-1 text-sm font-medium">
+          <div className="bg-yellow-500 dark:bg-yellow-600 text-white dark:text-yellow-50 text-center py-1 text-sm font-medium">
             Offline Mode Enabled
           </div>
         )}

@@ -75,7 +75,7 @@ const Header = () => {
       </div>
 
       {showBanner && (
-        <div className="absolute inset-x-0 top-full bg-yellow-300 text-yellow-900 text-center py-1 text-sm font-medium z-50">
+        <div className="absolute inset-x-0 top-full bg-yellow-500 dark:bg-yellow-600 text-white dark:text-yellow-50 text-center py-1 text-sm font-medium z-50">
           📶 You are currently using AI offline (Ollama). All processing is local.
         </div>
       )}
