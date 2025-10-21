@@ -128,7 +128,7 @@ export const DailyFocusModule = () => {
                 value={newGoal}
                 onChange={(e) => setNewGoal(e.target.value)}
                 placeholder="Add a goal..."
-                className="flex-1 px-3 py-1 text-sm border rounded"
+                className="flex-1 px-3 py-1 text-sm border border-input bg-background text-foreground rounded placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 onKeyPress={(e) => e.key === 'Enter' && addGoal()}
               />
               <Button size="sm" onClick={addGoal} disabled={!newGoal.trim()}>

@@ -645,13 +645,13 @@ export default function Admin() {
         <TabsContent value="settings" className="space-y-6">
           {/* Settings Load Error Warning */}
           {settingsLoadError && (
-            <Card className="border-yellow-500 bg-yellow-50">
+            <Card className="border-yellow-500 dark:border-yellow-600 bg-yellow-50 dark:bg-yellow-950">
               <CardHeader>
-                <CardTitle className="text-yellow-800 flex items-center gap-2">
+                <CardTitle className="text-yellow-800 dark:text-yellow-200 flex items-center gap-2">
                   <AlertCircle className="h-5 w-5" />
                   Settings Load Warning
                 </CardTitle>
-                <CardDescription className="text-yellow-700">
+                <CardDescription className="text-yellow-700 dark:text-yellow-300">
                   Unable to load settings from database. Using default values. Changes you make will be saved to the database.
                 </CardDescription>
               </CardHeader>
