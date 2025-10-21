@@ -304,7 +304,7 @@ export default function Admin() {
       console.error('Error updating setting:', error);
       toast.error('Failed to save setting to database');
       // Revert the local state change
-      loadSettings();
+      fetchSettings();
     }
   };
 
