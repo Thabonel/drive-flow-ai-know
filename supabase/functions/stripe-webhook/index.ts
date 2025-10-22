@@ -1,57 +1,74 @@
-import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import Stripe from "https://esm.sh/stripe@14.21.0";
+import Stripe from "https://esm.sh/stripe@14?target=denonext";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
-  apiVersion: "2025-02-24",
+  apiVersion: "2024-11-20",
   httpClient: Stripe.createFetchHttpClient(),
 });
 
 const cryptoProvider = Stripe.createSubtleCryptoProvider();
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, stripe-signature',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-};
+console.log("Stripe webhook handler initialized");
 
-serve(async (req) => {
-  // Handle CORS preflight requests
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
-
-  const signature = req.headers.get("Stripe-Signature");
-  const webhookSecret = Deno.env.get("STRIPE_WEBHOOK_SECRET");
-
-  if (!signature || !webhookSecret) {
-    return new Response(JSON.stringify({ error: "Webhook signature or secret missing" }), {
-      status: 400,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+Deno.serve(async (request) => {
+  // Handle CORS preflight
+  if (request.method === 'OPTIONS') {
+    return new Response(null, {
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, stripe-signature',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+      }
     });
   }
 
+  const signature = request.headers.get('Stripe-Signature');
+  const webhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET');
+
+  if (!signature || !webhookSecret) {
+    console.error("Missing signature or webhook secret");
+    return new Response(JSON.stringify({ error: 'Missing signature or secret' }), {
+      status: 400,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  }
+
+  // Get raw body - CRITICAL: must use .text() for signature verification
+  const body = await request.text();
+  console.log("Received webhook, body length:", body.length);
+
+  // Verify webhook signature
+  let receivedEvent;
   try {
-    const body = await req.text();
-    const event = await stripe.webhooks.constructEventAsync(
+    receivedEvent = await stripe.webhooks.constructEventAsync(
       body,
       signature,
       webhookSecret,
       undefined,
       cryptoProvider
     );
+    console.log(`✅ Event verified: ${receivedEvent.id} (${receivedEvent.type})`);
+  } catch (err) {
+    console.error(`❌ Webhook verification failed: ${err.message}`);
+    return new Response(JSON.stringify({ error: err.message }), {
+      status: 400,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  }
 
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
-    );
+  // Process the event
+  const supabase = createClient(
+    Deno.env.get("SUPABASE_URL") ?? "",
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+  );
 
-    console.log(`Processing webhook event: ${event.type}`);
+  console.log(`Processing webhook event: ${receivedEvent.type}`);
 
-    switch (event.type) {
+  try {
+    switch (receivedEvent.type) {
       case "customer.subscription.created":
       case "customer.subscription.updated": {
-        const subscription = event.data.object as Stripe.Subscription;
+        const subscription = receivedEvent.data.object as Stripe.Subscription;
         const userId = subscription.metadata.user_id;
         const planType = subscription.metadata.plan_type;
 
@@ -103,7 +120,7 @@ serve(async (req) => {
       }
 
       case "customer.subscription.deleted": {
-        const subscription = event.data.object as Stripe.Subscription;
+        const subscription = receivedEvent.data.object as Stripe.Subscription;
 
         // Mark subscription as canceled
         await supabase
@@ -115,7 +132,7 @@ serve(async (req) => {
       }
 
       case "invoice.payment_succeeded": {
-        const invoice = event.data.object as Stripe.Invoice;
+        const invoice = receivedEvent.data.object as Stripe.Invoice;
 
         // Update subscription status on successful payment
         if (invoice.subscription) {
@@ -129,7 +146,7 @@ serve(async (req) => {
       }
 
       case "invoice.payment_failed": {
-        const invoice = event.data.object as Stripe.Invoice;
+        const invoice = receivedEvent.data.object as Stripe.Invoice;
 
         // Update subscription status on failed payment
         if (invoice.subscription) {
@@ -143,18 +160,18 @@ serve(async (req) => {
       }
 
       default:
-        console.log(`Unhandled event type: ${event.type}`);
+        console.log(`Unhandled event type: ${receivedEvent.type}`);
     }
 
     return new Response(JSON.stringify({ received: true }), {
       status: 200,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      headers: { 'Content-Type': 'application/json' }
     });
   } catch (error) {
-    console.error("Webhook error:", error);
+    console.error("Event processing error:", error);
     return new Response(
       JSON.stringify({ error: error.message }),
-      { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      { status: 500, headers: { 'Content-Type': 'application/json' } }
     );
   }
 });

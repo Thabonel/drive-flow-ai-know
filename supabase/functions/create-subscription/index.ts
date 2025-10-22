@@ -74,7 +74,7 @@ serve(async (req) => {
         },
       ],
       mode: "subscription",
-      success_url: `${req.headers.get("origin")}/settings/billing?success=true`,
+      success_url: `${req.headers.get("origin")}/settings/billing?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${req.headers.get("origin")}/settings/billing?canceled=true`,
       subscription_data: {
         trial_period_days: 14,
