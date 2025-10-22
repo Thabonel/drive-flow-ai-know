@@ -31,6 +31,8 @@ import Privacy from "./pages/Privacy";
 import Disclaimer from "./pages/Disclaimer";
 import DataPolicy from "./pages/DataPolicy";
 import AcceptableUse from "./pages/AcceptableUse";
+import Support from "./pages/Support";
+import AdminSupportTickets from "./pages/AdminSupportTickets";
 
 const queryClient = new QueryClient();
 
@@ -161,9 +163,19 @@ const App = () => (
                 <Admin />
               </ProtectedRoute>
             } />
+            <Route path="/admin/support-tickets" element={
+              <ProtectedRoute>
+                <AdminSupportTickets />
+              </ProtectedRoute>
+            } />
             <Route path="/conversations" element={
               <ProtectedRoute>
                 <Conversations />
+              </ProtectedRoute>
+            } />
+            <Route path="/support" element={
+              <ProtectedRoute>
+                <Support />
               </ProtectedRoute>
             } />
             <Route path="/terms" element={<Terms />} />

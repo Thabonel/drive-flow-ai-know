@@ -1,4 +1,4 @@
-import { Home, FolderOpen, FileText, Brain, Settings, LogOut, RefreshCw, Upload, MessageSquare } from 'lucide-react';
+import { Home, FolderOpen, FileText, Brain, Settings, LogOut, RefreshCw, Upload, MessageSquare, HelpCircle } from 'lucide-react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import {
@@ -70,6 +70,14 @@ export function AppSidebar() {
 
       <SidebarFooter className="border-t border-sidebar-border p-4">
         <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton asChild>
+              <NavLink to="/support" className={getNavCls}>
+                <HelpCircle className="h-4 w-4" />
+                {!collapsed && <span>Support</span>}
+              </NavLink>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
           <SidebarMenuItem>
             <SidebarMenuButton asChild>
               <NavLink to="/settings" className={getNavCls}>

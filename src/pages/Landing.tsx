@@ -34,7 +34,7 @@ const plans = [
       '5 GB storage',
       'Google Drive sync',
       'Knowledge bases',
-      'Email support'
+      'Support tickets'
     ],
     popular: false,
     trial: false,
