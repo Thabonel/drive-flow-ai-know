@@ -207,11 +207,7 @@ export default function Landing() {
     fetchStats();
   }, []);
   return (
-    <div className="min-h-screen relative overflow-hidden">
-      {/* White background */}
-      <div className="fixed inset-0 bg-white" />
-      
-
+    <div className="min-h-screen relative overflow-hidden bg-background">
       {/* Navigation */}
       <header className="relative border-b border-primary bg-primary sticky top-0 z-50 shadow-lg">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">

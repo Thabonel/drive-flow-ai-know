@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState } from "react";
+import { useLocation } from "react-router-dom";
 
 type Theme = "light" | "dark" | "system" | "pure-light" | "magic-blue" | "classic-dark";
 
@@ -26,6 +27,7 @@ export function ThemeProvider({
   storageKey = "aiqueryhub-theme",
   ...props
 }: ThemeProviderProps) {
+  const location = useLocation();
   const [theme, setTheme] = useState<Theme>(
     () => (localStorage.getItem(storageKey) as Theme) || defaultTheme
   );
@@ -35,6 +37,15 @@ export function ThemeProvider({
 
     // Remove all theme classes
     root.classList.remove("light", "dark", "pure-light", "magic-blue", "classic-dark");
+
+    // Force light theme on public pages (landing page and legal pages)
+    const publicPaths = ['/', '/terms', '/privacy', '/disclaimer', '/data-policy', '/acceptable-use'];
+    const isPublicPage = publicPaths.includes(location.pathname);
+
+    if (isPublicPage) {
+      root.classList.add("light");
+      return;
+    }
 
     // Handle system theme
     if (theme === "system") {
@@ -48,7 +59,7 @@ export function ThemeProvider({
 
     // Add the selected theme class
     root.classList.add(theme);
-  }, [theme]);
+  }, [theme, location.pathname]);
 
   const value = {
     theme,
