@@ -31,11 +31,9 @@ const plans = [
     period: '/month',
     description: 'Good if you are just trying this out',
     features: [
-      '200 questions/month',
       '5 GB storage',
       'Google Drive sync',
-      'Up to 3 knowledge bases',
-      'Fast AI model (Gemini)',
+      'Knowledge bases',
       'Email support'
     ],
     popular: false,
@@ -49,14 +47,11 @@ const plans = [
     period: '/month',
     description: 'For people who use this daily',
     features: [
-      '1,000 questions/month',
       '50 GB storage',
       'Unlimited Google Drive sync',
       'Unlimited knowledge bases',
-      'Pick your AI (Gemini or GPT-4o)',
       'Full conversation history',
-      'Faster support',
-      'API access'
+      'Priority support'
     ],
     popular: true,
     trial: false,
@@ -71,12 +66,10 @@ const plans = [
     features: [
       '5 team members included',
       '+$10/month per extra person',
-      'Unlimited questions per person',
       '500 GB shared storage',
       'Team admin tools',
-      'Your own AI models if you want',
       'Usage analytics',
-      'Dedicated support person'
+      'Dedicated account manager'
     ],
     popular: false,
     trial: false,
