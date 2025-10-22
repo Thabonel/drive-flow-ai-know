@@ -1,5 +1,4 @@
 import { createContext, useContext, useEffect, useState } from "react";
-import { useLocation } from "react-router-dom";
 
 type Theme = "light" | "dark" | "system" | "pure-light" | "magic-blue" | "classic-dark";
 
@@ -27,39 +26,55 @@ export function ThemeProvider({
   storageKey = "aiqueryhub-theme",
   ...props
 }: ThemeProviderProps) {
-  const location = useLocation();
   const [theme, setTheme] = useState<Theme>(
     () => (localStorage.getItem(storageKey) as Theme) || defaultTheme
   );
 
   useEffect(() => {
-    const root = window.document.documentElement;
+    const updateTheme = () => {
+      const root = window.document.documentElement;
 
-    // Remove all theme classes
-    root.classList.remove("light", "dark", "pure-light", "magic-blue", "classic-dark");
+      // Remove all theme classes
+      root.classList.remove("light", "dark", "pure-light", "magic-blue", "classic-dark");
 
-    // Force light theme on public pages (landing page and legal pages)
-    const publicPaths = ['/', '/terms', '/privacy', '/disclaimer', '/data-policy', '/acceptable-use'];
-    const isPublicPage = publicPaths.includes(location.pathname);
+      // Force light theme on public pages (landing page and legal pages)
+      const publicPaths = ['/', '/terms', '/privacy', '/disclaimer', '/data-policy', '/acceptable-use'];
+      const isPublicPage = publicPaths.includes(window.location.pathname);
 
-    if (isPublicPage) {
-      root.classList.add("light");
-      return;
-    }
+      if (isPublicPage) {
+        root.classList.add("light");
+        return;
+      }
 
-    // Handle system theme
-    if (theme === "system") {
-      const systemTheme = window.matchMedia("(prefers-color-scheme: dark)").matches
-        ? "dark"
-        : "light";
+      // Handle system theme
+      if (theme === "system") {
+        const systemTheme = window.matchMedia("(prefers-color-scheme: dark)").matches
+          ? "dark"
+          : "light";
 
-      root.classList.add(systemTheme);
-      return;
-    }
+        root.classList.add(systemTheme);
+        return;
+      }
 
-    // Add the selected theme class
-    root.classList.add(theme);
-  }, [theme, location.pathname]);
+      // Add the selected theme class
+      root.classList.add(theme);
+    };
+
+    // Update theme on mount and when theme changes
+    updateTheme();
+
+    // Listen for navigation events (for route changes)
+    window.addEventListener('popstate', updateTheme);
+
+    // Create a MutationObserver to watch for route changes in SPAs
+    const observer = new MutationObserver(updateTheme);
+    observer.observe(document.body, { childList: true, subtree: true });
+
+    return () => {
+      window.removeEventListener('popstate', updateTheme);
+      observer.disconnect();
+    };
+  }, [theme]);
 
   const value = {
     theme,
