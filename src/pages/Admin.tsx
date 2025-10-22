@@ -13,8 +13,9 @@ import { supabase } from '@/integrations/supabase/client';
 import {
   Shield, Send, MessageSquare, Clock, CheckCircle, Users, UserPlus,
   BarChart3, Activity, Database, FileText, Brain, Settings,
-  TrendingUp, AlertTriangle, Eye, Globe, AlertCircle
+  TrendingUp, AlertTriangle, Eye, Globe, AlertCircle, Ticket
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 interface AdminMessage {
   id: string;
@@ -49,6 +50,7 @@ interface AppSettings {
 }
 
 export default function Admin() {
+  const navigate = useNavigate();
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
@@ -509,38 +511,67 @@ export default function Admin() {
 
         <TabsContent value="management" className="space-y-6">
 
-          {/* User Management Section */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Users className="h-5 w-5" />
-                User Management
-              </CardTitle>
-              <CardDescription>
-                Grant admin privileges to other users
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <label className="text-sm font-medium mb-2 block">User Email</label>
-                <Input
-                  placeholder="Enter user email to grant admin access"
-                  value={newAdminEmail}
-                  onChange={(e) => setNewAdminEmail(e.target.value)}
-                  type="email"
-                />
-              </div>
-              
-              <Button 
-                onClick={grantAdminRole} 
-                disabled={grantingAdmin || !newAdminEmail.trim()}
-                className="w-full"
-              >
-                <UserPlus className="h-4 w-4 mr-2" />
-                {grantingAdmin ? 'Granting Access...' : 'Grant Admin Access'}
-              </Button>
-            </CardContent>
-          </Card>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* User Management Section */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Users className="h-5 w-5" />
+                  User Management
+                </CardTitle>
+                <CardDescription>
+                  Grant admin privileges to other users
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <label className="text-sm font-medium mb-2 block">User Email</label>
+                  <Input
+                    placeholder="Enter user email to grant admin access"
+                    value={newAdminEmail}
+                    onChange={(e) => setNewAdminEmail(e.target.value)}
+                    type="email"
+                  />
+                </div>
+
+                <Button
+                  onClick={grantAdminRole}
+                  disabled={grantingAdmin || !newAdminEmail.trim()}
+                  className="w-full"
+                >
+                  <UserPlus className="h-4 w-4 mr-2" />
+                  {grantingAdmin ? 'Granting Access...' : 'Grant Admin Access'}
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* Support Tickets */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Ticket className="h-5 w-5" />
+                  Support Tickets
+                </CardTitle>
+                <CardDescription>
+                  View and respond to user support requests
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  Manage user support tickets, respond to issues, and track resolution status.
+                </p>
+
+                <Button
+                  onClick={() => navigate('/admin/support-tickets')}
+                  className="w-full"
+                  variant="outline"
+                >
+                  <Ticket className="h-4 w-4 mr-2" />
+                  View Support Tickets
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
 
           {/* AI Command Center */}
           <Card>
