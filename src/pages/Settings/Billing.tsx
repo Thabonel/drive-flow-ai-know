@@ -5,8 +5,9 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { ShoppingCart, Zap, Loader2 } from 'lucide-react';
+import { ShoppingCart, Zap, Loader2, Check, ExternalLink } from 'lucide-react';
 import { STRIPE_PRICE_IDS } from '@/lib/stripe-config';
+import { useQuery } from '@tanstack/react-query';
 
 const plans = [
   {
@@ -35,6 +36,32 @@ const plans = [
 export default function Billing() {
   const { user } = useAuth();
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
+  const [loadingPortal, setLoadingPortal] = useState(false);
+
+  // Fetch user's active subscription
+  const { data: subscription, isLoading: isLoadingSubscription } = useQuery({
+    queryKey: ['subscription', user?.id],
+    queryFn: async () => {
+      if (!user) return null;
+
+      const { data, error } = await supabase
+        .from('subscriptions')
+        .select('*')
+        .eq('user_id', user.id)
+        .in('status', ['active', 'trialing'])
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (error && error.code !== 'PGRST116') {
+        console.error('Error fetching subscription:', error);
+        return null;
+      }
+
+      return data;
+    },
+    enabled: !!user,
+  });
 
   const handleChoosePlan = async (priceId: string, planType: string) => {
     if (!user) {
@@ -66,6 +93,34 @@ export default function Billing() {
     }
   };
 
+  const handleManageSubscription = async () => {
+    if (!user || !subscription) {
+      toast.error('No active subscription found');
+      return;
+    }
+
+    setLoadingPortal(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('create-portal-session');
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      if (data?.url) {
+        // Redirect to Stripe Customer Portal
+        window.location.href = data.url;
+      } else {
+        throw new Error('No portal URL returned');
+      }
+    } catch (error) {
+      console.error('Portal error:', error);
+      toast.error('Failed to open subscription management. Please try again.');
+    } finally {
+      setLoadingPortal(false);
+    }
+  };
+
   const handleStorageUpgrade = async () => {
     if (!user) {
       toast.error('Please log in to purchase storage upgrades');
@@ -93,51 +148,123 @@ export default function Billing() {
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold text-foreground">Billing</h1>
-        <p className="text-muted-foreground">Choose the plan that\'s right for you</p>
+        <p className="text-muted-foreground">
+          {subscription ? 'Manage your subscription' : 'Choose the plan that\'s right for you'}
+        </p>
       </div>
+
+      {/* Current Subscription Status */}
+      {subscription && (
+        <Card className="border-primary/50 bg-primary/5">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="flex items-center gap-2">
+                  <Check className="h-5 w-5 text-primary" />
+                  Current Plan: {subscription.plan_type.charAt(0).toUpperCase() + subscription.plan_type.slice(1)}
+                </CardTitle>
+                <CardDescription className="mt-2">
+                  {subscription.status === 'trialing' ? (
+                    <>Trial ends {new Date(subscription.trial_end!).toLocaleDateString()}</>
+                  ) : (
+                    <>Next billing date: {new Date(subscription.current_period_end).toLocaleDateString()}</>
+                  )}
+                </CardDescription>
+              </div>
+              <Badge variant={subscription.status === 'active' ? 'default' : 'secondary'}>
+                {subscription.status === 'trialing' ? 'Trial' : 'Active'}
+              </Badge>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <Button
+              onClick={handleManageSubscription}
+              disabled={loadingPortal}
+              variant="outline"
+              className="w-full"
+            >
+              {loadingPortal ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Loading...
+                </>
+              ) : (
+                <>
+                  <ExternalLink className="h-4 w-4 mr-2" />
+                  Manage Subscription
+                </>
+              )}
+            </Button>
+            <p className="text-xs text-muted-foreground text-center mt-2">
+              Update payment method, cancel, or view invoices
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {plans.map((plan) => (
-          <Card key={plan.name} className="text-center">
-            <CardHeader>
-              <CardTitle>{plan.name}</CardTitle>
-              <CardDescription className="text-4xl font-bold">{plan.price}</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ul className="space-y-2 mb-4">
-                {plan.features.map((feature) => (
-                  <li key={feature} className="flex items-center justify-center">
-                    <Badge variant="secondary" className="mr-2" />
-                    <span>{feature}</span>
-                  </li>
-                ))}
-              </ul>
-              {plan.name !== 'Free Trial' && (
-                <div className="text-center">
-                  <Button
-                    variant="outline"
-                    className="w-full"
-                    onClick={() => handleChoosePlan(plan.priceId, plan.planType)}
-                    disabled={!user || loadingPlan === plan.planType}
-                  >
-                    {loadingPlan === plan.planType ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Loading...
-                      </>
-                    ) : (
-                      'Choose Plan'
-                    )}
-                  </Button>
-                  {!user && (
-                    <p className="text-xs text-muted-foreground mt-2">
-                      Please log in to subscribe
-                    </p>
+        {plans.map((plan) => {
+          const isCurrentPlan = subscription?.plan_type === plan.planType;
+
+          return (
+            <Card
+              key={plan.name}
+              className={`text-center ${isCurrentPlan ? 'border-primary' : ''}`}
+            >
+              <CardHeader>
+                <div className="flex items-center justify-center gap-2">
+                  <CardTitle>{plan.name}</CardTitle>
+                  {isCurrentPlan && (
+                    <Badge variant="default" className="text-xs">Current</Badge>
                   )}
                 </div>
-              )}
-            </CardContent>
-          </Card>
-        ))}
+                <CardDescription className="text-4xl font-bold">{plan.price}</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ul className="space-y-2 mb-4">
+                  {plan.features.map((feature) => (
+                    <li key={feature} className="flex items-center justify-center">
+                      <Badge variant="secondary" className="mr-2" />
+                      <span>{feature}</span>
+                    </li>
+                  ))}
+                </ul>
+                {plan.name !== 'Free Trial' && !isCurrentPlan && (
+                  <div className="text-center">
+                    <Button
+                      variant="outline"
+                      className="w-full"
+                      onClick={() => handleChoosePlan(plan.priceId, plan.planType)}
+                      disabled={!user || loadingPlan === plan.planType}
+                    >
+                      {loadingPlan === plan.planType ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Loading...
+                        </>
+                      ) : (
+                        subscription ? 'Upgrade' : 'Choose Plan'
+                      )}
+                    </Button>
+                    {!user && (
+                      <p className="text-xs text-muted-foreground mt-2">
+                        Please log in to subscribe
+                      </p>
+                    )}
+                  </div>
+                )}
+                {isCurrentPlan && (
+                  <div className="text-center">
+                    <Badge variant="outline" className="w-full py-2">
+                      <Check className="h-4 w-4 mr-2" />
+                      Active Plan
+                    </Badge>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
       
       {/* Storage Upgrade Section */}
