@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -7,7 +7,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { ShoppingCart, Zap, Loader2, Check, ExternalLink } from 'lucide-react';
 import { STRIPE_PRICE_IDS } from '@/lib/stripe-config';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useSearchParams } from 'react-router-dom';
 
 const plans = [
   {
@@ -37,6 +38,9 @@ export default function Billing() {
   const { user } = useAuth();
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
   const [loadingPortal, setLoadingPortal] = useState(false);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const queryClient = useQueryClient();
+  const [verifyingSession, setVerifyingSession] = useState(false);
 
   // Fetch user's active subscription
   const { data: subscription, isLoading: isLoadingSubscription } = useQuery({
@@ -62,6 +66,47 @@ export default function Billing() {
     },
     enabled: !!user,
   });
+
+  // Verify checkout session on redirect from Stripe
+  useEffect(() => {
+    const sessionId = searchParams.get('session_id');
+    const canceled = searchParams.get('canceled');
+
+    if (canceled) {
+      toast.error('Payment canceled');
+      setSearchParams({});
+      return;
+    }
+
+    if (sessionId && user && !verifyingSession) {
+      setVerifyingSession(true);
+
+      const verifySession = async () => {
+        try {
+          const { data, error } = await supabase.functions.invoke('verify-checkout-session', {
+            body: { session_id: sessionId }
+          });
+
+          if (error) throw error;
+
+          toast.success('Subscription activated successfully!');
+
+          // Refresh subscription data
+          queryClient.invalidateQueries({ queryKey: ['subscription', user.id] });
+
+          // Clean up URL
+          setSearchParams({});
+        } catch (error) {
+          console.error('Session verification error:', error);
+          toast.error('Failed to verify payment. Please contact support.');
+        } finally {
+          setVerifyingSession(false);
+        }
+      };
+
+      verifySession();
+    }
+  }, [searchParams, user, verifyingSession, queryClient, setSearchParams]);
 
   const handleChoosePlan = async (priceId: string, planType: string) => {
     if (!user) {
@@ -152,6 +197,18 @@ export default function Billing() {
           {subscription ? 'Manage your subscription' : 'Choose the plan that\'s right for you'}
         </p>
       </div>
+
+      {/* Verifying session loading state */}
+      {verifyingSession && (
+        <Card className="border-blue-500 bg-blue-50 dark:bg-blue-950">
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-center gap-3">
+              <Loader2 className="h-5 w-5 animate-spin text-blue-600" />
+              <p className="text-blue-800 dark:text-blue-200">Verifying your payment...</p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Current Subscription Status */}
       {subscription && (
