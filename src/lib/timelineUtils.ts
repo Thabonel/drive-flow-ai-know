@@ -156,10 +156,11 @@ export function formatDuration(minutes: number): string {
 /**
  * Calculate the NOW line X position
  * @param viewportWidth - Width of the viewport in pixels
+ * @param scrollOffset - Current scroll offset in pixels (optional, for manual mode)
  * @returns X position in pixels
  */
-export function calculateNowLineX(viewportWidth: number): number {
-  return viewportWidth * NOW_LINE_POSITION;
+export function calculateNowLineX(viewportWidth: number, scrollOffset: number = 0): number {
+  return (viewportWidth * NOW_LINE_POSITION) + scrollOffset;
 }
 
 /**
@@ -181,7 +182,7 @@ export function generateTimeMarkers(
   hoursAfterNow: number
 ): Array<{ x: number; time: Date; isPast: boolean; isMajor: boolean }> {
   const markers: Array<{ x: number; time: Date; isPast: boolean; isMajor: boolean }> = [];
-  const nowLineX = calculateNowLineX(viewportWidth);
+  const nowLineX = viewportWidth * NOW_LINE_POSITION; // Base position without scroll offset
 
   // Generate markers for past and future
   for (let hourOffset = -hoursBeforeNow; hourOffset <= hoursAfterNow; hourOffset++) {
