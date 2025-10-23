@@ -349,19 +349,19 @@ export function useTimeline() {
     }
   };
 
-  // Auto-scroll in locked mode
+  // Animation tick - runs in both locked and unlocked mode
   const tick = useCallback(() => {
-    if (!settings?.is_locked) return;
-
     const now = Date.now();
     const deltaTime = (now - lastTickRef.current) / 1000; // seconds
     lastTickRef.current = now;
 
-    // Update NOW time
+    // Always update NOW time (in both locked and unlocked mode)
     setNowTime(new Date());
 
-    // Auto-scroll left (simulating time passing)
-    setScrollOffset(prev => prev - AUTO_SCROLL_SPEED * deltaTime);
+    // Only auto-scroll in locked mode
+    if (settings?.is_locked) {
+      setScrollOffset(prev => prev - AUTO_SCROLL_SPEED * deltaTime);
+    }
 
     // Check for logjammed items
     setItems(prevItems =>
@@ -382,23 +382,17 @@ export function useTimeline() {
     animationFrameRef.current = requestAnimationFrame(tick);
   }, [settings?.is_locked]);
 
-  // Start/stop animation loop
+  // Start/stop animation loop (always runs, but behavior changes based on locked state)
   useEffect(() => {
-    if (settings?.is_locked) {
-      lastTickRef.current = Date.now();
-      animationFrameRef.current = requestAnimationFrame(tick);
-    } else {
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-      }
-    }
+    lastTickRef.current = Date.now();
+    animationFrameRef.current = requestAnimationFrame(tick);
 
     return () => {
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
       }
     };
-  }, [settings?.is_locked, tick]);
+  }, [tick]);
 
   // Initial fetch
   useEffect(() => {
