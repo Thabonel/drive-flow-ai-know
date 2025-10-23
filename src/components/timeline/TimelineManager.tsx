@@ -18,7 +18,9 @@ import {
   MAX_ZOOM,
 } from '@/lib/timelineConstants';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, Clock } from 'lucide-react';
+import { Loader2, Clock, Settings, Layers } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Button } from '@/components/ui/button';
 
 export function TimelineManager() {
   const {
@@ -138,8 +140,9 @@ export function TimelineManager() {
           </p>
         </div>
 
-        {/* Primary Add Item Button */}
-        <div>
+        {/* Action Buttons Row */}
+        <div className="flex items-center gap-3 flex-wrap">
+          {/* Primary Add Item Button */}
           <button
             onClick={() => setShowAddItemForm(true)}
             className="px-6 py-3 bg-primary text-primary-foreground rounded-lg font-semibold hover:bg-primary/90 transition-colors shadow-sm"
@@ -147,6 +150,47 @@ export function TimelineManager() {
           >
             {layers.length === 0 ? 'Create a Layer First' : '+ Add Timeline Item'}
           </button>
+
+          {/* Timeline Controls Dropdown */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" className="gap-2">
+                <Settings className="h-4 w-4" />
+                Timeline Controls
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-80" align="start">
+              <TimelineControls
+                isLocked={settings?.is_locked ?? true}
+                onToggleLock={handleToggleLock}
+                zoomHorizontal={settings?.zoom_horizontal ?? 100}
+                zoomVertical={settings?.zoom_vertical ?? 80}
+                onZoomHorizontalChange={handleZoomHorizontalChange}
+                onZoomVerticalChange={handleZoomVerticalChange}
+                onAddItem={() => setShowAddItemForm(true)}
+                onFitAllLayers={handleFitAllLayers}
+              />
+            </PopoverContent>
+          </Popover>
+
+          {/* Timeline Layers Dropdown */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" className="gap-2">
+                <Layers className="h-4 w-4" />
+                Manage Layers ({layers.length})
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-80" align="start">
+              <TimelineLayerManager
+                layers={layers}
+                onAddLayer={addLayer}
+                onUpdateLayer={updateLayer}
+                onDeleteLayer={deleteLayer}
+                onToggleVisibility={toggleLayerVisibility}
+              />
+            </PopoverContent>
+          </Popover>
         </div>
       </div>
 
@@ -160,64 +204,37 @@ export function TimelineManager() {
         </Alert>
       )}
 
-      {/* Main layout: Timeline + Sidebar */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        {/* Timeline Canvas (takes 3 columns) */}
-        <div className="lg:col-span-3 space-y-4">
-          {/* Completed toggle */}
-          <CompletedItemsToggle
-            showCompleted={settings?.show_completed ?? true}
-            onToggle={handleToggleCompleted}
-            completedCount={completedCount}
-          />
+      {/* Main timeline area */}
+      <div className="space-y-4">
+        {/* Completed toggle */}
+        <CompletedItemsToggle
+          showCompleted={settings?.show_completed ?? true}
+          onToggle={handleToggleCompleted}
+          completedCount={completedCount}
+        />
 
-          {/* Main timeline */}
-          {layers.length === 0 ? (
-            <Alert>
-              <AlertDescription>
-                Create a layer first to start adding items to your timeline.
-              </AlertDescription>
-            </Alert>
-          ) : (
-            <TimelineCanvas
-              items={items}
-              layers={layers}
-              nowTime={nowTime}
-              scrollOffset={scrollOffset}
-              pixelsPerHour={pixelsPerHour}
-              layerHeight={layerHeight}
-              isLocked={settings?.is_locked ?? true}
-              showCompleted={settings?.show_completed ?? true}
-              onItemClick={handleItemClick}
-              onDrag={handleDrag}
-              onItemDrop={handleItemDrop}
-            />
-          )}
-        </div>
-
-        {/* Sidebar (takes 1 column) */}
-        <div className="space-y-4">
-          {/* Controls */}
-          <TimelineControls
-            isLocked={settings?.is_locked ?? true}
-            onToggleLock={handleToggleLock}
-            zoomHorizontal={settings?.zoom_horizontal ?? 100}
-            zoomVertical={settings?.zoom_vertical ?? 80}
-            onZoomHorizontalChange={handleZoomHorizontalChange}
-            onZoomVerticalChange={handleZoomVerticalChange}
-            onAddItem={() => setShowAddItemForm(true)}
-            onFitAllLayers={handleFitAllLayers}
-          />
-
-          {/* Layer Manager */}
-          <TimelineLayerManager
+        {/* Main timeline */}
+        {layers.length === 0 ? (
+          <Alert>
+            <AlertDescription>
+              Create a layer first to start adding items to your timeline.
+            </AlertDescription>
+          </Alert>
+        ) : (
+          <TimelineCanvas
+            items={items}
             layers={layers}
-            onAddLayer={addLayer}
-            onUpdateLayer={updateLayer}
-            onDeleteLayer={deleteLayer}
-            onToggleVisibility={toggleLayerVisibility}
+            nowTime={nowTime}
+            scrollOffset={scrollOffset}
+            pixelsPerHour={pixelsPerHour}
+            layerHeight={layerHeight}
+            isLocked={settings?.is_locked ?? true}
+            showCompleted={settings?.show_completed ?? true}
+            onItemClick={handleItemClick}
+            onDrag={handleDrag}
+            onItemDrop={handleItemDrop}
           />
-        </div>
+        )}
       </div>
 
       {/* Modals */}
