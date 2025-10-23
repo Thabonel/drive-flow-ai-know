@@ -197,15 +197,21 @@ export function useTimeline() {
   };
 
   // Reschedule an item
-  const rescheduleItem = async (itemId: string, newStartTime: string) => {
-    await updateItem(itemId, {
+  const rescheduleItem = async (itemId: string, newStartTime: string, newLayerId?: string) => {
+    const updates: Partial<TimelineItem> = {
       start_time: newStartTime,
       status: 'active',
-    });
+    };
+
+    if (newLayerId) {
+      updates.layer_id = newLayerId;
+    }
+
+    await updateItem(itemId, updates);
 
     toast({
       title: 'Item rescheduled',
-      description: 'Item has been moved to a new time',
+      description: newLayerId ? 'Item has been moved to a new time and layer' : 'Item has been moved to a new time',
     });
   };
 
