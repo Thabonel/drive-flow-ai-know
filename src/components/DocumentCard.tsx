@@ -104,8 +104,8 @@ export const DocumentCard = ({
         
         <div className="flex flex-col gap-3 mt-auto pt-4">
           <div className="flex flex-wrap gap-2">
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               size="sm"
               onClick={() => onView(doc)}
               className="flex-1 min-w-[100px]"
@@ -113,18 +113,9 @@ export const DocumentCard = ({
               <FileText className="h-4 w-4 mr-2" />
               View
             </Button>
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={() => onEdit(doc)}
-              className="flex-1 min-w-[100px]"
-            >
-              <Edit className="h-4 w-4 mr-2" />
-              Edit
-            </Button>
             {onDelete && (
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 size="sm"
                 onClick={() => onDelete(doc)}
                 className="text-destructive hover:text-destructive hover:bg-destructive/10"

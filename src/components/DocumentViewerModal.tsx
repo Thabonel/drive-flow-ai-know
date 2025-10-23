@@ -18,6 +18,33 @@ interface DocumentViewerModalProps {
   onClose: () => void;
 }
 
+// Utility function to clean markdown formatting from text
+const cleanMarkdown = (text: string): string => {
+  if (!text) return '';
+
+  return text
+    // Remove horizontal rules (---, ___, ***)
+    .replace(/^[\-_*]{3,}\s*$/gm, '')
+    // Remove headers (##, ###, etc.)
+    .replace(/^#{1,6}\s+/gm, '')
+    // Remove bold/italic (**, __, *, _)
+    .replace(/(\*\*|__)(.*?)\1/g, '$2')
+    .replace(/(\*|_)(.*?)\1/g, '$2')
+    // Remove inline code (`code`)
+    .replace(/`([^`]+)`/g, '$1')
+    // Remove code blocks (```code```)
+    .replace(/```[\s\S]*?```/g, '')
+    // Remove links but keep text [text](url)
+    .replace(/\[([^\]]+)\]\([^\)]+\)/g, '$1')
+    // Remove image syntax ![alt](url)
+    .replace(/!\[([^\]]*)\]\([^\)]+\)/g, '$1')
+    // Remove blockquotes (>)
+    .replace(/^>\s+/gm, '')
+    // Clean up multiple consecutive blank lines
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+};
+
 export const DocumentViewerModal = ({ document, isOpen, onClose }: DocumentViewerModalProps) => {
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
@@ -197,9 +224,10 @@ export const DocumentViewerModal = ({ document, isOpen, onClose }: DocumentViewe
                 value={formData.title}
                 onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                 placeholder="Enter document title"
+                className="font-sans"
               />
             ) : (
-              <div className="p-3 border rounded-md bg-muted/50 select-text">
+              <div className="p-3 border rounded-md bg-muted/50 select-text font-sans text-lg font-semibold">
                 {formData.title}
               </div>
             )}
@@ -214,11 +242,11 @@ export const DocumentViewerModal = ({ document, isOpen, onClose }: DocumentViewe
                 onChange={(e) => setFormData({ ...formData, content: e.target.value })}
                 placeholder="Enter document content"
                 rows={12}
-                className="resize-none"
+                className="resize-none font-sans"
               />
             ) : (
-              <div className="p-4 border rounded-md bg-muted/50 min-h-[300px] whitespace-pre-wrap select-text font-mono text-sm">
-                {formData.content || 'No content available'}
+              <div className="p-4 border rounded-md bg-muted/50 min-h-[300px] whitespace-pre-wrap select-text font-sans text-base leading-relaxed">
+                {cleanMarkdown(formData.content) || 'No content available'}
               </div>
             )}
           </div>
