@@ -230,7 +230,7 @@ export default function Landing() {
         {/* Hero Background Image */}
         <div className="absolute inset-0 z-0">
           <img
-            src="https://fskwutnoxbbflzqrphro.supabase.co/storage/v1/object/public/assets/Hero%20AI.png"
+            src="https://fskwutnoxbbflzqrphro.supabase.co/storage/v1/object/public/assets/Hero%20AI.png?v=2"
             alt="AI Knowledge Background"
             className="w-full h-full object-cover opacity-90"
           />
