@@ -226,15 +226,15 @@ export default function Landing() {
       </header>
 
       {/* Hero Section */}
-      <section className="relative pt-16 pb-20 px-6 overflow-hidden">
+      <section className="relative pt-16 pb-20 px-6 overflow-hidden bg-gradient-to-br from-slate-900 via-blue-900 to-slate-800">
         {/* Hero Background Image */}
         <div className="absolute inset-0 z-0">
           <img
             src="https://fskwutnoxbbflzqrphro.supabase.co/storage/v1/object/public/assets/Hero%20AI.png"
             alt="AI Knowledge Background"
-            className="w-full h-full object-cover opacity-30"
+            className="w-full h-full object-cover opacity-90"
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-background/60 via-background/70 to-background"></div>
+          <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/30 to-transparent"></div>
         </div>
 
         <div className="max-w-7xl mx-auto relative z-10">
@@ -247,14 +247,14 @@ export default function Landing() {
             </div>
 
             <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight leading-tight">
-              <span className="bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent animate-gradient-shift bg-[length:200%_auto]">
+              <span className="bg-gradient-to-r from-blue-400 via-cyan-300 to-blue-500 bg-clip-text text-transparent animate-gradient-shift bg-[length:200%_auto] drop-shadow-lg">
                 Ask Questions.
               </span>
               <br />
-              <span className="bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent">Get Answers From Your Files.</span>
+              <span className="text-white drop-shadow-lg">Get Answers From Your Files.</span>
             </h1>
 
-            <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
+            <p className="text-lg md:text-xl text-white/90 max-w-3xl mx-auto leading-relaxed drop-shadow-md">
               Upload your documents. Ask questions in plain English. The AI reads through everything and
               tells you what's there. No more digging through folders.
             </p>
