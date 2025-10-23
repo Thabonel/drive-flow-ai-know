@@ -44,6 +44,7 @@ export function TimelineItem({
   const [isDragging, setIsDragging] = React.useState(false);
   const [dragStartPos, setDragStartPos] = React.useState({ x: 0, y: 0 });
   const [currentDragDelta, setCurrentDragDelta] = React.useState({ x: 0, y: 0 });
+  const [wasDragged, setWasDragged] = React.useState(false);
 
   const x = calculateItemX(
     item.start_time,
@@ -68,6 +69,7 @@ export function TimelineItem({
     setIsDragging(true);
     setDragStartPos({ x: e.clientX, y: e.clientY });
     setCurrentDragDelta({ x: 0, y: 0 });
+    setWasDragged(false);
     onDragStart?.(item);
   };
 
@@ -78,6 +80,12 @@ export function TimelineItem({
 
     const deltaX = e.clientX - dragStartPos.x;
     const deltaY = e.clientY - dragStartPos.y;
+
+    // Mark as dragged if moved more than 5 pixels
+    if (Math.abs(deltaX) > 5 || Math.abs(deltaY) > 5) {
+      setWasDragged(true);
+    }
+
     setCurrentDragDelta({ x: deltaX, y: deltaY });
     onDragMove?.(item, deltaX, deltaY);
   };
@@ -94,9 +102,9 @@ export function TimelineItem({
     onDragEnd?.(item, deltaX, deltaY);
   };
 
-  // Handle click (only if not dragging)
+  // Handle click (only if not dragged)
   const handleClick = (e: React.MouseEvent) => {
-    if (Math.abs(currentDragDelta.x) < 5 && Math.abs(currentDragDelta.y) < 5) {
+    if (!wasDragged) {
       onClick(item);
     }
   };
