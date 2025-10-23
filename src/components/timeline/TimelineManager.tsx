@@ -122,14 +122,27 @@ export function TimelineManager() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold flex items-center gap-2">
-          <Clock className="h-8 w-8" />
-          Timeline Manager
-        </h1>
-        <p className="text-gray-600 dark:text-gray-400 mt-2">
-          Manage your time with a flowing timeline. Items move toward NOW and logjam when overdue.
-        </p>
+      <div className="space-y-4">
+        <div>
+          <h1 className="text-3xl font-bold flex items-center gap-2">
+            <Clock className="h-8 w-8" />
+            Timeline Manager
+          </h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-2">
+            Manage your time with a flowing timeline. Items move toward NOW and logjam when overdue.
+          </p>
+        </div>
+
+        {/* Primary Add Item Button */}
+        <div>
+          <button
+            onClick={() => setShowAddItemForm(true)}
+            className="px-6 py-3 bg-primary text-primary-foreground rounded-lg font-semibold hover:bg-primary/90 transition-colors shadow-sm"
+            disabled={layers.length === 0}
+          >
+            {layers.length === 0 ? 'Create a Layer First' : '+ Add Timeline Item'}
+          </button>
+        </div>
       </div>
 
       {/* Logjam alert */}

@@ -24,7 +24,8 @@ export const ITEM_BORDER_RADIUS = 4;
 export const ITEM_PADDING = 8;
 
 // Auto-scroll speed (pixels per second in locked mode)
-export const AUTO_SCROLL_SPEED = 10;
+// Slower speed so items are visible for longer
+export const AUTO_SCROLL_SPEED = 2;
 
 // Time markers
 export const HOUR_MARKER_INTERVAL = 60; // minutes
