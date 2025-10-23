@@ -175,12 +175,12 @@ export const DocumentViewerModal = ({ document, isOpen, onClose }: DocumentViewe
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="flex items-center justify-between">
-            <div className="flex items-center">
+          <div className="flex items-start justify-between gap-4 mb-2">
+            <DialogTitle className="flex items-center">
               <FileText className="h-5 w-5 mr-2" />
               {isEditing ? 'Edit Document' : 'View Document'}
-            </div>
-            <div className="flex items-center space-x-2">
+            </DialogTitle>
+            <div className="flex items-center gap-2 flex-shrink-0">
               {!isEditing && (
                 <>
                   <Button variant="outline" size="sm" onClick={handleCopyContent}>
@@ -198,8 +198,8 @@ export const DocumentViewerModal = ({ document, isOpen, onClose }: DocumentViewe
                   <Button variant="outline" size="sm" onClick={() => setIsEditing(false)}>
                     Cancel
                   </Button>
-                  <Button 
-                    size="sm" 
+                  <Button
+                    size="sm"
                     onClick={handleSave}
                     disabled={updateDocument.isPending}
                   >
@@ -209,7 +209,7 @@ export const DocumentViewerModal = ({ document, isOpen, onClose }: DocumentViewe
                 </>
               )}
             </div>
-          </DialogTitle>
+          </div>
           <DialogDescription>
             {isEditing ? 'Edit your document content and details' : 'View and copy your document content'}
           </DialogDescription>
