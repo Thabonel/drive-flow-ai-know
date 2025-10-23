@@ -23,6 +23,9 @@ interface TimelineItemProps {
   scrollOffset: number;
   nowTime: Date;
   onClick: (item: TimelineItemType) => void;
+  onDragStart?: (item: TimelineItemType) => void;
+  onDragMove?: (item: TimelineItemType, deltaX: number, deltaY: number) => void;
+  onDragEnd?: (item: TimelineItemType, deltaX: number, deltaY: number) => void;
 }
 
 export function TimelineItem({
@@ -34,7 +37,14 @@ export function TimelineItem({
   scrollOffset,
   nowTime,
   onClick,
+  onDragStart,
+  onDragMove,
+  onDragEnd,
 }: TimelineItemProps) {
+  const [isDragging, setIsDragging] = React.useState(false);
+  const [dragStartPos, setDragStartPos] = React.useState({ x: 0, y: 0 });
+  const [currentDragDelta, setCurrentDragDelta] = React.useState({ x: 0, y: 0 });
+
   const x = calculateItemX(
     item.start_time,
     nowTime,
@@ -52,31 +62,78 @@ export function TimelineItem({
   // Determine if item should pulse (logjam)
   const shouldPulse = item.status === 'logjam';
 
+  // Handle drag start
+  const handleMouseDown = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent canvas drag
+    setIsDragging(true);
+    setDragStartPos({ x: e.clientX, y: e.clientY });
+    setCurrentDragDelta({ x: 0, y: 0 });
+    onDragStart?.(item);
+  };
+
+  // Handle drag move
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging) return;
+    e.stopPropagation();
+
+    const deltaX = e.clientX - dragStartPos.x;
+    const deltaY = e.clientY - dragStartPos.y;
+    setCurrentDragDelta({ x: deltaX, y: deltaY });
+    onDragMove?.(item, deltaX, deltaY);
+  };
+
+  // Handle drag end
+  const handleMouseUp = (e: React.MouseEvent) => {
+    if (!isDragging) return;
+    e.stopPropagation();
+
+    const deltaX = e.clientX - dragStartPos.x;
+    const deltaY = e.clientY - dragStartPos.y;
+    setIsDragging(false);
+    setCurrentDragDelta({ x: 0, y: 0 });
+    onDragEnd?.(item, deltaX, deltaY);
+  };
+
+  // Handle click (only if not dragging)
+  const handleClick = (e: React.MouseEvent) => {
+    if (Math.abs(currentDragDelta.x) < 5 && Math.abs(currentDragDelta.y) < 5) {
+      onClick(item);
+    }
+  };
+
+  // Calculate display position (with drag offset)
+  const displayX = x + currentDragDelta.x;
+  const displayY = y + currentDragDelta.y;
+
   return (
     <g
-      className="timeline-item cursor-pointer transition-transform hover:scale-105"
-      onClick={() => onClick(item)}
+      className={`timeline-item transition-transform ${isDragging ? 'cursor-grabbing' : 'cursor-grab hover:scale-105'}`}
+      onMouseDown={handleMouseDown}
+      onMouseMove={handleMouseMove}
+      onMouseUp={handleMouseUp}
+      onMouseLeave={handleMouseUp}
+      onClick={handleClick}
     >
       {/* Item rectangle */}
       <rect
-        x={x}
-        y={y}
+        x={displayX}
+        y={displayY}
         width={Math.max(width, 2)}
         height={height}
         rx={ITEM_BORDER_RADIUS}
         ry={ITEM_BORDER_RADIUS}
         fill={item.color}
-        opacity={opacity}
-        stroke={shouldPulse ? '#ef4444' : 'none'}
-        strokeWidth={shouldPulse ? 3 : 0}
-        className={shouldPulse ? 'animate-pulse' : ''}
+        opacity={isDragging ? 0.6 : opacity}
+        stroke={isDragging ? '#3b82f6' : (shouldPulse ? '#ef4444' : 'none')}
+        strokeWidth={isDragging ? 2 : (shouldPulse ? 3 : 0)}
+        className={shouldPulse && !isDragging ? 'animate-pulse' : ''}
       />
 
       {/* Item text (only if wide enough) */}
       {width > 60 && (
         <text
-          x={x + ITEM_PADDING}
-          y={y + height / 2}
+          x={displayX + ITEM_PADDING}
+          y={displayY + height / 2}
           dominantBaseline="middle"
           fill="white"
           fontSize="12"
@@ -95,8 +152,8 @@ export function TimelineItem({
       {/* Duration text (only if wide enough) */}
       {width > 100 && (
         <text
-          x={x + ITEM_PADDING}
-          y={y + height / 2 + 14}
+          x={displayX + ITEM_PADDING}
+          y={displayY + height / 2 + 14}
           dominantBaseline="middle"
           fill="white"
           fontSize="10"
@@ -108,10 +165,10 @@ export function TimelineItem({
       )}
 
       {/* Logjam indicator */}
-      {shouldPulse && (
+      {shouldPulse && !isDragging && (
         <circle
-          cx={x + width - 10}
-          cy={y + 10}
+          cx={displayX + width - 10}
+          cy={displayY + 10}
           r={5}
           fill="#ef4444"
           className="animate-pulse"
@@ -120,7 +177,7 @@ export function TimelineItem({
 
       {/* Completed checkmark */}
       {item.status === 'completed' && (
-        <g transform={`translate(${x + width - 20}, ${y + 5})`}>
+        <g transform={`translate(${displayX + width - 20}, ${displayY + 5})`}>
           <circle cx="8" cy="8" r="8" fill="#10b981" />
           <path
             d="M5 8 L7 10 L11 6"

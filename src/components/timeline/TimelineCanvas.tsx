@@ -29,6 +29,7 @@ interface TimelineCanvasProps {
   showCompleted: boolean;
   onItemClick: (item: TimelineItemType) => void;
   onDrag?: (deltaX: number) => void;
+  onItemDrop?: (item: TimelineItemType, newStartTime: string, newLayerId: string) => void;
 }
 
 export function TimelineCanvas({
@@ -42,6 +43,7 @@ export function TimelineCanvas({
   showCompleted,
   onItemClick,
   onDrag,
+  onItemDrop,
 }: TimelineCanvasProps) {
   const svgRef = useRef<SVGSVGElement>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -80,6 +82,30 @@ export function TimelineCanvas({
   // Handle mouse up
   const handleMouseUp = () => {
     setIsDragging(false);
+  };
+
+  // Handle item drag end - calculate new time and layer
+  const handleItemDragEnd = (item: TimelineItemType, deltaX: number, deltaY: number) => {
+    if (!onItemDrop) return;
+
+    // Calculate time change from horizontal drag
+    const hoursChanged = deltaX / pixelsPerHour;
+    const currentStartTime = new Date(item.start_time);
+    const newStartTime = new Date(currentStartTime.getTime() + hoursChanged * 60 * 60 * 1000);
+
+    // Calculate layer change from vertical drag
+    const layerIndexChange = Math.round(deltaY / layerHeight);
+    const currentLayer = visibleLayers.find(l => l.id === item.layer_id);
+    if (!currentLayer) return;
+
+    const currentLayerIndex = visibleLayers.indexOf(currentLayer);
+    const newLayerIndex = Math.max(0, Math.min(visibleLayers.length - 1, currentLayerIndex + layerIndexChange));
+    const newLayer = visibleLayers[newLayerIndex];
+
+    // Only update if something changed
+    if (newLayer.id !== item.layer_id || Math.abs(hoursChanged) > 0.01) {
+      onItemDrop(item, newStartTime.toISOString(), newLayer.id);
+    }
   };
 
   // Calculate dimensions
@@ -267,6 +293,7 @@ export function TimelineCanvas({
               scrollOffset={scrollOffset}
               nowTime={nowTime}
               onClick={onItemClick}
+              onDragEnd={handleItemDragEnd}
             />
           </g>
         );

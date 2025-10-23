@@ -108,6 +108,11 @@ export function TimelineManager() {
     setScrollOffset(prev => prev + deltaX);
   };
 
+  // Handle item drop (after drag)
+  const handleItemDrop = async (item: TimelineItem, newStartTime: string, newLayerId: string) => {
+    await rescheduleItem(item.id, newStartTime, newLayerId);
+  };
+
   if (timelineLoading || layersLoading) {
     return (
       <div className="flex items-center justify-center h-96">
@@ -185,6 +190,7 @@ export function TimelineManager() {
               showCompleted={settings?.show_completed ?? true}
               onItemClick={handleItemClick}
               onDrag={handleDrag}
+              onItemDrop={handleItemDrop}
             />
           )}
         </div>
