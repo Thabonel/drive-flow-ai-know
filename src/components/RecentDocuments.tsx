@@ -1,7 +1,6 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { FileText, Clock, Pin, Eye } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -9,6 +8,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { useState } from 'react';
+import { DocumentViewerModal } from '@/components/DocumentViewerModal';
 
 export const RecentDocuments = () => {
   const { user } = useAuth();
@@ -174,47 +174,12 @@ export const RecentDocuments = () => {
         )}
       </CardContent>
 
-      {/* Document View Dialog */}
-      <Dialog open={!!viewingDoc} onOpenChange={() => setViewingDoc(null)}>
-        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center space-x-2">
-              <FileText className="h-5 w-5" />
-              <span>{viewingDoc?.title}</span>
-              <Badge variant="outline" className={getFileTypeColor(viewingDoc?.file_type)}>
-                {viewingDoc?.file_type.toUpperCase()}
-              </Badge>
-            </DialogTitle>
-            <DialogDescription>
-              Document content and AI-generated summary
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            {viewingDoc?.ai_summary && (
-              <div className="p-4 bg-muted/50 rounded-lg">
-                <h4 className="font-medium mb-2">AI Summary</h4>
-                <p className="text-sm">{viewingDoc.ai_summary}</p>
-              </div>
-            )}
-            {viewingDoc?.content ? (
-              <div className="prose prose-sm max-w-none">
-                <h4 className="font-medium mb-2">Content</h4>
-                {viewingDoc.file_type === 'json' ? (
-                  <pre className="text-xs bg-muted/30 p-4 rounded-lg overflow-x-auto">
-                    {JSON.stringify(JSON.parse(viewingDoc.content), null, 2)}
-                  </pre>
-                ) : (
-                  <div className="whitespace-pre-wrap text-sm bg-muted/30 p-4 rounded-lg">
-                    {viewingDoc.content}
-                  </div>
-                )}
-              </div>
-            ) : (
-              <p className="text-muted-foreground text-sm">No content available for this document.</p>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
+      {/* Document Viewer Modal with Edit Capability */}
+      <DocumentViewerModal
+        document={viewingDoc}
+        isOpen={!!viewingDoc}
+        onClose={() => setViewingDoc(null)}
+      />
     </Card>
   );
 };
