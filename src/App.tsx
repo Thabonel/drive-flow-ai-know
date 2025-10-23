@@ -33,6 +33,7 @@ import DataPolicy from "./pages/DataPolicy";
 import AcceptableUse from "./pages/AcceptableUse";
 import Support from "./pages/Support";
 import AdminSupportTickets from "./pages/AdminSupportTickets";
+import Timeline from "./pages/Timeline";
 
 const queryClient = new QueryClient();
 
@@ -176,6 +177,11 @@ const App = () => (
             <Route path="/support" element={
               <ProtectedRoute>
                 <Support />
+              </ProtectedRoute>
+            } />
+            <Route path="/timeline" element={
+              <ProtectedRoute>
+                <Timeline />
               </ProtectedRoute>
             } />
             <Route path="/terms" element={<Terms />} />
