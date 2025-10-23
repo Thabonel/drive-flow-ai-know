@@ -232,9 +232,9 @@ export default function Landing() {
           <img
             src="https://fskwutnoxbbflzqrphro.supabase.co/storage/v1/object/public/assets/Hero%20AI.png"
             alt="AI Knowledge Background"
-            className="w-full h-full object-cover opacity-20"
+            className="w-full h-full object-cover opacity-30"
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-background/80 via-background/90 to-background"></div>
+          <div className="absolute inset-0 bg-gradient-to-b from-background/60 via-background/70 to-background"></div>
         </div>
 
         <div className="max-w-7xl mx-auto relative z-10">
