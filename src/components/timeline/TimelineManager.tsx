@@ -156,10 +156,14 @@ export function TimelineManager() {
             <PopoverTrigger asChild>
               <Button variant="outline" className="gap-2">
                 <Settings className="h-4 w-4" />
-                Timeline Controls
+                Controls
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-80" align="start">
+            <PopoverContent className="w-72 max-h-[80vh] overflow-y-auto" align="start">
+              <div className="space-y-2">
+                <h3 className="font-semibold text-sm">Timeline Controls</h3>
+                <p className="text-xs text-muted-foreground">Manage your timeline view</p>
+              </div>
               <TimelineControls
                 isLocked={settings?.is_locked ?? true}
                 onToggleLock={handleToggleLock}
@@ -178,10 +182,14 @@ export function TimelineManager() {
             <PopoverTrigger asChild>
               <Button variant="outline" className="gap-2">
                 <Layers className="h-4 w-4" />
-                Manage Layers ({layers.length})
+                Layers ({layers.length})
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-80" align="start">
+            <PopoverContent className="w-72 max-h-[80vh] overflow-y-auto" align="start">
+              <div className="space-y-2">
+                <h3 className="font-semibold text-sm">Timeline Layers</h3>
+                <p className="text-xs text-muted-foreground">Organize your items into layers</p>
+              </div>
               <TimelineLayerManager
                 layers={layers}
                 onAddLayer={addLayer}

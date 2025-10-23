@@ -2,19 +2,11 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import {
   Lock,
   Unlock,
-  Plus,
   ZoomIn,
   ZoomOut,
   Maximize2,
@@ -59,14 +51,7 @@ export function TimelineControls({
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Timeline Controls</CardTitle>
-        <CardDescription>
-          Manage your timeline view and add items
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-6">
+    <div className="space-y-4 p-1">
         {/* Lock/Unlock */}
         <div className="space-y-2">
           <Label>Timeline Mode</Label>
@@ -172,16 +157,6 @@ export function TimelineControls({
           Fit All Layers
         </Button>
 
-        {/* Add Item */}
-        <Button
-          onClick={onAddItem}
-          className="w-full"
-          size="lg"
-        >
-          <Plus className="mr-2 h-4 w-4" />
-          Add Timeline Item
-        </Button>
-      </CardContent>
-    </Card>
+    </div>
   );
 }

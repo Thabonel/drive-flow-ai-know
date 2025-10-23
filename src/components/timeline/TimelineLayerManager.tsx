@@ -1,13 +1,6 @@
 // Layer management component
 
 import React, { useState } from 'react';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { TimelineLayer } from '@/lib/timelineUtils';
@@ -67,14 +60,7 @@ export function TimelineLayerManager({
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Timeline Layers</CardTitle>
-        <CardDescription>
-          Organize your timeline items into layers
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
+    <div className="space-y-4 p-1">
         {/* Add new layer */}
         <div className="flex gap-2">
           <Input
@@ -121,7 +107,7 @@ export function TimelineLayerManager({
                     autoFocus
                   />
                 ) : (
-                  <span className="flex-1 text-sm font-medium">
+                  <span className="flex-1 text-sm font-medium text-foreground">
                     {layer.name}
                   </span>
                 )}
@@ -179,7 +165,6 @@ export function TimelineLayerManager({
             ))
           )}
         </div>
-      </CardContent>
-    </Card>
+    </div>
   );
 }
