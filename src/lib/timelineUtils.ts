@@ -154,12 +154,24 @@ export function formatDuration(minutes: number): string {
 }
 
 /**
- * Calculate the NOW line X position (fixed at 30% from left)
+ * Calculate the NOW line X position
  * @param viewportWidth - Width of the viewport in pixels
+ * @param isLocked - Whether timeline is in locked mode
+ * @param scrollOffset - Current scroll offset (for unlocked mode)
  * @returns X position in pixels
  */
-export function calculateNowLineX(viewportWidth: number): number {
-  return viewportWidth * NOW_LINE_POSITION;
+export function calculateNowLineX(
+  viewportWidth: number,
+  isLocked: boolean = true,
+  scrollOffset: number = 0
+): number {
+  if (isLocked) {
+    // Locked mode: NOW line fixed at 30% from left
+    return viewportWidth * NOW_LINE_POSITION;
+  } else {
+    // Unlocked mode: NOW line moves with timeline (at actual current time position)
+    return (viewportWidth * NOW_LINE_POSITION) + scrollOffset;
+  }
 }
 
 /**

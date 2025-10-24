@@ -111,7 +111,7 @@ export function TimelineCanvas({
   // Calculate dimensions
   const visibleLayers = layers.filter(l => l.is_visible);
   const totalHeight = TIMELINE_HEADER_HEIGHT + (visibleLayers.length * layerHeight);
-  const nowLineX = calculateNowLineX(viewportWidth);
+  const nowLineX = calculateNowLineX(viewportWidth, isLocked, scrollOffset);
 
   // Generate time markers
   const timeMarkers = generateTimeMarkers(
