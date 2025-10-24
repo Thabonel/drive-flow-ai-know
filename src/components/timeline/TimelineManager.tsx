@@ -66,6 +66,7 @@ export function TimelineManager() {
   const [showAddItemForm, setShowAddItemForm] = useState(false);
   const [showParkedItems, setShowParkedItems] = useState(false);
   const [viewMode, setViewMode] = useState<TimelineViewMode>('week');
+  const [initialFormValues, setInitialFormValues] = useState<{ startTime?: string; layerId?: string } | null>(null);
 
   const animationFrameRef = useRef<number>();
   const lastTickRef = useRef<number>(Date.now());
@@ -166,6 +167,12 @@ export function TimelineManager() {
   // Handle item drop (after drag)
   const handleItemDrop = async (item: TimelineItem, newStartTime: string, newLayerId: string) => {
     await rescheduleItem(item.id, newStartTime, newLayerId);
+  };
+
+  // Handle double-click on timeline - open form with pre-filled values
+  const handleTimelineDoubleClick = (startTime: string, layerId: string) => {
+    setInitialFormValues({ startTime, layerId });
+    setShowAddItemForm(true);
   };
 
   if (timelineLoading || layersLoading) {
@@ -322,6 +329,7 @@ export function TimelineManager() {
             onItemClick={handleItemClick}
             onDrag={handleDrag}
             onItemDrop={handleItemDrop}
+            onDoubleClick={handleTimelineDoubleClick}
           />
         )}
       </div>
@@ -329,10 +337,15 @@ export function TimelineManager() {
       {/* Modals */}
       <AddItemForm
         open={showAddItemForm}
-        onClose={() => setShowAddItemForm(false)}
+        onClose={() => {
+          setShowAddItemForm(false);
+          setInitialFormValues(null);
+        }}
         layers={layers}
         onAddItem={addItem}
         onAddLayer={addLayer}
+        initialStartTime={initialFormValues?.startTime}
+        initialLayerId={initialFormValues?.layerId}
       />
 
       <ItemActionMenu

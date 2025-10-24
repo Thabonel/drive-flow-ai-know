@@ -1,6 +1,6 @@
 // Form for adding new timeline items
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -34,6 +34,8 @@ interface AddItemFormProps {
     color: string
   ) => Promise<void>;
   onAddLayer: (name: string, color?: string) => Promise<any>;
+  initialStartTime?: string;
+  initialLayerId?: string;
 }
 
 export function AddItemForm({
@@ -42,6 +44,8 @@ export function AddItemForm({
   layers,
   onAddItem,
   onAddLayer,
+  initialStartTime,
+  initialLayerId,
 }: AddItemFormProps) {
   const [title, setTitle] = useState('');
   const [hoursFromNow, setHoursFromNow] = useState(1);
@@ -52,6 +56,18 @@ export function AddItemForm({
   const [newLayerName, setNewLayerName] = useState('');
   const [isCreatingLayer, setIsCreatingLayer] = useState(false);
   const [color, setColor] = useState(getRandomItemColor());
+
+  // Set initial values when provided (from double-click)
+  useEffect(() => {
+    if (initialStartTime && initialLayerId) {
+      // Calculate hours from now based on initial start time
+      const now = new Date();
+      const targetTime = new Date(initialStartTime);
+      const hoursDiff = (targetTime.getTime() - now.getTime()) / (1000 * 60 * 60);
+      setHoursFromNow(Number(hoursDiff.toFixed(2)));
+      setSelectedLayerId(initialLayerId);
+    }
+  }, [initialStartTime, initialLayerId]);
 
   // Convert duration value to minutes based on unit
   const convertToMinutes = (value: number, unit: 'minutes' | 'hours' | 'days'): number => {

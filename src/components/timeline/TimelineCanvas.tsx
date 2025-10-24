@@ -32,6 +32,7 @@ interface TimelineCanvasProps {
   onItemClick: (item: TimelineItemType) => void;
   onDrag?: (deltaX: number) => void;
   onItemDrop?: (item: TimelineItemType, newStartTime: string, newLayerId: string) => void;
+  onDoubleClick?: (startTime: string, layerId: string) => void;
 }
 
 export function TimelineCanvas({
@@ -48,6 +49,7 @@ export function TimelineCanvas({
   onItemClick,
   onDrag,
   onItemDrop,
+  onDoubleClick,
 }: TimelineCanvasProps) {
   const svgRef = useRef<SVGSVGElement>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -112,6 +114,37 @@ export function TimelineCanvas({
     }
   };
 
+  // Handle double-click on canvas - create item at clicked position
+  const handleCanvasDoubleClick = (e: React.MouseEvent<SVGSVGElement>) => {
+    if (!onDoubleClick || visibleLayers.length === 0) return;
+
+    // Get SVG coordinates
+    const svg = svgRef.current;
+    if (!svg) return;
+
+    const rect = svg.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    // Skip if clicked in header area
+    if (y < TIMELINE_HEADER_HEIGHT) return;
+
+    // Calculate which layer was clicked
+    const layerY = y - TIMELINE_HEADER_HEIGHT;
+    const layerIndex = Math.floor(layerY / layerHeight);
+    if (layerIndex < 0 || layerIndex >= visibleLayers.length) return;
+    const clickedLayer = visibleLayers[layerIndex];
+
+    // Calculate time from X position
+    // Reverse the calculateItemX formula: x = nowLineX + (hoursFromNow * pixelsPerHour) + scrollOffset
+    // So: hoursFromNow = (x - nowLineX - scrollOffset) / pixelsPerHour
+    const nowLineX = calculateNowLineX(viewportWidth, isLocked, scrollOffset);
+    const hoursFromNow = (x - nowLineX - scrollOffset) / pixelsPerHour;
+    const clickedTime = new Date(nowTime.getTime() + hoursFromNow * 60 * 60 * 1000);
+
+    onDoubleClick(clickedTime.toISOString(), clickedLayer.id);
+  };
+
   // Calculate dimensions
   const visibleLayers = layers.filter(l => l.is_visible);
   const totalHeight = TIMELINE_HEADER_HEIGHT + (visibleLayers.length * layerHeight);
@@ -144,6 +177,7 @@ export function TimelineCanvas({
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseUp}
+      onDoubleClick={handleCanvasDoubleClick}
     >
       {/* Background */}
       <rect
