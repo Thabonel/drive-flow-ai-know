@@ -321,6 +321,31 @@ export function useTimeline() {
     }
   };
 
+  // Delete a parked item
+  const deleteParkedItem = async (parkedItemId: string) => {
+    try {
+      const { error } = await supabase
+        .from('timeline_parked_items')
+        .delete()
+        .eq('id', parkedItemId);
+
+      if (error) throw error;
+
+      setParkedItems(parkedItems.filter(p => p.id !== parkedItemId));
+      toast({
+        title: 'Parked item deleted',
+        description: 'Parked item has been removed',
+      });
+    } catch (error) {
+      console.error('Error deleting parked item:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to delete parked item',
+        variant: 'destructive',
+      });
+    }
+  };
+
   // Update settings
   const updateSettings = async (updates: Partial<TimelineSettings>) => {
     if (!user || !settings) return;
@@ -407,6 +432,7 @@ export function useTimeline() {
     parkItem,
     restoreParkedItem,
     deleteItem,
+    deleteParkedItem,
     updateSettings,
     refetchItems: fetchItems,
     refetchParkedItems: fetchParkedItems,

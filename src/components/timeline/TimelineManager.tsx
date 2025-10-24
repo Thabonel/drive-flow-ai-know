@@ -6,6 +6,7 @@ import { TimelineControls } from './TimelineControls';
 import { TimelineLayerManager } from './TimelineLayerManager';
 import { AddItemForm } from './AddItemForm';
 import { ItemActionMenu } from './ItemActionMenu';
+import { ParkedItemsPanel } from './ParkedItemsPanel';
 import { useTimeline } from '@/hooks/useTimeline';
 import { useLayers } from '@/hooks/useLayers';
 import { useTimelineSync } from '@/hooks/useTimelineSync';
@@ -17,7 +18,7 @@ import {
   MAX_ZOOM,
 } from '@/lib/timelineConstants';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, Clock, Settings, Layers, Lock, Unlock } from 'lucide-react';
+import { Loader2, Clock, Settings, Layers, Lock, Unlock, Archive } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
 
@@ -25,6 +26,7 @@ export function TimelineManager() {
   const {
     items,
     settings,
+    parkedItems,
     loading: timelineLoading,
     nowTime,
     scrollOffset,
@@ -33,7 +35,9 @@ export function TimelineManager() {
     completeItem,
     rescheduleItem,
     parkItem,
+    restoreParkedItem,
     deleteItem,
+    deleteParkedItem,
     updateSettings,
     refetchItems,
   } = useTimeline();
@@ -57,6 +61,7 @@ export function TimelineManager() {
 
   const [selectedItem, setSelectedItem] = useState<TimelineItem | null>(null);
   const [showAddItemForm, setShowAddItemForm] = useState(false);
+  const [showParkedItems, setShowParkedItems] = useState(false);
 
   const animationFrameRef = useRef<number>();
   const lastTickRef = useRef<number>(Date.now());
@@ -256,6 +261,16 @@ export function TimelineManager() {
               />
             </PopoverContent>
           </Popover>
+
+          {/* Parked Items Button */}
+          <Button
+            onClick={() => setShowParkedItems(true)}
+            variant="outline"
+            className="gap-2"
+          >
+            <Archive className="h-4 w-4" />
+            Parked ({parkedItems.length})
+          </Button>
         </div>
       </div>
 
@@ -312,6 +327,15 @@ export function TimelineManager() {
         onReschedule={rescheduleItem}
         onPark={parkItem}
         onDelete={deleteItem}
+      />
+
+      <ParkedItemsPanel
+        open={showParkedItems}
+        onClose={() => setShowParkedItems(false)}
+        parkedItems={parkedItems}
+        layers={layers}
+        onRestoreItem={restoreParkedItem}
+        onDeleteParkedItem={deleteParkedItem}
       />
     </div>
   );
