@@ -87,7 +87,7 @@ export const DEFAULT_LAYER_COLORS = [
 ];
 
 // View modes
-export type TimelineViewMode = 'day' | 'week' | 'month' | 'year';
+export type TimelineViewMode = 'day' | 'week' | 'month';
 
 export const VIEW_MODE_CONFIG = {
   day: {
@@ -104,14 +104,8 @@ export const VIEW_MODE_CONFIG = {
   },
   month: {
     label: 'Month',
-    pixelsPerHour: 7,    // 7px per hour = ~168px per day = ~5040px per month
+    pixelsPerHour: 10,   // 10px per hour = ~240px per day = ~7200px per month
     pastHours: 168,      // Show 1 week in the past
     futureHours: 552,    // Show ~3 weeks in the future (total ~30 days)
-  },
-  year: {
-    label: 'Year',
-    pixelsPerHour: 1.5,  // 1.5px per hour = ~36px per day = ~13,140px per year
-    pastHours: 720,      // Show 1 month in the past
-    futureHours: 8040,   // Show ~11 months in the future (total ~12 months)
   },
 };
