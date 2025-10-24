@@ -555,6 +555,28 @@ export default function Landing() {
         </div>
       </section>
 
+      {/* Support Section */}
+      <section className="relative py-12 px-6 bg-muted/50">
+        <div className="max-w-4xl mx-auto text-center">
+          <div className="p-8 rounded-2xl bg-card border border-border shadow-card">
+            <h2 className="text-3xl font-bold mb-4">
+              <span className="bg-gradient-to-r from-primary via-accent to-secondary bg-clip-text text-transparent">
+                Need Help?
+              </span>
+            </h2>
+            <p className="text-lg text-muted-foreground mb-6 max-w-2xl mx-auto">
+              If something does not work, let me know and I will fix it immediately.
+            </p>
+            <Button asChild size="lg" className="text-lg px-8 py-6 bg-primary hover:bg-primary/90 text-white shadow-lg hover:shadow-xl transition-all hover:scale-105">
+              <Link to="/support">
+                Create Support Ticket
+                <ArrowRight className="ml-2 w-5 h-5" />
+              </Link>
+            </Button>
+          </div>
+        </div>
+      </section>
+
       {/* Footer */}
       <footer className="relative border-t border-border bg-muted py-8 px-4">
         <div className="container mx-auto">
