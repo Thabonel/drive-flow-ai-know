@@ -107,7 +107,19 @@ export function TimelineManager() {
   // Handle lock toggle
   const handleToggleLock = async () => {
     if (!settings) return;
-    await updateSettings({ is_locked: !settings.is_locked });
+
+    const newLockedState = !settings.is_locked;
+
+    // When switching from unlocked to locked:
+    // Adjust scroll offset so timeline stays in sync with NOW line position
+    if (newLockedState) {
+      // In unlocked mode, NOW line was at (30% + scrollOffset)
+      // In locked mode, NOW line will be at 30%
+      // So we need to reset scrollOffset to 0 to keep timeline aligned
+      setScrollOffset(0);
+    }
+
+    await updateSettings({ is_locked: newLockedState });
   };
 
   // Handle zoom changes
