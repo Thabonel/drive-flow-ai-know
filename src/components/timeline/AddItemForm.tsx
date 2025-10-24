@@ -46,10 +46,37 @@ export function AddItemForm({
   const [title, setTitle] = useState('');
   const [hoursFromNow, setHoursFromNow] = useState(1);
   const [duration, setDuration] = useState(60);
+  const [durationValue, setDurationValue] = useState(60); // User input value
+  const [durationUnit, setDurationUnit] = useState<'minutes' | 'hours' | 'days'>('minutes');
   const [selectedLayerId, setSelectedLayerId] = useState('');
   const [newLayerName, setNewLayerName] = useState('');
   const [isCreatingLayer, setIsCreatingLayer] = useState(false);
   const [color, setColor] = useState(getRandomItemColor());
+
+  // Convert duration value to minutes based on unit
+  const convertToMinutes = (value: number, unit: 'minutes' | 'hours' | 'days'): number => {
+    switch (unit) {
+      case 'minutes':
+        return value;
+      case 'hours':
+        return value * 60;
+      case 'days':
+        return value * 60 * 24;
+      default:
+        return value;
+    }
+  };
+
+  // Update duration whenever value or unit changes
+  const handleDurationValueChange = (value: number) => {
+    setDurationValue(value);
+    setDuration(convertToMinutes(value, durationUnit));
+  };
+
+  const handleDurationUnitChange = (unit: 'minutes' | 'hours' | 'days') => {
+    setDurationUnit(unit);
+    setDuration(convertToMinutes(durationValue, unit));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -86,6 +113,8 @@ export function AddItemForm({
     setTitle('');
     setHoursFromNow(1);
     setDuration(60);
+    setDurationValue(60);
+    setDurationUnit('minutes');
     setColor(getRandomItemColor());
     setNewLayerName('');
     setIsCreatingLayer(false);
@@ -94,6 +123,8 @@ export function AddItemForm({
 
   const handleQuickDuration = (minutes: number) => {
     setDuration(minutes);
+    setDurationValue(minutes);
+    setDurationUnit('minutes');
   };
 
   return (
@@ -141,16 +172,33 @@ export function AddItemForm({
 
           {/* Duration */}
           <div className="space-y-2">
-            <Label htmlFor="duration">Duration (minutes) *</Label>
-            <Input
-              id="duration"
-              type="number"
-              value={duration}
-              onChange={(e) => setDuration(Number(e.target.value))}
-              min="1"
-              required
-            />
-            <div className="flex gap-2">
+            <Label htmlFor="duration">Duration *</Label>
+            <div className="flex items-center gap-2">
+              <Input
+                id="duration"
+                type="number"
+                value={durationValue}
+                onChange={(e) => handleDurationValueChange(Number(e.target.value))}
+                min="1"
+                step="any"
+                required
+                className="flex-1"
+              />
+              <Select
+                value={durationUnit}
+                onValueChange={handleDurationUnitChange}
+              >
+                <SelectTrigger className="w-32">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="minutes">Minutes</SelectItem>
+                  <SelectItem value="hours">Hours</SelectItem>
+                  <SelectItem value="days">Days</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex gap-2 flex-wrap">
               {QUICK_ADD_DURATIONS.map((minutes) => (
                 <Button
                   key={minutes}
