@@ -125,6 +125,12 @@ const features = [
     benefit: 'Answers in milliseconds',
   },
   {
+    icon: Clock,
+    title: 'Timeline Manager',
+    description: 'Visual timeline that flows in real-time. Schedule tasks, see what\'s logjammed, park items for later. Switch between day, week, and month views.',
+    benefit: 'Time flows naturally',
+  },
+  {
     icon: Brain,
     title: 'Group Your Documents',
     description: 'Make collections from related files. The AI reads them together to answer your questions.',
@@ -369,18 +375,20 @@ export default function Landing() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {features.map((feature, i) => {
-              const colors = ["success", "secondary", "primary", "success", "secondary", "primary"];
+              const colors = ["success", "secondary", "primary", "accent", "success", "secondary", "primary"];
               const iconColor = colors[i];
               return (
                 <div key={i} className={`group p-6 rounded-2xl bg-card border border-border shadow-card backdrop-blur-xl transition-all hover:scale-105 hover:shadow-lg`}>
                   <div className={`w-14 h-14 rounded-xl ${
                     iconColor === 'primary' ? 'bg-primary/10 border-primary/20' :
                     iconColor === 'secondary' ? 'bg-secondary/10 border-secondary/20' :
+                    iconColor === 'accent' ? 'bg-accent/10 border-accent/20' :
                     'bg-success/10 border-success/20'
                   } flex items-center justify-center mb-4 group-hover:scale-110 transition-transform border`}>
                     <feature.icon className={`w-7 h-7 ${
                       iconColor === 'primary' ? 'text-primary' :
                       iconColor === 'secondary' ? 'text-secondary' :
+                      iconColor === 'accent' ? 'text-accent' :
                       'text-success'
                     }`} />
                   </div>
