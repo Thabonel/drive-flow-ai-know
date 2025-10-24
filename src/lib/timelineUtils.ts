@@ -154,13 +154,12 @@ export function formatDuration(minutes: number): string {
 }
 
 /**
- * Calculate the NOW line X position
+ * Calculate the NOW line X position (fixed at 30% from left)
  * @param viewportWidth - Width of the viewport in pixels
- * @param scrollOffset - Current scroll offset in pixels (optional, for manual mode)
  * @returns X position in pixels
  */
-export function calculateNowLineX(viewportWidth: number, scrollOffset: number = 0): number {
-  return (viewportWidth * NOW_LINE_POSITION) + scrollOffset;
+export function calculateNowLineX(viewportWidth: number): number {
+  return viewportWidth * NOW_LINE_POSITION;
 }
 
 /**
