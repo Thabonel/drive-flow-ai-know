@@ -1,6 +1,6 @@
 // Main Timeline Manager Component
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { TimelineCanvas } from './TimelineCanvas';
 import { TimelineControls } from './TimelineControls';
 import { TimelineLayerManager } from './TimelineLayerManager';
@@ -59,9 +59,45 @@ export function TimelineManager() {
   const [selectedItem, setSelectedItem] = useState<TimelineItem | null>(null);
   const [showAddItemForm, setShowAddItemForm] = useState(false);
 
+  const animationFrameRef = useRef<number>();
+  const lastTickRef = useRef<number>(Date.now());
+
   // Calculate zoom-adjusted values
   const pixelsPerHour = (settings?.zoom_horizontal || 100) / 100 * DEFAULT_PIXELS_PER_HOUR;
   const layerHeight = (settings?.zoom_vertical || 80) / 100 * DEFAULT_LAYER_HEIGHT;
+
+  // Real-time auto-scroll effect (only in locked mode)
+  useEffect(() => {
+    const tick = () => {
+      if (!settings?.is_locked) {
+        animationFrameRef.current = requestAnimationFrame(tick);
+        return;
+      }
+
+      const now = Date.now();
+      const deltaTime = (now - lastTickRef.current) / 1000; // seconds
+      lastTickRef.current = now;
+
+      // Calculate real-time scroll speed based on current zoom
+      // For real-time: 1 hour in real life = pixelsPerHour pixels scrolled
+      // Therefore: pixelsPerHour pixels per 3600 seconds
+      const autoScrollSpeed = pixelsPerHour / 3600; // pixels per second
+
+      // Auto-scroll left (simulating time passing)
+      setScrollOffset(prev => prev - autoScrollSpeed * deltaTime);
+
+      animationFrameRef.current = requestAnimationFrame(tick);
+    };
+
+    lastTickRef.current = Date.now();
+    animationFrameRef.current = requestAnimationFrame(tick);
+
+    return () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+    };
+  }, [settings?.is_locked, pixelsPerHour]);
 
   // Handle item click
   const handleItemClick = (item: TimelineItem) => {
