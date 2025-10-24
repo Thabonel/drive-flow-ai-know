@@ -269,7 +269,7 @@ export function TimelineManager() {
             className="gap-2"
           >
             <Archive className="h-4 w-4" />
-            Parked ({parkedItems.length})
+            Parked ({parkedItems?.length || 0})
           </Button>
         </div>
       </div>
@@ -332,7 +332,7 @@ export function TimelineManager() {
       <ParkedItemsPanel
         open={showParkedItems}
         onClose={() => setShowParkedItems(false)}
-        parkedItems={parkedItems}
+        parkedItems={parkedItems || []}
         layers={layers}
         onRestoreItem={restoreParkedItem}
         onDeleteParkedItem={deleteParkedItem}
