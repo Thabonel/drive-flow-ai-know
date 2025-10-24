@@ -11,11 +11,6 @@ import {
   shouldBeLogjammed,
   shouldBeArchived,
 } from '@/lib/timelineUtils';
-import {
-  DEFAULT_PIXELS_PER_HOUR,
-  DEFAULT_LAYER_HEIGHT,
-  AUTO_SCROLL_SPEED,
-} from '@/lib/timelineConstants';
 
 export function useTimeline() {
   const { user } = useAuth();
@@ -352,16 +347,10 @@ export function useTimeline() {
   // Animation tick - runs in both locked and unlocked mode
   const tick = useCallback(() => {
     const now = Date.now();
-    const deltaTime = (now - lastTickRef.current) / 1000; // seconds
     lastTickRef.current = now;
 
     // Always update NOW time (in both locked and unlocked mode)
     setNowTime(new Date());
-
-    // Only auto-scroll in locked mode
-    if (settings?.is_locked) {
-      setScrollOffset(prev => prev - AUTO_SCROLL_SPEED * deltaTime);
-    }
 
     // Check for logjammed items
     setItems(prevItems =>
@@ -380,7 +369,7 @@ export function useTimeline() {
     );
 
     animationFrameRef.current = requestAnimationFrame(tick);
-  }, [settings?.is_locked]);
+  }, []);
 
   // Start/stop animation loop (always runs, but behavior changes based on locked state)
   useEffect(() => {
