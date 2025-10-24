@@ -193,10 +193,25 @@ export function generateTimeMarkers(
   hoursAfterNow: number
 ): Array<{ x: number; time: Date; isPast: boolean; isMajor: boolean }> {
   const markers: Array<{ x: number; time: Date; isPast: boolean; isMajor: boolean }> = [];
-  const nowLineX = viewportWidth * NOW_LINE_POSITION; // Base position without scroll offset
+  const nowLineX = viewportWidth * NOW_LINE_POSITION;
 
-  // Generate markers for past and future
-  for (let hourOffset = -hoursBeforeNow; hourOffset <= hoursAfterNow; hourOffset++) {
+  // Determine marker interval based on zoom level
+  let majorInterval: number; // in hours
+  let showSubdivisions = false;
+
+  if (pixelsPerHour >= 50) {
+    // Day/Week view: hourly markers with 15-min subdivisions
+    majorInterval = 1;
+    showSubdivisions = true;
+  } else {
+    // Month view: 12-hour markers (twice a day)
+    majorInterval = 12;
+    showSubdivisions = false;
+  }
+
+  // Generate major markers
+  const totalHours = hoursBeforeNow + hoursAfterNow;
+  for (let hourOffset = -hoursBeforeNow; hourOffset <= hoursAfterNow; hourOffset += majorInterval) {
     const markerTime = new Date(nowTime.getTime() + hourOffset * 60 * 60 * 1000);
     const x = nowLineX + (hourOffset * pixelsPerHour) + scrollOffset;
 
@@ -207,17 +222,19 @@ export function generateTimeMarkers(
       isMajor: true,
     });
 
-    // Add 15-minute subdivisions
-    for (let quarterHour = 1; quarterHour < 4; quarterHour++) {
-      const subdivisionTime = new Date(markerTime.getTime() + quarterHour * 15 * 60 * 1000);
-      const subdivisionX = x + (quarterHour * 0.25 * pixelsPerHour);
+    // Add subdivisions only for detailed views
+    if (showSubdivisions) {
+      for (let quarterHour = 1; quarterHour < 4; quarterHour++) {
+        const subdivisionTime = new Date(markerTime.getTime() + quarterHour * 15 * 60 * 1000);
+        const subdivisionX = x + (quarterHour * 0.25 * pixelsPerHour);
 
-      markers.push({
-        x: subdivisionX,
-        time: subdivisionTime,
-        isPast: hourOffset < 0 || (hourOffset === 0 && quarterHour === 0),
-        isMajor: false,
-      });
+        markers.push({
+          x: subdivisionX,
+          time: subdivisionTime,
+          isPast: hourOffset < 0 || (hourOffset === 0 && quarterHour === 0),
+          isMajor: false,
+        });
+      }
     }
   }
 

@@ -10,7 +10,7 @@ interface ViewModeSwitcherProps {
 }
 
 export function ViewModeSwitcher({ currentMode, onModeChange }: ViewModeSwitcherProps) {
-  const modes: TimelineViewMode[] = ['day', 'week', 'month', 'year'];
+  const modes: TimelineViewMode[] = ['day', 'week', 'month'];
 
   return (
     <div className="flex items-center gap-1 border rounded-lg p-1 bg-background">
