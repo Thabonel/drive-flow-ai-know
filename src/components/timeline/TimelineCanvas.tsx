@@ -260,6 +260,20 @@ export function TimelineCanvas({
               opacity={0.5}
             />
 
+            {/* Layer name label (on the left, in past area) */}
+            <text
+              x={10}
+              y={y + layerHeight / 2}
+              dominantBaseline="middle"
+              fontSize="12"
+              fontWeight="500"
+              fill="currentColor"
+              className="text-gray-600 dark:text-gray-400"
+              opacity={0.7}
+            >
+              {layer.name}
+            </text>
+
             {/* Layer separator */}
             <line
               x1="0"
