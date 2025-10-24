@@ -18,7 +18,7 @@ import {
   MAX_ZOOM,
 } from '@/lib/timelineConstants';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, Clock, Settings, Layers } from 'lucide-react';
+import { Loader2, Clock, Settings, Layers, Lock, Unlock } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
 
@@ -151,6 +151,25 @@ export function TimelineManager() {
             {layers.length === 0 ? 'Create a Layer First' : '+ Add Timeline Item'}
           </button>
 
+          {/* Lock/Unlock Toggle Button */}
+          <Button
+            onClick={handleToggleLock}
+            variant={settings?.is_locked ? 'default' : 'outline'}
+            className="gap-2"
+          >
+            {settings?.is_locked ? (
+              <>
+                <Lock className="h-4 w-4" />
+                Locked
+              </>
+            ) : (
+              <>
+                <Unlock className="h-4 w-4" />
+                Unlocked
+              </>
+            )}
+          </Button>
+
           {/* Timeline Controls Dropdown */}
           <Popover>
             <PopoverTrigger asChild>
@@ -165,13 +184,10 @@ export function TimelineManager() {
                 <p className="text-xs text-muted-foreground">Manage your timeline view</p>
               </div>
               <TimelineControls
-                isLocked={settings?.is_locked ?? true}
-                onToggleLock={handleToggleLock}
                 zoomHorizontal={settings?.zoom_horizontal ?? 100}
                 zoomVertical={settings?.zoom_vertical ?? 80}
                 onZoomHorizontalChange={handleZoomHorizontalChange}
                 onZoomVerticalChange={handleZoomVerticalChange}
-                onAddItem={() => setShowAddItemForm(true)}
                 onFitAllLayers={handleFitAllLayers}
               />
             </PopoverContent>

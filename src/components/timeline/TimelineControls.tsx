@@ -5,8 +5,6 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import {
-  Lock,
-  Unlock,
   ZoomIn,
   ZoomOut,
   Maximize2,
@@ -14,24 +12,18 @@ import {
 import { ZOOM_STEP, MIN_ZOOM, MAX_ZOOM } from '@/lib/timelineConstants';
 
 interface TimelineControlsProps {
-  isLocked: boolean;
-  onToggleLock: () => void;
   zoomHorizontal: number;
   zoomVertical: number;
   onZoomHorizontalChange: (value: number) => void;
   onZoomVerticalChange: (value: number) => void;
-  onAddItem: () => void;
   onFitAllLayers: () => void;
 }
 
 export function TimelineControls({
-  isLocked,
-  onToggleLock,
   zoomHorizontal,
   zoomVertical,
   onZoomHorizontalChange,
   onZoomVerticalChange,
-  onAddItem,
   onFitAllLayers,
 }: TimelineControlsProps) {
   const handleZoomIn = (isHorizontal: boolean) => {
@@ -52,33 +44,6 @@ export function TimelineControls({
 
   return (
     <div className="space-y-4 p-1">
-        {/* Lock/Unlock */}
-        <div className="space-y-2">
-          <Label>Timeline Mode</Label>
-          <Button
-            onClick={onToggleLock}
-            variant={isLocked ? 'default' : 'outline'}
-            className="w-full"
-          >
-            {isLocked ? (
-              <>
-                <Lock className="mr-2 h-4 w-4" />
-                Locked (Auto-scroll)
-              </>
-            ) : (
-              <>
-                <Unlock className="mr-2 h-4 w-4" />
-                Unlocked (Manual)
-              </>
-            )}
-          </Button>
-          <p className="text-xs text-gray-500">
-            {isLocked
-              ? 'Timeline scrolls automatically with time'
-              : 'Drag timeline to navigate'}
-          </p>
-        </div>
-
         {/* Horizontal Zoom */}
         <div className="space-y-2">
           <Label>Horizontal Zoom ({zoomHorizontal}%)</Label>
