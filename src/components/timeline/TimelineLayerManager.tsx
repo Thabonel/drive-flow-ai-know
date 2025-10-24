@@ -68,7 +68,6 @@ export function TimelineLayerManager({
             value={newLayerName}
             onChange={(e) => setNewLayerName(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && handleAddLayer()}
-            className="text-foreground dark:text-foreground"
           />
           <Button onClick={handleAddLayer} size="sm">
             <Plus className="h-4 w-4" />
@@ -104,7 +103,7 @@ export function TimelineLayerManager({
                     value={editingName}
                     onChange={(e) => setEditingName(e.target.value)}
                     onKeyPress={(e) => e.key === 'Enter' && saveEdit()}
-                    className="flex-1 text-foreground dark:text-foreground"
+                    className="flex-1"
                     autoFocus
                   />
                 ) : (
