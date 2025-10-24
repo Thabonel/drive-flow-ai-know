@@ -84,7 +84,7 @@ export function TimelineLayerManager({
             layers.map((layer) => (
               <div
                 key={layer.id}
-                className="flex items-center gap-2 p-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800"
+                className="flex items-center gap-2 p-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-foreground"
               >
                 {/* Drag handle */}
                 <GripVertical className="h-4 w-4 text-gray-400 cursor-move" />
