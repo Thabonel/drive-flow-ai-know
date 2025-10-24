@@ -85,3 +85,33 @@ export const DEFAULT_LAYER_COLORS = [
   '#db2777', // pink
   '#0891b2', // cyan
 ];
+
+// View modes
+export type TimelineViewMode = 'day' | 'week' | 'month' | 'year';
+
+export const VIEW_MODE_CONFIG = {
+  day: {
+    label: 'Day',
+    pixelsPerHour: 200,  // 200px per hour = very detailed
+    pastHours: 6,        // Show 6 hours in the past
+    futureHours: 18,     // Show 18 hours in the future (total 24h)
+  },
+  week: {
+    label: 'Week',
+    pixelsPerHour: 30,   // 30px per hour = ~720px per day
+    pastHours: 24,       // Show 1 day in the past
+    futureHours: 144,    // Show 6 days in the future (total 7 days)
+  },
+  month: {
+    label: 'Month',
+    pixelsPerHour: 7,    // 7px per hour = ~168px per day = ~5040px per month
+    pastHours: 168,      // Show 1 week in the past
+    futureHours: 552,    // Show ~3 weeks in the future (total ~30 days)
+  },
+  year: {
+    label: 'Year',
+    pixelsPerHour: 1.5,  // 1.5px per hour = ~36px per day = ~13,140px per year
+    pastHours: 720,      // Show 1 month in the past
+    futureHours: 8040,   // Show ~11 months in the future (total ~12 months)
+  },
+};

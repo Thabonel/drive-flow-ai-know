@@ -7,6 +7,7 @@ import { TimelineLayerManager } from './TimelineLayerManager';
 import { AddItemForm } from './AddItemForm';
 import { ItemActionMenu } from './ItemActionMenu';
 import { ParkedItemsPanel } from './ParkedItemsPanel';
+import { ViewModeSwitcher } from './ViewModeSwitcher';
 import { useTimeline } from '@/hooks/useTimeline';
 import { useLayers } from '@/hooks/useLayers';
 import { useTimelineSync } from '@/hooks/useTimelineSync';
@@ -16,6 +17,8 @@ import {
   DEFAULT_LAYER_HEIGHT,
   MIN_ZOOM,
   MAX_ZOOM,
+  TimelineViewMode,
+  VIEW_MODE_CONFIG,
 } from '@/lib/timelineConstants';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, Clock, Settings, Layers, Lock, Unlock, Archive } from 'lucide-react';
@@ -62,12 +65,15 @@ export function TimelineManager() {
   const [selectedItem, setSelectedItem] = useState<TimelineItem | null>(null);
   const [showAddItemForm, setShowAddItemForm] = useState(false);
   const [showParkedItems, setShowParkedItems] = useState(false);
+  const [viewMode, setViewMode] = useState<TimelineViewMode>('week');
 
   const animationFrameRef = useRef<number>();
   const lastTickRef = useRef<number>(Date.now());
 
-  // Calculate zoom-adjusted values
-  const pixelsPerHour = (settings?.zoom_horizontal || 100) / 100 * DEFAULT_PIXELS_PER_HOUR;
+  // Calculate zoom-adjusted values based on view mode
+  const viewModeConfig = VIEW_MODE_CONFIG[viewMode];
+  const basePixelsPerHour = viewModeConfig.pixelsPerHour;
+  const pixelsPerHour = (settings?.zoom_horizontal || 100) / 100 * basePixelsPerHour;
   const layerHeight = (settings?.zoom_vertical || 80) / 100 * DEFAULT_LAYER_HEIGHT;
 
   // Real-time auto-scroll effect (only in locked mode)
@@ -271,6 +277,14 @@ export function TimelineManager() {
             <Archive className="h-4 w-4" />
             Parked ({parkedItems?.length || 0})
           </Button>
+
+          {/* View Mode Switcher */}
+          <div className="ml-auto">
+            <ViewModeSwitcher
+              currentMode={viewMode}
+              onModeChange={setViewMode}
+            />
+          </div>
         </div>
       </div>
 
@@ -303,6 +317,8 @@ export function TimelineManager() {
             layerHeight={layerHeight}
             isLocked={settings?.is_locked ?? true}
             showCompleted={true}
+            pastHours={viewModeConfig.pastHours}
+            futureHours={viewModeConfig.futureHours}
             onItemClick={handleItemClick}
             onDrag={handleDrag}
             onItemDrop={handleItemDrop}

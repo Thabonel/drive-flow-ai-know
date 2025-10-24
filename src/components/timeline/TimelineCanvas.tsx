@@ -27,6 +27,8 @@ interface TimelineCanvasProps {
   layerHeight: number;
   isLocked: boolean;
   showCompleted: boolean;
+  pastHours?: number;
+  futureHours?: number;
   onItemClick: (item: TimelineItemType) => void;
   onDrag?: (deltaX: number) => void;
   onItemDrop?: (item: TimelineItemType, newStartTime: string, newLayerId: string) => void;
@@ -41,6 +43,8 @@ export function TimelineCanvas({
   layerHeight,
   isLocked,
   showCompleted,
+  pastHours = DEFAULT_PAST_HOURS,
+  futureHours = DEFAULT_FUTURE_HOURS,
   onItemClick,
   onDrag,
   onItemDrop,
@@ -119,8 +123,8 @@ export function TimelineCanvas({
     viewportWidth,
     pixelsPerHour,
     scrollOffset,
-    DEFAULT_PAST_HOURS,
-    DEFAULT_FUTURE_HOURS
+    pastHours,
+    futureHours
   );
 
   // Filter items based on showCompleted setting
