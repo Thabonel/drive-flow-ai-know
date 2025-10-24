@@ -6,7 +6,6 @@ import { TimelineControls } from './TimelineControls';
 import { TimelineLayerManager } from './TimelineLayerManager';
 import { AddItemForm } from './AddItemForm';
 import { ItemActionMenu } from './ItemActionMenu';
-import { CompletedItemsToggle } from './CompletedItemsToggle';
 import { useTimeline } from '@/hooks/useTimeline';
 import { useLayers } from '@/hooks/useLayers';
 import { useTimelineSync } from '@/hooks/useTimelineSync';
@@ -133,11 +132,6 @@ export function TimelineManager() {
     await updateSettings({ zoom_vertical: clamped });
   };
 
-  // Handle completed toggle
-  const handleToggleCompleted = async () => {
-    if (!settings) return;
-    await updateSettings({ show_completed: !settings.show_completed });
-  };
 
   // Handle fit all layers
   const handleFitAllLayers = async () => {
@@ -171,7 +165,6 @@ export function TimelineManager() {
     );
   }
 
-  const completedCount = items.filter(i => i.status === 'completed').length;
   const logjamCount = items.filter(i => i.status === 'logjam').length;
 
   return (
@@ -278,13 +271,6 @@ export function TimelineManager() {
 
       {/* Main timeline area */}
       <div className="space-y-4">
-        {/* Completed toggle */}
-        <CompletedItemsToggle
-          showCompleted={settings?.show_completed ?? true}
-          onToggle={handleToggleCompleted}
-          completedCount={completedCount}
-        />
-
         {/* Main timeline */}
         {layers.length === 0 ? (
           <Alert>
@@ -301,7 +287,7 @@ export function TimelineManager() {
             pixelsPerHour={pixelsPerHour}
             layerHeight={layerHeight}
             isLocked={settings?.is_locked ?? true}
-            showCompleted={settings?.show_completed ?? true}
+            showCompleted={true}
             onItemClick={handleItemClick}
             onDrag={handleDrag}
             onItemDrop={handleItemDrop}
