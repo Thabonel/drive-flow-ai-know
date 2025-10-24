@@ -207,7 +207,7 @@ export function TimelineManager() {
           <Button
             onClick={handleToggleLock}
             variant={settings?.is_locked ? 'default' : 'outline'}
-            className="gap-2"
+            className="gap-2 w-32"
           >
             {settings?.is_locked ? (
               <>
