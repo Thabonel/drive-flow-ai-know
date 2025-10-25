@@ -60,12 +60,7 @@ export default function AdminSupportTickets() {
 
       const { data, error } = await supabase
         .from('support_tickets')
-        .select(`
-          *,
-          user:user_id (
-            email
-          )
-        `)
+        .select('*')
         .order('created_at', { ascending: false });
 
       if (error) {
@@ -73,7 +68,12 @@ export default function AdminSupportTickets() {
         throw error;
       }
 
-      return data;
+      // Add user object with user_id as email for now
+      // We can enhance this later to fetch actual emails
+      return data.map(ticket => ({
+        ...ticket,
+        user: { email: ticket.user_id.slice(0, 8) + '...' } // Show shortened user ID
+      }));
     },
     enabled: !!user,
   });
