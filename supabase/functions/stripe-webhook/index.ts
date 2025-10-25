@@ -25,10 +25,21 @@ Deno.serve(async (request) => {
   const signature = request.headers.get('Stripe-Signature');
   const webhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET');
 
-  if (!signature || !webhookSecret) {
-    console.error("Missing signature or webhook secret");
-    return new Response(JSON.stringify({ error: 'Missing signature or secret' }), {
+  console.log("Webhook secret configured:", webhookSecret ? `Yes (starts with ${webhookSecret.substring(0, 7)}...)` : 'No');
+  console.log("Signature present:", signature ? 'Yes' : 'No');
+
+  if (!signature) {
+    console.error("Missing Stripe-Signature header");
+    return new Response(JSON.stringify({ error: 'Missing Stripe signature' }), {
       status: 400,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  }
+
+  if (!webhookSecret) {
+    console.error("STRIPE_WEBHOOK_SECRET environment variable not set");
+    return new Response(JSON.stringify({ error: 'Webhook secret not configured' }), {
+      status: 500,
       headers: { 'Content-Type': 'application/json' }
     });
   }
