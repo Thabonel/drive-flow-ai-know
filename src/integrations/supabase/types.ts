@@ -140,6 +140,27 @@ export type Database = {
         }
         Relationships: []
       }
+      app_config: {
+        Row: {
+          created_at: string | null
+          key: string
+          updated_at: string | null
+          value: string
+        }
+        Insert: {
+          created_at?: string | null
+          key: string
+          updated_at?: string | null
+          value: string
+        }
+        Update: {
+          created_at?: string | null
+          key?: string
+          updated_at?: string | null
+          value?: string
+        }
+        Relationships: []
+      }
       attachments: {
         Row: {
           created_at: string | null
@@ -599,7 +620,7 @@ export type Database = {
           details: Json | null
           error_message: string | null
           id: string
-          ip_address: unknown | null
+          ip_address: unknown
           success: boolean
           user_agent: string | null
           user_id: string
@@ -611,7 +632,7 @@ export type Database = {
           details?: Json | null
           error_message?: string | null
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           success: boolean
           user_agent?: string | null
           user_id: string
@@ -623,7 +644,7 @@ export type Database = {
           details?: Json | null
           error_message?: string | null
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           success?: boolean
           user_agent?: string | null
           user_id?: string
@@ -698,6 +719,66 @@ export type Database = {
         }
         Relationships: []
       }
+      enterprise_servers: {
+        Row: {
+          authentication: Json | null
+          base_path: string | null
+          bucket_name: string | null
+          container_name: string | null
+          created_at: string | null
+          endpoint: string | null
+          host: string | null
+          id: string
+          is_active: boolean | null
+          last_synced_at: string | null
+          name: string
+          port: number | null
+          protocol: string
+          region: string | null
+          storage_account_name: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          authentication?: Json | null
+          base_path?: string | null
+          bucket_name?: string | null
+          container_name?: string | null
+          created_at?: string | null
+          endpoint?: string | null
+          host?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_synced_at?: string | null
+          name: string
+          port?: number | null
+          protocol: string
+          region?: string | null
+          storage_account_name?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          authentication?: Json | null
+          base_path?: string | null
+          bucket_name?: string | null
+          container_name?: string | null
+          created_at?: string | null
+          endpoint?: string | null
+          host?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_synced_at?: string | null
+          name?: string
+          port?: number | null
+          protocol?: string
+          region?: string | null
+          storage_account_name?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       google_drive_folders: {
         Row: {
           created_at: string
@@ -740,7 +821,7 @@ export type Database = {
           created_at: string | null
           details: Json | null
           id: string
-          ip_address: unknown | null
+          ip_address: unknown
           success: boolean
           user_agent: string | null
           user_id: string
@@ -750,7 +831,7 @@ export type Database = {
           created_at?: string | null
           details?: Json | null
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           success: boolean
           user_agent?: string | null
           user_id: string
@@ -760,7 +841,7 @@ export type Database = {
           created_at?: string | null
           details?: Json | null
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           success?: boolean
           user_agent?: string | null
           user_id?: string
@@ -853,7 +934,12 @@ export type Database = {
           is_archived: boolean | null
           is_outdated: boolean | null
           is_pinned: boolean | null
+          microsoft_file_id: string | null
           mime_type: string | null
+          s3_etag: string | null
+          s3_key: string | null
+          s3_last_modified: string | null
+          server_id: string | null
           tags: string[] | null
           title: string
           updated_at: string
@@ -875,7 +961,12 @@ export type Database = {
           is_archived?: boolean | null
           is_outdated?: boolean | null
           is_pinned?: boolean | null
+          microsoft_file_id?: string | null
           mime_type?: string | null
+          s3_etag?: string | null
+          s3_key?: string | null
+          s3_last_modified?: string | null
+          server_id?: string | null
           tags?: string[] | null
           title: string
           updated_at?: string
@@ -897,7 +988,12 @@ export type Database = {
           is_archived?: boolean | null
           is_outdated?: boolean | null
           is_pinned?: boolean | null
+          microsoft_file_id?: string | null
           mime_type?: string | null
+          s3_etag?: string | null
+          s3_key?: string | null
+          s3_last_modified?: string | null
+          server_id?: string | null
           tags?: string[] | null
           title?: string
           updated_at?: string
@@ -909,6 +1005,13 @@ export type Database = {
             columns: ["folder_id"]
             isOneToOne: false
             referencedRelation: "google_drive_folders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "knowledge_documents_server_id_fkey"
+            columns: ["server_id"]
+            isOneToOne: false
+            referencedRelation: "enterprise_servers"
             referencedColumns: ["id"]
           },
         ]
@@ -983,6 +1086,111 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      microsoft_drive_folders: {
+        Row: {
+          created_at: string | null
+          drive_id: string
+          drive_type: string | null
+          folder_name: string
+          folder_path: string | null
+          id: string
+          is_active: boolean | null
+          item_id: string
+          last_synced_at: string | null
+          site_id: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          drive_id: string
+          drive_type?: string | null
+          folder_name: string
+          folder_path?: string | null
+          id?: string
+          is_active?: boolean | null
+          item_id: string
+          last_synced_at?: string | null
+          site_id?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          drive_id?: string
+          drive_type?: string | null
+          folder_name?: string
+          folder_path?: string | null
+          id?: string
+          is_active?: boolean | null
+          item_id?: string
+          last_synced_at?: string | null
+          site_id?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      microsoft_token_audit_log: {
+        Row: {
+          action: string
+          created_at: string | null
+          details: Json | null
+          id: string
+          ip_address: unknown
+          success: boolean
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          action: string
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          ip_address?: unknown
+          success?: boolean
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          ip_address?: unknown
+          success?: boolean
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      microsoft_token_rate_limit: {
+        Row: {
+          access_count: number | null
+          blocked_until: string | null
+          created_at: string | null
+          updated_at: string | null
+          user_id: string
+          window_start: string | null
+        }
+        Insert: {
+          access_count?: number | null
+          blocked_until?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+          user_id: string
+          window_start?: string | null
+        }
+        Update: {
+          access_count?: number | null
+          blocked_until?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+          user_id?: string
+          window_start?: string | null
+        }
+        Relationships: []
       }
       pages: {
         Row: {
@@ -1176,7 +1384,7 @@ export type Database = {
           created_at: string | null
           details: Json | null
           id: string
-          ip_address: unknown | null
+          ip_address: unknown
           resource_id: string | null
           resource_type: string
           success: boolean
@@ -1188,7 +1396,7 @@ export type Database = {
           created_at?: string | null
           details?: Json | null
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           resource_id?: string | null
           resource_type: string
           success: boolean
@@ -1200,12 +1408,108 @@ export type Database = {
           created_at?: string | null
           details?: Json | null
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           resource_id?: string | null
           resource_type?: string
           success?: boolean
           user_agent?: string | null
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      subscriptions: {
+        Row: {
+          cancel_at_period_end: boolean | null
+          created_at: string | null
+          current_period_end: string
+          current_period_start: string
+          id: string
+          plan_type: string
+          status: string
+          stripe_customer_id: string | null
+          stripe_price_id: string
+          stripe_subscription_id: string | null
+          trial_end: string | null
+          trial_start: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          cancel_at_period_end?: boolean | null
+          created_at?: string | null
+          current_period_end: string
+          current_period_start: string
+          id?: string
+          plan_type: string
+          status: string
+          stripe_customer_id?: string | null
+          stripe_price_id: string
+          stripe_subscription_id?: string | null
+          trial_end?: string | null
+          trial_start?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          cancel_at_period_end?: boolean | null
+          created_at?: string | null
+          current_period_end?: string
+          current_period_start?: string
+          id?: string
+          plan_type?: string
+          status?: string
+          stripe_customer_id?: string | null
+          stripe_price_id?: string
+          stripe_subscription_id?: string | null
+          trial_end?: string | null
+          trial_start?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      support_tickets: {
+        Row: {
+          admin_id: string | null
+          admin_response: string | null
+          category: string
+          created_at: string | null
+          id: string
+          message: string
+          priority: string | null
+          responded_at: string | null
+          status: string | null
+          subject: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          admin_id?: string | null
+          admin_response?: string | null
+          category: string
+          created_at?: string | null
+          id?: string
+          message: string
+          priority?: string | null
+          responded_at?: string | null
+          status?: string | null
+          subject: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          admin_id?: string | null
+          admin_response?: string | null
+          category?: string
+          created_at?: string | null
+          id?: string
+          message?: string
+          priority?: string | null
+          responded_at?: string | null
+          status?: string | null
+          subject?: string
+          updated_at?: string | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -1218,6 +1522,7 @@ export type Database = {
           files_total: number | null
           folder_id: string | null
           id: string
+          server_id: string | null
           started_at: string | null
           status: string
           user_id: string
@@ -1230,6 +1535,7 @@ export type Database = {
           files_total?: number | null
           folder_id?: string | null
           id?: string
+          server_id?: string | null
           started_at?: string | null
           status: string
           user_id: string
@@ -1242,6 +1548,7 @@ export type Database = {
           files_total?: number | null
           folder_id?: string | null
           id?: string
+          server_id?: string | null
           started_at?: string | null
           status?: string
           user_id?: string
@@ -1252,6 +1559,13 @@ export type Database = {
             columns: ["folder_id"]
             isOneToOne: false
             referencedRelation: "google_drive_folders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sync_jobs_server_id_fkey"
+            columns: ["server_id"]
+            isOneToOne: false
+            referencedRelation: "enterprise_servers"
             referencedColumns: ["id"]
           },
         ]
@@ -1277,6 +1591,271 @@ export type Database = {
           status?: string | null
           title?: string | null
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      team_members: {
+        Row: {
+          created_at: string | null
+          email: string
+          id: string
+          invited_at: string | null
+          invited_by: string | null
+          joined_at: string | null
+          organization_id: string
+          role: string
+          status: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          email: string
+          id?: string
+          invited_at?: string | null
+          invited_by?: string | null
+          joined_at?: string | null
+          organization_id: string
+          role: string
+          status?: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          email?: string
+          id?: string
+          invited_at?: string | null
+          invited_by?: string | null
+          joined_at?: string | null
+          organization_id?: string
+          role?: string
+          status?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      timeline_items: {
+        Row: {
+          color: string
+          completed_at: string | null
+          created_at: string | null
+          duration_minutes: number
+          id: string
+          layer_id: string
+          start_time: string
+          status: string
+          title: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          color: string
+          completed_at?: string | null
+          created_at?: string | null
+          duration_minutes: number
+          id?: string
+          layer_id: string
+          start_time: string
+          status?: string
+          title: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          color?: string
+          completed_at?: string | null
+          created_at?: string | null
+          duration_minutes?: number
+          id?: string
+          layer_id?: string
+          start_time?: string
+          status?: string
+          title?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "timeline_items_layer_id_fkey"
+            columns: ["layer_id"]
+            isOneToOne: false
+            referencedRelation: "timeline_layers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      timeline_layers: {
+        Row: {
+          color: string | null
+          created_at: string | null
+          id: string
+          is_visible: boolean | null
+          name: string
+          sort_order: number
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string | null
+          id?: string
+          is_visible?: boolean | null
+          name: string
+          sort_order: number
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string | null
+          id?: string
+          is_visible?: boolean | null
+          name?: string
+          sort_order?: number
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      timeline_parked_items: {
+        Row: {
+          color: string
+          duration_minutes: number
+          id: string
+          original_layer_id: string | null
+          parked_at: string | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          color: string
+          duration_minutes: number
+          id?: string
+          original_layer_id?: string | null
+          parked_at?: string | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          color?: string
+          duration_minutes?: number
+          id?: string
+          original_layer_id?: string | null
+          parked_at?: string | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "timeline_parked_items_original_layer_id_fkey"
+            columns: ["original_layer_id"]
+            isOneToOne: false
+            referencedRelation: "timeline_layers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      timeline_settings: {
+        Row: {
+          auto_archive_hours: number | null
+          created_at: string | null
+          is_locked: boolean | null
+          show_completed: boolean | null
+          updated_at: string | null
+          user_id: string
+          zoom_horizontal: number | null
+          zoom_vertical: number | null
+        }
+        Insert: {
+          auto_archive_hours?: number | null
+          created_at?: string | null
+          is_locked?: boolean | null
+          show_completed?: boolean | null
+          updated_at?: string | null
+          user_id: string
+          zoom_horizontal?: number | null
+          zoom_vertical?: number | null
+        }
+        Update: {
+          auto_archive_hours?: number | null
+          created_at?: string | null
+          is_locked?: boolean | null
+          show_completed?: boolean | null
+          updated_at?: string | null
+          user_id?: string
+          zoom_horizontal?: number | null
+          zoom_vertical?: number | null
+        }
+        Relationships: []
+      }
+      usage_alerts: {
+        Row: {
+          alert_type: string
+          alerted_at: string | null
+          id: string
+          query_count: number
+          resolved_at: string | null
+          threshold: number
+          user_id: string
+        }
+        Insert: {
+          alert_type: string
+          alerted_at?: string | null
+          id?: string
+          query_count: number
+          resolved_at?: string | null
+          threshold: number
+          user_id: string
+        }
+        Update: {
+          alert_type?: string
+          alerted_at?: string | null
+          id?: string
+          query_count?: number
+          resolved_at?: string | null
+          threshold?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      usage_tracking: {
+        Row: {
+          created_at: string | null
+          hour_window_start: string | null
+          id: string
+          last_query_at: string | null
+          period_end: string
+          period_start: string
+          queries_this_hour: number | null
+          query_count: number | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          hour_window_start?: string | null
+          id?: string
+          last_query_at?: string | null
+          period_end?: string
+          period_start?: string
+          queries_this_hour?: number | null
+          query_count?: number | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          hour_window_start?: string | null
+          id?: string
+          last_query_at?: string | null
+          period_end?: string
+          period_start?: string
+          queries_this_hour?: number | null
+          query_count?: number | null
+          updated_at?: string | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -1316,6 +1895,42 @@ export type Database = {
         }
         Relationships: []
       }
+      user_microsoft_tokens: {
+        Row: {
+          created_at: string | null
+          encrypted_access_token: string
+          encrypted_refresh_token: string | null
+          expires_at: string
+          id: string
+          scope: string | null
+          token_type: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          encrypted_access_token: string
+          encrypted_refresh_token?: string | null
+          expires_at: string
+          id?: string
+          scope?: string | null
+          token_type?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          encrypted_access_token?: string
+          encrypted_refresh_token?: string | null
+          expires_at?: string
+          id?: string
+          scope?: string | null
+          token_type?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string | null
@@ -1342,6 +1957,7 @@ export type Database = {
           created_at: string
           id: string
           model_preference: string
+          personal_prompt: string | null
           updated_at: string
           user_id: string
         }
@@ -1349,6 +1965,7 @@ export type Database = {
           created_at?: string
           id?: string
           model_preference?: string
+          personal_prompt?: string | null
           updated_at?: string
           user_id: string
         }
@@ -1356,6 +1973,7 @@ export type Database = {
           created_at?: string
           id?: string
           model_preference?: string
+          personal_prompt?: string | null
           updated_at?: string
           user_id?: string
         }
@@ -1366,22 +1984,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      cleanup_expired_google_data: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
-      cleanup_expired_google_tokens: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
-      cleanup_old_qa_sessions: {
-        Args: Record<PropertyKey, never> | { days_old?: number }
-        Returns: number
-      }
-      example_function: {
-        Args: { param1: string }
-        Returns: string
-      }
+      check_query_limit: { Args: { p_user_id: string }; Returns: Json }
+      cleanup_expired_google_data: { Args: never; Returns: undefined }
+      cleanup_expired_google_tokens: { Args: never; Returns: undefined }
+      cleanup_old_qa_sessions:
+        | { Args: { days_old?: number }; Returns: number }
+        | { Args: never; Returns: undefined }
+      example_function: { Args: { param1: string }; Returns: string }
       get_current_user_can_view_agent: {
         Args: { p_agent_id: string }
         Returns: boolean
@@ -1410,21 +2019,57 @@ export type Database = {
           token_type: string
         }[]
       }
+      get_decrypted_microsoft_token:
+        | {
+            Args: {
+              p_ip_address?: unknown
+              p_user_agent?: string
+              p_user_id: string
+            }
+            Returns: {
+              access_token: string
+              expires_at: string
+              refresh_token: string
+              scope: string
+              token_type: string
+            }[]
+          }
+        | {
+            Args: { p_user_id: string }
+            Returns: {
+              access_token: string
+              expires_at: string
+              refresh_token: string
+              scope: string
+              token_type: string
+            }[]
+          }
       get_decrypted_server_credentials: {
         Args: { p_config_id: string }
         Returns: string
       }
-      get_qa_agent_stats: {
-        Args: Record<PropertyKey, never> | { p_agent_id: string }
-        Returns: {
-          agent_id: string
-          closed_tickets: number
-          open_tickets: number
-          total_tickets: number
-        }[]
-      }
+      get_qa_agent_stats:
+        | {
+            Args: never
+            Returns: {
+              agent_id: string
+              closed_tickets: number
+              open_tickets: number
+              total_tickets: number
+            }[]
+          }
+        | {
+            Args: { p_agent_id: string }
+            Returns: {
+              avg_session_length: number
+              total_collections: number
+              total_documents: number
+              total_messages: number
+              total_sessions: number
+            }[]
+          }
       get_qa_agent_stats_new: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           agent_id: number
           total_collections: number
@@ -1432,10 +2077,7 @@ export type Database = {
           total_messages: number
         }[]
       }
-      handle_new_user_v2: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
+      handle_new_user_v2: { Args: never; Returns: undefined }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -1443,6 +2085,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      increment_query_count: { Args: { p_user_id: string }; Returns: undefined }
       log_token_access_attempt: {
         Args: {
           p_action: string
@@ -1452,44 +2095,73 @@ export type Database = {
         }
         Returns: undefined
       }
-      match_documents: {
-        Args:
-          | { filter?: Json; match_count?: number; query_embedding: string }
-          | { query: string }
-        Returns: {
-          agent_id: number
-          collection_id: number
-          content: string
-          created_at: string
-          document_name: string
-          embedding: string
-          id: number
-          updated_at: string
-        }[]
-      }
-      match_memories: {
-        Args:
-          | Record<PropertyKey, never>
-          | {
+      match_documents:
+        | {
+            Args: { query: string }
+            Returns: {
+              agent_id: number
+              collection_id: number
+              content: string
+              created_at: string
+              document_name: string
+              embedding: string
+              id: number
+              updated_at: string
+            }[]
+          }
+        | {
+            Args: {
+              filter?: Json
+              match_count?: number
+              query_embedding: string
+            }
+            Returns: {
+              content: string
+              embedding: string
+              id: string
+              metadata: Json
+              similarity: number
+            }[]
+          }
+      match_memories:
+        | {
+            Args: {
               filter_agent: string
               match_count: number
               match_threshold: number
               query_embedding: string
               user_filter: string
             }
-          | { match_count?: number; query_embedding: string }
-          | { param1: string; param2: number }
-        Returns: {
-          agent: string
-          content: string
-          id: string
-          memory_type: string
-          metadata: Json
-          similarity: number
-        }[]
-      }
+            Returns: {
+              agent: string
+              content: string
+              id: string
+              memory_type: string
+              metadata: Json
+              similarity: number
+            }[]
+          }
+        | {
+            Args: { match_count?: number; query_embedding: string }
+            Returns: {
+              agent: string
+              content: string
+              id: string
+              memory_type: string
+              metadata: Json
+              similarity: number
+            }[]
+          }
+        | { Args: never; Returns: undefined }
+        | {
+            Args: { param1: string; param2: number }
+            Returns: {
+              id: number
+              result: string
+            }[]
+          }
       match_memories_optimized: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           agent: string
           content: string
@@ -1500,28 +2172,43 @@ export type Database = {
           metadata: Json | null
           user_id: string
         }[]
+        SetofOptions: {
+          from: "*"
+          to: "agentic_memories"
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
-      match_qa_documents: {
-        Args:
-          | Record<PropertyKey, never>
-          | {
+      match_qa_documents:
+        | {
+            Args: {
+              match_count?: number
+              match_threshold?: number
+              query_embedding: string
+            }
+            Returns: {
+              content: string
+              id: string
+              similarity: number
+            }[]
+          }
+        | {
+            Args: {
               match_count?: number
               match_threshold?: number
               p_agent_id?: string
               p_collection_id?: string
               query_embedding: string
             }
-          | {
-              match_count?: number
-              match_threshold?: number
-              query_embedding: string
-            }
-        Returns: {
-          content: string
-          id: string
-          similarity: number
-        }[]
-      }
+            Returns: {
+              content: string
+              document_name: string
+              id: string
+              metadata: Json
+              similarity: number
+            }[]
+          }
+        | { Args: never; Returns: undefined }
       store_encrypted_google_tokens: {
         Args: {
           p_access_token: string
@@ -1544,14 +2231,24 @@ export type Database = {
         }
         Returns: undefined
       }
+      store_encrypted_microsoft_token: {
+        Args: {
+          p_access_token: string
+          p_expires_at?: string
+          p_ip_address?: unknown
+          p_refresh_token?: string
+          p_scope?: string
+          p_token_type?: string
+          p_user_agent?: string
+          p_user_id: string
+        }
+        Returns: Json
+      }
       store_encrypted_server_credentials: {
         Args: { p_config_id: string; p_credentials: string }
         Returns: undefined
       }
-      validate_encryption_key_configured: {
-        Args: Record<PropertyKey, never>
-        Returns: boolean
-      }
+      validate_encryption_key_configured: { Args: never; Returns: boolean }
       validate_google_token_access: {
         Args: { p_user_id: string }
         Returns: boolean

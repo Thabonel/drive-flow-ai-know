@@ -68,9 +68,26 @@ export default function Support() {
   // Submit ticket mutation
   const submitTicket = useMutation({
     mutationFn: async () => {
-      const { data, error } = await supabase.functions.invoke('submit-support-ticket', {
-        body: { subject, message, category }
-      });
+      if (!user) throw new Error('User not authenticated');
+
+      // Auto-assign priority based on category
+      let priority = 'normal';
+      if (category === 'billing' || category === 'bug_report') {
+        priority = 'high';
+      }
+
+      const { data, error } = await supabase
+        .from('support_tickets')
+        .insert({
+          user_id: user.id,
+          subject: subject.trim(),
+          message: message.trim(),
+          category,
+          priority,
+          status: 'open'
+        })
+        .select()
+        .single();
 
       if (error) throw error;
       return data;
