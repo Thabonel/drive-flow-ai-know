@@ -40,7 +40,7 @@ serve(async (req) => {
 
     // Initialize Stripe
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
-      apiVersion: "2023-10-16",
+      apiVersion: "2024-10-28.acacia",
       httpClient: Stripe.createFetchHttpClient(),
     });
 
