@@ -36,11 +36,25 @@ serve(async (req) => {
       .order("created_at", { ascending: false })
       .limit(1);
 
-    if (subError || !subscriptions || subscriptions.length === 0 || !subscriptions[0]?.stripe_customer_id) {
+    console.log("Subscription query result:", { subscriptions, subError });
+
+    if (subError) {
+      console.error("Database error fetching subscription:", subError);
+      throw new Error(`Database error: ${subError.message}`);
+    }
+
+    if (!subscriptions || subscriptions.length === 0) {
+      console.error("No subscriptions found for user:", user.id);
       throw new Error("No active subscription found");
     }
 
+    if (!subscriptions[0]?.stripe_customer_id) {
+      console.error("Subscription missing stripe_customer_id:", subscriptions[0]);
+      throw new Error("Subscription missing customer ID");
+    }
+
     const subscription = subscriptions[0];
+    console.log("Using customer ID:", subscription.stripe_customer_id);
 
     // Initialize Stripe
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
@@ -49,18 +63,33 @@ serve(async (req) => {
     });
 
     // Create customer portal session
-    const session = await stripe.billingPortal.sessions.create({
-      customer: subscription.stripe_customer_id,
-      return_url: `${req.headers.get("origin")}/settings/billing`,
-    });
+    console.log("Creating portal session for customer:", subscription.stripe_customer_id);
 
-    return new Response(
-      JSON.stringify({ url: session.url }),
-      {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
+    try {
+      const session = await stripe.billingPortal.sessions.create({
+        customer: subscription.stripe_customer_id,
+        return_url: `${req.headers.get("origin")}/settings/billing`,
+      });
+
+      console.log("Portal session created successfully:", session.id);
+
+      return new Response(
+        JSON.stringify({ url: session.url }),
+        {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200,
+        }
+      );
+    } catch (stripeError: any) {
+      console.error("Stripe API error:", stripeError);
+
+      // Check for specific Stripe error about portal not being activated
+      if (stripeError.code === 'customer_portal_not_configured') {
+        throw new Error("Stripe Customer Portal is not activated. Please activate it in your Stripe Dashboard at https://dashboard.stripe.com/test/settings/billing/portal");
       }
-    );
+
+      throw new Error(`Stripe error: ${stripeError.message || stripeError}`);
+    }
   } catch (error) {
     console.error("Error creating portal session:", error);
     return new Response(
