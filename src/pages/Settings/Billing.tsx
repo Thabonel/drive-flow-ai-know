@@ -67,7 +67,7 @@ export default function Billing() {
     enabled: !!user,
   });
 
-  // Verify checkout session on redirect from Stripe
+  // Handle redirect from Stripe checkout - webhook-based verification
   useEffect(() => {
     const sessionId = searchParams.get('session_id');
     const canceled = searchParams.get('canceled');
@@ -80,31 +80,56 @@ export default function Billing() {
 
     if (sessionId && user && !verifyingSession) {
       setVerifyingSession(true);
+      toast.info('Processing your subscription... This may take a few seconds.');
 
-      const verifySession = async () => {
+      // Poll for subscription creation (webhook will handle the actual creation)
+      let pollAttempts = 0;
+      const maxAttempts = 10; // Poll for up to 20 seconds (10 attempts * 2 seconds)
+
+      const pollForSubscription = async () => {
         try {
-          const { data, error } = await supabase.functions.invoke('verify-checkout-session', {
-            body: { session_id: sessionId }
-          });
+          const { data, error } = await supabase
+            .from('subscriptions')
+            .select('*')
+            .eq('user_id', user.id)
+            .in('status', ['active', 'trialing'])
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .single();
 
-          if (error) throw error;
+          if (!error && data) {
+            // Subscription found - webhook processed it successfully
+            toast.success('Subscription activated successfully!');
+            queryClient.invalidateQueries({ queryKey: ['subscription', user.id] });
+            setSearchParams({});
+            setVerifyingSession(false);
+            return true;
+          }
 
-          toast.success('Subscription activated successfully!');
-
-          // Refresh subscription data
-          queryClient.invalidateQueries({ queryKey: ['subscription', user.id] });
-
-          // Clean up URL
-          setSearchParams({});
+          // Keep polling if not found yet
+          pollAttempts++;
+          if (pollAttempts < maxAttempts) {
+            setTimeout(pollForSubscription, 2000); // Poll every 2 seconds
+          } else {
+            // Timeout - webhook might be delayed
+            toast.warning('Subscription is being processed. Please refresh the page in a moment.');
+            setSearchParams({});
+            setVerifyingSession(false);
+          }
         } catch (error) {
-          console.error('Session verification error:', error);
-          toast.error('Failed to verify payment. Please contact support.');
-        } finally {
-          setVerifyingSession(false);
+          console.error('Polling error:', error);
+          pollAttempts++;
+          if (pollAttempts < maxAttempts) {
+            setTimeout(pollForSubscription, 2000);
+          } else {
+            toast.error('Unable to confirm subscription. Please contact support if you were charged.');
+            setSearchParams({});
+            setVerifyingSession(false);
+          }
         }
       };
 
-      verifySession();
+      pollForSubscription();
     }
   }, [searchParams, user, verifyingSession, queryClient, setSearchParams]);
 
