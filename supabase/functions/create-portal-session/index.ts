@@ -27,16 +27,20 @@ serve(async (req) => {
       throw new Error("User not authenticated");
     }
 
-    // Get user's subscription to find customer ID
-    const { data: subscription, error: subError } = await supabaseClient
+    // Get user's subscription to find customer ID (get most recent one)
+    const { data: subscriptions, error: subError } = await supabaseClient
       .from("subscriptions")
       .select("stripe_customer_id")
       .eq("user_id", user.id)
-      .single();
+      .in("status", ["active", "trialing"])
+      .order("created_at", { ascending: false })
+      .limit(1);
 
-    if (subError || !subscription?.stripe_customer_id) {
+    if (subError || !subscriptions || subscriptions.length === 0 || !subscriptions[0]?.stripe_customer_id) {
       throw new Error("No active subscription found");
     }
+
+    const subscription = subscriptions[0];
 
     // Initialize Stripe
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
