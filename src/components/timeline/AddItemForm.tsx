@@ -19,7 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { TimelineLayer, getRandomItemColor } from '@/lib/timelineUtils';
+import { TimelineLayer, getRandomItemColor, TimelineItem } from '@/lib/timelineUtils';
 import { QUICK_ADD_DURATIONS } from '@/lib/timelineConstants';
 
 interface AddItemFormProps {
@@ -33,9 +33,11 @@ interface AddItemFormProps {
     durationMinutes: number,
     color: string
   ) => Promise<void>;
+  onUpdateItem?: (itemId: string, updates: Partial<TimelineItem>) => Promise<void>;
   onAddLayer: (name: string, color?: string) => Promise<any>;
   initialStartTime?: string;
   initialLayerId?: string;
+  editingItem?: TimelineItem | null;
 }
 
 export function AddItemForm({
@@ -43,10 +45,13 @@ export function AddItemForm({
   onClose,
   layers,
   onAddItem,
+  onUpdateItem,
   onAddLayer,
   initialStartTime,
   initialLayerId,
+  editingItem,
 }: AddItemFormProps) {
+  const isEditMode = !!editingItem;
   const [title, setTitle] = useState('');
   const [hoursFromNow, setHoursFromNow] = useState(1);
   const [duration, setDuration] = useState(60);
@@ -68,6 +73,34 @@ export function AddItemForm({
       setSelectedLayerId(initialLayerId);
     }
   }, [initialStartTime, initialLayerId]);
+
+  // Populate form when editing an item
+  useEffect(() => {
+    if (editingItem) {
+      setTitle(editingItem.title);
+      setSelectedLayerId(editingItem.layer_id);
+      setColor(editingItem.color);
+      setDuration(editingItem.duration_minutes);
+      setDurationValue(editingItem.duration_minutes);
+      setDurationUnit('minutes');
+
+      // Calculate hours from now
+      const now = new Date();
+      const startTime = new Date(editingItem.start_time);
+      const hoursDiff = (startTime.getTime() - now.getTime()) / (1000 * 60 * 60);
+      setHoursFromNow(Number(hoursDiff.toFixed(2)));
+    } else {
+      // Reset form when not editing
+      setTitle('');
+      setHoursFromNow(1);
+      setDuration(60);
+      setDurationValue(60);
+      setDurationUnit('minutes');
+      setColor(getRandomItemColor());
+      setNewLayerName('');
+      setIsCreatingLayer(false);
+    }
+  }, [editingItem]);
 
   // Convert duration value to minutes based on unit
   const convertToMinutes = (value: number, unit: 'minutes' | 'hours' | 'days'): number => {
@@ -99,8 +132,8 @@ export function AddItemForm({
 
     let layerId = selectedLayerId;
 
-    // If creating a new layer
-    if (isCreatingLayer && newLayerName.trim()) {
+    // If creating a new layer (only in add mode)
+    if (!isEditMode && isCreatingLayer && newLayerName.trim()) {
       const newLayer = await onAddLayer(newLayerName.trim());
       if (newLayer) {
         layerId = newLayer.id;
@@ -117,13 +150,25 @@ export function AddItemForm({
     const startTime = new Date();
     startTime.setHours(startTime.getHours() + hoursFromNow);
 
-    await onAddItem(
-      layerId,
-      title.trim(),
-      startTime.toISOString(),
-      duration,
-      color
-    );
+    if (isEditMode && editingItem && onUpdateItem) {
+      // Update existing item
+      await onUpdateItem(editingItem.id, {
+        title: title.trim(),
+        layer_id: layerId,
+        start_time: startTime.toISOString(),
+        duration_minutes: duration,
+        color: color,
+      });
+    } else {
+      // Add new item
+      await onAddItem(
+        layerId,
+        title.trim(),
+        startTime.toISOString(),
+        duration,
+        color
+      );
+    }
 
     // Reset form
     setTitle('');
@@ -147,9 +192,9 @@ export function AddItemForm({
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Add Timeline Item</DialogTitle>
+          <DialogTitle>{isEditMode ? 'Edit Timeline Item' : 'Add Timeline Item'}</DialogTitle>
           <DialogDescription>
-            Create a new item on your timeline
+            {isEditMode ? 'Update the details of your timeline item' : 'Create a new item on your timeline'}
           </DialogDescription>
         </DialogHeader>
 
@@ -310,7 +355,7 @@ export function AddItemForm({
             <Button type="button" variant="outline" onClick={onClose}>
               Cancel
             </Button>
-            <Button type="submit">Add Item</Button>
+            <Button type="submit">{isEditMode ? 'Update Item' : 'Add Item'}</Button>
           </DialogFooter>
         </form>
       </DialogContent>

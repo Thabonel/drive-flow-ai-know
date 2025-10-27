@@ -35,6 +35,7 @@ export function TimelineManager() {
     scrollOffset,
     setScrollOffset,
     addItem,
+    updateItem,
     completeItem,
     rescheduleItem,
     parkItem,
@@ -63,6 +64,7 @@ export function TimelineManager() {
   });
 
   const [selectedItem, setSelectedItem] = useState<TimelineItem | null>(null);
+  const [editingItem, setEditingItem] = useState<TimelineItem | null>(null);
   const [showAddItemForm, setShowAddItemForm] = useState(false);
   const [showParkedItems, setShowParkedItems] = useState(false);
   const [viewMode, setViewMode] = useState<TimelineViewMode>('week');
@@ -113,6 +115,15 @@ export function TimelineManager() {
   // Handle item click
   const handleItemClick = (item: TimelineItem) => {
     setSelectedItem(item);
+  };
+
+  // Handle edit item
+  const handleEditItem = (itemId: string) => {
+    const item = items.find(i => i.id === itemId);
+    if (item) {
+      setEditingItem(item);
+      setShowAddItemForm(true);
+    }
   };
 
   // Handle lock toggle
@@ -340,18 +351,22 @@ export function TimelineManager() {
         onClose={() => {
           setShowAddItemForm(false);
           setInitialFormValues(null);
+          setEditingItem(null);
         }}
         layers={layers}
         onAddItem={addItem}
+        onUpdateItem={updateItem}
         onAddLayer={addLayer}
         initialStartTime={initialFormValues?.startTime}
         initialLayerId={initialFormValues?.layerId}
+        editingItem={editingItem}
       />
 
       <ItemActionMenu
         item={selectedItem}
         open={selectedItem !== null}
         onClose={() => setSelectedItem(null)}
+        onEdit={handleEditItem}
         onComplete={completeItem}
         onReschedule={rescheduleItem}
         onPark={parkItem}
