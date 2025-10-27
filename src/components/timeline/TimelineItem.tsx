@@ -115,7 +115,7 @@ export function TimelineItem({
 
   return (
     <g
-      className={`timeline-item transition-transform ${isDragging ? 'cursor-grabbing' : 'cursor-grab hover:scale-105'}`}
+      className={`timeline-item ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
