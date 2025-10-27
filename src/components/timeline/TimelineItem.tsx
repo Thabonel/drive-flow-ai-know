@@ -26,6 +26,7 @@ interface TimelineItemProps {
   onDragStart?: (item: TimelineItemType) => void;
   onDragMove?: (item: TimelineItemType, deltaX: number, deltaY: number) => void;
   onDragEnd?: (item: TimelineItemType, deltaX: number, deltaY: number) => void;
+  onResize?: (item: TimelineItemType, newDurationMinutes: number) => void;
 }
 
 export function TimelineItem({
@@ -40,10 +41,13 @@ export function TimelineItem({
   onDragStart,
   onDragMove,
   onDragEnd,
+  onResize,
 }: TimelineItemProps) {
   const [isDragging, setIsDragging] = React.useState(false);
+  const [isResizing, setIsResizing] = React.useState(false);
   const [dragStartPos, setDragStartPos] = React.useState({ x: 0, y: 0 });
   const [currentDragDelta, setCurrentDragDelta] = React.useState({ x: 0, y: 0 });
+  const [resizeDelta, setResizeDelta] = React.useState(0);
   const [wasDragged, setWasDragged] = React.useState(false);
 
   const x = calculateItemX(
@@ -65,6 +69,7 @@ export function TimelineItem({
 
   // Handle drag start
   const handleMouseDown = (e: React.MouseEvent) => {
+    if (isResizing) return; // Don't drag while resizing
     e.stopPropagation(); // Prevent canvas drag
     setIsDragging(true);
     setDragStartPos({ x: e.clientX, y: e.clientY });
@@ -75,6 +80,7 @@ export function TimelineItem({
 
   // Handle drag move
   const handleMouseMove = (e: React.MouseEvent) => {
+    if (isResizing) return; // Don't drag while resizing
     if (!isDragging) return;
     e.stopPropagation();
 
@@ -92,6 +98,7 @@ export function TimelineItem({
 
   // Handle drag end
   const handleMouseUp = (e: React.MouseEvent) => {
+    if (isResizing) return; // Don't end drag while resizing
     if (!isDragging) return;
     e.stopPropagation();
 
@@ -100,6 +107,45 @@ export function TimelineItem({
     setIsDragging(false);
     setCurrentDragDelta({ x: 0, y: 0 });
     onDragEnd?.(item, deltaX, deltaY);
+  };
+
+  // Handle resize start
+  const handleResizeStart = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent item drag
+    setIsResizing(true);
+    setDragStartPos({ x: e.clientX, y: e.clientY });
+    setResizeDelta(0);
+    setWasDragged(true); // Prevent click event
+  };
+
+  // Handle resize move
+  const handleResizeMove = (e: React.MouseEvent) => {
+    if (!isResizing) return;
+    e.stopPropagation();
+
+    const deltaX = e.clientX - dragStartPos.x;
+    setResizeDelta(deltaX);
+  };
+
+  // Handle resize end
+  const handleResizeEnd = (e: React.MouseEvent) => {
+    if (!isResizing) return;
+    e.stopPropagation();
+
+    const deltaX = e.clientX - dragStartPos.x;
+
+    // Calculate new duration based on pixels dragged
+    const minutesPerPixel = 60 / pixelsPerHour;
+    const deltaMinutes = Math.round(deltaX * minutesPerPixel);
+    const newDuration = Math.max(15, item.duration_minutes + deltaMinutes); // Minimum 15 minutes
+
+    setIsResizing(false);
+    setResizeDelta(0);
+
+    // Only update if duration actually changed
+    if (newDuration !== item.duration_minutes && onResize) {
+      onResize(item, newDuration);
+    }
   };
 
   // Handle click (only if not dragged)
@@ -112,6 +158,39 @@ export function TimelineItem({
   // Calculate display position (with drag offset)
   const displayX = x + currentDragDelta.x;
   const displayY = y + currentDragDelta.y;
+  const displayWidth = Math.max(width + resizeDelta, 20); // Minimum width
+
+  // Add global mouse handlers for resize (SVG events can be finicky)
+  React.useEffect(() => {
+    if (!isResizing) return;
+
+    const handleGlobalMouseMove = (e: MouseEvent) => {
+      const deltaX = e.clientX - dragStartPos.x;
+      setResizeDelta(deltaX);
+    };
+
+    const handleGlobalMouseUp = (e: MouseEvent) => {
+      const deltaX = e.clientX - dragStartPos.x;
+      const minutesPerPixel = 60 / pixelsPerHour;
+      const deltaMinutes = Math.round(deltaX * minutesPerPixel);
+      const newDuration = Math.max(15, item.duration_minutes + deltaMinutes);
+
+      setIsResizing(false);
+      setResizeDelta(0);
+
+      if (newDuration !== item.duration_minutes && onResize) {
+        onResize(item, newDuration);
+      }
+    };
+
+    window.addEventListener('mousemove', handleGlobalMouseMove);
+    window.addEventListener('mouseup', handleGlobalMouseUp);
+
+    return () => {
+      window.removeEventListener('mousemove', handleGlobalMouseMove);
+      window.removeEventListener('mouseup', handleGlobalMouseUp);
+    };
+  }, [isResizing, dragStartPos, item, pixelsPerHour, onResize]);
 
   return (
     <g
@@ -126,19 +205,19 @@ export function TimelineItem({
       <rect
         x={displayX}
         y={displayY}
-        width={Math.max(width, 2)}
+        width={Math.max(displayWidth, 2)}
         height={height}
         rx={ITEM_BORDER_RADIUS}
         ry={ITEM_BORDER_RADIUS}
         fill={item.color}
-        opacity={isDragging ? 0.6 : opacity}
-        stroke={isDragging ? '#3b82f6' : (shouldPulse ? '#ef4444' : 'none')}
-        strokeWidth={isDragging ? 2 : (shouldPulse ? 3 : 0)}
-        className={shouldPulse && !isDragging ? 'animate-pulse' : ''}
+        opacity={isDragging || isResizing ? 0.6 : opacity}
+        stroke={isDragging || isResizing ? '#3b82f6' : (shouldPulse ? '#ef4444' : 'none')}
+        strokeWidth={isDragging || isResizing ? 2 : (shouldPulse ? 3 : 0)}
+        className={shouldPulse && !isDragging && !isResizing ? 'animate-pulse' : ''}
       />
 
       {/* Item text (only if wide enough) */}
-      {width > 60 && (
+      {displayWidth > 60 && (
         <text
           x={displayX + ITEM_PADDING}
           y={displayY + height / 2}
@@ -158,7 +237,7 @@ export function TimelineItem({
       )}
 
       {/* Duration text (only if wide enough) */}
-      {width > 100 && (
+      {displayWidth > 100 && (
         <text
           x={displayX + ITEM_PADDING}
           y={displayY + height / 2 + 14}
@@ -168,14 +247,14 @@ export function TimelineItem({
           opacity={0.8}
           className="pointer-events-none select-none"
         >
-          {formatDuration(item.duration_minutes)}
+          {isResizing ? formatDuration(Math.max(15, item.duration_minutes + Math.round((resizeDelta * 60) / pixelsPerHour))) : formatDuration(item.duration_minutes)}
         </text>
       )}
 
       {/* Logjam indicator */}
-      {shouldPulse && !isDragging && (
+      {shouldPulse && !isDragging && !isResizing && (
         <circle
-          cx={displayX + width - 10}
+          cx={displayX + displayWidth - 10}
           cy={displayY + 10}
           r={5}
           fill="#ef4444"
@@ -185,7 +264,7 @@ export function TimelineItem({
 
       {/* Completed checkmark */}
       {item.status === 'completed' && (
-        <g transform={`translate(${displayX + width - 20}, ${displayY + 5})`}>
+        <g transform={`translate(${displayX + displayWidth - 20}, ${displayY + 5})`}>
           <circle cx="8" cy="8" r="8" fill="#10b981" />
           <path
             d="M5 8 L7 10 L11 6"
@@ -195,6 +274,29 @@ export function TimelineItem({
             strokeLinecap="round"
             strokeLinejoin="round"
           />
+        </g>
+      )}
+
+      {/* Resize handle - right edge */}
+      <rect
+        x={displayX + displayWidth - 8}
+        y={displayY}
+        width={8}
+        height={height}
+        fill="transparent"
+        className="cursor-ew-resize"
+        onMouseDown={handleResizeStart}
+        onMouseMove={handleResizeMove}
+        onMouseUp={handleResizeEnd}
+        style={{ cursor: 'ew-resize' }}
+      />
+
+      {/* Visual resize handle indicator (3 vertical dots) */}
+      {displayWidth > 40 && !isDragging && (
+        <g transform={`translate(${displayX + displayWidth - 6}, ${displayY + height / 2})`}>
+          <circle cx="0" cy="-6" r="1.5" fill="white" opacity="0.5" className="pointer-events-none" />
+          <circle cx="0" cy="0" r="1.5" fill="white" opacity="0.5" className="pointer-events-none" />
+          <circle cx="0" cy="6" r="1.5" fill="white" opacity="0.5" className="pointer-events-none" />
         </g>
       )}
     </g>
