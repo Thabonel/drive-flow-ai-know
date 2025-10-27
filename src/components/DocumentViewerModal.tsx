@@ -173,7 +173,7 @@ export const DocumentViewerModal = ({ document, isOpen, onClose }: DocumentViewe
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto overflow-x-hidden">
         <DialogHeader>
           <DialogTitle className="flex items-center justify-between flex-wrap gap-3">
             <div className="flex items-center flex-1 min-w-0">
@@ -245,7 +245,7 @@ export const DocumentViewerModal = ({ document, isOpen, onClose }: DocumentViewe
                 className="resize-none font-sans"
               />
             ) : (
-              <div className="p-4 border rounded-md bg-muted/50 min-h-[300px] whitespace-pre-wrap select-text font-sans text-base leading-relaxed">
+              <div className="p-4 border rounded-md bg-muted/50 min-h-[300px] whitespace-pre-wrap select-text font-sans text-base leading-relaxed break-all overflow-hidden">
                 {cleanMarkdown(formData.content) || 'No content available'}
               </div>
             )}
