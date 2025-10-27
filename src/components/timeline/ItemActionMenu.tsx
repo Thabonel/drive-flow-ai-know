@@ -11,12 +11,13 @@ import {
 import { Button } from '@/components/ui/button';
 import { TimelineItem, rescheduleItem as calculateReschedule } from '@/lib/timelineUtils';
 import { RESCHEDULE_OPTIONS } from '@/lib/timelineConstants';
-import { Check, Clock, Pause, Trash2 } from 'lucide-react';
+import { Check, Clock, Pause, Trash2, Edit } from 'lucide-react';
 
 interface ItemActionMenuProps {
   item: TimelineItem | null;
   open: boolean;
   onClose: () => void;
+  onEdit: (itemId: string) => void;
   onComplete: (itemId: string) => void;
   onReschedule: (itemId: string, newStartTime: string) => void;
   onPark: (itemId: string) => void;
@@ -27,12 +28,18 @@ export function ItemActionMenu({
   item,
   open,
   onClose,
+  onEdit,
   onComplete,
   onReschedule,
   onPark,
   onDelete,
 }: ItemActionMenuProps) {
   if (!item) return null;
+
+  const handleEdit = () => {
+    onEdit(item.id);
+    onClose();
+  };
 
   const handleComplete = () => {
     onComplete(item.id);
@@ -77,6 +84,16 @@ export function ItemActionMenu({
         </DialogHeader>
 
         <div className="space-y-3 py-4">
+          {/* Edit Item */}
+          <Button
+            onClick={handleEdit}
+            className="w-full justify-start"
+            variant="outline"
+          >
+            <Edit className="mr-2 h-4 w-4" />
+            Edit Item
+          </Button>
+
           {/* Mark as Done */}
           {item.status !== 'completed' && (
             <Button
