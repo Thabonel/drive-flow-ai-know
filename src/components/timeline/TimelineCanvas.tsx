@@ -32,6 +32,7 @@ interface TimelineCanvasProps {
   onItemClick: (item: TimelineItemType) => void;
   onDrag?: (deltaX: number) => void;
   onItemDrop?: (item: TimelineItemType, newStartTime: string, newLayerId: string) => void;
+  onItemResize?: (item: TimelineItemType, newDurationMinutes: number) => void;
   onDoubleClick?: (startTime: string, layerId: string) => void;
 }
 
@@ -49,6 +50,7 @@ export function TimelineCanvas({
   onItemClick,
   onDrag,
   onItemDrop,
+  onItemResize,
   onDoubleClick,
 }: TimelineCanvasProps) {
   const svgRef = useRef<SVGSVGElement>(null);
@@ -346,6 +348,7 @@ export function TimelineCanvas({
               nowTime={nowTime}
               onClick={onItemClick}
               onDragEnd={handleItemDragEnd}
+              onResize={onItemResize}
             />
           </g>
         );

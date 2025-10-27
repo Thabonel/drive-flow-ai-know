@@ -180,6 +180,11 @@ export function TimelineManager() {
     await rescheduleItem(item.id, newStartTime, newLayerId);
   };
 
+  // Handle item resize
+  const handleItemResize = async (item: TimelineItem, newDurationMinutes: number) => {
+    await updateItem(item.id, { duration_minutes: newDurationMinutes });
+  };
+
   // Handle double-click on timeline - open form with pre-filled values
   const handleTimelineDoubleClick = (startTime: string, layerId: string) => {
     setInitialFormValues({ startTime, layerId });
@@ -340,6 +345,7 @@ export function TimelineManager() {
             onItemClick={handleItemClick}
             onDrag={handleDrag}
             onItemDrop={handleItemDrop}
+            onItemResize={handleItemResize}
             onDoubleClick={handleTimelineDoubleClick}
           />
         )}
