@@ -21,6 +21,7 @@ import MicrosoftAuthStatus from '@/components/MicrosoftAuthStatus';
 import DragDropUpload from '@/components/DragDropUpload';
 import LocalFilesPicker from '@/components/LocalFilesPicker';
 import { S3Setup } from '@/components/S3Setup';
+import { PageHelp } from '@/components/PageHelp';
 
 export default function AddDocuments() {
   const navigate = useNavigate();
@@ -216,11 +217,24 @@ export default function AddDocuments() {
 
   return (
     <div className="container mx-auto py-8 space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold mb-2">Add Documents</h1>
-        <p className="text-muted-foreground">
-          Upload documents from various sources to your knowledge base
-        </p>
+      <div className="flex items-start gap-3">
+        <div className="flex-1">
+          <h1 className="text-3xl font-bold mb-2">Add Documents</h1>
+          <p className="text-muted-foreground">
+            Upload documents from various sources to your knowledge base
+          </p>
+        </div>
+        <PageHelp
+          title="Add Documents Help"
+          description="Add documents to your knowledge base from multiple sources: upload local files, sync from Google Drive or Microsoft 365, connect Amazon S3 buckets, or paste text directly."
+          tips={[
+            "Upload: Drag & drop files or use the file picker (supports PDF, DOCX, TXT, MD, CSV, JSON)",
+            "Google Drive: Connect your account and select folders to sync automatically",
+            "Microsoft 365: Sync documents from OneDrive or SharePoint",
+            "Amazon S3: Connect S3 buckets for automatic document syncing",
+            "Manual: Paste or type content directly to create documents"
+          ]}
+        />
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">

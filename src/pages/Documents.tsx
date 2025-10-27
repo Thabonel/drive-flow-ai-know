@@ -11,6 +11,7 @@ import { DocumentGrid } from '@/components/DocumentGrid';
 import { DocumentViewerModal } from '@/components/DocumentViewerModal';
 import { ConfirmationDialog } from '@/components/ConfirmationDialog';
 import { PaginationControls } from '@/components/PaginationControls';
+import { PageHelp } from '@/components/PageHelp';
 
 const Documents = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -203,9 +204,22 @@ const Documents = () => {
   return (
     <div className="space-y-8 pb-8">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-4xl font-bold text-foreground mb-2">Find Documents</h1>
-          <p className="text-muted-foreground text-lg">Browse and search your knowledge documents</p>
+        <div className="flex items-center gap-3">
+          <div>
+            <h1 className="text-4xl font-bold text-foreground mb-2">Find Documents</h1>
+            <p className="text-muted-foreground text-lg">Browse and search your knowledge documents</p>
+          </div>
+          <PageHelp
+            title="Find Documents Help"
+            description="Search and browse all documents you've added to your knowledge base. You can filter by category, search by keywords, and sort by different criteria. Click any document to view or edit its content."
+            tips={[
+              "Use the search bar to find documents by title or content",
+              "Filter by category to narrow down results",
+              "Sort by date, title, or modification time",
+              "Click a document to view, edit, or delete it",
+              "Create new documents with the '+ New Document' button"
+            ]}
+          />
         </div>
         <CreateKnowledgeDocumentModal 
           trigger={

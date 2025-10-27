@@ -24,6 +24,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, Clock, Settings, Layers, Lock, Unlock, Archive } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
+import { PageHelp } from '@/components/PageHelp';
 
 export function TimelineManager() {
   const {
@@ -209,6 +210,18 @@ export function TimelineManager() {
           <h1 className="text-3xl font-bold flex items-center gap-2">
             <Clock className="h-8 w-8" />
             Timeline Manager
+            <PageHelp
+              title="Timeline Manager Help"
+              description="The Timeline Manager helps you visualize and manage your tasks on a flowing timeline. Items move towards the NOW line, and become 'logjammed' (red pulsing) when overdue. You can drag items to reschedule, resize them to adjust duration, or park them for later."
+              tips={[
+                "Drag items horizontally to reschedule them",
+                "Drag the right edge to resize duration (like Google Calendar)",
+                "Click items to mark done, reschedule, park, or delete",
+                "Double-click empty space to create a new item at that time",
+                "Use layers to organize different types of tasks",
+                "Lock/unlock to enable auto-scrolling with real time"
+              ]}
+            />
           </h1>
           <p className="text-gray-600 dark:text-gray-400 mt-2">
             Manage your time with a flowing timeline. Items move toward NOW and logjam when overdue.

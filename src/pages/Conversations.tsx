@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ConversationChat } from '@/components/ConversationChat';
+import { PageHelp } from '@/components/PageHelp';
 import { Plus, MessageSquare, Archive, Search, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -129,7 +130,19 @@ export default function Conversations() {
         <Card className="lg:col-span-1 h-full flex flex-col overflow-hidden">
           <CardHeader className="flex-shrink-0">
             <div className="flex justify-between items-center">
-              <CardTitle>Conversations</CardTitle>
+              <div className="flex items-center gap-2">
+                <CardTitle>Conversations</CardTitle>
+                <PageHelp
+                  title="AI Assistant Help"
+                  description="The AI Assistant allows you to have multi-turn conversations with AI. Your conversations are saved and can be archived when complete. Each conversation gets an AI-generated title and summary."
+                  tips={[
+                    "Click 'New' to start a fresh conversation",
+                    "Search through your conversation history",
+                    "Archive completed conversations for organization",
+                    "Delete conversations you no longer need"
+                  ]}
+                />
+              </div>
               <Button size="sm" onClick={handleNewConversation}>
                 <Plus className="h-4 w-4 mr-2" />
                 New

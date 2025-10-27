@@ -11,6 +11,7 @@ import { AIQueryInput } from '@/components/AIQueryInput';
 import { RecentDocuments } from '@/components/RecentDocuments';
 import { DocumentList } from '@/components/DocumentList';
 import { DailyFocusModule } from '@/components/DailyFocusModule';
+import { PageHelp } from '@/components/PageHelp';
 
 import { CreateKnowledgeDocumentModal } from '@/components/CreateKnowledgeDocumentModal';
 
@@ -59,9 +60,21 @@ const Index = () => {
       <div className="max-w-7xl mx-auto space-y-8 px-6 py-8">
         {/* Header */}
         <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-4xl font-bold text-foreground mb-2">Dashboard</h1>
-            <p className="text-muted-foreground text-lg">Hey {user?.user_metadata?.full_name || user?.email?.split('@')[0]}</p>
+          <div className="flex items-center gap-3">
+            <div>
+              <h1 className="text-4xl font-bold text-foreground mb-2">Dashboard</h1>
+              <p className="text-muted-foreground text-lg">Hey {user?.user_metadata?.full_name || user?.email?.split('@')[0]}</p>
+            </div>
+            <PageHelp
+              title="Dashboard Help"
+              description="Your dashboard provides a quick overview of your knowledge base and allows you to query your documents using AI. Use the AI query box to ask questions across all your documents or select a specific knowledge base."
+              tips={[
+                "Use the AI query box to search across all your documents",
+                "View stats showing total documents, knowledge bases, and folders",
+                "Access recent documents and knowledge bases quickly",
+                "Create new documents using the '+ New Document' button"
+              ]}
+            />
           </div>
           <CreateKnowledgeDocumentModal />
         </div>

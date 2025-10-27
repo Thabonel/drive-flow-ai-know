@@ -12,6 +12,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
+import { PageHelp } from '@/components/PageHelp';
 
 const KnowledgeBases = () => {
   const { user } = useAuth();
@@ -298,9 +299,22 @@ const KnowledgeBases = () => {
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-foreground">Knowledge Bases</h1>
-            <p className="text-muted-foreground">AI-generated collections of synthesized knowledge</p>
+          <div className="flex items-center gap-3">
+            <div>
+              <h1 className="text-3xl font-bold text-foreground">Knowledge Bases</h1>
+              <p className="text-muted-foreground">AI-generated collections of synthesized knowledge</p>
+            </div>
+            <PageHelp
+              title="Knowledge Bases Help"
+              description="Knowledge Bases are AI-generated collections of synthesized information from your documents. The AI analyzes your documents and creates comprehensive, searchable knowledge bases organized by topic or purpose."
+              tips={[
+                "Create knowledge bases to organize documents by topic",
+                "AI automatically synthesizes and summarizes content",
+                "Use different types: General, Prompts, Marketing, Specs",
+                "Query specific knowledge bases for more focused results",
+                "View analytics to see usage and performance metrics"
+              ]}
+            />
           </div>
           <DialogTrigger asChild>
             <Button>
