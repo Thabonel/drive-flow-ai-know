@@ -108,17 +108,22 @@ export function shouldBeLogjammed(item: TimelineItem, nowTime: Date): boolean {
 }
 
 /**
- * Format a timestamp for display
+ * Format a timestamp for display (24-hour format, no AM/PM)
  * @param timestamp - ISO timestamp
- * @returns Formatted string (e.g., "2:30 PM")
+ * @returns Formatted string (e.g., "14:30" or "14" for exact hours)
  */
 export function formatTime(timestamp: string): string {
   const date = new Date(timestamp);
-  return date.toLocaleTimeString('en-US', {
-    hour: 'numeric',
-    minute: '2-digit',
-    hour12: true
-  });
+  const hours = date.getHours();
+  const minutes = date.getMinutes();
+
+  // If minutes are 00, show only the hour (e.g., "1", "14")
+  if (minutes === 0) {
+    return hours.toString();
+  }
+
+  // Otherwise show hour:minutes (e.g., "1:30", "14:45")
+  return `${hours}:${minutes.toString().padStart(2, '0')}`;
 }
 
 /**
