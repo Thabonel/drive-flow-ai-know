@@ -29,6 +29,7 @@ interface TimelineCanvasProps {
   showCompleted: boolean;
   pastHours?: number;
   futureHours?: number;
+  subdivisionMinutes?: number;
   onItemClick: (item: TimelineItemType) => void;
   onDrag?: (deltaX: number) => void;
   onItemDrop?: (item: TimelineItemType, newStartTime: string, newLayerId: string) => void;
@@ -47,6 +48,7 @@ export function TimelineCanvas({
   showCompleted,
   pastHours = DEFAULT_PAST_HOURS,
   futureHours = DEFAULT_FUTURE_HOURS,
+  subdivisionMinutes = 360,
   onItemClick,
   onDrag,
   onItemDrop,
@@ -159,7 +161,8 @@ export function TimelineCanvas({
     pixelsPerHour,
     scrollOffset,
     pastHours,
-    futureHours
+    futureHours,
+    subdivisionMinutes
   );
 
   // Filter items based on showCompleted setting
@@ -221,8 +224,9 @@ export function TimelineCanvas({
               opacity={marker.isMajor ? 0.5 : 0.2}
             />
 
-            {/* Time label (only for major markers) */}
-            {marker.isMajor && (
+            {/* Time labels */}
+            {marker.isMajor ? (
+              // Major markers: Show both date and time
               <>
                 <text
                   x={marker.x + 5}
@@ -252,6 +256,21 @@ export function TimelineCanvas({
                   {formatTime(marker.time.toISOString())}
                 </text>
               </>
+            ) : (
+              // Minor markers: Show only time
+              <text
+                x={marker.x + 3}
+                y={55}
+                fontSize="10"
+                fill="currentColor"
+                className={
+                  marker.isPast
+                    ? 'text-gray-400 dark:text-gray-600'
+                    : 'text-gray-500 dark:text-gray-500'
+                }
+              >
+                {formatTime(marker.time.toISOString())}
+              </text>
             )}
           </g>
         ))}
