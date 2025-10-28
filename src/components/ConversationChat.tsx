@@ -245,7 +245,30 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
         },
       });
 
-      if (error) throw error;
+      // Handle errors with specific user-friendly messages
+      if (error) {
+        console.error('AI query error:', error);
+
+        // Check for specific error types based on status code
+        const errorMessage = error.message || '';
+        const statusMatch = errorMessage.match(/FunctionsHttpError:\s*(\d+)/);
+        const statusCode = statusMatch ? parseInt(statusMatch[1]) : null;
+
+        if (statusCode === 413 || errorMessage.includes('too large') || data?.error === 'Query too long' || data?.error === 'Context too large') {
+          toast.error(data?.response || 'Your message or conversation is too long. Try starting a new conversation or shortening your message.');
+          return;
+        } else if (statusCode === 429 || errorMessage.includes('rate limit') || data?.error === 'Rate limit exceeded' || data?.error === 'Provider rate limit') {
+          toast.error(data?.response || 'Rate limit exceeded. Please wait a moment before trying again.');
+          return;
+        } else if (statusCode === 503 || errorMessage.includes('unavailable') || data?.error === 'Authentication error') {
+          toast.error(data?.response || 'The AI service is temporarily unavailable. Please try again later.');
+          return;
+        }
+
+        // Generic error
+        toast.error(data?.response || 'Failed to get response. Please try again.');
+        return;
+      }
 
       const aiResponse = data?.response || 'Sorry, I could not process your request.';
 
@@ -324,9 +347,18 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
           })
           .eq('id', currentConvId);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error:', error);
-      toast.error('Failed to get response');
+
+      // Provide more specific error messages
+      const errorStr = String(error?.message || error);
+      if (errorStr.includes('Failed to create conversation')) {
+        toast.error('Unable to create conversation. Please try again.');
+      } else if (errorStr.includes('network') || errorStr.includes('fetch')) {
+        toast.error('Network error. Please check your connection and try again.');
+      } else {
+        toast.error('An unexpected error occurred. Please try again.');
+      }
     } finally {
       setIsLoading(false);
       // Always clear the submission flag, even on error
