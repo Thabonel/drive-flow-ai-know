@@ -5,10 +5,77 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 const openRouterApiKey = Deno.env.get('OPENROUTER_API_KEY');
 const anthropicApiKey = Deno.env.get('ANTHROPIC_API_KEY');
 
-async function claudeCompletion(prompt: string, context: string) {
+// Token estimation utilities
+interface Message {
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+}
+
+const PROVIDER_TOKEN_LIMITS = {
+  claude: 200000,
+  'gpt-4o': 128000,
+  gemini: 100000,
+  ollama: 8192,
+  openrouter: 128000,
+} as const;
+
+function estimateTokens(text: string): number {
+  if (!text) return 0;
+  return Math.ceil(text.length / 4);
+}
+
+function calculateConversationTokens(messages: Message[]): number {
+  let totalTokens = 0;
+  for (const message of messages) {
+    totalTokens += estimateTokens(message.role) + 2;
+    totalTokens += estimateTokens(message.content);
+    totalTokens += 4;
+  }
+  return totalTokens;
+}
+
+function chunkConversationContext(messages: Message[], maxTokens: number): Message[] {
+  if (messages.length === 0) return [];
+
+  const chunkedMessages: Message[] = [];
+  let currentTokens = 0;
+
+  for (let i = messages.length - 1; i >= 0; i--) {
+    const message = messages[i];
+    const messageTokens = estimateTokens(message.role) + estimateTokens(message.content) + 6;
+
+    if (currentTokens + messageTokens > maxTokens) {
+      if (chunkedMessages.length === 0) {
+        chunkedMessages.unshift(message);
+      }
+      break;
+    }
+
+    chunkedMessages.unshift(message);
+    currentTokens += messageTokens;
+  }
+
+  return chunkedMessages;
+}
+
+function getProviderTokenLimit(providerName: string): number {
+  const lowerProvider = providerName?.toLowerCase() || '';
+
+  if (lowerProvider.includes('claude')) return PROVIDER_TOKEN_LIMITS.claude;
+  if (lowerProvider.includes('gpt-4o')) return PROVIDER_TOKEN_LIMITS['gpt-4o'];
+  if (lowerProvider.includes('gemini')) return PROVIDER_TOKEN_LIMITS.gemini;
+  if (lowerProvider.includes('ollama') || lowerProvider.includes('llama')) return PROVIDER_TOKEN_LIMITS.ollama;
+
+  return PROVIDER_TOKEN_LIMITS.openrouter;
+}
+
+async function claudeCompletion(messages: Message[], systemMessage: string) {
   if (!anthropicApiKey) {
     throw new Error('Anthropic API key not available');
   }
+
+  // Filter out system messages from the messages array
+  const userMessages = messages.filter(m => m.role !== 'system');
 
   const response = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
@@ -20,10 +87,8 @@ async function claudeCompletion(prompt: string, context: string) {
     body: JSON.stringify({
       model: 'claude-haiku-4-5',
       max_tokens: 4096,
-      system: context,
-      messages: [
-        { role: 'user', content: prompt },
-      ],
+      system: systemMessage,
+      messages: userMessages,
     }),
   });
 
@@ -40,7 +105,13 @@ async function claudeCompletion(prompt: string, context: string) {
 }
 
 
-async function openRouterCompletion(prompt: string, context: string) {
+async function openRouterCompletion(messages: Message[], systemMessage: string) {
+  // Build messages array with system message at start
+  const allMessages = [
+    { role: 'system', content: systemMessage },
+    ...messages.filter(m => m.role !== 'system')
+  ];
+
   const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
     method: 'POST',
     headers: {
@@ -49,17 +120,22 @@ async function openRouterCompletion(prompt: string, context: string) {
     },
     body: JSON.stringify({
       model: 'openai/gpt-4o',
-      messages: [
-        { role: 'system', content: context },
-        { role: 'user', content: prompt },
-      ],
+      messages: allMessages,
     }),
   });
   const data = await response.json();
   return data.choices?.[0]?.message?.content ?? '';
 }
 
-async function localCompletion(prompt: string, context: string) {
+async function localCompletion(messages: Message[], systemMessage: string) {
+  // Ollama uses simple text concatenation
+  let fullPrompt = systemMessage + '\n\n';
+
+  for (const message of messages) {
+    if (message.role === 'system') continue;
+    fullPrompt += `${message.role === 'user' ? 'User' : 'Assistant'}: ${message.content}\n\n`;
+  }
+
   const response = await fetch('http://localhost:11434/api/generate', {
     method: 'POST',
     headers: {
@@ -67,7 +143,7 @@ async function localCompletion(prompt: string, context: string) {
     },
     body: JSON.stringify({
       model: 'llama3',
-      prompt: `${context}\n${prompt}`,
+      prompt: fullPrompt,
       stream: false,
     }),
   });
@@ -75,7 +151,7 @@ async function localCompletion(prompt: string, context: string) {
   return data.response ?? '';
 }
 
-export async function getLLMResponse(prompt: string, context: string, providerOverride?: string) {
+export async function getLLMResponse(messages: Message[], systemMessage: string, providerOverride?: string) {
   const providerEnv = providerOverride || Deno.env.get('MODEL_PROVIDER');
   const useOpenRouter = Deno.env.get('USE_OPENROUTER') === 'true';
   const useLocalLLM = Deno.env.get('USE_LOCAL_LLM') === 'true';
@@ -117,16 +193,16 @@ export async function getLLMResponse(prompt: string, context: string, providerOv
             console.log('Anthropic API key not available, skipping');
             continue;
           }
-          return await claudeCompletion(prompt, context);
+          return await claudeCompletion(messages, systemMessage);
         case 'openrouter':
           if (!openRouterApiKey) {
             console.log('OpenRouter API key not available, skipping');
             continue;
           }
-          return await openRouterCompletion(prompt, context);
+          return await openRouterCompletion(messages, systemMessage);
         case 'ollama':
         case 'local':
-          return await localCompletion(prompt, context);
+          return await localCompletion(messages, systemMessage);
         default:
           continue;
       }
@@ -219,23 +295,38 @@ serve(async (req) => {
     const personalPrompt = settings?.personal_prompt || '';
 
     const body = await req.json();
-    const { query, knowledge_base_id } = body;
+    const { query, knowledge_base_id, conversationContext } = body;
     
     // Input validation
     if (!query || typeof query !== 'string') {
       throw new Error('Query is required and must be a string');
     }
-    
+
     if (query.length > 10000) {
-      throw new Error('Query too long (max 10000 characters)');
+      return new Response(
+        JSON.stringify({
+          error: 'Query too long',
+          response: "Your query is too long (maximum 10,000 characters). Please shorten your message and try again."
+        }),
+        {
+          status: 413, // Payload Too Large
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
     }
-    
+
     if (knowledge_base_id && typeof knowledge_base_id !== 'string') {
       throw new Error('Knowledge base ID must be a string');
     }
-    
+
+    // Validate conversation context if provided
+    if (conversationContext && !Array.isArray(conversationContext)) {
+      throw new Error('Conversation context must be an array');
+    }
+
     console.log('Query received:', query);
     console.log('Knowledge base ID:', knowledge_base_id);
+    console.log('Conversation context messages:', conversationContext?.length || 0);
 
     if (!query) {
       throw new Error('Query is required');
@@ -388,20 +479,101 @@ serve(async (req) => {
     If you can't find relevant information in the provided documents, say so clearly.
     Be concise but comprehensive in your responses.`;
 
+    // Add document context to system message
+    if (documentContext) {
+      systemMessage += `\n\nContext from documents:\n${documentContext}`;
+    }
+
     // Add personal prompt if user has one
     if (personalPrompt) {
       systemMessage += `\n\nUSER PREFERENCES:\n${personalPrompt}`;
     }
 
-    const userPrompt = `Context from my documents:\n${documentContext}\n\nQuestion: ${query}`;
+    // Build messages array with conversation history
+    const messages: Message[] = [];
 
-    console.log('Calling AI model for response generation...');
+    // Add conversation context if provided
+    if (conversationContext && Array.isArray(conversationContext) && conversationContext.length > 0) {
+      console.log('Processing conversation context with', conversationContext.length, 'messages');
+
+      // Determine provider token limit
+      const providerName = providerOverride || 'claude';
+      const maxTokens = getProviderTokenLimit(providerName);
+      console.log('Provider:', providerName, 'Max tokens:', maxTokens);
+
+      // Calculate token budget (reserve space for system message, current query, and response)
+      const systemTokens = estimateTokens(systemMessage);
+      const queryTokens = estimateTokens(query);
+      const reservedTokens = systemTokens + queryTokens + 3000; // Reserve 3000 for response
+      const conversationBudget = Math.floor((maxTokens - reservedTokens) * 0.7);
+
+      console.log('Token budget - System:', systemTokens, 'Query:', queryTokens, 'Conversation budget:', conversationBudget);
+
+      // Chunk conversation if needed
+      const conversationTokens = calculateConversationTokens(conversationContext);
+      console.log('Conversation tokens:', conversationTokens);
+
+      if (conversationTokens > conversationBudget) {
+        console.log('Chunking conversation context - exceeds budget');
+        const chunkedContext = chunkConversationContext(conversationContext, conversationBudget);
+        console.log('Chunked to', chunkedContext.length, 'messages');
+        messages.push(...chunkedContext);
+      } else {
+        messages.push(...conversationContext);
+      }
+    }
+
+    // Add current query as the last user message
+    messages.push({
+      role: 'user',
+      content: query
+    });
+
+    console.log('Calling AI model for response generation with', messages.length, 'messages...');
     let aiAnswer;
     try {
-      aiAnswer = await getLLMResponse(userPrompt, systemMessage, providerOverride);
+      aiAnswer = await getLLMResponse(messages, systemMessage, providerOverride);
       console.log('AI response generated successfully:', aiAnswer ? 'Yes' : 'No', 'Length:', aiAnswer?.length || 0);
     } catch (aiError) {
       console.error('AI model error:', aiError);
+      const errorStr = String(aiError);
+
+      // Better error categorization
+      if (errorStr.includes('401') || errorStr.includes('unauthorized')) {
+        return new Response(
+          JSON.stringify({
+            error: 'Authentication error',
+            response: "There's an authentication issue with the AI provider. Please contact support."
+          }),
+          {
+            status: 503,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          }
+        );
+      } else if (errorStr.includes('429') || errorStr.includes('rate limit')) {
+        return new Response(
+          JSON.stringify({
+            error: 'Provider rate limit',
+            response: "The AI provider is rate limiting requests. Please try again in a few moments."
+          }),
+          {
+            status: 503,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          }
+        );
+      } else if (errorStr.includes('413') || errorStr.includes('too large') || errorStr.includes('token')) {
+        return new Response(
+          JSON.stringify({
+            error: 'Context too large',
+            response: "Your conversation or documents are too large for the AI provider. Try starting a new conversation or using fewer documents."
+          }),
+          {
+            status: 413,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          }
+        );
+      }
+
       aiAnswer = "I'm having trouble generating a response right now. Please try again in a moment.";
     }
 
