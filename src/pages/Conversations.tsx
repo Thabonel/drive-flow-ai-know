@@ -32,7 +32,7 @@ export default function Conversations() {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<'active' | 'archived'>('active');
   const [isCreating, setIsCreating] = useState(true);
-  const [isTemporaryMode, setIsTemporaryMode] = useState(true);
+  const [isTemporaryMode, setIsTemporaryMode] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -138,39 +138,51 @@ export default function Conversations() {
                 <CardTitle>Conversations</CardTitle>
                 <PageHelp
                   title="AI Assistant Help"
-                  description="The AI Assistant allows you to have multi-turn conversations with AI. You can create saved conversations or use temporary chats that don't clutter your history."
+                  description="The AI Assistant allows you to have multi-turn conversations with AI. Conversations are saved by default, or you can toggle to temporary mode for quick chats."
                   tips={[
-                    "Toggle between Temporary Chat and Saved Conversation modes",
-                    "Temporary chats don't save to your history",
-                    "Saved conversations can be archived when complete",
-                    "Search through your conversation history"
+                    "Conversations are saved by default and appear in your history",
+                    "Toggle to Temp mode for quick chats that won't be saved",
+                    "Switch between Saved and Temp modes before starting your chat",
+                    "Saved conversations can be archived when complete"
                   ]}
                 />
               </div>
               <div className="flex gap-2">
                 <Button
                   size="sm"
-                  variant={isTemporaryMode ? "default" : "outline"}
+                  variant={!isTemporaryMode ? "default" : "outline"}
                   onClick={() => {
-                    setIsTemporaryMode(true);
-                    handleNewConversation();
+                    if (isCreating) {
+                      // Just toggle mode if already creating a new conversation
+                      setIsTemporaryMode(false);
+                    } else {
+                      // Start new saved conversation
+                      setIsTemporaryMode(false);
+                      handleNewConversation();
+                    }
                   }}
-                  title="Start a temporary chat that won't be saved"
+                  title="Saved conversation (default)"
                 >
-                  <Clock className="h-4 w-4 mr-2" />
-                  Temp
+                  <Plus className="h-4 w-4 mr-2" />
+                  Saved
                 </Button>
                 <Button
                   size="sm"
-                  variant={!isTemporaryMode ? "default" : "outline"}
+                  variant={isTemporaryMode ? "default" : "outline"}
                   onClick={() => {
-                    setIsTemporaryMode(false);
-                    handleNewConversation();
+                    if (isCreating) {
+                      // Just toggle mode if already creating a new conversation
+                      setIsTemporaryMode(true);
+                    } else {
+                      // Start new temporary conversation
+                      setIsTemporaryMode(true);
+                      handleNewConversation();
+                    }
                   }}
-                  title="Start a saved conversation"
+                  title="Temporary chat (not saved)"
                 >
-                  <Plus className="h-4 w-4 mr-2" />
-                  New
+                  <Clock className="h-4 w-4 mr-2" />
+                  Temp
                 </Button>
               </div>
             </div>
