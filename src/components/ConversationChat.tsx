@@ -242,6 +242,7 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
         body: {
           query: userMessage,
           conversationContext,
+          use_documents: false,
         },
       });
 
@@ -297,6 +298,7 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
           const { data: titleData } = await supabase.functions.invoke('ai-query', {
             body: {
               query: `Generate a short, descriptive title (maximum 6 words) for a conversation that starts with: "${userMessage.slice(0, 200)}". Respond with ONLY the title, no quotes or extra text.`,
+              use_documents: false,
             },
           });
 

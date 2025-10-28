@@ -9,7 +9,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ConversationChat } from '@/components/ConversationChat';
 import { PageHelp } from '@/components/PageHelp';
-import { Plus, MessageSquare, Archive, Search, Trash2, Clock } from 'lucide-react';
+import { Plus, MessageSquare, Archive, Search, Trash2, Clock, ChevronLeft, ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 
@@ -33,6 +33,10 @@ export default function Conversations() {
   const [activeTab, setActiveTab] = useState<'active' | 'archived'>('active');
   const [isCreating, setIsCreating] = useState(true);
   const [isTemporaryMode, setIsTemporaryMode] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    const saved = localStorage.getItem('conversations-sidebar-collapsed');
+    return saved === 'true';
+  });
 
   useEffect(() => {
     if (user) {
@@ -127,27 +131,44 @@ export default function Conversations() {
     loadConversations();
   };
 
+  const toggleSidebar = () => {
+    const newState = !sidebarCollapsed;
+    setSidebarCollapsed(newState);
+    localStorage.setItem('conversations-sidebar-collapsed', String(newState));
+  };
+
   return (
     <div className="container mx-auto p-1 h-screen max-h-screen overflow-hidden">
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-2 h-full">
+      <div className={`grid grid-cols-1 gap-2 h-full ${sidebarCollapsed ? 'lg:grid-cols-[80px_1fr]' : 'lg:grid-cols-3'}`}>
         {/* Sidebar */}
-        <Card className="lg:col-span-1 h-full flex flex-col overflow-hidden">
+        <Card className={`h-full flex flex-col overflow-hidden transition-all duration-200 ${sidebarCollapsed ? 'lg:w-20' : 'lg:col-span-1'}`}>
           <CardHeader className="flex-shrink-0">
             <div className="flex justify-between items-center">
               <div className="flex items-center gap-2">
-                <CardTitle>Conversations</CardTitle>
-                <PageHelp
-                  title="AI Assistant Help"
-                  description="The AI Assistant allows you to have multi-turn conversations with AI. Conversations are saved by default, or you can toggle to temporary mode for quick chats."
-                  tips={[
-                    "Conversations are saved by default and appear in your history",
-                    "Toggle to Temp mode for quick chats that won't be saved",
-                    "Switch between Saved and Temp modes before starting your chat",
-                    "Saved conversations can be archived when complete"
-                  ]}
-                />
+                {!sidebarCollapsed && <CardTitle>Conversations</CardTitle>}
+                {!sidebarCollapsed && (
+                  <PageHelp
+                    title="AI Assistant Help"
+                    description="The AI Assistant allows you to have multi-turn conversations with AI. Conversations are saved by default, or you can toggle to temporary mode for quick chats."
+                    tips={[
+                      "Conversations are saved by default and appear in your history",
+                      "Toggle to Temp mode for quick chats that won't be saved",
+                      "Switch between Saved and Temp modes before starting your chat",
+                      "Saved conversations can be archived when complete"
+                    ]}
+                  />
+                )}
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={toggleSidebar}
+                  className="h-8 w-8 p-0"
+                  title={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+                >
+                  {sidebarCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+                </Button>
               </div>
-              <div className="flex gap-2">
+              {!sidebarCollapsed && <div className="flex gap-2">
                 <Button
                   size="sm"
                   variant={!isTemporaryMode ? "default" : "outline"}
@@ -184,22 +205,24 @@ export default function Conversations() {
                   <Clock className="h-4 w-4 mr-2" />
                   Temp
                 </Button>
-              </div>
+              </div>}
             </div>
-            <CardDescription>Your AI conversation history</CardDescription>
+            {!sidebarCollapsed && <CardDescription>Your AI conversation history</CardDescription>}
           </CardHeader>
-          <CardContent className="space-y-4 flex-1 flex flex-col overflow-hidden">
-            <div className="relative flex-shrink-0">
-              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search conversations..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-8"
-              />
-            </div>
+          <CardContent className={`space-y-4 flex-1 flex flex-col overflow-hidden transition-opacity duration-200 ${sidebarCollapsed ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
+            {!sidebarCollapsed && (
+              <>
+                <div className="relative flex-shrink-0">
+                  <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search conversations..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-8"
+                  />
+                </div>
 
-            <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'active' | 'archived')} className="flex-1 flex flex-col overflow-hidden">
+                <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'active' | 'archived')} className="flex-1 flex flex-col overflow-hidden">
               <TabsList className="grid w-full grid-cols-2 flex-shrink-0">
                 <TabsTrigger value="active">
                   <MessageSquare className="h-4 w-4 mr-2" />
@@ -264,11 +287,13 @@ export default function Conversations() {
                 </ScrollArea>
               </TabsContent>
             </Tabs>
+              </>
+            )}
           </CardContent>
         </Card>
 
         {/* Chat Area */}
-        <div className="lg:col-span-2 h-full overflow-hidden">
+        <div className={`h-full overflow-hidden ${sidebarCollapsed ? 'lg:col-span-1' : 'lg:col-span-2'}`}>
           {selectedConversation || isCreating ? (
             <ConversationChat
               conversationId={selectedConversation || undefined}

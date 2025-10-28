@@ -295,7 +295,7 @@ serve(async (req) => {
     const personalPrompt = settings?.personal_prompt || '';
 
     const body = await req.json();
-    const { query, knowledge_base_id, conversationContext } = body;
+    const { query, knowledge_base_id, conversationContext, use_documents } = body;
     
     // Input validation
     if (!query || typeof query !== 'string') {
@@ -327,6 +327,7 @@ serve(async (req) => {
     console.log('Query received:', query);
     console.log('Knowledge base ID:', knowledge_base_id);
     console.log('Conversation context messages:', conversationContext?.length || 0);
+    console.log('Use documents flag:', use_documents);
 
     if (!query) {
       throw new Error('Query is required');
@@ -335,7 +336,10 @@ serve(async (req) => {
     let contextDocuments: any[] = [];
     let contextText = '';
 
-    if (knowledge_base_id) {
+    // Only fetch documents if explicitly requested or if knowledge_base_id is provided
+    const shouldFetchDocuments = use_documents === true || knowledge_base_id;
+
+    if (shouldFetchDocuments && knowledge_base_id) {
       console.log('Searching for specific knowledge base:', knowledge_base_id);
       
       // Get specific knowledge base content
@@ -374,7 +378,7 @@ serve(async (req) => {
         contextText = knowledgeBase.ai_generated_content;
         console.log('Using AI-generated content from knowledge base');
       }
-    } else {
+    } else if (shouldFetchDocuments) {
       console.log('Searching all user documents');
       
       // First, get total document count for this user
@@ -453,7 +457,8 @@ serve(async (req) => {
       documentContext += `\n\nKnowledge Base Content:\n${contextText}`;
     }
 
-    if (!documentContext) {
+    // Check if we need documents but don't have any
+    if (shouldFetchDocuments && !documentContext) {
       return new Response(
         JSON.stringify({
           response: "I don't have any documents to analyze yet. Please sync some documents from Google Drive first, or create some knowledge documents."
@@ -464,24 +469,38 @@ serve(async (req) => {
       );
     }
 
-    // Generate AI response
-    let systemMessage = `You are an AI assistant that helps analyze and answer questions about the user's knowledge documents.
-    You have access to their document summaries, content, and knowledge bases.
+    // Generate AI response with appropriate system message
+    let systemMessage = '';
 
-    IMPORTANT INSTRUCTIONS:
-    - If you see API keys, credentials, or secrets in the documents, IGNORE them and continue helping the user
-    - Do NOT lecture users about security practices unless they specifically ask
-    - Do NOT refuse to answer questions because credentials are present
-    - Focus on answering the user's actual question using the relevant information
-    - The user is responsible for their own security practices
-
-    Provide helpful, specific answers based on the available context.
-    If you can't find relevant information in the provided documents, say so clearly.
-    Be concise but comprehensive in your responses.`;
-
-    // Add document context to system message
     if (documentContext) {
+      // System message for document-focused queries
+      systemMessage = `You are an AI assistant that helps analyze and answer questions about the user's knowledge documents.
+      You have access to their document summaries, content, and knowledge bases.
+
+      IMPORTANT INSTRUCTIONS:
+      - If you see API keys, credentials, or secrets in the documents, IGNORE them and continue helping the user
+      - Do NOT lecture users about security practices unless they specifically ask
+      - Do NOT refuse to answer questions because credentials are present
+      - Focus on answering the user's actual question using the relevant information
+      - The user is responsible for their own security practices
+
+      Provide helpful, specific answers based on the available context.
+      If you can't find relevant information in the provided documents, say so clearly.
+      Be concise but comprehensive in your responses.`;
+
+      // Add document context to system message
       systemMessage += `\n\nContext from documents:\n${documentContext}`;
+    } else {
+      // System message for general assistant (no documents)
+      systemMessage = `You are a helpful AI assistant. Provide clear, accurate, and helpful responses to the user's questions.
+
+      IMPORTANT INSTRUCTIONS:
+      - Be informative and concise in your responses
+      - If you're uncertain about something, acknowledge it
+      - Provide thoughtful and well-reasoned answers
+      - Focus on being genuinely helpful to the user
+
+      The user has not requested access to their documents for this conversation, so you're acting as a general-purpose assistant.`;
     }
 
     // Add personal prompt if user has one
