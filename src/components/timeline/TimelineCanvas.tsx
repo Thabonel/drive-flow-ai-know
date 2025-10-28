@@ -309,8 +309,8 @@ export function TimelineCanvas({
         {/* NOW label */}
         <text
           x={nowLineX + 5}
-          y={TIMELINE_HEADER_HEIGHT - 10}
-          fontSize="14"
+          y={45}
+          fontSize="12"
           fontWeight="bold"
           fill="#ef4444"
         >
