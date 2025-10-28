@@ -268,6 +268,26 @@ export function TimelineCanvas({
           strokeWidth={3}
           opacity={0.8}
         />
+        {/* Date label */}
+        <text
+          x={nowLineX + 5}
+          y={15}
+          fontSize="10"
+          fill="#ef4444"
+        >
+          {formatDate(nowTime.toISOString())}
+        </text>
+        {/* Time label */}
+        <text
+          x={nowLineX + 5}
+          y={30}
+          fontSize="12"
+          fontWeight="500"
+          fill="#ef4444"
+        >
+          {formatTime(nowTime.toISOString())}
+        </text>
+        {/* NOW label */}
         <text
           x={nowLineX + 5}
           y={TIMELINE_HEADER_HEIGHT - 10}
