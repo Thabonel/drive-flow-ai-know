@@ -102,7 +102,7 @@ export const VIEW_MODE_CONFIG = {
     pixelsPerHour: 30,   // 30px per hour = ~720px per day
     pastHours: 24,       // Show 1 day in the past
     futureHours: 144,    // Show 6 days in the future (total 7 days)
-    subdivisionMinutes: 360, // 6-hour intervals
+    subdivisionMinutes: 60, // Hourly intervals
   },
   month: {
     label: 'Month',
