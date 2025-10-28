@@ -453,7 +453,7 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
-      <div className="flex justify-between items-center mb-4 flex-shrink-0">
+      <div className="flex justify-between items-center mb-2 flex-shrink-0">
         {isEditingTitle ? (
           <div className="flex items-center gap-2 flex-1 mr-4">
             <Input
@@ -526,7 +526,7 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
       <Card className="flex-1 flex flex-col overflow-hidden">
         <ScrollArea className="flex-1 p-4" ref={scrollRef}>
           {messages.length === 0 ? (
-            <div className="flex items-center justify-center h-full text-muted-foreground">
+            <div className="flex items-start justify-center pt-12 text-muted-foreground">
               <p>Start a conversation with your AI assistant</p>
             </div>
           ) : (
@@ -561,14 +561,14 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
           )}
         </ScrollArea>
 
-        <form onSubmit={handleSubmit} className="p-4 border-t flex-shrink-0">
+        <form onSubmit={handleSubmit} className="p-3 border-t flex-shrink-0">
           <div className="flex gap-2">
             <Textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder="Type your message..."
               className="resize-none"
-              rows={3}
+              rows={2}
               disabled={isLoading}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && !e.shiftKey) {

@@ -128,7 +128,7 @@ export default function Conversations() {
   };
 
   return (
-    <div className="container mx-auto p-2 h-screen max-h-screen overflow-hidden">
+    <div className="container mx-auto p-1 h-screen max-h-screen overflow-hidden">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-2 h-full">
         {/* Sidebar */}
         <Card className="lg:col-span-1 h-full flex flex-col overflow-hidden">
