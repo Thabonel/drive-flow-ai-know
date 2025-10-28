@@ -9,7 +9,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ConversationChat } from '@/components/ConversationChat';
 import { PageHelp } from '@/components/PageHelp';
-import { Plus, MessageSquare, Archive, Search, Trash2, Clock, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, MessageSquare, Archive, Search, Trash2, Clock, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 
@@ -138,7 +138,7 @@ export default function Conversations() {
   };
 
   return (
-    <div className="container mx-auto p-1 h-screen max-h-screen overflow-hidden">
+    <div className="w-full px-1 h-screen max-h-screen overflow-hidden">
       <div className={`grid grid-cols-1 gap-2 h-full ${sidebarCollapsed ? 'lg:grid-cols-[80px_1fr]' : 'lg:grid-cols-3'}`}>
         {/* Sidebar */}
         <Card className={`h-full flex flex-col overflow-hidden transition-all duration-200 ${sidebarCollapsed ? 'lg:w-20' : 'lg:col-span-1'}`}>
@@ -165,7 +165,7 @@ export default function Conversations() {
                   className="h-8 w-8 p-0"
                   title={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
                 >
-                  {sidebarCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+                  {sidebarCollapsed ? <PanelLeftOpen className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
                 </Button>
               </div>
               {!sidebarCollapsed && <div className="flex gap-2">
