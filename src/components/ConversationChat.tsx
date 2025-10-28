@@ -453,7 +453,7 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
-      <div className="flex justify-between items-center mb-2 flex-shrink-0">
+      <div className="flex justify-between items-center mb-1 flex-shrink-0">
         {isEditingTitle ? (
           <div className="flex items-center gap-2 flex-1 mr-4">
             <Input
@@ -476,7 +476,7 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
           </div>
         ) : (
           <div className="flex items-center gap-2">
-            <h2 className="text-2xl font-bold">{conversationTitle}</h2>
+            <h2 className="text-lg font-semibold">{conversationTitle}</h2>
             {conversationId && (
               <Button size="sm" variant="ghost" onClick={handleEditTitle}>
                 <Edit2 className="h-4 w-4" />
@@ -523,11 +523,11 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
         </div>
       </div>
 
-      <Card className="flex-1 flex flex-col overflow-hidden">
-        <ScrollArea className="flex-1 p-4" ref={scrollRef}>
+      <Card className={`flex flex-col overflow-hidden ${messages.length === 0 ? 'h-auto' : 'flex-1'}`}>
+        <ScrollArea className={`${messages.length === 0 ? 'p-2 h-20' : 'p-4 flex-1'}`} ref={scrollRef}>
           {messages.length === 0 ? (
-            <div className="flex items-start justify-center pt-12 text-muted-foreground">
-              <p>Start a conversation with your AI assistant</p>
+            <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
+              <p>Start a conversation</p>
             </div>
           ) : (
             <div className="space-y-4">
