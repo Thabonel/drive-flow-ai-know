@@ -20,12 +20,13 @@ interface Message {
 
 interface ConversationChatProps {
   conversationId?: string;
+  isTemporary?: boolean;
   onConversationCreated?: (id: string) => void;
   onConversationDeleted?: () => void;
   onConversationSummarized?: () => void;
 }
 
-export function ConversationChat({ conversationId: initialConversationId, onConversationCreated, onConversationDeleted, onConversationSummarized }: ConversationChatProps) {
+export function ConversationChat({ conversationId: initialConversationId, isTemporary = false, onConversationCreated, onConversationDeleted, onConversationSummarized }: ConversationChatProps) {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [conversationId, setConversationId] = useState<string | null>(initialConversationId || null);
@@ -199,32 +200,36 @@ export function ConversationChat({ conversationId: initialConversationId, onConv
     isSubmittingRef.current = true;
 
     try {
-      // CRITICAL: Ensure conversation exists and get ID ONCE
-      // Store in local variable to ensure both messages use the SAME conversation
       let currentConvId = conversationId;
-      if (!currentConvId) {
-        currentConvId = await createConversation();
+      let messagesWithSavedUser = updatedMessages;
+
+      if (!isTemporary) {
+        // CRITICAL: Ensure conversation exists and get ID ONCE
+        // Store in local variable to ensure both messages use the SAME conversation
         if (!currentConvId) {
-          toast.error('Failed to create conversation');
-          return;
+          currentConvId = await createConversation();
+          if (!currentConvId) {
+            toast.error('Failed to create conversation');
+            return;
+          }
+          console.log('Created new conversation:', currentConvId);
+        } else {
+          console.log('Using existing conversation:', currentConvId);
         }
-        console.log('Created new conversation:', currentConvId);
-      } else {
-        console.log('Using existing conversation:', currentConvId);
-      }
 
-      // Save user message to database - pass explicit conversation ID
-      const savedUserMsg = await saveMessage('user', userMessage, updatedMessages, currentConvId);
+        // Save user message to database - pass explicit conversation ID
+        const savedUserMsg = await saveMessage('user', userMessage, updatedMessages, currentConvId);
 
-      // Prepare messages array with the saved message
-      // FIX: Build from updatedMessages, not stale messages closure
-      const messagesWithSavedUser = savedUserMsg
-        ? updatedMessages.slice(0, -1).concat(savedUserMsg as Message)
-        : updatedMessages;
+        // Prepare messages array with the saved message
+        // FIX: Build from updatedMessages, not stale messages closure
+        messagesWithSavedUser = savedUserMsg
+          ? updatedMessages.slice(0, -1).concat(savedUserMsg as Message)
+          : updatedMessages;
 
-      // Replace temp message with saved one (if successful)
-      if (savedUserMsg) {
-        setMessages(messagesWithSavedUser);
+        // Replace temp message with saved one (if successful)
+        if (savedUserMsg) {
+          setMessages(messagesWithSavedUser);
+        }
       }
 
       // Get AI response with conversation context - include the current user message
@@ -244,14 +249,26 @@ export function ConversationChat({ conversationId: initialConversationId, onConv
 
       const aiResponse = data?.response || 'Sorry, I could not process your request.';
 
-      // Save AI response - pass same conversation ID to ensure both messages in same conversation
-      const savedAiMsg = await saveMessage('assistant', aiResponse, messagesWithSavedUser, currentConvId);
-      if (savedAiMsg) {
-        setMessages([...messagesWithSavedUser, savedAiMsg as Message]);
+      if (isTemporary) {
+        // For temporary chats, just add the AI message to local state
+        const tempAiMessage: Message = {
+          id: `temp-ai-${Date.now()}`,
+          role: 'assistant',
+          content: aiResponse,
+          sequence_number: messagesWithSavedUser.length,
+          timestamp: new Date().toISOString(),
+        };
+        setMessages([...messagesWithSavedUser, tempAiMessage]);
+      } else {
+        // Save AI response - pass same conversation ID to ensure both messages in same conversation
+        const savedAiMsg = await saveMessage('assistant', aiResponse, messagesWithSavedUser, currentConvId);
+        if (savedAiMsg) {
+          setMessages([...messagesWithSavedUser, savedAiMsg as Message]);
+        }
       }
 
       // Update conversation message count and title if first message
-      if (messages.length === 0 && currentConvId) {
+      if (!isTemporary && messages.length === 0 && currentConvId) {
         // Generate AI title immediately
         try {
           const { data: titleData } = await supabase.functions.invoke('ai-query', {
@@ -468,7 +485,12 @@ export function ConversationChat({ conversationId: initialConversationId, onConv
           </div>
         )}
         <div className="flex gap-2">
-          {conversationId && messages.length > 0 && (
+          {isTemporary && messages.length > 0 && (
+            <div className="text-sm text-muted-foreground bg-yellow-50 dark:bg-yellow-900/20 px-3 py-1.5 rounded-md border border-yellow-200 dark:border-yellow-800">
+              Temporary Chat (not saved)
+            </div>
+          )}
+          {!isTemporary && conversationId && messages.length > 0 && (
             <>
               <Button
                 onClick={handleSummarize}
