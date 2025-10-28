@@ -200,42 +200,40 @@ export function generateTimeMarkers(
   let showSubdivisions = false;
 
   if (pixelsPerHour >= 50) {
-    // Day/Week view: hourly markers with 15-min subdivisions
-    majorInterval = 1;
-    showSubdivisions = true;
+    // Day/Week view: midnight markers (day boundaries)
+    majorInterval = 24;
+    showSubdivisions = false;
   } else {
-    // Month view: 12-hour markers (twice a day)
-    majorInterval = 12;
+    // Month view: midnight markers (day boundaries)
+    majorInterval = 24;
     showSubdivisions = false;
   }
 
-  // Generate major markers
-  const totalHours = hoursBeforeNow + hoursAfterNow;
-  for (let hourOffset = -hoursBeforeNow; hourOffset <= hoursAfterNow; hourOffset += majorInterval) {
-    const markerTime = new Date(nowTime.getTime() + hourOffset * 60 * 60 * 1000);
-    const x = nowLineX + (hourOffset * pixelsPerHour) + scrollOffset;
+  // Find today's midnight (start of current day)
+  const todayMidnight = new Date(nowTime);
+  todayMidnight.setHours(0, 0, 0, 0);
+
+  // Calculate how many days to show before and after NOW
+  const daysBeforeNow = Math.ceil(hoursBeforeNow / 24) + 1; // Extra day for safety
+  const daysAfterNow = Math.ceil(hoursAfterNow / 24) + 1;
+
+  // Generate markers at each midnight (day boundary)
+  for (let dayOffset = -daysBeforeNow; dayOffset <= daysAfterNow; dayOffset++) {
+    // Calculate the FIXED midnight timestamp for this day
+    const markerTime = new Date(todayMidnight.getTime() + dayOffset * 24 * 60 * 60 * 1000);
+
+    // Calculate hours from NOW to this marker (this changes as time flows, but markerTime doesn't)
+    const hoursFromNow = (markerTime.getTime() - nowTime.getTime()) / (1000 * 60 * 60);
+
+    // Calculate X position based on how far this marker is from NOW
+    const x = nowLineX + (hoursFromNow * pixelsPerHour) + scrollOffset;
 
     markers.push({
       x,
-      time: markerTime,
-      isPast: hourOffset < 0,
+      time: markerTime, // This is a FIXED timestamp (e.g., "Oct 27, 12:00 AM")
+      isPast: markerTime < nowTime,
       isMajor: true,
     });
-
-    // Add subdivisions only for detailed views
-    if (showSubdivisions) {
-      for (let quarterHour = 1; quarterHour < 4; quarterHour++) {
-        const subdivisionTime = new Date(markerTime.getTime() + quarterHour * 15 * 60 * 1000);
-        const subdivisionX = x + (quarterHour * 0.25 * pixelsPerHour);
-
-        markers.push({
-          x: subdivisionX,
-          time: subdivisionTime,
-          isPast: hourOffset < 0 || (hourOffset === 0 && quarterHour === 0),
-          isMajor: false,
-        });
-      }
-    }
   }
 
   return markers;
