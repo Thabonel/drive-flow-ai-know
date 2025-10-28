@@ -228,7 +228,7 @@ export function PersonalPrompt() {
             <div className="border-t pt-4 mt-4">
               <h4 className="text-sm font-medium mb-2">How it works</h4>
               <ul className="text-xs text-muted-foreground space-y-1">
-                <li>• Your prompt is added to every AI conversation (Barry, PAM, document queries)</li>
+                <li>• Your prompt is added to all AI conversations and document queries</li>
                 <li>• The AI will adapt its tone, depth, and style based on your preferences</li>
                 <li>• You can update or remove this anytime</li>
                 <li>• Your prompt is private and only used for your account</li>
