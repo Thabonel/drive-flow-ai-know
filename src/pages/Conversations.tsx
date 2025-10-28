@@ -9,7 +9,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ConversationChat } from '@/components/ConversationChat';
 import { PageHelp } from '@/components/PageHelp';
-import { Plus, MessageSquare, Archive, Search, Trash2 } from 'lucide-react';
+import { Plus, MessageSquare, Archive, Search, Trash2, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 
@@ -31,7 +31,8 @@ export default function Conversations() {
   const [selectedConversation, setSelectedConversation] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<'active' | 'archived'>('active');
-  const [isCreating, setIsCreating] = useState(false);
+  const [isCreating, setIsCreating] = useState(true);
+  const [isTemporaryMode, setIsTemporaryMode] = useState(true);
 
   useEffect(() => {
     if (user) {
@@ -69,11 +70,13 @@ export default function Conversations() {
   const handleNewConversation = () => {
     setSelectedConversation(null);
     setIsCreating(true);
+    // Keep current temporary mode setting when starting new chat
   };
 
   const handleSelectConversation = (id: string) => {
     setSelectedConversation(id);
     setIsCreating(false);
+    setIsTemporaryMode(false); // Existing conversations are always saved
   };
 
   const handleDeleteConversation = async (id: string, e: React.MouseEvent) => {
@@ -102,6 +105,7 @@ export default function Conversations() {
   const handleConversationCreated = (id: string) => {
     setSelectedConversation(id);
     setIsCreating(false);
+    setIsTemporaryMode(false); // Once a conversation is created, it's no longer temporary
     loadConversations();
   };
 
@@ -134,19 +138,41 @@ export default function Conversations() {
                 <CardTitle>Conversations</CardTitle>
                 <PageHelp
                   title="AI Assistant Help"
-                  description="The AI Assistant allows you to have multi-turn conversations with AI. Your conversations are saved and can be archived when complete. Each conversation gets an AI-generated title and summary."
+                  description="The AI Assistant allows you to have multi-turn conversations with AI. You can create saved conversations or use temporary chats that don't clutter your history."
                   tips={[
-                    "Click 'New' to start a fresh conversation",
-                    "Search through your conversation history",
-                    "Archive completed conversations for organization",
-                    "Delete conversations you no longer need"
+                    "Toggle between Temporary Chat and Saved Conversation modes",
+                    "Temporary chats don't save to your history",
+                    "Saved conversations can be archived when complete",
+                    "Search through your conversation history"
                   ]}
                 />
               </div>
-              <Button size="sm" onClick={handleNewConversation}>
-                <Plus className="h-4 w-4 mr-2" />
-                New
-              </Button>
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  variant={isTemporaryMode ? "default" : "outline"}
+                  onClick={() => {
+                    setIsTemporaryMode(true);
+                    handleNewConversation();
+                  }}
+                  title="Start a temporary chat that won't be saved"
+                >
+                  <Clock className="h-4 w-4 mr-2" />
+                  Temp
+                </Button>
+                <Button
+                  size="sm"
+                  variant={!isTemporaryMode ? "default" : "outline"}
+                  onClick={() => {
+                    setIsTemporaryMode(false);
+                    handleNewConversation();
+                  }}
+                  title="Start a saved conversation"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  New
+                </Button>
+              </div>
             </div>
             <CardDescription>Your AI conversation history</CardDescription>
           </CardHeader>
@@ -234,6 +260,7 @@ export default function Conversations() {
           {selectedConversation || isCreating ? (
             <ConversationChat
               conversationId={selectedConversation || undefined}
+              isTemporary={isTemporaryMode && isCreating}
               onConversationCreated={handleConversationCreated}
               onConversationDeleted={handleConversationDeleted}
               onConversationSummarized={handleConversationSummarized}
