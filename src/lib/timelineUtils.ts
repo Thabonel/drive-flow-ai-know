@@ -182,7 +182,8 @@ export function calculateNowLineX(
  * @param scrollOffset - Current scroll offset in pixels
  * @param hoursBeforeNow - How many hours before NOW to show
  * @param hoursAfterNow - How many hours after NOW to show
- * @returns Array of time marker objects
+ * @param subdivisionMinutes - Interval in minutes for subdivision markers (default 360 = 6 hours)
+ * @returns Array of time marker objects with isMajor flag (midnight markers are major, subdivisions are minor)
  */
 export function generateTimeMarkers(
   nowTime: Date,
@@ -190,24 +191,11 @@ export function generateTimeMarkers(
   pixelsPerHour: number,
   scrollOffset: number,
   hoursBeforeNow: number,
-  hoursAfterNow: number
+  hoursAfterNow: number,
+  subdivisionMinutes: number = 360 // Default to 6-hour intervals
 ): Array<{ x: number; time: Date; isPast: boolean; isMajor: boolean }> {
   const markers: Array<{ x: number; time: Date; isPast: boolean; isMajor: boolean }> = [];
   const nowLineX = viewportWidth * NOW_LINE_POSITION;
-
-  // Determine marker interval based on zoom level
-  let majorInterval: number; // in hours
-  let showSubdivisions = false;
-
-  if (pixelsPerHour >= 50) {
-    // Day/Week view: midnight markers (day boundaries)
-    majorInterval = 24;
-    showSubdivisions = false;
-  } else {
-    // Month view: midnight markers (day boundaries)
-    majorInterval = 24;
-    showSubdivisions = false;
-  }
 
   // Find today's midnight (start of current day)
   const todayMidnight = new Date(nowTime);
@@ -217,7 +205,7 @@ export function generateTimeMarkers(
   const daysBeforeNow = Math.ceil(hoursBeforeNow / 24) + 1; // Extra day for safety
   const daysAfterNow = Math.ceil(hoursAfterNow / 24) + 1;
 
-  // Generate markers at each midnight (day boundary)
+  // Generate markers at each midnight (day boundary) - MAJOR markers
   for (let dayOffset = -daysBeforeNow; dayOffset <= daysAfterNow; dayOffset++) {
     // Calculate the FIXED midnight timestamp for this day
     const markerTime = new Date(todayMidnight.getTime() + dayOffset * 24 * 60 * 60 * 1000);
@@ -234,9 +222,28 @@ export function generateTimeMarkers(
       isPast: markerTime < nowTime,
       isMajor: true,
     });
+
+    // Generate subdivision markers (MINOR markers) within this day
+    if (subdivisionMinutes < 24 * 60) { // Only if subdivisions are smaller than a day
+      const subdivisionsPerDay = Math.floor((24 * 60) / subdivisionMinutes);
+
+      for (let subIndex = 1; subIndex < subdivisionsPerDay; subIndex++) {
+        const subMarkerTime = new Date(markerTime.getTime() + subIndex * subdivisionMinutes * 60 * 1000);
+        const subHoursFromNow = (subMarkerTime.getTime() - nowTime.getTime()) / (1000 * 60 * 60);
+        const subX = nowLineX + (subHoursFromNow * pixelsPerHour) + scrollOffset;
+
+        markers.push({
+          x: subX,
+          time: subMarkerTime,
+          isPast: subMarkerTime < nowTime,
+          isMajor: false, // Minor marker
+        });
+      }
+    }
   }
 
-  return markers;
+  // Sort markers by time to ensure proper rendering order
+  return markers.sort((a, b) => a.time.getTime() - b.time.getTime());
 }
 
 /**

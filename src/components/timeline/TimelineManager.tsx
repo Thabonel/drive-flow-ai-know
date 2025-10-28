@@ -355,6 +355,7 @@ export function TimelineManager() {
             showCompleted={true}
             pastHours={viewModeConfig.pastHours}
             futureHours={viewModeConfig.futureHours}
+            subdivisionMinutes={viewModeConfig.subdivisionMinutes}
             onItemClick={handleItemClick}
             onDrag={handleDrag}
             onItemDrop={handleItemDrop}
