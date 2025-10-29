@@ -147,7 +147,7 @@ export const DocumentViewerModal = ({ document, isOpen, onClose }: DocumentViewe
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl w-[95vw] max-h-[90vh] overflow-y-auto overflow-x-hidden">
+      <DialogContent className="max-w-5xl w-[95vw] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center justify-between flex-wrap gap-3">
             <div className="flex items-center flex-1 min-w-0">
@@ -219,7 +219,7 @@ export const DocumentViewerModal = ({ document, isOpen, onClose }: DocumentViewe
                 className="resize-none font-sans"
               />
             ) : (
-              <div className="p-6 border rounded-md bg-background min-h-[300px] select-text overflow-auto prose prose-slate dark:prose-invert max-w-none prose-headings:text-white prose-p:text-white prose-li:text-white prose-strong:text-white prose-a:text-white prose-code:text-white [&_*]:text-white">
+              <div className="p-6 border rounded-md bg-background min-h-[300px] select-text prose prose-slate dark:prose-invert max-w-none break-words prose-headings:text-white prose-p:text-white prose-li:text-white prose-strong:text-white prose-a:text-white prose-code:text-white [&_*]:text-white">
                 <ReactMarkdown>
                   {formData.content || 'No content available'}
                 </ReactMarkdown>
