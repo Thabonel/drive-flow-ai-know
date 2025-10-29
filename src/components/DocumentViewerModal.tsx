@@ -219,7 +219,7 @@ export const DocumentViewerModal = ({ document, isOpen, onClose }: DocumentViewe
                 className="resize-none font-sans"
               />
             ) : (
-              <div className="p-6 border rounded-md bg-background min-h-[300px] select-text overflow-auto prose prose-slate dark:prose-invert max-w-none prose-headings:text-foreground prose-p:text-foreground prose-li:text-foreground prose-strong:text-foreground">
+              <div className="p-6 border rounded-md bg-background min-h-[300px] select-text overflow-auto prose prose-slate dark:prose-invert max-w-none prose-headings:text-white prose-p:text-white prose-li:text-white prose-strong:text-white prose-a:text-white prose-code:text-white [&_*]:text-white">
                 <ReactMarkdown>
                   {formData.content || 'No content available'}
                 </ReactMarkdown>
