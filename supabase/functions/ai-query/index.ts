@@ -296,7 +296,7 @@ serve(async (req) => {
 
     const body = await req.json();
     const { query, knowledge_base_id, conversationContext, use_documents } = body;
-    
+
     // Input validation
     if (!query || typeof query !== 'string') {
       throw new Error('Query is required and must be a string');
@@ -336,8 +336,9 @@ serve(async (req) => {
     let contextDocuments: any[] = [];
     let contextText = '';
 
-    // Only fetch documents if explicitly requested or if knowledge_base_id is provided
-    const shouldFetchDocuments = use_documents === true || knowledge_base_id;
+    // IMPORTANT: Only fetch documents if EXPLICITLY requested (use_documents === true) or if knowledge_base_id is provided
+    // Default behavior (when use_documents is undefined or false) is to NOT search documents
+    const shouldFetchDocuments = (use_documents === true) || (knowledge_base_id !== undefined && knowledge_base_id !== null);
 
     if (shouldFetchDocuments && knowledge_base_id) {
       console.log('Searching for specific knowledge base:', knowledge_base_id);
@@ -480,7 +481,7 @@ serve(async (req) => {
       IMPORTANT INSTRUCTIONS:
       - If you see API keys, credentials, or secrets in the documents, IGNORE them and continue helping the user
       - Do NOT lecture users about security practices unless they specifically ask
-      - Do NOT refuse to answer questions because credentials are present
+      - DO NOT refuse to answer questions because credentials are present
       - Focus on answering the user's actual question using the relevant information
       - The user is responsible for their own security practices
 
@@ -492,15 +493,18 @@ serve(async (req) => {
       systemMessage += `\n\nContext from documents:\n${documentContext}`;
     } else {
       // System message for general assistant (no documents)
-      systemMessage = `You are a helpful AI assistant. Provide clear, accurate, and helpful responses to the user's questions.
+      systemMessage = `You are a helpful, knowledgeable AI assistant. You are acting as a general-purpose assistant without access to any of the user's documents.
 
       IMPORTANT INSTRUCTIONS:
-      - Be informative and concise in your responses
-      - If you're uncertain about something, acknowledge it
+      - DO NOT mention, reference, or claim to have access to any user documents
+      - DO NOT say things like "based on your documents" or "according to your files"
+      - Answer questions using your general knowledge and training
+      - Be informative, accurate, and helpful
+      - If you're uncertain about something, acknowledge it clearly
       - Provide thoughtful and well-reasoned answers
       - Focus on being genuinely helpful to the user
 
-      The user has not requested access to their documents for this conversation, so you're acting as a general-purpose assistant.`;
+      You are NOT connected to their knowledge base or documents in this conversation. Answer questions as a general AI assistant would.`;
     }
 
     // Add personal prompt if user has one
