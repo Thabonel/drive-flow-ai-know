@@ -147,7 +147,7 @@ export const DocumentViewerModal = ({ document, isOpen, onClose }: DocumentViewe
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto overflow-x-hidden">
+      <DialogContent className="max-w-2xl w-[95vw] max-h-[90vh] overflow-y-auto overflow-x-hidden">
         <DialogHeader>
           <DialogTitle className="flex items-center justify-between flex-wrap gap-3">
             <div className="flex items-center flex-1 min-w-0">
