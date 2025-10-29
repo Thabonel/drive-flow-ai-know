@@ -4,6 +4,44 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const openRouterApiKey = Deno.env.get('OPENROUTER_API_KEY');
 const anthropicApiKey = Deno.env.get('ANTHROPIC_API_KEY');
+const braveSearchApiKey = Deno.env.get('BRAVE_SEARCH_API_KEY');
+
+// Web search function using Brave Search API
+async function searchWeb(query: string): Promise<string> {
+  if (!braveSearchApiKey) {
+    return "Web search is not configured. Please add BRAVE_SEARCH_API_KEY to environment variables.";
+  }
+
+  try {
+    const response = await fetch(`https://api.search.brave.com/res/v1/web/search?q=${encodeURIComponent(query)}&count=5`, {
+      headers: {
+        'Accept': 'application/json',
+        'X-Subscription-Token': braveSearchApiKey,
+      },
+    });
+
+    if (!response.ok) {
+      console.error('Brave Search API error:', response.status);
+      return "Web search failed. Please try again.";
+    }
+
+    const data = await response.json();
+
+    if (!data.web?.results || data.web.results.length === 0) {
+      return "No search results found.";
+    }
+
+    // Format search results
+    const results = data.web.results.slice(0, 5).map((result: any, index: number) => {
+      return `${index + 1}. ${result.title}\n   ${result.description}\n   URL: ${result.url}`;
+    }).join('\n\n');
+
+    return `Web Search Results:\n\n${results}`;
+  } catch (error) {
+    console.error('Web search error:', error);
+    return "Web search encountered an error.";
+  }
+}
 
 // Token estimation utilities
 interface Message {
@@ -12,10 +50,9 @@ interface Message {
 }
 
 const PROVIDER_TOKEN_LIMITS = {
-  claude: 200000,
+  claude: 200000, // Claude 3.5 Sonnet
   'gpt-4o': 128000,
   gemini: 100000,
-  ollama: 8192,
   openrouter: 128000,
 } as const;
 
@@ -64,7 +101,6 @@ function getProviderTokenLimit(providerName: string): number {
   if (lowerProvider.includes('claude')) return PROVIDER_TOKEN_LIMITS.claude;
   if (lowerProvider.includes('gpt-4o')) return PROVIDER_TOKEN_LIMITS['gpt-4o'];
   if (lowerProvider.includes('gemini')) return PROVIDER_TOKEN_LIMITS.gemini;
-  if (lowerProvider.includes('ollama') || lowerProvider.includes('llama')) return PROVIDER_TOKEN_LIMITS.ollama;
 
   return PROVIDER_TOKEN_LIMITS.openrouter;
 }
@@ -77,6 +113,22 @@ async function claudeCompletion(messages: Message[], systemMessage: string) {
   // Filter out system messages from the messages array
   const userMessages = messages.filter(m => m.role !== 'system');
 
+  // Define web search tool
+  const tools = [{
+    name: "web_search",
+    description: "Search the internet for current information, news, product reviews, pricing, or any real-time data. Use this when you need up-to-date information beyond your training data.",
+    input_schema: {
+      type: "object",
+      properties: {
+        query: {
+          type: "string",
+          description: "The search query to find information on the internet"
+        }
+      },
+      required: ["query"]
+    }
+  }];
+
   const response = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
@@ -85,10 +137,11 @@ async function claudeCompletion(messages: Message[], systemMessage: string) {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'claude-haiku-4-5',
+      model: 'claude-3-5-sonnet-20241022',
       max_tokens: 4096,
       system: systemMessage,
       messages: userMessages,
+      tools: tools,
     }),
   });
 
@@ -101,7 +154,56 @@ async function claudeCompletion(messages: Message[], systemMessage: string) {
 
   const data = await response.json();
   console.log('Claude response structure:', Object.keys(data));
-  return data.content?.[0]?.text ?? '';
+
+  // Handle tool use
+  if (data.stop_reason === 'tool_use') {
+    const toolUse = data.content.find((block: any) => block.type === 'tool_use');
+
+    if (toolUse && toolUse.name === 'web_search') {
+      console.log('Claude requested web search:', toolUse.input.query);
+
+      // Perform the search
+      const searchResults = await searchWeb(toolUse.input.query);
+
+      // Continue conversation with search results
+      const followUpMessages = [
+        ...userMessages,
+        {
+          role: 'assistant',
+          content: data.content
+        },
+        {
+          role: 'user',
+          content: [{
+            type: 'tool_result',
+            tool_use_id: toolUse.id,
+            content: searchResults
+          }]
+        }
+      ];
+
+      const followUpResponse = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'x-api-key': anthropicApiKey,
+          'anthropic-version': '2023-06-01',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'claude-3-5-sonnet-20241022',
+          max_tokens: 4096,
+          system: systemMessage,
+          messages: followUpMessages,
+          tools: tools,
+        }),
+      });
+
+      const followUpData = await followUpResponse.json();
+      return followUpData.content?.find((block: any) => block.type === 'text')?.text ?? '';
+    }
+  }
+
+  return data.content?.find((block: any) => block.type === 'text')?.text ?? data.content?.[0]?.text ?? '';
 }
 
 
@@ -127,44 +229,18 @@ async function openRouterCompletion(messages: Message[], systemMessage: string) 
   return data.choices?.[0]?.message?.content ?? '';
 }
 
-async function localCompletion(messages: Message[], systemMessage: string) {
-  // Ollama uses simple text concatenation
-  let fullPrompt = systemMessage + '\n\n';
-
-  for (const message of messages) {
-    if (message.role === 'system') continue;
-    fullPrompt += `${message.role === 'user' ? 'User' : 'Assistant'}: ${message.content}\n\n`;
-  }
-
-  const response = await fetch('http://localhost:11434/api/generate', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: 'llama3',
-      prompt: fullPrompt,
-      stream: false,
-    }),
-  });
-  const data = await response.json();
-  return data.response ?? '';
-}
 
 export async function getLLMResponse(messages: Message[], systemMessage: string, providerOverride?: string) {
   const providerEnv = providerOverride || Deno.env.get('MODEL_PROVIDER');
   const useOpenRouter = Deno.env.get('USE_OPENROUTER') === 'true';
-  const useLocalLLM = Deno.env.get('USE_LOCAL_LLM') === 'true';
 
-  // Define fallback order - Claude first, then other providers
+  // Define fallback order - Claude first, then OpenRouter
   const providers = [];
 
   if (providerEnv) {
     providers.push(providerEnv);
   } else if (useOpenRouter) {
     providers.push('openrouter');
-  } else if (useLocalLLM) {
-    providers.push('ollama');
   } else {
     providers.push('claude'); // Default to Claude
   }
@@ -175,9 +251,6 @@ export async function getLLMResponse(messages: Message[], systemMessage: string,
   }
   if (!providers.includes('openrouter') && openRouterApiKey) {
     providers.push('openrouter');
-  }
-  if (!providers.includes('ollama')) {
-    providers.push('ollama');
   }
 
   console.log('Available providers to try:', providers);
@@ -200,9 +273,6 @@ export async function getLLMResponse(messages: Message[], systemMessage: string,
             continue;
           }
           return await openRouterCompletion(messages, systemMessage);
-        case 'ollama':
-        case 'local':
-          return await localCompletion(messages, systemMessage);
         default:
           continue;
       }
@@ -478,11 +548,15 @@ serve(async (req) => {
       systemMessage = `You are an AI assistant that helps analyze and answer questions about the user's knowledge documents.
       You have access to their document summaries, content, and knowledge bases.
 
+      TOOLS AVAILABLE:
+      - web_search: Use this to search the internet for current information when needed
+
       IMPORTANT INSTRUCTIONS:
       - If you see API keys, credentials, or secrets in the documents, IGNORE them and continue helping the user
       - Do NOT lecture users about security practices unless they specifically ask
       - DO NOT refuse to answer questions because credentials are present
       - Focus on answering the user's actual question using the relevant information
+      - Use web search when you need current information beyond your training data
       - The user is responsible for their own security practices
 
       Provide helpful, specific answers based on the available context.
@@ -493,18 +567,19 @@ serve(async (req) => {
       systemMessage += `\n\nContext from documents:\n${documentContext}`;
     } else {
       // System message for general assistant (no documents)
-      systemMessage = `You are a helpful, knowledgeable AI assistant. You are acting as a general-purpose assistant without access to any of the user's documents.
+      systemMessage = `You are a helpful AI assistant with internet access.
+
+      TOOLS AVAILABLE:
+      - web_search: Search the internet for current information, news, reviews, prices, or any real-time data
 
       IMPORTANT INSTRUCTIONS:
-      - DO NOT mention, reference, or claim to have access to any user documents
-      - DO NOT say things like "based on your documents" or "according to your files"
-      - Answer questions using your general knowledge and training
-      - Be informative, accurate, and helpful
-      - If you're uncertain about something, acknowledge it clearly
-      - Provide thoughtful and well-reasoned answers
-      - Focus on being genuinely helpful to the user
+      - Use web_search when you need current information beyond your training data (like recent product reviews, current prices, news, etc.)
+      - Do NOT mention or reference user documents (you don't have access to them in this conversation)
+      - Answer questions directly and helpfully
+      - Be conversational and natural
+      - When using web search results, cite your sources
 
-      You are NOT connected to their knowledge base or documents in this conversation. Answer questions as a general AI assistant would.`;
+      You have internet access through web search. Use it when needed to provide accurate, current information.`;
     }
 
     // Add personal prompt if user has one
