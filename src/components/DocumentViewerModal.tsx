@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import ReactMarkdown from 'react-markdown';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,33 +18,6 @@ interface DocumentViewerModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
-
-// Utility function to clean markdown formatting from text
-const cleanMarkdown = (text: string): string => {
-  if (!text) return '';
-
-  return text
-    // Remove horizontal rules (---, ___, ***)
-    .replace(/^[\-_*]{3,}\s*$/gm, '')
-    // Remove headers (##, ###, etc.)
-    .replace(/^#{1,6}\s+/gm, '')
-    // Remove bold/italic (**, __, *, _)
-    .replace(/(\*\*|__)(.*?)\1/g, '$2')
-    .replace(/(\*|_)(.*?)\1/g, '$2')
-    // Remove inline code (`code`)
-    .replace(/`([^`]+)`/g, '$1')
-    // Remove code blocks (```code```)
-    .replace(/```[\s\S]*?```/g, '')
-    // Remove links but keep text [text](url)
-    .replace(/\[([^\]]+)\]\([^\)]+\)/g, '$1')
-    // Remove image syntax ![alt](url)
-    .replace(/!\[([^\]]*)\]\([^\)]+\)/g, '$1')
-    // Remove blockquotes (>)
-    .replace(/^>\s+/gm, '')
-    // Clean up multiple consecutive blank lines
-    .replace(/\n{3,}/g, '\n\n')
-    .trim();
-};
 
 export const DocumentViewerModal = ({ document, isOpen, onClose }: DocumentViewerModalProps) => {
   const [isEditing, setIsEditing] = useState(false);
@@ -245,8 +219,10 @@ export const DocumentViewerModal = ({ document, isOpen, onClose }: DocumentViewe
                 className="resize-none font-sans"
               />
             ) : (
-              <div className="p-4 border rounded-md bg-muted/50 min-h-[300px] whitespace-pre-wrap select-text font-sans text-base leading-relaxed break-all overflow-hidden">
-                {cleanMarkdown(formData.content) || 'No content available'}
+              <div className="p-4 border rounded-md bg-muted/50 min-h-[300px] select-text font-sans text-base leading-relaxed overflow-auto prose prose-sm dark:prose-invert max-w-none">
+                <ReactMarkdown>
+                  {formData.content || 'No content available'}
+                </ReactMarkdown>
               </div>
             )}
           </div>
