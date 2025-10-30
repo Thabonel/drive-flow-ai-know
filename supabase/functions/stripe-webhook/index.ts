@@ -107,8 +107,6 @@ Deno.serve(async (request) => {
             current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
             current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
             cancel_at_period_end: subscription.cancel_at_period_end,
-          }, {
-            onConflict: "stripe_subscription_id",
           });
 
         if (error) {
@@ -116,16 +114,21 @@ Deno.serve(async (request) => {
         }
 
         // Initialize usage tracking for new period
-        await supabase
+        const { error: usageError } = await supabase
           .from("usage_tracking")
-          .insert({
+          .upsert({
             user_id: userId,
             query_count: 0,
             period_start: new Date(subscription.current_period_start * 1000).toISOString(),
             period_end: new Date(subscription.current_period_end * 1000).toISOString(),
-          })
-          .onConflict("user_id, period_start")
-          .ignore();
+          }, {
+            onConflict: 'user_id,period_start',
+            ignoreDuplicates: true
+          });
+
+        if (usageError) {
+          console.error("Error initializing usage tracking:", usageError);
+        }
 
         break;
       }
