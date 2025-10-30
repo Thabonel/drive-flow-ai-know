@@ -83,9 +83,22 @@ Deno.serve(async (request) => {
         const userId = subscription.metadata.user_id;
         const planType = subscription.metadata.plan_type;
 
-        if (!userId) {
-          console.error("No user_id in subscription metadata");
-          break;
+        if (!userId || !planType) {
+          const errorMsg = `Missing subscription metadata - user_id: ${userId || 'null'}, plan_type: ${planType || 'null'}`;
+          console.error(errorMsg);
+          return new Response(
+            JSON.stringify({ error: errorMsg }),
+            { status: 400, headers: { 'Content-Type': 'application/json' } }
+          );
+        }
+
+        // Validate plan type
+        if (!['starter', 'pro', 'business'].includes(planType)) {
+          console.error(`Invalid plan_type: ${planType}`);
+          return new Response(
+            JSON.stringify({ error: `Invalid plan type: ${planType}` }),
+            { status: 400, headers: { 'Content-Type': 'application/json' } }
+          );
         }
 
         // Upsert subscription
@@ -111,6 +124,10 @@ Deno.serve(async (request) => {
 
         if (error) {
           console.error("Error upserting subscription:", error);
+          return new Response(
+            JSON.stringify({ error: "Failed to save subscription", details: error.message }),
+            { status: 500, headers: { 'Content-Type': 'application/json' } }
+          );
         }
 
         // Initialize usage tracking for new period
@@ -128,6 +145,8 @@ Deno.serve(async (request) => {
 
         if (usageError) {
           console.error("Error initializing usage tracking:", usageError);
+          // Don't fail webhook for usage tracking errors (non-critical)
+          // But log prominently for monitoring
         }
 
         break;
