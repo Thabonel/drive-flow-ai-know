@@ -5,7 +5,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Brain, Eye, EyeOff } from 'lucide-react';
+import { Brain, Eye, EyeOff, AlertCircle } from 'lucide-react';
+import { validatePassword, validateEmail, validateFullName, getPasswordStrength } from '@/lib/validation';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 const Auth = () => {
   const { signIn, signUp, resetPassword } = useAuth();
@@ -13,6 +15,12 @@ const Auth = () => {
   const [resetEmailSent, setResetEmailSent] = useState(false);
   const [showSignInPassword, setShowSignInPassword] = useState(false);
   const [showSignUpPassword, setShowSignUpPassword] = useState(false);
+  const [signUpPassword, setSignUpPassword] = useState('');
+  const [validationErrors, setValidationErrors] = useState<{
+    email?: string;
+    password?: string[];
+    fullName?: string;
+  }>({});
 
   const handleSignIn = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -28,13 +36,39 @@ const Auth = () => {
 
   const handleSignUp = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setIsLoading(true);
+    setValidationErrors({});
 
     const formData = new FormData(e.currentTarget);
     const email = formData.get('email') as string;
     const password = formData.get('password') as string;
     const fullName = formData.get('fullName') as string;
 
+    // Validate all inputs
+    const emailValidation = validateEmail(email);
+    const passwordValidation = validatePassword(password);
+    const nameValidation = validateFullName(fullName);
+
+    const errors: typeof validationErrors = {};
+
+    if (!emailValidation.isValid) {
+      errors.email = emailValidation.error;
+    }
+
+    if (!passwordValidation.isValid) {
+      errors.password = passwordValidation.errors;
+    }
+
+    if (!nameValidation.isValid) {
+      errors.fullName = nameValidation.error;
+    }
+
+    // If there are validation errors, show them and don't submit
+    if (Object.keys(errors).length > 0) {
+      setValidationErrors(errors);
+      return;
+    }
+
+    setIsLoading(true);
     await signUp(email, password, fullName);
     setIsLoading(false);
   };
@@ -136,7 +170,11 @@ const Auth = () => {
                       type="text"
                       placeholder="Enter your full name"
                       required
+                      className={validationErrors.fullName ? 'border-red-500' : ''}
                     />
+                    {validationErrors.fullName && (
+                      <p className="text-sm text-red-500">{validationErrors.fullName}</p>
+                    )}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="signup-email">Email</Label>
@@ -146,7 +184,11 @@ const Auth = () => {
                       type="email"
                       placeholder="Enter your email"
                       required
+                      className={validationErrors.email ? 'border-red-500' : ''}
                     />
+                    {validationErrors.email && (
+                      <p className="text-sm text-red-500">{validationErrors.email}</p>
+                    )}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="signup-password">Password</Label>
@@ -157,8 +199,9 @@ const Auth = () => {
                         type={showSignUpPassword ? "text" : "password"}
                         placeholder="Create a password"
                         required
-                        minLength={6}
-                        className="pr-10"
+                        value={signUpPassword}
+                        onChange={(e) => setSignUpPassword(e.target.value)}
+                        className={`pr-10 ${validationErrors.password ? 'border-red-500' : ''}`}
                       />
                       <button
                         type="button"
@@ -172,6 +215,44 @@ const Auth = () => {
                         )}
                       </button>
                     </div>
+
+                    {/* Password strength indicator */}
+                    {signUpPassword && (
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-muted-foreground">Password strength:</span>
+                          <span
+                            className="font-medium capitalize"
+                            style={{ color: getPasswordStrength(signUpPassword).color }}
+                          >
+                            {getPasswordStrength(signUpPassword).strength.replace('-', ' ')}
+                          </span>
+                        </div>
+                        <div className="h-1.5 w-full bg-gray-200 rounded-full overflow-hidden">
+                          <div
+                            className="h-full transition-all duration-300"
+                            style={{
+                              width: `${getPasswordStrength(signUpPassword).percentage}%`,
+                              backgroundColor: getPasswordStrength(signUpPassword).color
+                            }}
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Password validation errors */}
+                    {validationErrors.password && validationErrors.password.length > 0 && (
+                      <Alert variant="destructive" className="mt-2">
+                        <AlertCircle className="h-4 w-4" />
+                        <AlertDescription>
+                          <ul className="list-disc list-inside space-y-1 text-sm">
+                            {validationErrors.password.map((error, index) => (
+                              <li key={index}>{error}</li>
+                            ))}
+                          </ul>
+                        </AlertDescription>
+                      </Alert>
+                    )}
                   </div>
                   <Button type="submit" className="w-full" disabled={isLoading}>
                     {isLoading ? 'Creating account...' : 'Sign Up'}

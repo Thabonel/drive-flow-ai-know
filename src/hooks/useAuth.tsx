@@ -41,53 +41,79 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signUp = async (email: string, password: string, fullName: string) => {
-    const redirectUrl = `${window.location.origin}/`;
-    
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: redirectUrl,
-        data: {
-          full_name: fullName,
+    try {
+      // Use the new registration Edge Function with backend validation
+      const { data: registerData, error: registerError } = await supabase.functions.invoke('register-user', {
+        body: {
+          email,
+          password,
+          fullName
         }
-      }
-    });
-
-    if (error) {
-      toast({
-        title: "Sign Up Error",
-        description: error.message,
-        variant: "destructive",
       });
-      return { error };
-    }
 
-    // Send confirmation email via edge function
-    if (data.user && !data.session) {
-      try {
-        const { error: emailError } = await supabase.functions.invoke('send-confirmation-email', {
-          body: {
-            email,
-            fullName,
-            confirmationUrl: redirectUrl
-          }
+      // Handle validation errors from backend
+      if (registerError) {
+        toast({
+          title: "Registration Error",
+          description: registerError.message || "Failed to create account",
+          variant: "destructive",
         });
+        return { error: registerError };
+      }
 
-        if (emailError) {
-          console.error('Error sending confirmation email:', emailError);
+      // Handle specific validation errors
+      if (registerData?.validationErrors) {
+        const errorMessages: string[] = [];
+
+        if (registerData.validationErrors.email) {
+          errorMessages.push(registerData.validationErrors.email);
+        }
+
+        if (registerData.validationErrors.password) {
+          errorMessages.push(...registerData.validationErrors.password);
+        }
+
+        if (registerData.validationErrors.fullName) {
+          errorMessages.push(registerData.validationErrors.fullName);
         }
 
         toast({
-          title: "Check Your Email",
-          description: "We've sent you a confirmation email. Please check your inbox to verify your account.",
+          title: "Validation Error",
+          description: errorMessages.join('. '),
+          variant: "destructive",
         });
-      } catch (emailError) {
-        console.error('Failed to send confirmation email:', emailError);
+        return { error: { message: errorMessages.join('. ') } };
       }
-    }
 
-    return { error };
+      // Handle general errors
+      if (registerData?.error) {
+        toast({
+          title: "Registration Error",
+          description: registerData.error,
+          variant: "destructive",
+        });
+        return { error: { message: registerData.error } };
+      }
+
+      // Success
+      toast({
+        title: "Registration Successful",
+        description: registerData?.message || "Please check your email to verify your account.",
+      });
+
+      return { error: null };
+
+    } catch (error) {
+      console.error('Sign up error:', error);
+
+      toast({
+        title: "Registration Error",
+        description: error instanceof Error ? error.message : "An unexpected error occurred",
+        variant: "destructive",
+      });
+
+      return { error: error instanceof Error ? error : new Error('Registration failed') };
+    }
   };
 
   const signIn = async (email: string, password: string) => {
