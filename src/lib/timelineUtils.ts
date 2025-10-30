@@ -14,6 +14,12 @@ export interface TimelineItem {
   completed_at?: string | null;
   created_at: string;
   updated_at: string;
+  // Enhanced Timeline Manager fields
+  is_locked_time?: boolean;
+  is_flexible?: boolean;
+  parent_item_id?: string | null;
+  template_id?: string | null;
+  original_duration?: number | null;
 }
 
 export interface TimelineLayer {
@@ -25,6 +31,9 @@ export interface TimelineLayer {
   is_visible: boolean;
   created_at: string;
   updated_at: string;
+  // Enhanced Timeline Manager fields
+  is_primary_timeline?: boolean;
+  timeline_type?: 'standard' | 'magnetic';
 }
 
 export interface TimelineSettings {
@@ -44,6 +53,68 @@ export interface ParkedItem {
   original_layer_id?: string | null;
   color: string;
   parked_at: string;
+}
+
+export type TemplateCategory = 'rest' | 'personal' | 'meal' | 'health' | 'work' | 'travel' | 'social' | 'learning' | 'other';
+
+export interface TimelineTemplate {
+  id: string;
+  user_id: string | null; // null for system defaults
+  name: string;
+  description?: string | null;
+  duration_minutes: number;
+  default_start_time?: string | null; // TIME format (HH:MM:SS)
+  category: TemplateCategory;
+  color: string;
+  icon?: string | null; // Lucide icon name
+  is_locked_time: boolean;
+  is_flexible: boolean;
+  is_system_default: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export type GoalPriority = 'low' | 'medium' | 'high' | 'critical';
+export type GoalStatus = 'active' | 'completed' | 'cancelled' | 'on_hold';
+
+export interface TimelineGoal {
+  id: string;
+  user_id: string;
+  title: string;
+  description?: string | null;
+  target_date?: string | null; // DATE format
+  priority: GoalPriority;
+  status: GoalStatus;
+  category?: string | null;
+  estimated_hours?: number | null;
+  hours_completed: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TimelineGoalItem {
+  id: string;
+  goal_id: string;
+  item_id: string;
+  contribution_hours: number;
+  created_at: string;
+}
+
+export type AISessionType = 'optimize' | 'plan' | 'suggest' | 'balance' | 'compress';
+
+export interface TimelineAISession {
+  id: string;
+  user_id: string;
+  session_type: AISessionType;
+  input_prompt: string;
+  ai_response?: string | null;
+  items_created: number;
+  items_modified: number;
+  items_deleted: number;
+  success: boolean;
+  error_message?: string | null;
+  metadata?: Record<string, any> | null; // JSONB
+  created_at: string;
 }
 
 /**
