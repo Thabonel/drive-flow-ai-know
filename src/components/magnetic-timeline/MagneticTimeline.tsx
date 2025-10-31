@@ -1,6 +1,6 @@
 // Magnetic Timeline - Gap-free 24-hour continuous timeline
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useMagneticTimeline } from '@/hooks/useMagneticTimeline';
 import { MagneticTimelineItem } from '@/lib/magneticTimelineUtils';
 import { itemsToBlocks, findGaps, getMinutesFromMidnight } from '@/lib/magneticTimelineUtils';
@@ -82,11 +82,12 @@ export function MagneticTimeline() {
     });
   };
 
-  const handleKeyDown = (e: KeyboardEvent) => {
+  // Memoize keyboard handler to prevent infinite loop
+  const handleKeyDown = useCallback((e: KeyboardEvent) => {
     // Blade tool activation with 'B' key
     if (e.key === 'b' || e.key === 'B') {
       if (selectedItemId) {
-        setBladeMode(!bladeMode);
+        setBladeMode(prev => !prev);  // Use functional update to avoid stale closure
       }
     }
     // Escape to cancel
@@ -94,13 +95,13 @@ export function MagneticTimeline() {
       setBladeMode(false);
       setSelectedItemId(null);
     }
-  };
+  }, [selectedItemId]);  // Only depend on selectedItemId
 
   // Register keyboard shortcuts
   useEffect(() => {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedItemId, bladeMode]);
+  }, [handleKeyDown]);  // Depend on memoized function
 
   return (
     <div className="space-y-4">

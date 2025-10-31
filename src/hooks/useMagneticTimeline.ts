@@ -25,8 +25,23 @@ export function useMagneticTimeline() {
   const [loading, setLoading] = useState(true);
   const [hasFullCoverage, setHasFullCoverage] = useState(false);
 
+  // Initialize default timeline in database
+  const initializeDefaultTimeline = useCallback(async (defaultItems: MagneticTimelineItem[]) => {
+    if (!user) return;
+
+    try {
+      const { error } = await supabase
+        .from('magnetic_timeline_items')
+        .insert(defaultItems);
+
+      if (error) throw error;
+    } catch (error) {
+      console.error('Error initializing default timeline:', error);
+    }
+  }, [user]);
+
   // Fetch magnetic timeline items
-  const fetchItems = async () => {
+  const fetchItems = useCallback(async () => {
     if (!user) return;
 
     try {
@@ -58,22 +73,7 @@ export function useMagneticTimeline() {
     } finally {
       setLoading(false);
     }
-  };
-
-  // Initialize default timeline in database
-  const initializeDefaultTimeline = async (defaultItems: MagneticTimelineItem[]) => {
-    if (!user) return;
-
-    try {
-      const { error } = await supabase
-        .from('magnetic_timeline_items')
-        .insert(defaultItems);
-
-      if (error) throw error;
-    } catch (error) {
-      console.error('Error initializing default timeline:', error);
-    }
-  };
+  }, [user, toast, initializeDefaultTimeline]);
 
   // Add a new item and trigger reflow
   const addItem = async (
@@ -352,7 +352,7 @@ export function useMagneticTimeline() {
     if (user) {
       fetchItems();
     }
-  }, [user]);
+  }, [user, fetchItems]);
 
   return {
     items,

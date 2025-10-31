@@ -27,7 +27,7 @@ export function useTimeline() {
   const lastTickRef = useRef<number>(Date.now());
 
   // Fetch timeline items
-  const fetchItems = async () => {
+  const fetchItems = useCallback(async () => {
     if (!user) return;
 
     try {
@@ -48,10 +48,10 @@ export function useTimeline() {
         variant: 'destructive',
       });
     }
-  };
+  }, [user, toast]);
 
   // Fetch settings
-  const fetchSettings = async () => {
+  const fetchSettings = useCallback(async () => {
     if (!user) return;
 
     try {
@@ -93,10 +93,10 @@ export function useTimeline() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user, toast]);
 
   // Fetch parked items
-  const fetchParkedItems = async () => {
+  const fetchParkedItems = useCallback(async () => {
     if (!user) return;
 
     try {
@@ -111,7 +111,7 @@ export function useTimeline() {
     } catch (error) {
       console.error('Error fetching parked items:', error);
     }
-  };
+  }, [user]);
 
   // Add a new item
   const addItem = async (
@@ -415,7 +415,7 @@ export function useTimeline() {
       fetchSettings();
       fetchParkedItems();
     }
-  }, [user]);
+  }, [user, fetchItems, fetchSettings, fetchParkedItems]);
 
   return {
     items,

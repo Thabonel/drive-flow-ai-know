@@ -48,7 +48,15 @@ export type Database = {
           status?: string | null
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "admin_messages_admin_user_id_fkey"
+            columns: ["admin_user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       agentic_memories: {
         Row: {
@@ -81,7 +89,15 @@ export type Database = {
           metadata?: Json | null
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "agentic_memories_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       agents: {
         Row: {
@@ -161,6 +177,111 @@ export type Database = {
         }
         Relationships: []
       }
+      assistant_audit_log: {
+        Row: {
+          action: Database["public"]["Enums"]["audit_action_type"]
+          actor_user_id: string
+          created_at: string
+          details: Json | null
+          id: string
+          ip_address: unknown
+          resource_id: string | null
+          resource_type: string
+          target_user_id: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          action: Database["public"]["Enums"]["audit_action_type"]
+          actor_user_id: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          ip_address?: unknown
+          resource_id?: string | null
+          resource_type: string
+          target_user_id?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          action?: Database["public"]["Enums"]["audit_action_type"]
+          actor_user_id?: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          ip_address?: unknown
+          resource_id?: string | null
+          resource_type?: string
+          target_user_id?: string | null
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assistant_audit_log_actor_user_id_fkey"
+            columns: ["actor_user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assistant_audit_log_target_user_id_fkey"
+            columns: ["target_user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      assistant_relationships: {
+        Row: {
+          approved_at: string | null
+          assistant_id: string
+          created_at: string
+          executive_id: string
+          id: string
+          notes: string | null
+          permissions: Json
+          revoked_at: string | null
+          status: Database["public"]["Enums"]["relationship_status"]
+        }
+        Insert: {
+          approved_at?: string | null
+          assistant_id: string
+          created_at?: string
+          executive_id: string
+          id?: string
+          notes?: string | null
+          permissions?: Json
+          revoked_at?: string | null
+          status?: Database["public"]["Enums"]["relationship_status"]
+        }
+        Update: {
+          approved_at?: string | null
+          assistant_id?: string
+          created_at?: string
+          executive_id?: string
+          id?: string
+          notes?: string | null
+          permissions?: Json
+          revoked_at?: string | null
+          status?: Database["public"]["Enums"]["relationship_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assistant_relationships_assistant_id_fkey"
+            columns: ["assistant_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assistant_relationships_executive_id_fkey"
+            columns: ["executive_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       attachments: {
         Row: {
           created_at: string | null
@@ -218,7 +339,15 @@ export type Database = {
           status?: string | null
           user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "changelog_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       conversations: {
         Row: {
@@ -282,6 +411,13 @@ export type Database = {
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversations_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -610,7 +746,15 @@ export type Database = {
           metadata?: Json | null
           user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "documents_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       enterprise_server_audit_log: {
         Row: {
@@ -655,6 +799,13 @@ export type Database = {
             columns: ["config_id"]
             isOneToOne: false
             referencedRelation: "enterprise_server_configs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "enterprise_server_audit_log_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -717,7 +868,15 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "enterprise_server_configs_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       enterprise_servers: {
         Row: {
@@ -777,7 +936,72 @@ export type Database = {
           updated_at?: string | null
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "enterprise_servers_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      executive_daily_briefs: {
+        Row: {
+          auto_generated_insights: Json | null
+          brief_date: string
+          created_at: string
+          executive_id: string
+          id: string
+          key_points: Json | null
+          prepared_by_assistant_id: string | null
+          status: Database["public"]["Enums"]["brief_status"]
+          summary: string | null
+          updated_at: string
+          viewed_at: string | null
+        }
+        Insert: {
+          auto_generated_insights?: Json | null
+          brief_date: string
+          created_at?: string
+          executive_id: string
+          id?: string
+          key_points?: Json | null
+          prepared_by_assistant_id?: string | null
+          status?: Database["public"]["Enums"]["brief_status"]
+          summary?: string | null
+          updated_at?: string
+          viewed_at?: string | null
+        }
+        Update: {
+          auto_generated_insights?: Json | null
+          brief_date?: string
+          created_at?: string
+          executive_id?: string
+          id?: string
+          key_points?: Json | null
+          prepared_by_assistant_id?: string | null
+          status?: Database["public"]["Enums"]["brief_status"]
+          summary?: string | null
+          updated_at?: string
+          viewed_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "executive_daily_briefs_executive_id_fkey"
+            columns: ["executive_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "executive_daily_briefs_prepared_by_assistant_id_fkey"
+            columns: ["prepared_by_assistant_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       google_drive_folders: {
         Row: {
@@ -813,7 +1037,15 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "google_drive_folders_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       google_token_audit_log: {
         Row: {
@@ -915,7 +1147,15 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "knowledge_bases_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       knowledge_documents: {
         Row: {
@@ -1012,6 +1252,80 @@ export type Database = {
             columns: ["server_id"]
             isOneToOne: false
             referencedRelation: "enterprise_servers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "knowledge_documents_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      magnetic_timeline_items: {
+        Row: {
+          color: string
+          created_at: string
+          duration_minutes: number
+          id: string
+          is_flexible: boolean
+          is_locked_time: boolean
+          original_duration: number | null
+          start_time: string
+          template_id: string | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          duration_minutes: number
+          id?: string
+          is_flexible?: boolean
+          is_locked_time?: boolean
+          original_duration?: number | null
+          start_time: string
+          template_id?: string | null
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          duration_minutes?: number
+          id?: string
+          is_flexible?: boolean
+          is_locked_time?: boolean
+          original_duration?: number | null
+          start_time?: string
+          template_id?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "magnetic_timeline_items_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "template_usage_stats"
+            referencedColumns: ["template_id"]
+          },
+          {
+            foreignKeyName: "magnetic_timeline_items_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "timeline_templates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "magnetic_timeline_items_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -1130,7 +1444,15 @@ export type Database = {
           updated_at?: string | null
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "microsoft_drive_folders_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       microsoft_token_audit_log: {
         Row: {
@@ -1163,7 +1485,15 @@ export type Database = {
           user_agent?: string | null
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "microsoft_token_audit_log_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       microsoft_token_rate_limit: {
         Row: {
@@ -1190,7 +1520,15 @@ export type Database = {
           user_id?: string
           window_start?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "microsoft_token_rate_limit_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       pages: {
         Row: {
@@ -1241,7 +1579,15 @@ export type Database = {
           type?: string | null
           user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "pamrag_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -1271,7 +1617,15 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       project_memory: {
         Row: {
@@ -1415,7 +1769,15 @@ export type Database = {
           user_agent?: string | null
           user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "security_audit_log_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       subscriptions: {
         Row: {
@@ -1466,7 +1828,15 @@ export type Database = {
           updated_at?: string | null
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "subscriptions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       support_tickets: {
         Row: {
@@ -1511,7 +1881,22 @@ export type Database = {
           updated_at?: string | null
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "support_tickets_admin_id_fkey"
+            columns: ["admin_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "support_tickets_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       sync_jobs: {
         Row: {
@@ -1568,6 +1953,13 @@ export type Database = {
             referencedRelation: "enterprise_servers"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "sync_jobs_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
         ]
       }
       tasks: {
@@ -1592,7 +1984,15 @@ export type Database = {
           title?: string | null
           user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "tasks_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       team_members: {
         Row: {
@@ -1634,7 +2034,314 @@ export type Database = {
           updated_at?: string | null
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "team_members_invited_by_fkey"
+            columns: ["invited_by"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "team_members_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      timeline_ai_sessions: {
+        Row: {
+          ai_response: string | null
+          created_at: string | null
+          error_message: string | null
+          id: string
+          input_prompt: string
+          items_created: number | null
+          items_deleted: number | null
+          items_modified: number | null
+          metadata: Json | null
+          session_type: string
+          success: boolean | null
+          user_id: string
+        }
+        Insert: {
+          ai_response?: string | null
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          input_prompt: string
+          items_created?: number | null
+          items_deleted?: number | null
+          items_modified?: number | null
+          metadata?: Json | null
+          session_type: string
+          success?: boolean | null
+          user_id: string
+        }
+        Update: {
+          ai_response?: string | null
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          input_prompt?: string
+          items_created?: number | null
+          items_deleted?: number | null
+          items_modified?: number | null
+          metadata?: Json | null
+          session_type?: string
+          success?: boolean | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "timeline_ai_sessions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      timeline_documents: {
+        Row: {
+          category: string | null
+          checksum: string | null
+          created_at: string
+          document_date: string | null
+          file_size: number
+          file_type: string
+          file_url: string
+          filename: string
+          for_user_id: string
+          id: string
+          is_confidential: boolean | null
+          storage_bucket: string | null
+          storage_path: string | null
+          storage_provider: Database["public"]["Enums"]["storage_provider"]
+          tags: string[] | null
+          updated_at: string
+          upload_date: string
+          uploaded_by_user_id: string
+        }
+        Insert: {
+          category?: string | null
+          checksum?: string | null
+          created_at?: string
+          document_date?: string | null
+          file_size: number
+          file_type: string
+          file_url: string
+          filename: string
+          for_user_id: string
+          id?: string
+          is_confidential?: boolean | null
+          storage_bucket?: string | null
+          storage_path?: string | null
+          storage_provider?: Database["public"]["Enums"]["storage_provider"]
+          tags?: string[] | null
+          updated_at?: string
+          upload_date?: string
+          uploaded_by_user_id: string
+        }
+        Update: {
+          category?: string | null
+          checksum?: string | null
+          created_at?: string
+          document_date?: string | null
+          file_size?: number
+          file_type?: string
+          file_url?: string
+          filename?: string
+          for_user_id?: string
+          id?: string
+          is_confidential?: boolean | null
+          storage_bucket?: string | null
+          storage_path?: string | null
+          storage_provider?: Database["public"]["Enums"]["storage_provider"]
+          tags?: string[] | null
+          updated_at?: string
+          upload_date?: string
+          uploaded_by_user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "timeline_documents_for_user_id_fkey"
+            columns: ["for_user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "timeline_documents_uploaded_by_user_id_fkey"
+            columns: ["uploaded_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      timeline_goal_items: {
+        Row: {
+          contribution_hours: number
+          created_at: string | null
+          goal_id: string
+          id: string
+          item_id: string
+        }
+        Insert: {
+          contribution_hours: number
+          created_at?: string | null
+          goal_id: string
+          id?: string
+          item_id: string
+        }
+        Update: {
+          contribution_hours?: number
+          created_at?: string | null
+          goal_id?: string
+          id?: string
+          item_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "timeline_goal_items_goal_id_fkey"
+            columns: ["goal_id"]
+            isOneToOne: false
+            referencedRelation: "timeline_goals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "timeline_goal_items_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "timeline_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "timeline_goal_items_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "user_me_timeline_status"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      timeline_goals: {
+        Row: {
+          category: string | null
+          created_at: string | null
+          description: string | null
+          estimated_hours: number | null
+          hours_completed: number | null
+          id: string
+          priority: string | null
+          status: string | null
+          target_date: string | null
+          title: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string | null
+          description?: string | null
+          estimated_hours?: number | null
+          hours_completed?: number | null
+          id?: string
+          priority?: string | null
+          status?: string | null
+          target_date?: string | null
+          title: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string | null
+          description?: string | null
+          estimated_hours?: number | null
+          hours_completed?: number | null
+          id?: string
+          priority?: string | null
+          status?: string | null
+          target_date?: string | null
+          title?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "timeline_goals_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      timeline_item_documents: {
+        Row: {
+          added_by_user_id: string
+          attachment_type: Database["public"]["Enums"]["attachment_type"]
+          created_at: string
+          document_id: string
+          id: string
+          notes: string | null
+          sort_order: number | null
+          timeline_item_id: string
+        }
+        Insert: {
+          added_by_user_id: string
+          attachment_type?: Database["public"]["Enums"]["attachment_type"]
+          created_at?: string
+          document_id: string
+          id?: string
+          notes?: string | null
+          sort_order?: number | null
+          timeline_item_id: string
+        }
+        Update: {
+          added_by_user_id?: string
+          attachment_type?: Database["public"]["Enums"]["attachment_type"]
+          created_at?: string
+          document_id?: string
+          id?: string
+          notes?: string | null
+          sort_order?: number | null
+          timeline_item_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "timeline_item_documents_added_by_user_id_fkey"
+            columns: ["added_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "timeline_item_documents_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "timeline_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "timeline_item_documents_timeline_item_id_fkey"
+            columns: ["timeline_item_id"]
+            isOneToOne: false
+            referencedRelation: "timeline_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "timeline_item_documents_timeline_item_id_fkey"
+            columns: ["timeline_item_id"]
+            isOneToOne: false
+            referencedRelation: "user_me_timeline_status"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       timeline_items: {
         Row: {
@@ -1643,9 +2350,14 @@ export type Database = {
           created_at: string | null
           duration_minutes: number
           id: string
+          is_flexible: boolean | null
+          is_locked_time: boolean | null
           layer_id: string
+          original_duration: number | null
+          parent_item_id: string | null
           start_time: string
           status: string
+          template_id: string | null
           title: string
           updated_at: string | null
           user_id: string
@@ -1656,9 +2368,14 @@ export type Database = {
           created_at?: string | null
           duration_minutes: number
           id?: string
+          is_flexible?: boolean | null
+          is_locked_time?: boolean | null
           layer_id: string
+          original_duration?: number | null
+          parent_item_id?: string | null
           start_time: string
           status?: string
+          template_id?: string | null
           title: string
           updated_at?: string | null
           user_id: string
@@ -1669,9 +2386,14 @@ export type Database = {
           created_at?: string | null
           duration_minutes?: number
           id?: string
+          is_flexible?: boolean | null
+          is_locked_time?: boolean | null
           layer_id?: string
+          original_duration?: number | null
+          parent_item_id?: string | null
           start_time?: string
           status?: string
+          template_id?: string | null
           title?: string
           updated_at?: string | null
           user_id?: string
@@ -1684,6 +2406,41 @@ export type Database = {
             referencedRelation: "timeline_layers"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "timeline_items_parent_item_id_fkey"
+            columns: ["parent_item_id"]
+            isOneToOne: false
+            referencedRelation: "timeline_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "timeline_items_parent_item_id_fkey"
+            columns: ["parent_item_id"]
+            isOneToOne: false
+            referencedRelation: "user_me_timeline_status"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "timeline_items_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "template_usage_stats"
+            referencedColumns: ["template_id"]
+          },
+          {
+            foreignKeyName: "timeline_items_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "timeline_templates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "timeline_items_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
         ]
       }
       timeline_layers: {
@@ -1691,9 +2448,11 @@ export type Database = {
           color: string | null
           created_at: string | null
           id: string
+          is_primary_timeline: boolean | null
           is_visible: boolean | null
           name: string
           sort_order: number
+          timeline_type: string | null
           updated_at: string | null
           user_id: string
         }
@@ -1701,9 +2460,11 @@ export type Database = {
           color?: string | null
           created_at?: string | null
           id?: string
+          is_primary_timeline?: boolean | null
           is_visible?: boolean | null
           name: string
           sort_order: number
+          timeline_type?: string | null
           updated_at?: string | null
           user_id: string
         }
@@ -1711,13 +2472,23 @@ export type Database = {
           color?: string | null
           created_at?: string | null
           id?: string
+          is_primary_timeline?: boolean | null
           is_visible?: boolean | null
           name?: string
           sort_order?: number
+          timeline_type?: string | null
           updated_at?: string | null
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "timeline_layers_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       timeline_parked_items: {
         Row: {
@@ -1755,6 +2526,13 @@ export type Database = {
             referencedRelation: "timeline_layers"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "timeline_parked_items_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
         ]
       }
       timeline_settings: {
@@ -1788,7 +2566,74 @@ export type Database = {
           zoom_horizontal?: number | null
           zoom_vertical?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "timeline_settings_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      timeline_templates: {
+        Row: {
+          category: string
+          color: string
+          created_at: string | null
+          default_start_time: string | null
+          description: string | null
+          duration_minutes: number
+          icon: string | null
+          id: string
+          is_flexible: boolean | null
+          is_locked_time: boolean | null
+          is_system_default: boolean | null
+          name: string
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          category: string
+          color: string
+          created_at?: string | null
+          default_start_time?: string | null
+          description?: string | null
+          duration_minutes: number
+          icon?: string | null
+          id?: string
+          is_flexible?: boolean | null
+          is_locked_time?: boolean | null
+          is_system_default?: boolean | null
+          name: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          category?: string
+          color?: string
+          created_at?: string | null
+          default_start_time?: string | null
+          description?: string | null
+          duration_minutes?: number
+          icon?: string | null
+          id?: string
+          is_flexible?: boolean | null
+          is_locked_time?: boolean | null
+          is_system_default?: boolean | null
+          name?: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "timeline_templates_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       usage_alerts: {
         Row: {
@@ -1818,7 +2663,15 @@ export type Database = {
           threshold?: number
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "usage_alerts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       usage_tracking: {
         Row: {
@@ -1857,7 +2710,15 @@ export type Database = {
           updated_at?: string | null
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "usage_tracking_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_google_tokens: {
         Row: {
@@ -1929,28 +2790,53 @@ export type Database = {
           updated_at?: string | null
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "user_microsoft_tokens_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
           created_at: string | null
+          features_enabled: Json | null
           id: string
           role: Database["public"]["Enums"]["app_role"]
+          role_type: Database["public"]["Enums"]["user_role_type"]
+          subscription_tier: Database["public"]["Enums"]["subscription_tier"]
           user_id: string
         }
         Insert: {
           created_at?: string | null
+          features_enabled?: Json | null
           id?: string
           role: Database["public"]["Enums"]["app_role"]
+          role_type?: Database["public"]["Enums"]["user_role_type"]
+          subscription_tier?: Database["public"]["Enums"]["subscription_tier"]
           user_id: string
         }
         Update: {
           created_at?: string | null
+          features_enabled?: Json | null
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
+          role_type?: Database["public"]["Enums"]["user_role_type"]
+          subscription_tier?: Database["public"]["Enums"]["subscription_tier"]
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "user_roles_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_settings: {
         Row: {
@@ -1981,15 +2867,107 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      template_usage_stats: {
+        Row: {
+          avg_duration: number | null
+          category: string | null
+          last_used: string | null
+          template_id: string | null
+          template_name: string | null
+          usage_count: number | null
+        }
+        Relationships: []
+      }
+      timeline_templates_by_category: {
+        Row: {
+          category: string | null
+          template_count: number | null
+          templates: Json | null
+        }
+        Relationships: []
+      }
+      user_me_timeline_status: {
+        Row: {
+          color: string | null
+          duration_minutes: number | null
+          id: string | null
+          is_mine: boolean | null
+          layer_id: string | null
+          layer_name: string | null
+          start_time: string | null
+          status: string | null
+          title: string | null
+          user_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "timeline_items_layer_id_fkey"
+            columns: ["layer_id"]
+            isOneToOne: false
+            referencedRelation: "timeline_layers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "timeline_items_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_profiles: {
+        Row: {
+          email: string | null
+          id: string | null
+          raw_user_meta_data: Json | null
+        }
+        Insert: {
+          email?: string | null
+          id?: string | null
+          raw_user_meta_data?: Json | null
+        }
+        Update: {
+          email?: string | null
+          id?: string | null
+          raw_user_meta_data?: Json | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
+      calculate_goal_hours_completed: {
+        Args: { p_goal_id: string }
+        Returns: number
+      }
+      can_user_access_timeline_item: {
+        Args: { p_item_id: string; p_user_id: string }
+        Returns: boolean
+      }
+      check_assistant_permission: {
+        Args: {
+          p_assistant_id: string
+          p_executive_id: string
+          p_permission: string
+        }
+        Returns: boolean
+      }
       check_query_limit: { Args: { p_user_id: string }; Returns: Json }
       cleanup_expired_google_data: { Args: never; Returns: undefined }
       cleanup_expired_google_tokens: { Args: never; Returns: undefined }
       cleanup_old_qa_sessions:
         | { Args: { days_old?: number }; Returns: number }
         | { Args: never; Returns: undefined }
+      create_item_from_template: {
+        Args: {
+          p_custom_title?: string
+          p_layer_id: string
+          p_start_time: string
+          p_template_id: string
+          p_user_id: string
+        }
+        Returns: string
+      }
       example_function: { Args: { param1: string }; Returns: string }
       get_current_user_can_view_agent: {
         Args: { p_agent_id: string }
@@ -2077,6 +3055,10 @@ export type Database = {
           total_messages: number
         }[]
       }
+      get_user_role: {
+        Args: { p_user_id: string }
+        Returns: Database["public"]["Enums"]["user_role_type"]
+      }
       handle_new_user_v2: { Args: never; Returns: undefined }
       has_role: {
         Args: {
@@ -2086,6 +3068,17 @@ export type Database = {
         Returns: boolean
       }
       increment_query_count: { Args: { p_user_id: string }; Returns: undefined }
+      log_assistant_action: {
+        Args: {
+          p_action: Database["public"]["Enums"]["audit_action_type"]
+          p_actor_user_id: string
+          p_details?: Json
+          p_resource_id: string
+          p_resource_type: string
+          p_target_user_id: string
+        }
+        Returns: string
+      }
       log_token_access_attempt: {
         Args: {
           p_action: string
@@ -2262,9 +3255,26 @@ export type Database = {
         }
         Returns: boolean
       }
+      validate_magnetic_timeline_continuity: {
+        Args: { p_layer_id: string }
+        Returns: Json
+      }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
+      attachment_type: "briefing" | "reference" | "output" | "notes"
+      audit_action_type:
+        | "create"
+        | "update"
+        | "delete"
+        | "view"
+        | "upload"
+        | "download"
+        | "share"
+        | "grant_permission"
+        | "revoke_permission"
+        | "approve_relationship"
+        | "revoke_relationship"
       auth_method:
         | "username_password"
         | "ssh_key"
@@ -2272,6 +3282,8 @@ export type Database = {
         | "api_key"
         | "certificate"
         | "active_directory"
+      brief_status: "draft" | "ready" | "viewed"
+      relationship_status: "active" | "pending" | "revoked"
       server_protocol:
         | "smb_cifs"
         | "nfs"
@@ -2281,6 +3293,9 @@ export type Database = {
         | "s3"
         | "azure_files"
         | "azure_blob"
+      storage_provider: "supabase" | "s3"
+      subscription_tier: "starter" | "professional" | "executive"
+      user_role_type: "executive" | "assistant" | "standard"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -2409,6 +3424,20 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "moderator", "user"],
+      attachment_type: ["briefing", "reference", "output", "notes"],
+      audit_action_type: [
+        "create",
+        "update",
+        "delete",
+        "view",
+        "upload",
+        "download",
+        "share",
+        "grant_permission",
+        "revoke_permission",
+        "approve_relationship",
+        "revoke_relationship",
+      ],
       auth_method: [
         "username_password",
         "ssh_key",
@@ -2417,6 +3446,8 @@ export const Constants = {
         "certificate",
         "active_directory",
       ],
+      brief_status: ["draft", "ready", "viewed"],
+      relationship_status: ["active", "pending", "revoked"],
       server_protocol: [
         "smb_cifs",
         "nfs",
@@ -2427,6 +3458,9 @@ export const Constants = {
         "azure_files",
         "azure_blob",
       ],
+      storage_provider: ["supabase", "s3"],
+      subscription_tier: ["starter", "professional", "executive"],
+      user_role_type: ["executive", "assistant", "standard"],
     },
   },
 } as const
