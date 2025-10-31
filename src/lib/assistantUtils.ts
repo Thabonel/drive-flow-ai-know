@@ -238,6 +238,36 @@ export async function getAssistantExecutives(
 }
 
 /**
+ * Get assistant relationships based on executive or assistant ID
+ * @param executiveId - Optional executive user ID
+ * @param assistantId - Optional assistant user ID
+ * @returns Array of assistant relationships
+ */
+export async function getAssistantRelationships(
+  executiveId?: string,
+  assistantId?: string
+): Promise<AssistantRelationship[]> {
+  let query = supabase.from("assistant_relationships").select("*");
+
+  if (executiveId) {
+    query = query.eq("executive_id", executiveId);
+  }
+
+  if (assistantId) {
+    query = query.eq("assistant_id", assistantId);
+  }
+
+  const { data, error } = await query.order("created_at", { ascending: false });
+
+  if (error) {
+    console.error("Error fetching assistant relationships:", error);
+    return [];
+  }
+
+  return data || [];
+}
+
+/**
  * Update assistant permissions
  */
 export async function updateAssistantPermissions(
@@ -754,6 +784,77 @@ export async function getAssistantAuditLog(
   }
 
   return data || [];
+}
+
+// ============================================================================
+// ADDITIONAL HELPER FUNCTIONS & ALIASES
+// ============================================================================
+
+/**
+ * Update assistant relationship (permissions and notes)
+ */
+export async function updateAssistantRelationship(
+  relationshipId: string,
+  permissions?: Record<string, any>,
+  notes?: string
+): Promise<AssistantRelationship | null> {
+  const updateData: any = {};
+  if (permissions) updateData.permissions = permissions;
+  if (notes !== undefined) updateData.notes = notes;
+
+  const { data, error } = await supabase
+    .from("assistant_relationships")
+    .update(updateData)
+    .eq("id", relationshipId)
+    .select()
+    .single();
+
+  if (error) {
+    console.error("Error updating assistant relationship:", error);
+    return null;
+  }
+
+  return data;
+}
+
+/**
+ * Detach a document from a timeline item
+ */
+export async function detachDocumentFromItem(
+  timelineItemId: string,
+  documentId: string
+): Promise<boolean> {
+  const { error } = await supabase
+    .from("timeline_item_documents")
+    .delete()
+    .eq("timeline_item_id", timelineItemId)
+    .eq("document_id", documentId);
+
+  if (error) {
+    console.error("Error detaching document from item:", error);
+    return false;
+  }
+
+  return true;
+}
+
+/**
+ * Alias for getItemDocuments - get documents attached to a timeline item
+ */
+export async function getTimelineItemDocuments(timelineItemId: string) {
+  return getItemDocuments(timelineItemId);
+}
+
+/**
+ * Alias for getExecutiveBriefs - get daily briefs for a user
+ */
+export async function getDailyBriefs(
+  forUserId?: string,
+  startDate?: string,
+  endDate?: string,
+  status?: string
+) {
+  return getExecutiveBriefs(forUserId, startDate, endDate, status);
 }
 
 // ============================================================================
