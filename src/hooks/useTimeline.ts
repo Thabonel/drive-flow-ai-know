@@ -123,6 +123,25 @@ export function useTimeline() {
   ) => {
     if (!user) return;
 
+    // Validate inputs before attempting database operation
+    if (durationMinutes <= 0) {
+      toast({
+        title: 'Invalid Duration',
+        description: 'Duration must be greater than 0 minutes',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (!layerId || !title.trim()) {
+      toast({
+        title: 'Missing Required Fields',
+        description: 'Please provide both a title and select a layer',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     try {
       const { data, error } = await supabase
         .from('timeline_items')
@@ -148,10 +167,27 @@ export function useTimeline() {
 
       return data;
     } catch (error: any) {
-      console.error('Error adding item:', error);
+      console.error('Error adding item:', {
+        message: error?.message,
+        code: error?.code,
+        details: error?.details,
+        hint: error?.hint,
+        fullError: error,
+      });
+
+      // Provide helpful error messages based on error type
+      let errorMessage = 'Failed to add timeline item';
+      if (error?.code === '23503') {
+        errorMessage = 'Selected layer no longer exists. Please refresh and select a valid layer.';
+      } else if (error?.code === '23514') {
+        errorMessage = 'Invalid data provided. Check duration is positive and status is valid.';
+      } else if (error?.message) {
+        errorMessage = error.message;
+      }
+
       toast({
         title: 'Error',
-        description: `Failed to add timeline item${error?.message ? `: ${error.message}` : ''}`,
+        description: errorMessage,
         variant: 'destructive',
       });
     }
@@ -159,20 +195,52 @@ export function useTimeline() {
 
   // Update an item
   const updateItem = async (itemId: string, updates: Partial<TimelineItem>) => {
+    // Validate duration if being updated
+    if (updates.duration_minutes !== undefined && updates.duration_minutes <= 0) {
+      toast({
+        title: 'Invalid Duration',
+        description: 'Duration must be greater than 0 minutes',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Remove readonly fields that shouldn't be updated
+    const { id, user_id, created_at, ...allowedUpdates } = updates as any;
+
     try {
       const { error } = await supabase
         .from('timeline_items')
-        .update(updates)
+        .update(allowedUpdates)
         .eq('id', itemId);
 
       if (error) throw error;
 
-      setItems(items.map(item => item.id === itemId ? { ...item, ...updates } : item));
-    } catch (error) {
-      console.error('Error updating item:', error);
+      setItems(items.map(item => item.id === itemId ? { ...item, ...allowedUpdates } : item));
+    } catch (error: any) {
+      console.error('Error updating item:', {
+        message: error?.message,
+        code: error?.code,
+        details: error?.details,
+        hint: error?.hint,
+        fullError: error,
+      });
+
+      // Provide helpful error messages based on error type
+      let errorMessage = 'Failed to update timeline item';
+      if (error?.code === '23503') {
+        errorMessage = 'Referenced layer no longer exists. Please select a valid layer.';
+      } else if (error?.code === '23514') {
+        errorMessage = 'Invalid data provided. Check duration is positive and status is valid.';
+      } else if (error?.code === '42501') {
+        errorMessage = 'Permission denied. You can only update your own items.';
+      } else if (error?.message) {
+        errorMessage = error.message;
+      }
+
       toast({
         title: 'Error',
-        description: 'Failed to update timeline item',
+        description: errorMessage,
         variant: 'destructive',
       });
     }
