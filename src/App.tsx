@@ -9,6 +9,7 @@ import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { useKeyboardShortcuts, globalShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { AppSidebar } from "@/components/AppSidebar";
+import { TierGuard } from "@/components/TierGuard";
 import Header from "./layout/Header";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
@@ -189,17 +190,23 @@ const App = () => (
             } />
             <Route path="/assistants" element={
               <ProtectedRoute>
-                <Assistants />
+                <TierGuard requiredFeature="assistant">
+                  <Assistants />
+                </TierGuard>
               </ProtectedRoute>
             } />
             <Route path="/briefs" element={
               <ProtectedRoute>
-                <Briefs />
+                <TierGuard requiredFeature="assistant">
+                  <Briefs />
+                </TierGuard>
               </ProtectedRoute>
             } />
             <Route path="/audit" element={
               <ProtectedRoute>
-                <AuditLog />
+                <TierGuard requiredFeature="assistant">
+                  <AuditLog />
+                </TierGuard>
               </ProtectedRoute>
             } />
             <Route path="/terms" element={<Terms />} />

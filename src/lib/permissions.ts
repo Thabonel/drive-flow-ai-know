@@ -46,6 +46,24 @@ export function useIsAssistant() {
 }
 
 /**
+ * Hook to check if user has executive tier subscription
+ */
+export function useHasExecutiveTier() {
+  const { data: userRole } = useUserRole();
+  return userRole?.subscription_tier === "executive";
+}
+
+/**
+ * Hook to check if user has access to assistant features
+ * Only executive tier has access to assistant features
+ */
+export function useHasAssistantFeatures() {
+  const { data: userRole } = useUserRole();
+  return userRole?.subscription_tier === "executive" ||
+         userRole?.features_enabled?.max_assistants > 0;
+}
+
+/**
  * Hook to get all assistant relationships where the current user is the executive
  */
 export function useMyAssistants() {

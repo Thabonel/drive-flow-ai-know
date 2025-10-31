@@ -23,7 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { useMyExecutives, usePendingApprovals } from '@/lib/permissions';
+import { useMyExecutives, usePendingApprovals, useHasAssistantFeatures } from '@/lib/permissions';
 import { useState, useEffect } from 'react';
 
 const navigationItems = [
@@ -44,6 +44,9 @@ export function AppSidebar() {
   const location = useLocation();
   const currentPath = location.pathname;
   const collapsed = state === 'collapsed';
+
+  // Check if user has access to assistant features
+  const hasAssistantFeatures = useHasAssistantFeatures();
 
   // Fetch executives if user is an assistant
   const { data: myExecutives } = useMyExecutives();
@@ -74,6 +77,16 @@ export function AppSidebar() {
   const getNavCls = ({ isActive }: { isActive: boolean }) =>
     isActive ? 'bg-sidebar-accent text-sidebar-accent-foreground' : 'hover:bg-sidebar-accent/50';
 
+  // Filter navigation items based on subscription tier
+  const filteredNavigationItems = navigationItems.filter(item => {
+    // Hide assistant-only features for non-executive tiers
+    const assistantOnlyPages = ['/assistants', '/briefs', '/audit'];
+    if (assistantOnlyPages.includes(item.url) && !hasAssistantFeatures) {
+      return false;
+    }
+    return true;
+  });
+
   return (
     <Sidebar className={collapsed ? 'w-14' : 'w-60'} collapsible="icon">
       <SidebarHeader className="border-b border-sidebar-border p-4 space-y-3">
@@ -86,8 +99,8 @@ export function AppSidebar() {
           )}
         </div>
 
-        {/* Executive Selector for Assistants */}
-        {!collapsed && myExecutives && myExecutives.length > 0 && (
+        {/* Executive Selector for Assistants - Only show for executive tier */}
+        {!collapsed && hasAssistantFeatures && myExecutives && myExecutives.length > 0 && (
           <div className="space-y-1.5">
             <label className="text-xs text-muted-foreground">Acting as:</label>
             <Select value={activeExecutiveId || 'none'} onValueChange={handleExecutiveChange}>
@@ -112,7 +125,7 @@ export function AppSidebar() {
           <SidebarGroupLabel>Navigation</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {navigationItems.map((item) => (
+              {filteredNavigationItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
                     <NavLink to={item.url} end className={getNavCls}>
@@ -120,7 +133,7 @@ export function AppSidebar() {
                       {!collapsed && (
                         <span className="flex items-center justify-between flex-1">
                           <span>{item.title}</span>
-                          {item.title === 'Assistants' && pendingApprovals && pendingApprovals.length > 0 && (
+                          {item.title === 'Assistants' && hasAssistantFeatures && pendingApprovals && pendingApprovals.length > 0 && (
                             <Badge variant="destructive" className="ml-auto h-5 min-w-5 rounded-full p-0 flex items-center justify-center text-xs">
                               {pendingApprovals.length}
                             </Badge>

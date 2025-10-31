@@ -20,7 +20,7 @@ import { PersonalPrompt } from "@/components/PersonalPrompt";
 import { supabase } from "@/integrations/supabase/client";
 import { useTheme } from "@/components/ThemeProvider";
 import { useAssistantRelationships } from "@/hooks/useAssistantData";
-import { useUserRole, usePendingApprovals } from "@/lib/permissions";
+import { useUserRole, usePendingApprovals, useHasAssistantFeatures } from "@/lib/permissions";
 import { useNavigate } from "react-router-dom";
 import {
   User,
@@ -52,6 +52,7 @@ const Settings = () => {
 
   // Fetch assistant data
   const { data: userRole } = useUserRole();
+  const hasAssistantFeatures = useHasAssistantFeatures();
   const { data: myAssistants } = useAssistantRelationships(true, false);
   const { data: myExecutives } = useAssistantRelationships(false, true);
   const { data: pendingApprovals } = usePendingApprovals();
@@ -147,20 +148,22 @@ const Settings = () => {
             </div>
 
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-              <TabsList className="grid w-full grid-cols-6">
+              <TabsList className={`grid w-full ${hasAssistantFeatures ? 'grid-cols-6' : 'grid-cols-5'}`}>
                 <TabsTrigger value="general">General</TabsTrigger>
                 <TabsTrigger value="billing">Billing</TabsTrigger>
                 <TabsTrigger value="ai">AI & Data</TabsTrigger>
-                <TabsTrigger value="team">
-                  <div className="flex items-center gap-1">
-                    Team
-                    {pendingApprovals && pendingApprovals.length > 0 && (
-                      <Badge variant="destructive" className="ml-1 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs">
-                        {pendingApprovals.length}
-                      </Badge>
-                    )}
-                  </div>
-                </TabsTrigger>
+                {hasAssistantFeatures && (
+                  <TabsTrigger value="team">
+                    <div className="flex items-center gap-1">
+                      Team
+                      {pendingApprovals && pendingApprovals.length > 0 && (
+                        <Badge variant="destructive" className="ml-1 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs">
+                          {pendingApprovals.length}
+                        </Badge>
+                      )}
+                    </div>
+                  </TabsTrigger>
+                )}
                 <TabsTrigger value="security">Security</TabsTrigger>
                 <TabsTrigger value="enterprise">Enterprise</TabsTrigger>
               </TabsList>
