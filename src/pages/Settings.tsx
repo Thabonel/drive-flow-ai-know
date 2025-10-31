@@ -19,6 +19,9 @@ import Billing from "./Settings/Billing";
 import { PersonalPrompt } from "@/components/PersonalPrompt";
 import { supabase } from "@/integrations/supabase/client";
 import { useTheme } from "@/components/ThemeProvider";
+import { useAssistantRelationships } from "@/hooks/useAssistantData";
+import { useUserRole, usePendingApprovals } from "@/lib/permissions";
+import { useNavigate } from "react-router-dom";
 import {
   User,
   Bell,
@@ -31,18 +34,27 @@ import {
   Server,
   CreditCard,
   Palette,
-  Check
+  Check,
+  Users,
+  ExternalLink
 } from "lucide-react";
 
 const Settings = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const location = useLocation();
+  const navigate = useNavigate();
   const [notifications, setNotifications] = useState(true);
   const [autoSync, setAutoSync] = useState(false);
   const [activeTab, setActiveTab] = useState("general");
   const { offlineMode, setOfflineMode } = useUserSettings();
   const { theme, setTheme } = useTheme();
+
+  // Fetch assistant data
+  const { data: userRole } = useUserRole();
+  const { data: myAssistants } = useAssistantRelationships(true, false);
+  const { data: myExecutives } = useAssistantRelationships(false, true);
+  const { data: pendingApprovals } = usePendingApprovals();
 
   useEffect(() => {
     if (location.hash === "#model-provider") {
@@ -135,10 +147,20 @@ const Settings = () => {
             </div>
 
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-              <TabsList className="grid w-full grid-cols-5">
+              <TabsList className="grid w-full grid-cols-6">
                 <TabsTrigger value="general">General</TabsTrigger>
                 <TabsTrigger value="billing">Billing</TabsTrigger>
                 <TabsTrigger value="ai">AI & Data</TabsTrigger>
+                <TabsTrigger value="team">
+                  <div className="flex items-center gap-1">
+                    Team
+                    {pendingApprovals && pendingApprovals.length > 0 && (
+                      <Badge variant="destructive" className="ml-1 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs">
+                        {pendingApprovals.length}
+                      </Badge>
+                    )}
+                  </div>
+                </TabsTrigger>
                 <TabsTrigger value="security">Security</TabsTrigger>
                 <TabsTrigger value="enterprise">Enterprise</TabsTrigger>
               </TabsList>
@@ -265,6 +287,213 @@ const Settings = () => {
 
               <TabsContent value="ai" className="space-y-6 w-full">
                 <PersonalPrompt />
+              </TabsContent>
+
+              <TabsContent value="team" className="space-y-6 w-full">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Users className="h-5 w-5" />
+                      Team & Assistants
+                    </CardTitle>
+                    <CardDescription>
+                      Manage assistant relationships and permissions
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {userRole?.role_type === "executive" && (
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <h3 className="font-semibold">My Assistants</h3>
+                            <p className="text-sm text-muted-foreground">
+                              {myAssistants?.length || 0} assistant{myAssistants?.length !== 1 ? 's' : ''} configured
+                            </p>
+                          </div>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => navigate('/assistants')}
+                          >
+                            <ExternalLink className="h-4 w-4 mr-2" />
+                            Manage All
+                          </Button>
+                        </div>
+
+                        {pendingApprovals && pendingApprovals.length > 0 && (
+                          <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4">
+                            <p className="text-sm font-medium text-yellow-600 dark:text-yellow-500">
+                              {pendingApprovals.length} pending approval{pendingApprovals.length !== 1 ? 's' : ''}
+                            </p>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              Review new assistant relationship requests
+                            </p>
+                          </div>
+                        )}
+
+                        {myAssistants && myAssistants.length > 0 ? (
+                          <div className="border rounded-lg overflow-hidden">
+                            <table className="w-full">
+                              <thead className="bg-muted/50">
+                                <tr>
+                                  <th className="text-left p-3 text-sm font-medium">Assistant</th>
+                                  <th className="text-left p-3 text-sm font-medium">Status</th>
+                                  <th className="text-left p-3 text-sm font-medium">Permissions</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y">
+                                {myAssistants.slice(0, 5).map((rel: any) => (
+                                  <tr key={rel.id} className="hover:bg-muted/30">
+                                    <td className="p-3">
+                                      <div>
+                                        <p className="font-medium text-sm">
+                                          {rel.assistant?.raw_user_meta_data?.full_name || 'Unknown'}
+                                        </p>
+                                        <p className="text-xs text-muted-foreground">
+                                          {rel.assistant?.email}
+                                        </p>
+                                      </div>
+                                    </td>
+                                    <td className="p-3">
+                                      <Badge variant={rel.status === 'active' ? 'default' : rel.status === 'pending' ? 'secondary' : 'outline'}>
+                                        {rel.status}
+                                      </Badge>
+                                    </td>
+                                    <td className="p-3">
+                                      <div className="flex flex-wrap gap-1">
+                                        {rel.permissions?.manage_timeline && (
+                                          <Badge variant="outline" className="text-xs">Timeline</Badge>
+                                        )}
+                                        {rel.permissions?.upload_documents && (
+                                          <Badge variant="outline" className="text-xs">Docs</Badge>
+                                        )}
+                                        {rel.permissions?.view_confidential && (
+                                          <Badge variant="outline" className="text-xs">Confidential</Badge>
+                                        )}
+                                      </div>
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        ) : (
+                          <div className="text-center py-8 border rounded-lg border-dashed">
+                            <Users className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
+                            <p className="text-sm text-muted-foreground">
+                              No assistants configured yet
+                            </p>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="mt-3"
+                              onClick={() => navigate('/assistants')}
+                            >
+                              Invite Assistant
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {userRole?.role_type === "assistant" && (
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <h3 className="font-semibold">My Executives</h3>
+                            <p className="text-sm text-muted-foreground">
+                              {myExecutives?.length || 0} executive{myExecutives?.length !== 1 ? 's' : ''} assigned
+                            </p>
+                          </div>
+                        </div>
+
+                        {myExecutives && myExecutives.length > 0 ? (
+                          <div className="border rounded-lg overflow-hidden">
+                            <table className="w-full">
+                              <thead className="bg-muted/50">
+                                <tr>
+                                  <th className="text-left p-3 text-sm font-medium">Executive</th>
+                                  <th className="text-left p-3 text-sm font-medium">Your Permissions</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y">
+                                {myExecutives.map((rel: any) => (
+                                  <tr key={rel.id} className="hover:bg-muted/30">
+                                    <td className="p-3">
+                                      <div>
+                                        <p className="font-medium text-sm">
+                                          {rel.executive?.raw_user_meta_data?.full_name || 'Unknown'}
+                                        </p>
+                                        <p className="text-xs text-muted-foreground">
+                                          {rel.executive?.email}
+                                        </p>
+                                      </div>
+                                    </td>
+                                    <td className="p-3">
+                                      <div className="flex flex-wrap gap-1">
+                                        {rel.permissions?.manage_timeline && (
+                                          <Badge variant="outline" className="text-xs">Timeline</Badge>
+                                        )}
+                                        {rel.permissions?.upload_documents && (
+                                          <Badge variant="outline" className="text-xs">Docs</Badge>
+                                        )}
+                                        {rel.permissions?.create_items && (
+                                          <Badge variant="outline" className="text-xs">Create</Badge>
+                                        )}
+                                        {rel.permissions?.edit_items && (
+                                          <Badge variant="outline" className="text-xs">Edit</Badge>
+                                        )}
+                                        {rel.permissions?.delete_items && (
+                                          <Badge variant="outline" className="text-xs">Delete</Badge>
+                                        )}
+                                        {rel.permissions?.view_confidential && (
+                                          <Badge variant="outline" className="text-xs">Confidential</Badge>
+                                        )}
+                                      </div>
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        ) : (
+                          <div className="text-center py-8 border rounded-lg border-dashed">
+                            <Users className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
+                            <p className="text-sm text-muted-foreground">
+                              Not assigned to any executives yet
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {userRole?.role_type === "standard" && (
+                      <div className="text-center py-8">
+                        <Users className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
+                        <p className="text-sm text-muted-foreground">
+                          Assistant features are only available for Executive and Assistant roles
+                        </p>
+                      </div>
+                    )}
+
+                    <div className="pt-4 border-t">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-medium">Subscription Tier</p>
+                          <p className="text-xs text-muted-foreground">
+                            {userRole?.subscription_tier || 'starter'}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium">Max Assistants</p>
+                          <p className="text-xs text-muted-foreground">
+                            {userRole?.features_enabled?.max_assistants || 0}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
               </TabsContent>
 
               <TabsContent value="security" className="space-y-6 w-full">

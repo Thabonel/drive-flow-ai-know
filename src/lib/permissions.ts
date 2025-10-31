@@ -1,0 +1,253 @@
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import type { UserRoleType, AssistantRelationship } from "./timelineUtils";
+
+/**
+ * Hook to get the current user's role from the user_roles table
+ */
+export function useUserRole() {
+  const { user } = useAuth();
+
+  return useQuery({
+    queryKey: ["user-role", user?.id],
+    enabled: !!user?.id,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("user_roles")
+        .select("*")
+        .eq("user_id", user!.id)
+        .single();
+
+      if (error) {
+        console.error("Error fetching user role:", error);
+        return null;
+      }
+
+      return data;
+    },
+  });
+}
+
+/**
+ * Hook to check if the current user is an executive
+ */
+export function useIsExecutive() {
+  const { data: userRole } = useUserRole();
+  return userRole?.role_type === "executive";
+}
+
+/**
+ * Hook to check if the current user is an assistant
+ */
+export function useIsAssistant() {
+  const { data: userRole } = useUserRole();
+  return userRole?.role_type === "assistant";
+}
+
+/**
+ * Hook to get all assistant relationships where the current user is the executive
+ */
+export function useMyAssistants() {
+  const { user } = useAuth();
+
+  return useQuery({
+    queryKey: ["my-assistants", user?.id],
+    enabled: !!user?.id,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("assistant_relationships")
+        .select(`
+          *,
+          assistant:auth.users!assistant_relationships_assistant_id_fkey(id, email, raw_user_meta_data)
+        `)
+        .eq("executive_id", user!.id)
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        console.error("Error fetching assistants:", error);
+        return [];
+      }
+
+      return data;
+    },
+  });
+}
+
+/**
+ * Hook to get all executive relationships where the current user is the assistant
+ */
+export function useMyExecutives() {
+  const { user } = useAuth();
+
+  return useQuery({
+    queryKey: ["my-executives", user?.id],
+    enabled: !!user?.id,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("assistant_relationships")
+        .select(`
+          *,
+          executive:auth.users!assistant_relationships_executive_id_fkey(id, email, raw_user_meta_data)
+        `)
+        .eq("assistant_id", user!.id)
+        .eq("status", "active")
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        console.error("Error fetching executives:", error);
+        return [];
+      }
+
+      return data;
+    },
+  });
+}
+
+/**
+ * Hook to check if the current user is acting as an assistant
+ * Returns the active executive context if acting on behalf of someone
+ */
+export function useIsActingAsAssistant() {
+  const { data: executives } = useMyExecutives();
+  const activeExecutiveId = localStorage.getItem("active-executive-id");
+
+  if (!executives || executives.length === 0) {
+    return {
+      isActingAsAssistant: false,
+      activeExecutive: null,
+      activeRelationship: null,
+    };
+  }
+
+  const activeRelationship = activeExecutiveId
+    ? executives.find((rel) => rel.executive_id === activeExecutiveId)
+    : null;
+
+  return {
+    isActingAsAssistant: !!activeRelationship,
+    activeExecutive: activeRelationship
+      ? (activeRelationship as any).executive
+      : null,
+    activeRelationship: activeRelationship || null,
+  };
+}
+
+/**
+ * Hook to check if the current user can perform a specific action
+ * @param permission - Permission key (e.g., 'manage_timeline', 'upload_documents')
+ * @param executiveId - Optional: check permission for specific executive (for assistants)
+ */
+export function useCanPerformAction(
+  permission: keyof AssistantRelationship["permissions"],
+  executiveId?: string
+) {
+  const { user } = useAuth();
+  const { data: userRole } = useUserRole();
+  const { isActingAsAssistant, activeRelationship } = useIsActingAsAssistant();
+
+  // Executives can always perform actions on their own data
+  if (userRole?.role_type === "executive" && !executiveId) {
+    return true;
+  }
+
+  // If executive is viewing someone else's data, they can't perform actions
+  if (userRole?.role_type === "executive" && executiveId && executiveId !== user?.id) {
+    return false;
+  }
+
+  // Assistants need to check their permissions
+  if (isActingAsAssistant && activeRelationship) {
+    const permissions = activeRelationship.permissions as AssistantRelationship["permissions"];
+    return permissions[permission] === true;
+  }
+
+  // Default: no permission
+  return false;
+}
+
+/**
+ * Hook to check if the current user can view confidential documents
+ */
+export function useCanViewConfidential(executiveId?: string) {
+  return useCanPerformAction("view_confidential", executiveId);
+}
+
+/**
+ * Hook to check if the current user can manage timeline items
+ */
+export function useCanManageTimeline(executiveId?: string) {
+  return useCanPerformAction("manage_timeline", executiveId);
+}
+
+/**
+ * Hook to check if the current user can upload documents
+ */
+export function useCanUploadDocuments(executiveId?: string) {
+  return useCanPerformAction("upload_documents", executiveId);
+}
+
+/**
+ * Hook to check if the current user can create timeline items
+ */
+export function useCanCreateItems(executiveId?: string) {
+  return useCanPerformAction("create_items", executiveId);
+}
+
+/**
+ * Hook to check if the current user can edit timeline items
+ */
+export function useCanEditItems(executiveId?: string) {
+  return useCanPerformAction("edit_items", executiveId);
+}
+
+/**
+ * Hook to check if the current user can delete timeline items
+ */
+export function useCanDeleteItems(executiveId?: string) {
+  return useCanPerformAction("delete_items", executiveId);
+}
+
+/**
+ * Helper to get the effective user ID (executive ID if acting as assistant, otherwise current user)
+ */
+export function useEffectiveUserId() {
+  const { user } = useAuth();
+  const { isActingAsAssistant, activeRelationship } = useIsActingAsAssistant();
+
+  if (isActingAsAssistant && activeRelationship) {
+    return activeRelationship.executive_id;
+  }
+
+  return user?.id || null;
+}
+
+/**
+ * Hook to get pending assistant relationship approvals (for executives)
+ */
+export function usePendingApprovals() {
+  const { user } = useAuth();
+
+  return useQuery({
+    queryKey: ["pending-approvals", user?.id],
+    enabled: !!user?.id,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("assistant_relationships")
+        .select(`
+          *,
+          assistant:auth.users!assistant_relationships_assistant_id_fkey(id, email, raw_user_meta_data)
+        `)
+        .eq("executive_id", user!.id)
+        .eq("status", "pending")
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        console.error("Error fetching pending approvals:", error);
+        return [];
+      }
+
+      return data;
+    },
+  });
+}
