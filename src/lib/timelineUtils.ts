@@ -117,6 +117,140 @@ export interface TimelineAISession {
   created_at: string;
 }
 
+// ============================================================================
+// EXECUTIVE-ASSISTANT SYSTEM TYPES
+// ============================================================================
+
+export type UserRoleType = 'executive' | 'assistant' | 'standard';
+export type SubscriptionTier = 'starter' | 'professional' | 'executive';
+export type RelationshipStatus = 'active' | 'pending' | 'revoked';
+export type AttachmentType = 'briefing' | 'reference' | 'output' | 'notes';
+export type BriefStatus = 'draft' | 'ready' | 'viewed';
+export type StorageProvider = 'supabase' | 's3';
+export type AuditActionType =
+  | 'create' | 'update' | 'delete' | 'view'
+  | 'upload' | 'download' | 'share'
+  | 'grant_permission' | 'revoke_permission'
+  | 'approve_relationship' | 'revoke_relationship';
+
+export interface UserRole {
+  id: string;
+  user_id: string;
+  role_type: UserRoleType;
+  subscription_tier: SubscriptionTier;
+  features_enabled: {
+    ai_assistant?: boolean;
+    timeline_goals?: boolean;
+    max_assistants?: number;
+    storage_gb?: number;
+    max_documents?: number;
+    daily_briefs?: boolean;
+    [key: string]: any;
+  };
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AssistantRelationship {
+  id: string;
+  executive_id: string;
+  assistant_id: string;
+  permissions: {
+    manage_timeline?: boolean;
+    upload_documents?: boolean;
+    create_items?: boolean;
+    edit_items?: boolean;
+    delete_items?: boolean;
+    view_confidential?: boolean;
+    manage_goals?: boolean;
+    create_briefs?: boolean;
+    view_only_layers?: string[]; // UUID[]
+    [key: string]: any;
+  };
+  status: RelationshipStatus;
+  created_at: string;
+  approved_at?: string | null;
+  revoked_at?: string | null;
+  notes?: string | null;
+}
+
+export interface TimelineDocument {
+  id: string;
+  uploaded_by_user_id: string;
+  for_user_id: string;
+  filename: string;
+  file_url: string;
+  file_size: number; // bytes
+  file_type: string; // MIME type
+  upload_date: string;
+  document_date?: string | null; // DATE format
+  tags: string[];
+  category?: string | null;
+  is_confidential: boolean;
+  storage_provider: StorageProvider;
+  storage_bucket?: string | null;
+  storage_path?: string | null;
+  checksum?: string | null; // SHA-256
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TimelineItemDocument {
+  id: string;
+  timeline_item_id: string;
+  document_id: string;
+  attachment_type: AttachmentType;
+  sort_order: number;
+  added_by_user_id: string;
+  notes?: string | null;
+  created_at: string;
+}
+
+export interface ExecutiveDailyBrief {
+  id: string;
+  executive_id: string;
+  prepared_by_assistant_id?: string | null;
+  brief_date: string; // DATE format
+  status: BriefStatus;
+  summary?: string | null;
+  key_points: Array<{
+    title: string;
+    priority?: 'low' | 'medium' | 'high';
+    notes?: string;
+    [key: string]: any;
+  }>;
+  auto_generated_insights: {
+    schedule_conflicts?: any[];
+    suggested_priorities?: any[];
+    energy_forecast?: Record<string, any>;
+    [key: string]: any;
+  };
+  created_at: string;
+  updated_at: string;
+  viewed_at?: string | null;
+}
+
+export interface AssistantAuditLog {
+  id: string;
+  actor_user_id: string;
+  target_user_id?: string | null;
+  action: AuditActionType;
+  resource_type: string; // 'timeline_item', 'document', 'goal', etc.
+  resource_id?: string | null;
+  details: {
+    changes?: {
+      before?: Record<string, any>;
+      after?: Record<string, any>;
+    };
+    reason?: string;
+    metadata?: Record<string, any>;
+    [key: string]: any;
+  };
+  ip_address?: string | null;
+  user_agent?: string | null;
+  created_at: string;
+}
+
 /**
  * Calculate the X position of an item on the timeline
  * @param startTime - ISO timestamp of when the item starts
