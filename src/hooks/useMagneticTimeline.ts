@@ -132,6 +132,17 @@ export function useMagneticTimeline() {
         template_id: finalNew.template_id ?? null,
       };
 
+      // Validate payload before insert
+      if (!insertPayload.duration_minutes || insertPayload.duration_minutes <= 0) {
+        throw new Error(`Invalid duration: ${insertPayload.duration_minutes} (must be > 0)`);
+      }
+      if (!insertPayload.start_time || isNaN(new Date(insertPayload.start_time).getTime())) {
+        throw new Error(`Invalid start_time: ${insertPayload.start_time}`);
+      }
+
+      // Log payload for debugging
+      console.log('[Magnetic Timeline] Inserting item:', JSON.stringify(insertPayload, null, 2));
+
       const { data, error } = await supabase
         .from('magnetic_timeline_items')
         .insert([insertPayload])
@@ -167,11 +178,39 @@ export function useMagneticTimeline() {
       });
 
       return data;
-    } catch (error) {
-      console.error('Error adding item:', error);
+    } catch (error: any) {
+      // Detailed error logging - use multiple methods to bypass console interception
+      console.log('=== ERROR ADDING MAGNETIC TIMELINE ITEM ===');
+      console.log('Error JSON:', JSON.stringify({
+        message: error?.message,
+        code: error?.code,
+        details: error?.details,
+        hint: error?.hint,
+        statusCode: error?.statusCode,
+      }, null, 2));
+      console.error('Error object:', {
+        message: error?.message,
+        code: error?.code,
+        details: error?.details,
+        hint: error?.hint,
+        fullError: error,
+      });
+
+      // Provide helpful error messages based on error type
+      let errorMessage = 'Failed to add item to magnetic timeline';
+      if (error?.code === '23503') {
+        errorMessage = 'Database constraint violation: Referenced item no longer exists.';
+      } else if (error?.code === '23514') {
+        errorMessage = 'Invalid data provided. Check that duration is positive and all required fields are valid.';
+      } else if (error?.code === '42501') {
+        errorMessage = 'Permission denied. Please check your authentication.';
+      } else if (error?.message) {
+        errorMessage = error.message;
+      }
+
       toast({
         title: 'Error',
-        description: 'Failed to add item to magnetic timeline',
+        description: errorMessage,
         variant: 'destructive',
       });
     }
@@ -344,11 +383,34 @@ export function useMagneticTimeline() {
         title: 'Item updated',
         description: 'Changes saved',
       });
-    } catch (error) {
-      console.error('Error updating item:', error);
+    } catch (error: any) {
+      // Detailed error logging
+      console.log('=== ERROR UPDATING MAGNETIC TIMELINE ITEM ===');
+      console.log('Error JSON:', JSON.stringify({
+        message: error?.message,
+        code: error?.code,
+        details: error?.details,
+        hint: error?.hint,
+      }, null, 2));
+      console.error('Error object:', {
+        message: error?.message,
+        code: error?.code,
+        details: error?.details,
+        hint: error?.hint,
+      });
+
+      let errorMessage = 'Failed to update item';
+      if (error?.code === '23503') {
+        errorMessage = 'Referenced item no longer exists.';
+      } else if (error?.code === '23514') {
+        errorMessage = 'Invalid data provided. Check that all values are valid.';
+      } else if (error?.message) {
+        errorMessage = error.message;
+      }
+
       toast({
         title: 'Error',
-        description: 'Failed to update item',
+        description: errorMessage,
         variant: 'destructive',
       });
     }
