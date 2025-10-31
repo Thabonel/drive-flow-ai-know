@@ -28,6 +28,26 @@ export function MagneticTimeline() {
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const [showToolbox, setShowToolbox] = useState(false);
   const [bladeMode, setBladeMode] = useState(false);
+  // Memoize keyboard handler to prevent infinite loop
+  const handleKeyDown = useCallback((e: KeyboardEvent) => {
+    // Blade tool activation with 'B' key
+    if (e.key === 'b' || e.key === 'B') {
+      if (selectedItemId) {
+        setBladeMode(prev => !prev);  // Use functional update to avoid stale closure
+      }
+    }
+    // Escape to cancel
+    if (e.key === 'Escape') {
+      setBladeMode(false);
+      setSelectedItemId(null);
+    }
+  }, [selectedItemId]);  // Only depend on selectedItemId
+
+  // Register keyboard shortcuts
+  useEffect(() => {
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handleKeyDown]);  // Depend on memoized function
 
   if (loading) {
     return (
@@ -82,27 +102,6 @@ export function MagneticTimeline() {
       is_flexible: !selectedItem.is_flexible,
     });
   };
-
-  // Memoize keyboard handler to prevent infinite loop
-  const handleKeyDown = useCallback((e: KeyboardEvent) => {
-    // Blade tool activation with 'B' key
-    if (e.key === 'b' || e.key === 'B') {
-      if (selectedItemId) {
-        setBladeMode(prev => !prev);  // Use functional update to avoid stale closure
-      }
-    }
-    // Escape to cancel
-    if (e.key === 'Escape') {
-      setBladeMode(false);
-      setSelectedItemId(null);
-    }
-  }, [selectedItemId]);  // Only depend on selectedItemId
-
-  // Register keyboard shortcuts
-  useEffect(() => {
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleKeyDown]);  // Depend on memoized function
 
   return (
     <div className="space-y-4">
