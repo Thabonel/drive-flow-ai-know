@@ -10,7 +10,7 @@ export interface MagneticTimelineItem {
   is_locked_time: boolean; // Cannot be moved/compressed
   is_flexible: boolean; // Can be compressed/expanded
   original_duration?: number; // Store original duration for flexible items
-  template_id?: string | null; // Reference to template if created from one
+  template_id?: string | null; // Reference to template UUID if created from one
   created_at: string;
   updated_at: string;
 }

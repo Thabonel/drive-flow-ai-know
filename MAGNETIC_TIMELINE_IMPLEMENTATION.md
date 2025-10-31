@@ -150,10 +150,20 @@ CREATE TABLE IF NOT EXISTS magnetic_timeline_items (
   is_locked_time BOOLEAN NOT NULL DEFAULT false,
   is_flexible BOOLEAN NOT NULL DEFAULT true,
   original_duration INTEGER,
-  template_id TEXT REFERENCES timeline_templates(id) ON DELETE SET NULL,
+  template_id UUID,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+-- Add foreign key constraint only if timeline_templates table exists
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'timeline_templates') THEN
+    ALTER TABLE magnetic_timeline_items
+    ADD CONSTRAINT magnetic_timeline_items_template_id_fkey
+    FOREIGN KEY (template_id) REFERENCES timeline_templates(id) ON DELETE SET NULL;
+  END IF;
+END $$;
 
 -- Add indexes
 CREATE INDEX IF NOT EXISTS idx_magnetic_timeline_items_user_id ON magnetic_timeline_items(user_id);
