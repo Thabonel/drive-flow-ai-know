@@ -12,7 +12,8 @@ import { useTimeline } from '@/hooks/useTimeline';
 import { useLayers } from '@/hooks/useLayers';
 import { useTimelineSync } from '@/hooks/useTimelineSync';
 import { TimelineItem, clamp } from '@/lib/timelineUtils';
-import { CompletedItemsToggle } from './CompletedItemsToggle';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import {
   DEFAULT_PIXELS_PER_HOUR,
   DEFAULT_LAYER_HEIGHT,
@@ -202,12 +203,11 @@ export function TimelineManager() {
   }
 
   const logjamCount = items.filter(i => i.status === 'logjam').length;
-  const completedCount = items.filter(i => i.status === 'completed').length;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Header */}
-      <div className="space-y-4">
+      <div className="space-y-3">
         <div>
           <h1 className="text-3xl font-bold flex items-center gap-2">
             <Clock className="h-8 w-8" />
@@ -316,6 +316,18 @@ export function TimelineManager() {
             Parked ({parkedItems?.length || 0})
           </Button>
 
+          {/* Show Completed (compact) */}
+          {settings && (
+            <div className="flex items-center gap-2">
+              <Label htmlFor="show-completed" className="text-xs text-muted-foreground">Show Completed</Label>
+              <Switch
+                id="show-completed"
+                checked={settings.show_completed}
+                onCheckedChange={() => updateSettings({ show_completed: !settings.show_completed })}
+              />
+            </div>
+          )}
+
           {/* View Mode Switcher */}
           <div className="ml-auto">
             <ViewModeSwitcher
@@ -337,16 +349,7 @@ export function TimelineManager() {
       )}
 
       {/* Main timeline area */}
-      <div className="space-y-4">
-        {/* Completed items toggle */}
-        {settings && (
-          <CompletedItemsToggle
-            showCompleted={settings.show_completed}
-            completedCount={completedCount}
-            onToggle={() => updateSettings({ show_completed: !settings.show_completed })}
-          />
-        )}
-
+      <div className="space-y-3">
         {/* Main timeline */}
         {layers.length === 0 ? (
           <Alert>
