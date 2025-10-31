@@ -34,7 +34,7 @@ interface AddItemFormProps {
     color: string
   ) => Promise<void>;
   onUpdateItem?: (itemId: string, updates: Partial<TimelineItem>) => Promise<void>;
-  onAddLayer: (name: string, color?: string) => Promise<any>;
+  onAddLayer: (name: string, color?: string, timelineType?: 'standard' | 'magnetic') => Promise<any>;
   initialStartTime?: string;
   initialLayerId?: string;
   editingItem?: TimelineItem | null;
@@ -144,7 +144,7 @@ export function AddItemForm({
 
     // If creating a new layer (only in add mode)
     if (!isEditMode && isCreatingLayer && newLayerName.trim()) {
-      const newLayer = await onAddLayer(newLayerName.trim());
+      const newLayer = await onAddLayer(newLayerName.trim(), undefined, 'standard');
       if (newLayer) {
         layerId = newLayer.id;
       } else {

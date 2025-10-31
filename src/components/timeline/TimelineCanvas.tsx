@@ -100,6 +100,18 @@ export function TimelineCanvas({
     setIsDragging(false);
   };
 
+  // Handle item drag start
+  const handleItemDragStart = (item: TimelineItemType) => {
+    // Optional: Add visual feedback or state updates when drag starts
+    // For now, this enables the drag functionality by being defined
+  };
+
+  // Handle item drag move - continuous updates during drag
+  const handleItemDragMove = (item: TimelineItemType, deltaX: number, deltaY: number) => {
+    // Optional: Add continuous visual feedback during drag
+    // For now, this enables smooth dragging by being defined
+  };
+
   // Handle item drag end - calculate new time and layer
   const handleItemDragEnd = (item: TimelineItemType, deltaX: number, deltaY: number) => {
     if (!onItemDrop) return;
@@ -392,6 +404,8 @@ export function TimelineCanvas({
               scrollOffset={scrollOffset}
               nowTime={nowTime}
               onClick={onItemClick}
+              onDragStart={handleItemDragStart}
+              onDragMove={handleItemDragMove}
               onDragEnd={handleItemDragEnd}
               onResize={onItemResize}
             />

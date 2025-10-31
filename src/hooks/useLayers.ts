@@ -38,7 +38,7 @@ export function useLayers() {
   };
 
   // Add a new layer
-  const addLayer = async (name: string, color?: string) => {
+  const addLayer = async (name: string, color?: string, timelineType: 'standard' | 'magnetic' = 'standard') => {
     if (!user) return;
 
     try {
@@ -53,6 +53,7 @@ export function useLayers() {
           name,
           color,
           sort_order: maxSortOrder + 1,
+          timeline_type: timelineType,
         })
         .select()
         .single();

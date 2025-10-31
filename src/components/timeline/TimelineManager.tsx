@@ -240,9 +240,9 @@ export function TimelineManager() {
           <button
             onClick={() => setShowAddItemForm(true)}
             className="px-6 py-3 bg-primary text-primary-foreground rounded-lg font-semibold hover:bg-primary/90 transition-colors shadow-sm"
-            disabled={layers.length === 0}
+            disabled={standardLayers.length === 0}
           >
-            {layers.length === 0 ? 'Create a Layer First' : '+ Add Timeline Item'}
+            {standardLayers.length === 0 ? 'Create a Standard Layer First' : '+ Add Timeline Item'}
           </button>
 
           {/* Lock/Unlock Toggle Button */}
