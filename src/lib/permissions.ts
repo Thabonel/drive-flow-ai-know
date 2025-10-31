@@ -73,21 +73,39 @@ export function useMyAssistants() {
     queryKey: ["my-assistants", user?.id],
     enabled: !!user?.id,
     queryFn: async () => {
-      const { data, error } = await supabase
+      // Fetch relationships
+      const { data: relationships, error: relError } = await supabase
         .from("assistant_relationships")
-        .select(`
-          *,
-          assistant:auth.users!assistant_relationships_assistant_id_fkey(id, email, raw_user_meta_data)
-        `)
+        .select("*")
         .eq("executive_id", user!.id)
         .order("created_at", { ascending: false });
 
-      if (error) {
-        console.error("Error fetching assistants:", error);
+      if (relError) {
+        console.error("Error fetching assistants:", relError);
         return [];
       }
 
-      return data;
+      if (!relationships || relationships.length === 0) {
+        return [];
+      }
+
+      // Fetch user profiles for all assistants
+      const assistantIds = relationships.map(r => r.assistant_id);
+      const { data: profiles, error: profileError } = await supabase
+        .from("user_profiles")
+        .select("id, email, raw_user_meta_data")
+        .in("id", assistantIds);
+
+      if (profileError) {
+        console.error("Error fetching assistant profiles:", profileError);
+        return relationships; // Return without profiles
+      }
+
+      // Merge profiles into relationships
+      return relationships.map(rel => ({
+        ...rel,
+        assistant: profiles?.find(p => p.id === rel.assistant_id) || null,
+      }));
     },
   });
 }
@@ -102,22 +120,40 @@ export function useMyExecutives() {
     queryKey: ["my-executives", user?.id],
     enabled: !!user?.id,
     queryFn: async () => {
-      const { data, error } = await supabase
+      // Fetch relationships
+      const { data: relationships, error: relError } = await supabase
         .from("assistant_relationships")
-        .select(`
-          *,
-          executive:auth.users!assistant_relationships_executive_id_fkey(id, email, raw_user_meta_data)
-        `)
+        .select("*")
         .eq("assistant_id", user!.id)
         .eq("status", "active")
         .order("created_at", { ascending: false });
 
-      if (error) {
-        console.error("Error fetching executives:", error);
+      if (relError) {
+        console.error("Error fetching executives:", relError);
         return [];
       }
 
-      return data;
+      if (!relationships || relationships.length === 0) {
+        return [];
+      }
+
+      // Fetch user profiles for all executives
+      const executiveIds = relationships.map(r => r.executive_id);
+      const { data: profiles, error: profileError } = await supabase
+        .from("user_profiles")
+        .select("id, email, raw_user_meta_data")
+        .in("id", executiveIds);
+
+      if (profileError) {
+        console.error("Error fetching executive profiles:", profileError);
+        return relationships; // Return without profiles
+      }
+
+      // Merge profiles into relationships
+      return relationships.map(rel => ({
+        ...rel,
+        executive: profiles?.find(p => p.id === rel.executive_id) || null,
+      }));
     },
   });
 }
@@ -250,22 +286,40 @@ export function usePendingApprovals() {
     queryKey: ["pending-approvals", user?.id],
     enabled: !!user?.id,
     queryFn: async () => {
-      const { data, error } = await supabase
+      // Fetch relationships
+      const { data: relationships, error: relError } = await supabase
         .from("assistant_relationships")
-        .select(`
-          *,
-          assistant:auth.users!assistant_relationships_assistant_id_fkey(id, email, raw_user_meta_data)
-        `)
+        .select("*")
         .eq("executive_id", user!.id)
         .eq("status", "pending")
         .order("created_at", { ascending: false });
 
-      if (error) {
-        console.error("Error fetching pending approvals:", error);
+      if (relError) {
+        console.error("Error fetching pending approvals:", relError);
         return [];
       }
 
-      return data;
+      if (!relationships || relationships.length === 0) {
+        return [];
+      }
+
+      // Fetch user profiles for all assistants
+      const assistantIds = relationships.map(r => r.assistant_id);
+      const { data: profiles, error: profileError } = await supabase
+        .from("user_profiles")
+        .select("id, email, raw_user_meta_data")
+        .in("id", assistantIds);
+
+      if (profileError) {
+        console.error("Error fetching assistant profiles:", profileError);
+        return relationships; // Return without profiles
+      }
+
+      // Merge profiles into relationships
+      return relationships.map(rel => ({
+        ...rel,
+        assistant: profiles?.find(p => p.id === rel.assistant_id) || null,
+      }));
     },
   });
 }
