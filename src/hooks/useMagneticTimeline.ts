@@ -1,6 +1,6 @@
 // Hook for magnetic timeline state management
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { useToast } from '@/hooks/use-toast';
@@ -26,7 +26,7 @@ export function useMagneticTimeline() {
   const [hasFullCoverage, setHasFullCoverage] = useState(false);
 
   // Initialize default timeline in database
-  const initializeDefaultTimeline = useCallback(async (defaultItems: MagneticTimelineItem[]) => {
+  const initializeDefaultTimeline = async (defaultItems: MagneticTimelineItem[]) => {
     if (!user) return;
 
     try {
@@ -38,10 +38,10 @@ export function useMagneticTimeline() {
     } catch (error) {
       console.error('Error initializing default timeline:', error);
     }
-  }, [user]);
+  };
 
   // Fetch magnetic timeline items
-  const fetchItems = useCallback(async () => {
+  const fetchItems = async () => {
     if (!user) return;
 
     try {
@@ -73,7 +73,7 @@ export function useMagneticTimeline() {
     } finally {
       setLoading(false);
     }
-  }, [user, toast, initializeDefaultTimeline]);
+  };
 
   // Add a new item and trigger reflow
   const addItem = async (
@@ -352,7 +352,8 @@ export function useMagneticTimeline() {
     if (user) {
       fetchItems();
     }
-  }, [user, fetchItems]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
 
   return {
     items,

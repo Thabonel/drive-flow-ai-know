@@ -1,6 +1,6 @@
 // Main hook for timeline state management
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { useToast } from '@/hooks/use-toast';
@@ -27,7 +27,7 @@ export function useTimeline() {
   const lastTickRef = useRef<number>(Date.now());
 
   // Fetch timeline items
-  const fetchItems = useCallback(async () => {
+  const fetchItems = async () => {
     if (!user) return;
 
     try {
@@ -48,10 +48,10 @@ export function useTimeline() {
         variant: 'destructive',
       });
     }
-  }, [user, toast]);
+  };
 
   // Fetch settings
-  const fetchSettings = useCallback(async () => {
+  const fetchSettings = async () => {
     if (!user) return;
 
     try {
@@ -93,10 +93,10 @@ export function useTimeline() {
     } finally {
       setLoading(false);
     }
-  }, [user, toast]);
+  };
 
   // Fetch parked items
-  const fetchParkedItems = useCallback(async () => {
+  const fetchParkedItems = async () => {
     if (!user) return;
 
     try {
@@ -111,7 +111,7 @@ export function useTimeline() {
     } catch (error) {
       console.error('Error fetching parked items:', error);
     }
-  }, [user]);
+  };
 
   // Add a new item
   const addItem = async (
@@ -415,7 +415,8 @@ export function useTimeline() {
       fetchSettings();
       fetchParkedItems();
     }
-  }, [user, fetchItems, fetchSettings, fetchParkedItems]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
 
   return {
     items,
