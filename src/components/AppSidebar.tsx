@@ -27,9 +27,9 @@ import { useMyExecutives, usePendingApprovals } from '@/lib/permissions';
 import { useState, useEffect } from 'react';
 
 const navigationItems = [
+  { title: 'Your Day', url: '/timeline', icon: Clock },
   { title: 'Dashboard', url: '/dashboard', icon: Home },
   { title: 'AI Assistant', url: '/conversations', icon: MessageSquare },
-  { title: 'Timeline', url: '/timeline', icon: Clock },
   { title: 'Find Documents', url: '/documents', icon: FileText },
   { title: 'Add Documents', url: '/add-documents', icon: Upload },
   { title: 'Knowledge Bases', url: '/knowledge', icon: Brain },
