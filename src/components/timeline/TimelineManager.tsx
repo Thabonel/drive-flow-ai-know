@@ -27,6 +27,7 @@ import { Loader2, Clock, Settings, Layers, Lock, Unlock, Archive } from 'lucide-
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
 import { PageHelp } from '@/components/PageHelp';
+import { MagneticTimeline } from '@/components/magnetic-timeline/MagneticTimeline';
 
 export function TimelineManager() {
   const {
@@ -350,6 +351,9 @@ export function TimelineManager() {
 
       {/* Main timeline area */}
       <div className="space-y-3">
+        {/* Magnetic timeline (Your Day) as part of timelines section */}
+        <MagneticTimeline embedded />
+
         {/* Main timeline */}
         {layers.length === 0 ? (
           <Alert>

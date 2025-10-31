@@ -11,7 +11,7 @@ import { Loader2 } from 'lucide-react';
 import { MagneticTimelineBar } from './MagneticTimelineBar';
 import { ToolboxPanel } from './ToolboxPanel';
 
-export function MagneticTimeline() {
+export function MagneticTimeline({ embedded = false }: { embedded?: boolean } = {}) {
   const {
     items,
     loading,
@@ -105,94 +105,53 @@ export function MagneticTimeline() {
 
   return (
     <div className="space-y-2">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-xl font-semibold">Your Day</h2>
-          <p className="text-sm text-muted-foreground">
-            Magnetic 24-hour timeline - gap-free, continuous coverage
-          </p>
+      {/* Optional header and controls hidden when embedded */}
+      {!embedded && (
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-xl font-semibold">Your Day</h2>
+            <p className="text-sm text-muted-foreground">
+              Magnetic 24-hour timeline - gap-free, continuous coverage
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2">
+            {selectedItem && (
+              <>
+                <Button variant="outline" size="sm" onClick={handleToggleLocked} className="gap-2">
+                  {selectedItem.is_locked_time ? (<><Lock className="h-4 w-4" />Locked</>) : (<><Unlock className="h-4 w-4" />Unlocked</>)}
+                </Button>
+                <Button variant="outline" size="sm" onClick={handleToggleFlexible} className="gap-2">
+                  <Maximize2 className="h-4 w-4" />{selectedItem.is_flexible ? 'Flexible' : 'Fixed'}
+                </Button>
+                <Button variant={bladeMode ? 'default' : 'outline'} size="sm" onClick={() => setBladeMode(!bladeMode)} className="gap-2">
+                  <Scissors className="h-4 w-4" />Split (B)
+                </Button>
+              </>
+            )}
+            <Button variant="outline" size="sm" onClick={() => setShowToolbox(!showToolbox)}>
+              {showToolbox ? 'Hide' : 'Show'} Toolbox
+            </Button>
+            <Button variant="outline" size="sm" onClick={manualReflow}>Auto-Reflow</Button>
+          </div>
         </div>
-
-        <div className="flex items-center gap-2">
-          {selectedItem && (
-            <>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleToggleLocked}
-                className="gap-2"
-              >
-                {selectedItem.is_locked_time ? (
-                  <>
-                    <Lock className="h-4 w-4" />
-                    Locked
-                  </>
-                ) : (
-                  <>
-                    <Unlock className="h-4 w-4" />
-                    Unlocked
-                  </>
-                )}
-              </Button>
-
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleToggleFlexible}
-                className="gap-2"
-              >
-                <Maximize2 className="h-4 w-4" />
-                {selectedItem.is_flexible ? 'Flexible' : 'Fixed'}
-              </Button>
-
-              <Button
-                variant={bladeMode ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setBladeMode(!bladeMode)}
-                className="gap-2"
-              >
-                <Scissors className="h-4 w-4" />
-                Split (B)
-              </Button>
-            </>
-          )}
-
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowToolbox(!showToolbox)}
-          >
-            {showToolbox ? 'Hide' : 'Show'} Toolbox
-          </Button>
-
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={manualReflow}
-          >
-            Auto-Reflow
-          </Button>
-        </div>
-      </div>
+      )}
 
       {/* Warnings */}
-      {!hasFullCoverage && (
+      {!embedded && !hasFullCoverage && (
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
-            Timeline does not cover full 24 hours. {gaps.length} gap(s) detected.
-            Click "Auto-Reflow" to fix.
+            Timeline does not cover full 24 hours. {gaps.length} gap(s) detected. Click "Auto-Reflow" to fix.
           </AlertDescription>
         </Alert>
       )}
 
-      {bladeMode && (
+      {!embedded && bladeMode && (
         <Alert>
           <Scissors className="h-4 w-4" />
           <AlertDescription>
-            Blade mode active: Click on the timeline to split "{selectedItem?.title}" at that position.
-            Press ESC to cancel.
+            Blade mode active: Click on the timeline to split "{selectedItem?.title}" at that position. Press ESC to cancel.
           </AlertDescription>
         </Alert>
       )}
@@ -208,36 +167,27 @@ export function MagneticTimeline() {
         onItemResize={handleItemResize}
         onBladeClick={handleBladeClick}
       />
-
       {/* Toolbox Panel (conditional) */}
-      {showToolbox && (
+      {!embedded && showToolbox && (
         <ToolboxPanel
           onClose={() => setShowToolbox(false)}
           onAddItem={async (template) => {
-            // Add item at current time using template defaults
-            await addItem(
-              template.name,
-              currentMinutes,
-              template.duration,
-              template.color,
-              !!template.isLocked,
-              template.isFlexible !== false
-            );
+            await addItem(template.name, currentMinutes, template.duration, template.color, !!template.isLocked, template.isFlexible !== false);
             setShowToolbox(false);
           }}
         />
       )}
 
       {/* Stats */}
-      <div className="flex gap-4 text-sm text-muted-foreground">
-        <div>Items: {items.length}</div>
-        <div>Coverage: {hasFullCoverage ? '24 hours ✓' : `${gaps.length} gaps`}</div>
-        {selectedItem && (
-          <div>
-            Selected: {selectedItem.title} ({selectedItem.duration_minutes}m)
-          </div>
-        )}
-      </div>
+      {!embedded && (
+        <div className="flex gap-4 text-sm text-muted-foreground">
+          <div>Items: {items.length}</div>
+          <div>Coverage: {hasFullCoverage ? '24 hours ✓' : `${gaps.length} gaps`}</div>
+          {selectedItem && (
+            <div>Selected: {selectedItem.title} ({selectedItem.duration_minutes}m)</div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
