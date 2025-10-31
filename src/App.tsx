@@ -34,6 +34,9 @@ import AcceptableUse from "./pages/AcceptableUse";
 import Support from "./pages/Support";
 import AdminSupportTickets from "./pages/AdminSupportTickets";
 import Timeline from "./pages/Timeline";
+import Assistants from "./pages/Assistants";
+import Briefs from "./pages/Briefs";
+import AuditLog from "./pages/AuditLog";
 
 const queryClient = new QueryClient();
 
@@ -182,6 +185,21 @@ const App = () => (
             <Route path="/timeline" element={
               <ProtectedRoute>
                 <Timeline />
+              </ProtectedRoute>
+            } />
+            <Route path="/assistants" element={
+              <ProtectedRoute>
+                <Assistants />
+              </ProtectedRoute>
+            } />
+            <Route path="/briefs" element={
+              <ProtectedRoute>
+                <Briefs />
+              </ProtectedRoute>
+            } />
+            <Route path="/audit" element={
+              <ProtectedRoute>
+                <AuditLog />
               </ProtectedRoute>
             } />
             <Route path="/terms" element={<Terms />} />
