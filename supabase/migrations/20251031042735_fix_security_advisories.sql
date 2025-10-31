@@ -105,31 +105,122 @@ GRANT SELECT ON template_usage_stats TO authenticated;
 
 -- Set search_path = '' on all functions to prevent security vulnerabilities
 -- This prevents malicious schemas from being injected
+-- Note: Using DO blocks to handle non-existent functions gracefully
 
--- Updated_at trigger functions
-ALTER FUNCTION IF EXISTS update_updated_at_column() SET search_path = '';
-ALTER FUNCTION IF EXISTS update_support_ticket_updated_at() SET search_path = '';
-ALTER FUNCTION IF EXISTS update_timeline_layers_updated_at() SET search_path = '';
-ALTER FUNCTION IF EXISTS update_timeline_items_updated_at() SET search_path = '';
-ALTER FUNCTION IF EXISTS update_timeline_settings_updated_at() SET search_path = '';
-ALTER FUNCTION IF EXISTS update_magnetic_timeline_updated_at() SET search_path = '';
+DO $$
+BEGIN
+  -- Updated_at trigger functions
+  ALTER FUNCTION update_updated_at_column() SET search_path = '';
+  EXCEPTION WHEN undefined_function THEN NULL;
+END $$;
 
--- Business logic functions
-ALTER FUNCTION IF EXISTS create_default_me_timeline() SET search_path = '';
-ALTER FUNCTION IF EXISTS check_assistant_permission(uuid, text) SET search_path = '';
-ALTER FUNCTION IF EXISTS get_user_role(uuid) SET search_path = '';
-ALTER FUNCTION IF EXISTS can_user_access_timeline_item(uuid) SET search_path = '';
-ALTER FUNCTION IF EXISTS calculate_goal_hours_completed(uuid) SET search_path = '';
-ALTER FUNCTION IF EXISTS update_goal_hours() SET search_path = '';
-ALTER FUNCTION IF EXISTS log_assistant_action(text, text, uuid, jsonb) SET search_path = '';
-ALTER FUNCTION IF EXISTS validate_magnetic_timeline_continuity() SET search_path = '';
-ALTER FUNCTION IF EXISTS check_query_limit() SET search_path = '';
-ALTER FUNCTION IF EXISTS increment_query_count() SET search_path = '';
-ALTER FUNCTION IF EXISTS create_item_from_template(uuid, uuid, timestamptz) SET search_path = '';
+DO $$
+BEGIN
+  ALTER FUNCTION update_support_ticket_updated_at() SET search_path = '';
+  EXCEPTION WHEN undefined_function THEN NULL;
+END $$;
 
--- Audit trigger functions
-ALTER FUNCTION IF EXISTS auto_log_timeline_item_changes() SET search_path = '';
-ALTER FUNCTION IF EXISTS auto_log_document_actions() SET search_path = '';
+DO $$
+BEGIN
+  ALTER FUNCTION update_timeline_layers_updated_at() SET search_path = '';
+  EXCEPTION WHEN undefined_function THEN NULL;
+END $$;
+
+DO $$
+BEGIN
+  ALTER FUNCTION update_timeline_items_updated_at() SET search_path = '';
+  EXCEPTION WHEN undefined_function THEN NULL;
+END $$;
+
+DO $$
+BEGIN
+  ALTER FUNCTION update_timeline_settings_updated_at() SET search_path = '';
+  EXCEPTION WHEN undefined_function THEN NULL;
+END $$;
+
+DO $$
+BEGIN
+  ALTER FUNCTION update_magnetic_timeline_updated_at() SET search_path = '';
+  EXCEPTION WHEN undefined_function THEN NULL;
+END $$;
+
+DO $$
+BEGIN
+  ALTER FUNCTION create_default_me_timeline() SET search_path = '';
+  EXCEPTION WHEN undefined_function THEN NULL;
+END $$;
+
+DO $$
+BEGIN
+  ALTER FUNCTION check_assistant_permission(uuid, text) SET search_path = '';
+  EXCEPTION WHEN undefined_function THEN NULL;
+END $$;
+
+DO $$
+BEGIN
+  ALTER FUNCTION get_user_role(uuid) SET search_path = '';
+  EXCEPTION WHEN undefined_function THEN NULL;
+END $$;
+
+DO $$
+BEGIN
+  ALTER FUNCTION can_user_access_timeline_item(uuid) SET search_path = '';
+  EXCEPTION WHEN undefined_function THEN NULL;
+END $$;
+
+DO $$
+BEGIN
+  ALTER FUNCTION calculate_goal_hours_completed(uuid) SET search_path = '';
+  EXCEPTION WHEN undefined_function THEN NULL;
+END $$;
+
+DO $$
+BEGIN
+  ALTER FUNCTION update_goal_hours() SET search_path = '';
+  EXCEPTION WHEN undefined_function THEN NULL;
+END $$;
+
+DO $$
+BEGIN
+  ALTER FUNCTION log_assistant_action(text, text, uuid, jsonb) SET search_path = '';
+  EXCEPTION WHEN undefined_function THEN NULL;
+END $$;
+
+DO $$
+BEGIN
+  ALTER FUNCTION validate_magnetic_timeline_continuity() SET search_path = '';
+  EXCEPTION WHEN undefined_function THEN NULL;
+END $$;
+
+DO $$
+BEGIN
+  ALTER FUNCTION check_query_limit() SET search_path = '';
+  EXCEPTION WHEN undefined_function THEN NULL;
+END $$;
+
+DO $$
+BEGIN
+  ALTER FUNCTION increment_query_count() SET search_path = '';
+  EXCEPTION WHEN undefined_function THEN NULL;
+END $$;
+
+DO $$
+BEGIN
+  ALTER FUNCTION create_item_from_template(uuid, uuid, timestamptz) SET search_path = '';
+  EXCEPTION WHEN undefined_function THEN NULL;
+END $$;
+
+DO $$
+BEGIN
+  ALTER FUNCTION auto_log_timeline_item_changes() SET search_path = '';
+  EXCEPTION WHEN undefined_function THEN NULL;
+END $$;
+
+DO $$
+BEGIN
+  ALTER FUNCTION auto_log_document_actions() SET search_path = '';
+  EXCEPTION WHEN undefined_function THEN NULL;
+END $$;
 
 -- ============================================================================
 -- Verification Comments
