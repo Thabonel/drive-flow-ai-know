@@ -140,24 +140,29 @@ export function TimelineLayerManager({
                       >
                         <Edit2 className="h-4 w-4" />
                       </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => onToggleVisibility(layer.id)}
-                      >
-                        {layer.is_visible ? (
-                          <Eye className="h-4 w-4" />
-                        ) : (
-                          <EyeOff className="h-4 w-4 text-gray-400" />
-                        )}
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => onDeleteLayer(layer.id)}
-                      >
-                        <Trash2 className="h-4 w-4 text-red-600" />
-                      </Button>
+                      {/* Hide visibility and delete for primary "Me" timeline */}
+                      {!layer.is_primary_timeline && (
+                        <>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => onToggleVisibility(layer.id)}
+                          >
+                            {layer.is_visible ? (
+                              <Eye className="h-4 w-4" />
+                            ) : (
+                              <EyeOff className="h-4 w-4 text-gray-400" />
+                            )}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => onDeleteLayer(layer.id)}
+                          >
+                            <Trash2 className="h-4 w-4 text-red-600" />
+                          </Button>
+                        </>
+                      )}
                     </>
                   )}
                 </div>
