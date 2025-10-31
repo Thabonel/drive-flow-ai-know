@@ -1,3 +1,4 @@
+import { useState, useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -12,8 +13,12 @@ export function useUserRole() {
   return useQuery({
     queryKey: ["user-role", user?.id],
     enabled: !!user?.id,
+    staleTime: 5 * 60 * 1000, // 5 minutes - roles rarely change
+    gcTime: 10 * 60 * 1000, // 10 minutes in cache
+    refetchOnWindowFocus: false, // Don't refetch on window focus
+    retry: 1, // Only retry once
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error} = await supabase
         .from("user_roles")
         .select("*")
         .eq("user_id", user!.id)
@@ -34,7 +39,10 @@ export function useUserRole() {
  */
 export function useIsExecutive() {
   const { data: userRole } = useUserRole();
-  return userRole?.role_type === "executive";
+  return useMemo(
+    () => userRole?.role_type === "executive",
+    [userRole?.role_type]
+  );
 }
 
 /**
@@ -42,7 +50,10 @@ export function useIsExecutive() {
  */
 export function useIsAssistant() {
   const { data: userRole } = useUserRole();
-  return userRole?.role_type === "assistant";
+  return useMemo(
+    () => userRole?.role_type === "assistant",
+    [userRole?.role_type]
+  );
 }
 
 /**
@@ -50,7 +61,10 @@ export function useIsAssistant() {
  */
 export function useHasExecutiveTier() {
   const { data: userRole } = useUserRole();
-  return userRole?.subscription_tier === "executive";
+  return useMemo(
+    () => userRole?.subscription_tier === "executive",
+    [userRole?.subscription_tier]
+  );
 }
 
 /**
@@ -59,8 +73,12 @@ export function useHasExecutiveTier() {
  */
 export function useHasAssistantFeatures() {
   const { data: userRole } = useUserRole();
-  return userRole?.subscription_tier === "executive" ||
-         userRole?.features_enabled?.max_assistants > 0;
+  return useMemo(
+    () =>
+      userRole?.subscription_tier === "executive" ||
+      userRole?.features_enabled?.max_assistants > 0,
+    [userRole?.subscription_tier, userRole?.features_enabled?.max_assistants]
+  );
 }
 
 /**
@@ -72,6 +90,10 @@ export function useMyAssistants() {
   return useQuery({
     queryKey: ["my-assistants", user?.id],
     enabled: !!user?.id,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes in cache
+    refetchOnWindowFocus: false,
+    retry: 1,
     queryFn: async () => {
       // Fetch relationships
       const { data: relationships, error: relError } = await supabase
@@ -119,6 +141,10 @@ export function useMyExecutives() {
   return useQuery({
     queryKey: ["my-executives", user?.id],
     enabled: !!user?.id,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes in cache
+    refetchOnWindowFocus: false,
+    retry: 1,
     queryFn: async () => {
       // Fetch relationships
       const { data: relationships, error: relError } = await supabase
@@ -164,27 +190,54 @@ export function useMyExecutives() {
  */
 export function useIsActingAsAssistant() {
   const { data: executives } = useMyExecutives();
-  const activeExecutiveId = localStorage.getItem("active-executive-id");
 
-  if (!executives || executives.length === 0) {
-    return {
-      isActingAsAssistant: false,
-      activeExecutive: null,
-      activeRelationship: null,
+  // Use state instead of reading localStorage directly
+  const [activeExecutiveId, setActiveExecutiveId] = useState<string | null>(() =>
+    localStorage.getItem("active-executive-id")
+  );
+
+  // Listen for localStorage changes from other tabs/components
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === "active-executive-id") {
+        setActiveExecutiveId(e.newValue);
+      }
     };
-  }
 
-  const activeRelationship = activeExecutiveId
-    ? executives.find((rel) => rel.executive_id === activeExecutiveId)
-    : null;
+    // Also listen for custom events from same tab
+    const handleLocalUpdate = () => {
+      setActiveExecutiveId(localStorage.getItem("active-executive-id"));
+    };
 
-  return {
-    isActingAsAssistant: !!activeRelationship,
-    activeExecutive: activeRelationship
-      ? (activeRelationship as any).executive
-      : null,
-    activeRelationship: activeRelationship || null,
-  };
+    window.addEventListener("storage", handleStorageChange);
+    window.addEventListener("local-storage-update", handleLocalUpdate);
+
+    return () => {
+      window.removeEventListener("storage", handleStorageChange);
+      window.removeEventListener("local-storage-update", handleLocalUpdate);
+    };
+  }, []);
+
+  // Memoize the return value to prevent unnecessary re-renders
+  return useMemo(() => {
+    if (!executives || executives.length === 0) {
+      return {
+        isActingAsAssistant: false,
+        activeExecutive: null,
+        activeRelationship: null,
+      };
+    }
+
+    const activeRelationship = activeExecutiveId
+      ? executives.find((rel) => rel.executive_id === activeExecutiveId)
+      : null;
+
+    return {
+      isActingAsAssistant: !!activeRelationship,
+      activeExecutive: activeRelationship?.executive || null,
+      activeRelationship: activeRelationship || null,
+    };
+  }, [executives, activeExecutiveId]);
 }
 
 /**
@@ -197,27 +250,32 @@ export function useCanPerformAction(
   executiveId?: string
 ) {
   const { user } = useAuth();
+  const userId = user?.id;
   const { data: userRole } = useUserRole();
+  const roleType = userRole?.role_type;
   const { isActingAsAssistant, activeRelationship } = useIsActingAsAssistant();
 
-  // Executives can always perform actions on their own data
-  if (userRole?.role_type === "executive" && !executiveId) {
-    return true;
-  }
+  // Memoize the result to prevent unnecessary recalculations
+  return useMemo(() => {
+    // Executives can always perform actions on their own data
+    if (roleType === "executive" && !executiveId) {
+      return true;
+    }
 
-  // If executive is viewing someone else's data, they can't perform actions
-  if (userRole?.role_type === "executive" && executiveId && executiveId !== user?.id) {
+    // If executive is viewing someone else's data, they can't perform actions
+    if (roleType === "executive" && executiveId && executiveId !== userId) {
+      return false;
+    }
+
+    // Assistants need to check their permissions
+    if (isActingAsAssistant && activeRelationship) {
+      const permissions = activeRelationship.permissions as AssistantRelationship["permissions"];
+      return permissions[permission] === true;
+    }
+
+    // Default: no permission
     return false;
-  }
-
-  // Assistants need to check their permissions
-  if (isActingAsAssistant && activeRelationship) {
-    const permissions = activeRelationship.permissions as AssistantRelationship["permissions"];
-    return permissions[permission] === true;
-  }
-
-  // Default: no permission
-  return false;
+  }, [roleType, executiveId, userId, isActingAsAssistant, activeRelationship, permission]);
 }
 
 /**
@@ -285,6 +343,10 @@ export function usePendingApprovals() {
   return useQuery({
     queryKey: ["pending-approvals", user?.id],
     enabled: !!user?.id,
+    staleTime: 2 * 60 * 1000, // 2 minutes - pending approvals change more frequently
+    gcTime: 5 * 60 * 1000, // 5 minutes in cache
+    refetchOnWindowFocus: true, // Do refetch for pending approvals (user might want fresh data)
+    retry: 1,
     queryFn: async () => {
       // Fetch relationships
       const { data: relationships, error: relError } = await supabase

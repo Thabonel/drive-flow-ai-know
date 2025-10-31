@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, useCallback, useMemo, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
@@ -40,7 +40,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
-  const signUp = async (email: string, password: string, fullName: string) => {
+  const signUp = useCallback(async (email: string, password: string, fullName: string) => {
     try {
       // Use the new registration Edge Function with backend validation
       const { data: registerData, error: registerError } = await supabase.functions.invoke('register-user', {
@@ -114,9 +114,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       return { error: error instanceof Error ? error : new Error('Registration failed') };
     }
-  };
+  }, []); // No dependencies - function doesn't depend on props or state
 
-  const signIn = async (email: string, password: string) => {
+  const signIn = useCallback(async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
@@ -131,9 +131,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     return { error };
-  };
+  }, []); // No dependencies
 
-  const signOut = async () => {
+  const signOut = useCallback(async () => {
     const { error } = await supabase.auth.signOut();
     if (error) {
       toast({
@@ -142,9 +142,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         variant: "destructive",
       });
     }
-  };
+  }, []); // No dependencies
 
-  const resetPassword = async (email: string) => {
+  const resetPassword = useCallback(async (email: string) => {
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${window.location.origin}/reset-password`,
     });
@@ -164,18 +164,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     return { error: null };
-  };
+  }, []); // No dependencies
+
+  // Memoize context value to prevent unnecessary re-renders
+  const value = useMemo(() => ({
+    user,
+    session,
+    loading,
+    signUp,
+    signIn,
+    signOut,
+    resetPassword,
+  }), [user, session, loading, signUp, signIn, signOut, resetPassword]);
 
   return (
-    <AuthContext.Provider value={{
-      user,
-      session,
-      loading,
-      signUp,
-      signIn,
-      signOut,
-      resetPassword,
-    }}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );

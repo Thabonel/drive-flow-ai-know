@@ -1,6 +1,6 @@
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useLocation } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -56,6 +56,13 @@ const Settings = () => {
   const { data: myAssistants } = useAssistantRelationships(true, false);
   const { data: myExecutives } = useAssistantRelationships(false, true);
   const { data: pendingApprovals } = usePendingApprovals();
+
+  // Memoize grid class to prevent layout shifts during loading
+  const tabsGridClass = useMemo(() => {
+    // Convert to stable boolean (undefined becomes false)
+    const showTeamTab = Boolean(hasAssistantFeatures);
+    return `grid w-full ${showTeamTab ? 'grid-cols-6' : 'grid-cols-5'}`;
+  }, [hasAssistantFeatures]);
 
   useEffect(() => {
     if (location.hash === "#model-provider") {
@@ -148,7 +155,7 @@ const Settings = () => {
             </div>
 
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-              <TabsList className={`grid w-full ${hasAssistantFeatures ? 'grid-cols-6' : 'grid-cols-5'}`}>
+              <TabsList className={tabsGridClass}>
                 <TabsTrigger value="general">General</TabsTrigger>
                 <TabsTrigger value="billing">Billing</TabsTrigger>
                 <TabsTrigger value="ai">AI & Data</TabsTrigger>

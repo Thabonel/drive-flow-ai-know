@@ -24,7 +24,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useMyExecutives, usePendingApprovals, useHasAssistantFeatures } from '@/lib/permissions';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 
 const navigationItems = [
   { title: 'Your Day', url: '/timeline', icon: Clock },
@@ -78,14 +78,17 @@ export function AppSidebar() {
     isActive ? 'bg-sidebar-accent text-sidebar-accent-foreground' : 'hover:bg-sidebar-accent/50';
 
   // Filter navigation items based on subscription tier
-  const filteredNavigationItems = navigationItems.filter(item => {
-    // Hide assistant-only features for non-executive tiers
-    const assistantOnlyPages = ['/assistants', '/briefs', '/audit'];
-    if (assistantOnlyPages.includes(item.url) && !hasAssistantFeatures) {
-      return false;
-    }
-    return true;
-  });
+  // Memoize to prevent recalculation on every render
+  const filteredNavigationItems = useMemo(() => {
+    return navigationItems.filter(item => {
+      // Hide assistant-only features for non-executive tiers
+      const assistantOnlyPages = ['/assistants', '/briefs', '/audit'];
+      if (assistantOnlyPages.includes(item.url) && !hasAssistantFeatures) {
+        return false;
+      }
+      return true;
+    });
+  }, [hasAssistantFeatures]);
 
   return (
     <Sidebar className={collapsed ? 'w-14' : 'w-60'} collapsible="icon">
