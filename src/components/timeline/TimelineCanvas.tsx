@@ -76,6 +76,12 @@ export function TimelineCanvas({
   // Handle mouse down for dragging
   const handleMouseDown = (e: React.MouseEvent) => {
     if (isLocked) return;
+    // If starting a drag on an item, let the item handle it
+    const target = e.target as Element;
+    if (target && typeof (target as any).closest === 'function') {
+      const withinItem = (target as any).closest('g.timeline-item');
+      if (withinItem) return;
+    }
     setIsDragging(true);
     setDragStart({ x: e.clientX, y: e.clientY });
   };
