@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { useToast } from '@/hooks/use-toast';
+import { RealtimeChannel } from '@supabase/supabase-js';
 import {
   MagneticTimelineItem,
   applyMagneticReflow,
@@ -30,11 +31,16 @@ export function useMagneticTimeline() {
     if (!user) return;
 
     try {
-      const { error } = await supabase
+      // Strip client-generated ids and timestamps; let DB defaults apply
+      const payload = defaultItems.map(({ id, created_at, updated_at, ...rest }) => rest);
+
+      const { data, error } = await supabase
         .from('magnetic_timeline_items')
-        .insert(defaultItems);
+        .insert(payload)
+        .select();
 
       if (error) throw error;
+      return data as unknown as MagneticTimelineItem[];
     } catch (error) {
       console.error('Error initializing default timeline:', error);
     }
@@ -56,9 +62,14 @@ export function useMagneticTimeline() {
       if (!data || data.length === 0) {
         // Initialize with default 24-hour timeline
         const defaultItems = createDefault24HourTimeline(user.id);
-        await initializeDefaultTimeline(defaultItems);
-        setItems(defaultItems);
-        setHasFullCoverage(true);
+        const inserted = await initializeDefaultTimeline(defaultItems);
+        if (inserted && inserted.length > 0) {
+          setItems(inserted);
+          setHasFullCoverage(validateFullCoverage(inserted));
+        } else {
+          setItems([]);
+          setHasFullCoverage(false);
+        }
       } else {
         setItems(data);
         setHasFullCoverage(validateFullCoverage(data));
@@ -87,8 +98,9 @@ export function useMagneticTimeline() {
     if (!user) return;
 
     try {
+      const tempId = `temp_${Date.now()}`;
       const newItem: MagneticTimelineItem = {
-        id: `temp_${Date.now()}`,
+        id: tempId,
         user_id: user.id,
         title,
         start_time: new Date().toISOString(), // Will be set by insertItemAtPosition
@@ -101,19 +113,50 @@ export function useMagneticTimeline() {
       };
 
       // Calculate new timeline with reflow
-      const reflowedItems = insertItemAtPosition(items, newItem, targetMinutes);
+      const reflowedItemsWithTemp = insertItemAtPosition(items, newItem, targetMinutes);
 
-      // Insert into database
+      // Extract the final values for the new item (using temp id)
+      const finalNew = reflowedItemsWithTemp.find(i => i.id === tempId);
+      if (!finalNew) throw new Error('Failed to compute new item position');
+
+      // Insert new item with its final computed state, letting DB assign id
+      const insertPayload = {
+        user_id: user.id,
+        title: finalNew.title,
+        start_time: finalNew.start_time,
+        duration_minutes: finalNew.duration_minutes,
+        color: finalNew.color,
+        is_locked_time: finalNew.is_locked_time,
+        is_flexible: finalNew.is_flexible,
+        original_duration: finalNew.original_duration ?? null,
+        template_id: finalNew.template_id ?? null,
+      };
+
       const { data, error } = await supabase
         .from('magnetic_timeline_items')
-        .insert([newItem])
+        .insert([insertPayload])
         .select()
         .single();
 
       if (error) throw error;
 
-      // Update all items that were affected by reflow
-      await updateAllItems(reflowedItems);
+      // Update all other items that were affected by reflow (exclude the new item)
+      const others = reflowedItemsWithTemp.filter(i => i.id !== tempId);
+      for (const item of others) {
+        await supabase
+          .from('magnetic_timeline_items')
+          .update({
+            start_time: item.start_time,
+            duration_minutes: item.duration_minutes,
+            original_duration: item.original_duration ?? null,
+          })
+          .eq('id', item.id);
+      }
+
+      // Replace temp id with real id in local state
+      const reflowedItems = reflowedItemsWithTemp.map(i =>
+        i.id === tempId ? { ...i, id: data.id } : i
+      );
 
       setItems(reflowedItems);
       setHasFullCoverage(validateFullCoverage(reflowedItems));
@@ -191,7 +234,12 @@ export function useMagneticTimeline() {
     if (!user) return;
 
     try {
-      const splitItems = splitItemAt(items, itemId, splitMinutes);
+      const beforeIds = new Set(items.map(i => i.id));
+      const splitItemsResult = splitItemAt(items, itemId, splitMinutes);
+
+      // Determine new parts created by split
+      const newTempParts = splitItemsResult.filter(i => !beforeIds.has(i.id));
+      const remainingItems = splitItemsResult.filter(i => beforeIds.has(i.id) && i.id !== itemId);
 
       // Delete original item from database
       const { error: deleteError } = await supabase
@@ -201,18 +249,27 @@ export function useMagneticTimeline() {
 
       if (deleteError) throw deleteError;
 
-      // Insert both new parts
-      const newParts = splitItems.filter(item =>
-        item.id.startsWith(`${itemId}_part`)
-      );
+      // Insert both new parts without client-generated IDs
+      const insertPayload = newTempParts.map(p => ({
+        user_id: p.user_id,
+        title: p.title,
+        start_time: p.start_time,
+        duration_minutes: p.duration_minutes,
+        color: p.color,
+        is_locked_time: p.is_locked_time,
+        is_flexible: p.is_flexible,
+        original_duration: p.original_duration ?? null,
+        template_id: p.template_id ?? null,
+      }));
 
-      const { error: insertError } = await supabase
+      const { data: insertedParts, error: insertError } = await supabase
         .from('magnetic_timeline_items')
-        .insert(newParts);
+        .insert(insertPayload)
+        .select();
 
       if (insertError) throw insertError;
 
-      setItems(splitItems);
+      setItems([...remainingItems, ...(insertedParts as MagneticTimelineItem[])]);
 
       toast({
         title: 'Item split',
@@ -353,6 +410,30 @@ export function useMagneticTimeline() {
       fetchItems();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
+
+  // Realtime sync for magnetic timeline items
+  useEffect(() => {
+    if (!user) return;
+    const channel: RealtimeChannel = supabase
+      .channel('magnetic_timeline_items_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'magnetic_timeline_items',
+          filter: `user_id=eq.${user.id}`,
+        },
+        () => {
+          fetchItems();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [user]);
 
   return {

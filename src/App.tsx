@@ -38,6 +38,7 @@ import Timeline from "./pages/Timeline";
 import Assistants from "./pages/Assistants";
 import Briefs from "./pages/Briefs";
 import AuditLog from "./pages/AuditLog";
+import TestsMagnetic from "./pages/TestsMagnetic";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -196,6 +197,11 @@ const App = () => (
             <Route path="/timeline" element={
               <ProtectedRoute>
                 <Timeline />
+              </ProtectedRoute>
+            } />
+            <Route path="/tests/magnetic" element={
+              <ProtectedRoute>
+                <TestsMagnetic />
               </ProtectedRoute>
             } />
             <Route path="/assistants" element={

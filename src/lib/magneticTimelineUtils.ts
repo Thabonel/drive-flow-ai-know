@@ -211,15 +211,32 @@ function fillGapsByExpanding(
 
   // Calculate total gap duration
   const totalGapDuration = gaps.reduce((sum, gap) => sum + gap.duration, 0);
+  if (totalGapDuration <= 0) return result;
 
-  // Distribute gap duration proportionally to flexible items
-  const expansionPerItem = totalGapDuration / flexibleBlocks.length;
+  // Weights based on original duration (fallback to current)
+  const weights = flexibleBlocks.map(b => b.item.original_duration ?? b.item.duration_minutes);
+  const totalWeight = weights.reduce((a, b) => a + b, 0) || flexibleBlocks.length;
 
-  for (const block of flexibleBlocks) {
-    const newDuration = block.item.duration_minutes + expansionPerItem;
-    block.item.duration_minutes = Math.round(newDuration);
-    block.endMinutes = block.startMinutes + block.item.duration_minutes;
+  // First pass: compute rounded expansions and track remainders to preserve total
+  const rawExpansions = flexibleBlocks.map((b, idx) => (totalGapDuration * (weights[idx] / totalWeight)));
+  const roundedExpansions = rawExpansions.map(x => Math.floor(x));
+  let assigned = roundedExpansions.reduce((a, b) => a + b, 0);
+  let remaining = totalGapDuration - assigned;
+
+  // Distribute remaining minutes by largest remainders
+  const remainders = rawExpansions.map((x, idx) => ({ idx, frac: x - Math.floor(x) }));
+  remainders.sort((a, b) => b.frac - a.frac);
+  for (let i = 0; i < remaining; i++) {
+    const targetIdx = remainders[i % remainders.length].idx;
+    roundedExpansions[targetIdx] += 1;
   }
+
+  // Apply expansions
+  flexibleBlocks.forEach((block, idx) => {
+    const expansion = roundedExpansions[idx];
+    block.item.duration_minutes = Math.round(block.item.duration_minutes + expansion);
+    block.endMinutes = block.startMinutes + block.item.duration_minutes;
+  });
 
   return result;
 }
@@ -239,20 +256,32 @@ export function resolveOverlaps(items: MagneticTimelineItem[]): MagneticTimeline
     if (current.endMinutes > next.startMinutes) {
       // Overlap detected
       const overlapDuration = current.endMinutes - next.startMinutes;
+      const MIN_DURATION = 15; // minutes
 
-      // Strategy: Compress the current item if flexible
+      // Try compressing current if flexible (but not below MIN_DURATION)
+      let remaining = overlapDuration;
       if (current.item.is_flexible) {
-        current.item.duration_minutes -= overlapDuration;
+        const compressible = Math.max(0, current.item.duration_minutes - MIN_DURATION);
+        const compressBy = Math.min(compressible, remaining);
+        current.item.duration_minutes -= compressBy;
         current.endMinutes = current.startMinutes + current.item.duration_minutes;
+        remaining -= compressBy;
       }
-      // Otherwise: Shift next item forward
-      else if (!next.item.is_locked_time) {
-        const shift = overlapDuration;
-        next.startMinutes += shift;
-        next.endMinutes += shift;
 
-        // Update start_time
+      // If still overlapping, try shifting next if not locked
+      if (remaining > 0 && !next.item.is_locked_time) {
+        next.startMinutes += remaining;
+        next.endMinutes += remaining;
         next.item.start_time = createTimestampFromMinutes(next.startMinutes);
+        remaining = 0;
+      }
+      // Fallback: if next is flexible and we still have remaining, compress next
+      if (remaining > 0 && next.item.is_flexible) {
+        const compressibleNext = Math.max(0, next.item.duration_minutes - MIN_DURATION);
+        const compressByNext = Math.min(compressibleNext, remaining);
+        next.item.duration_minutes -= compressByNext;
+        next.endMinutes = next.startMinutes + next.item.duration_minutes;
+        remaining -= compressByNext;
       }
     }
   }

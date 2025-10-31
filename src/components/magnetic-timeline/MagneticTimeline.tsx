@@ -16,6 +16,7 @@ export function MagneticTimeline() {
     items,
     loading,
     hasFullCoverage,
+    addItem,
     moveItemTo,
     resizeItemTo,
     splitItem,
@@ -214,8 +215,16 @@ export function MagneticTimeline() {
         <ToolboxPanel
           onClose={() => setShowToolbox(false)}
           onAddItem={async (template) => {
-            // Add item at current time
-            // This will be implemented in the toolbox component
+            // Add item at current time using template defaults
+            await addItem(
+              template.name,
+              currentMinutes,
+              template.duration,
+              template.color,
+              !!template.isLocked,
+              template.isFlexible !== false
+            );
+            setShowToolbox(false);
           }}
         />
       )}

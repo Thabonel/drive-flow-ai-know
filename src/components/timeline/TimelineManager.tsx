@@ -12,6 +12,7 @@ import { useTimeline } from '@/hooks/useTimeline';
 import { useLayers } from '@/hooks/useLayers';
 import { useTimelineSync } from '@/hooks/useTimelineSync';
 import { TimelineItem, clamp } from '@/lib/timelineUtils';
+import { CompletedItemsToggle } from './CompletedItemsToggle';
 import {
   DEFAULT_PIXELS_PER_HOUR,
   DEFAULT_LAYER_HEIGHT,
@@ -201,6 +202,7 @@ export function TimelineManager() {
   }
 
   const logjamCount = items.filter(i => i.status === 'logjam').length;
+  const completedCount = items.filter(i => i.status === 'completed').length;
 
   return (
     <div className="space-y-6">
@@ -336,6 +338,15 @@ export function TimelineManager() {
 
       {/* Main timeline area */}
       <div className="space-y-4">
+        {/* Completed items toggle */}
+        {settings && (
+          <CompletedItemsToggle
+            showCompleted={settings.show_completed}
+            completedCount={completedCount}
+            onToggle={() => updateSettings({ show_completed: !settings.show_completed })}
+          />
+        )}
+
         {/* Main timeline */}
         {layers.length === 0 ? (
           <Alert>
@@ -352,7 +363,7 @@ export function TimelineManager() {
             pixelsPerHour={pixelsPerHour}
             layerHeight={layerHeight}
             isLocked={settings?.is_locked ?? true}
-            showCompleted={true}
+            showCompleted={settings?.show_completed ?? true}
             pastHours={viewModeConfig.pastHours}
             futureHours={viewModeConfig.futureHours}
             subdivisionMinutes={viewModeConfig.subdivisionMinutes}
