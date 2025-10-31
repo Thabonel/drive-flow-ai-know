@@ -74,6 +74,16 @@ export function AddItemForm({
     }
   }, [initialStartTime, initialLayerId]);
 
+  // When dialog opens (non-edit), default to first available layer if none selected
+  useEffect(() => {
+    if (open && !editingItem) {
+      if (!selectedLayerId && layers && layers.length > 0) {
+        setSelectedLayerId(initialLayerId || layers[0].id);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, layers, editingItem]);
+
   // Populate form when editing an item
   useEffect(() => {
     if (editingItem) {

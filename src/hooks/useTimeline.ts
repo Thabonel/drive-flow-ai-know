@@ -147,11 +147,11 @@ export function useTimeline() {
       });
 
       return data;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error adding item:', error);
       toast({
         title: 'Error',
-        description: 'Failed to add timeline item',
+        description: `Failed to add timeline item${error?.message ? `: ${error.message}` : ''}`,
         variant: 'destructive',
       });
     }

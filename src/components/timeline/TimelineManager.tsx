@@ -205,6 +205,9 @@ export function TimelineManager() {
 
   const logjamCount = items.filter(i => i.status === 'logjam').length;
 
+  // Only show and operate on standard layers in the standard timeline
+  const standardLayers = (layers || []).filter((l) => (l.timeline_type ?? 'standard') === 'standard');
+
   return (
     <div className="space-y-4">
       {/* Header */}
@@ -355,7 +358,7 @@ export function TimelineManager() {
         <MagneticTimeline embedded />
 
         {/* Main timeline */}
-        {layers.length === 0 ? (
+        {standardLayers.length === 0 ? (
           <Alert>
             <AlertDescription>
               Create a layer first to start adding items to your timeline.
@@ -364,7 +367,7 @@ export function TimelineManager() {
         ) : (
           <TimelineCanvas
             items={items}
-            layers={layers}
+            layers={standardLayers}
             nowTime={nowTime}
             scrollOffset={scrollOffset}
             pixelsPerHour={pixelsPerHour}
@@ -391,7 +394,7 @@ export function TimelineManager() {
           setInitialFormValues(null);
           setEditingItem(null);
         }}
-        layers={layers}
+        layers={standardLayers}
         onAddItem={addItem}
         onUpdateItem={updateItem}
         onAddLayer={addLayer}
@@ -415,7 +418,7 @@ export function TimelineManager() {
         open={showParkedItems}
         onClose={() => setShowParkedItems(false)}
         parkedItems={parkedItems || []}
-        layers={layers}
+        layers={standardLayers}
         onRestoreItem={restoreParkedItem}
         onDeleteParkedItem={deleteParkedItem}
       />
