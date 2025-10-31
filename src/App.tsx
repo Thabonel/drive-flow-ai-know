@@ -39,7 +39,17 @@ import Assistants from "./pages/Assistants";
 import Briefs from "./pages/Briefs";
 import AuditLog from "./pages/AuditLog";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000, // 5 minutes - data stays fresh
+      gcTime: 10 * 60 * 1000, // 10 minutes - cache retention
+      refetchOnWindowFocus: false, // Prevent refetch on tab switch
+      retry: 1, // Only retry failed queries once
+      structuralSharing: true, // Prevent unnecessary re-renders from identical data
+    },
+  },
+});
 
 function AppLayout({ children }: { children: React.ReactNode }) {
   const offline = offlineEnabled();

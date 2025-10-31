@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -89,7 +89,11 @@ export const AIQueryInput = ({ selectedKnowledgeBase, onClearSelection }: AIQuer
     return prompts.slice(0, 4); // Return max 4 prompts
   };
 
-  const quickPrompts = generateQuickPrompts();
+  // Memoize quickPrompts to prevent recalculation on every render
+  const quickPrompts = useMemo(
+    () => generateQuickPrompts(),
+    [recentDocs]
+  );
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

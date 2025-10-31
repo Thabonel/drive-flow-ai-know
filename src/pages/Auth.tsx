@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -21,6 +21,26 @@ const Auth = () => {
     password?: string[];
     fullName?: string;
   }>({});
+
+  // Memoize password strength to prevent recalculation on every render
+  const passwordStrength = useMemo(
+    () => getPasswordStrength(signUpPassword),
+    [signUpPassword]
+  );
+
+  // Memoize style objects to prevent new object creation on every render
+  const strengthLabelStyle = useMemo(
+    () => ({ color: passwordStrength.color }),
+    [passwordStrength.color]
+  );
+
+  const progressBarStyle = useMemo(
+    () => ({
+      width: `${passwordStrength.percentage}%`,
+      backgroundColor: passwordStrength.color
+    }),
+    [passwordStrength.percentage, passwordStrength.color]
+  );
 
   const handleSignIn = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -223,18 +243,15 @@ const Auth = () => {
                           <span className="text-muted-foreground">Password strength:</span>
                           <span
                             className="font-medium capitalize"
-                            style={{ color: getPasswordStrength(signUpPassword).color }}
+                            style={strengthLabelStyle}
                           >
-                            {getPasswordStrength(signUpPassword).strength.replace('-', ' ')}
+                            {passwordStrength.strength.replace('-', ' ')}
                           </span>
                         </div>
                         <div className="h-1.5 w-full bg-gray-200 rounded-full overflow-hidden">
                           <div
                             className="h-full transition-all duration-300"
-                            style={{
-                              width: `${getPasswordStrength(signUpPassword).percentage}%`,
-                              backgroundColor: getPasswordStrength(signUpPassword).color
-                            }}
+                            style={progressBarStyle}
                           />
                         </div>
                       </div>

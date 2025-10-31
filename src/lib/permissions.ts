@@ -73,11 +73,14 @@ export function useHasExecutiveTier() {
  */
 export function useHasAssistantFeatures() {
   const { data: userRole } = useUserRole();
+
+  // Extract primitive values to prevent object reference changes
+  const subscriptionTier = userRole?.subscription_tier;
+  const maxAssistants = userRole?.features_enabled?.max_assistants ?? 0;
+
   return useMemo(
-    () =>
-      userRole?.subscription_tier === "executive" ||
-      userRole?.features_enabled?.max_assistants > 0,
-    [userRole?.subscription_tier, userRole?.features_enabled?.max_assistants]
+    () => subscriptionTier === "executive" || maxAssistants > 0,
+    [subscriptionTier, maxAssistants]
   );
 }
 
@@ -345,7 +348,7 @@ export function usePendingApprovals() {
     enabled: !!user?.id,
     staleTime: 2 * 60 * 1000, // 2 minutes - pending approvals change more frequently
     gcTime: 5 * 60 * 1000, // 5 minutes in cache
-    refetchOnWindowFocus: true, // Do refetch for pending approvals (user might want fresh data)
+    // refetchOnWindowFocus now controlled by global default (false)
     retry: 1,
     queryFn: async () => {
       // Fetch relationships

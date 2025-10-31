@@ -1,3 +1,4 @@
+import { useMemo, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "./useAuth";
 import { toast } from "sonner";
@@ -360,8 +361,14 @@ export function useAuditLog(
 ) {
   const { user } = useAuth();
 
+  // Serialize options to prevent object reference changes in queryKey
+  const serializedOptions = useMemo(
+    () => options ? JSON.stringify(options) : null,
+    [options?.assistantId, options?.action, options?.entityType, options?.startDate, options?.endDate, options?.limit]
+  );
+
   return useQuery({
-    queryKey: ["audit-log", executiveId || user?.id, options],
+    queryKey: ["audit-log", executiveId || user?.id, serializedOptions],
     enabled: !!(executiveId || user?.id),
     queryFn: async () => {
       return await getExecutiveAuditLog(executiveId || user!.id, options);
@@ -392,7 +399,7 @@ export function useAuditLogRealtime(
   const query = useAuditLog(executiveId, options);
 
   // Set up real-time subscription
-  React.useEffect(() => {
+  useEffect(() => {
     if (!targetUserId) return;
 
     const subscription = supabase
@@ -406,6 +413,7 @@ export function useAuditLogRealtime(
           filter: `executive_id=eq.${targetUserId}`,
         },
         () => {
+          // queryClient from useQueryClient() is stable, no need in deps
           queryClient.invalidateQueries({ queryKey: ["audit-log", targetUserId] });
         }
       )
@@ -414,7 +422,7 @@ export function useAuditLogRealtime(
     return () => {
       subscription.unsubscribe();
     };
-  }, [targetUserId, queryClient]);
+  }, [targetUserId]); // Removed queryClient - it's stable from context
 
   return query;
 }
