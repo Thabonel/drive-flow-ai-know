@@ -36,6 +36,8 @@ import AdminSupportTickets from "./pages/AdminSupportTickets";
 import Timeline from "./pages/Timeline";
 import BookingPage from "./pages/BookingPage";
 import BookingLinks from "./pages/BookingLinks";
+import AssistantManagement from "./pages/AssistantManagement";
+import AssistantPortalPage from "./pages/AssistantPortalPage";
 import { DailyPlanningTrigger } from "./components/planning/DailyPlanningTrigger";
 
 const queryClient = new QueryClient();
@@ -193,6 +195,16 @@ const App = () => (
             <Route path="/booking-links" element={
               <ProtectedRoute>
                 <BookingLinks />
+              </ProtectedRoute>
+            } />
+            <Route path="/assistants" element={
+              <ProtectedRoute>
+                <AssistantManagement />
+              </ProtectedRoute>
+            } />
+            <Route path="/assistant-portal" element={
+              <ProtectedRoute>
+                <AssistantPortalPage />
               </ProtectedRoute>
             } />
             <Route path="/book/:slug" element={<BookingPage />} />
