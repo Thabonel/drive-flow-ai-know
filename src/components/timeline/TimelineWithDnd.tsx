@@ -1,9 +1,10 @@
-import { useState, useMemo } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import {
   DndContext,
   DragOverlay,
   DragStartEvent,
   DragEndEvent,
+  DragMoveEvent,
   MouseSensor,
   TouchSensor,
   useSensor,
@@ -13,18 +14,31 @@ import {
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { TimelineManager } from './TimelineManager';
 import { TaskSidebar } from './TaskSidebar';
-import { Task } from '@/hooks/useTasks';
+import { Task, useTasks } from '@/hooks/useTasks';
+import { useTimeline } from '@/hooks/useTimeline';
+import { useLayers } from '@/hooks/useLayers';
 import { Badge } from '@/components/ui/badge';
 import { Clock } from 'lucide-react';
 
 export function TimelineWithDnd() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [activeTask, setActiveTask] = useState<Task | null>(null);
+  const [dropPreview, setDropPreview] = useState<{
+    time: string;
+    layerId: string;
+    x: number;
+    y: number;
+  } | null>(null);
+
+  const timelineRef = useRef<HTMLDivElement>(null);
+  const { deleteTask } = useTasks();
+  const { addItem } = useTimeline();
+  const { layers } = useLayers();
 
   // Configure sensors for drag and drop
   const mouseSensor = useSensor(MouseSensor, {
     activationConstraint: {
-      distance: 10, // Require 10px movement before dragging starts
+      distance: 10,
     },
   });
 
@@ -37,6 +51,47 @@ export function TimelineWithDnd() {
 
   const sensors = useSensors(mouseSensor, touchSensor);
 
+  // Calculate drop position (time and layer) from mouse coordinates
+  const calculateDropPosition = useCallback((event: DragMoveEvent | DragEndEvent) => {
+    if (!timelineRef.current || layers.length === 0) return null;
+
+    const rect = timelineRef.current.getBoundingClientRect();
+    const x = event.activatorEvent ? (event.activatorEvent as MouseEvent).clientX : 0;
+    const y = event.activatorEvent ? (event.activatorEvent as MouseEvent).clientY : 0;
+
+    // Calculate which layer based on Y position
+    const relativeY = y - rect.top;
+    const layerHeight = rect.height / layers.filter(l => l.is_visible).length;
+    const layerIndex = Math.floor(relativeY / layerHeight);
+    const visibleLayers = layers.filter(l => l.is_visible);
+    const targetLayer = visibleLayers[Math.max(0, Math.min(layerIndex, visibleLayers.length - 1))];
+
+    if (!targetLayer) return null;
+
+    // Calculate time based on X position (simplified - assumes NOW line at center)
+    // In reality, this should use the timeline's scroll offset and zoom level
+    const now = new Date();
+    const relativeX = x - rect.left;
+    const centerX = rect.width * 0.3; // NOW_LINE_POSITION
+    const hoursFromNow = (relativeX - centerX) / 60; // Rough estimate
+
+    const targetTime = new Date(now.getTime() + hoursFromNow * 60 * 60 * 1000);
+
+    // Snap to 15-minute intervals
+    const minutes = targetTime.getMinutes();
+    const snappedMinutes = Math.round(minutes / 15) * 15;
+    targetTime.setMinutes(snappedMinutes);
+    targetTime.setSeconds(0);
+    targetTime.setMilliseconds(0);
+
+    return {
+      time: targetTime.toISOString(),
+      layerId: targetLayer.id,
+      x: relativeX,
+      y: relativeY,
+    };
+  }, [layers]);
+
   // Handle drag start
   const handleDragStart = (event: DragStartEvent) => {
     const { active } = event;
@@ -45,24 +100,43 @@ export function TimelineWithDnd() {
     }
   };
 
-  // Handle drag end
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
+  // Handle drag move (for preview)
+  const handleDragMove = (event: DragMoveEvent) => {
+    const position = calculateDropPosition(event);
+    setDropPreview(position);
+  };
 
-    if (!over) {
+  // Handle drag end
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active } = event;
+    const task = active.data.current as Task;
+
+    if (!task || !dropPreview) {
       setActiveTask(null);
+      setDropPreview(null);
       return;
     }
 
-    // Check if dropped on timeline
-    if (over.id === 'timeline-drop-zone') {
-      const task = active.data.current as Task;
-      // The actual scheduling will be handled by TimelineManager
-      // via the onTaskScheduled callback
-      console.log('Task dropped on timeline:', task);
-    }
+    try {
+      // Create timeline item from task
+      await addItem(
+        dropPreview.layerId,
+        task.title,
+        dropPreview.time,
+        task.planned_duration_minutes,
+        task.color
+      );
 
-    setActiveTask(null);
+      // Delete task from unscheduled list
+      await deleteTask(task.id);
+
+      console.log('Task scheduled successfully');
+    } catch (error) {
+      console.error('Failed to schedule task:', error);
+    } finally {
+      setActiveTask(null);
+      setDropPreview(null);
+    }
   };
 
   const formatDuration = (minutes: number): string => {
@@ -77,11 +151,34 @@ export function TimelineWithDnd() {
       sensors={sensors}
       collisionDetection={pointerWithin}
       onDragStart={handleDragStart}
+      onDragMove={handleDragMove}
       onDragEnd={handleDragEnd}
     >
       <div className="relative">
-        {/* Main Timeline */}
-        <TimelineManager />
+        {/* Main Timeline - with drop zone */}
+        <div ref={timelineRef} className="relative">
+          <TimelineManager />
+
+          {/* Drop preview indicator */}
+          {activeTask && dropPreview && (
+            <div
+              className="absolute pointer-events-none z-50 border-2 border-dashed border-primary bg-primary/10 rounded"
+              style={{
+                left: dropPreview.x - 2,
+                top: dropPreview.y - 20,
+                width: '4px',
+                height: '40px',
+              }}
+            >
+              <div className="absolute -top-6 left-1/2 -translate-x-1/2 text-xs font-medium text-primary whitespace-nowrap bg-background px-2 py-1 rounded shadow-sm">
+                {new Date(dropPreview.time).toLocaleTimeString([], {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                })}
+              </div>
+            </div>
+          )}
+        </div>
 
         {/* Task Sidebar */}
         <TaskSidebar
