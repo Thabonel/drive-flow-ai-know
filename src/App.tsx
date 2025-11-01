@@ -40,7 +40,6 @@ import AssistantManagement from "./pages/AssistantManagement";
 import AssistantPortalPage from "./pages/AssistantPortalPage";
 import DailyBrief from "./pages/DailyBrief";
 import EmailToTask from "./pages/EmailToTask";
-import { FeedbackWidget } from "./components/FeedbackWidget";
 
 const queryClient = new QueryClient();
 
@@ -63,9 +62,6 @@ function AppLayout({ children }: { children: React.ReactNode }) {
             <div className="p-6">{children}</div>
           </main>
         </div>
-
-        {/* Feedback Widget */}
-        <FeedbackWidget />
       </div>
     </SidebarProvider>
   );
