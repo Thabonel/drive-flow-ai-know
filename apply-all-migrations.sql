@@ -913,6 +913,9 @@ COMMENT ON VIEW planning_streaks IS 'Calculates planning streaks for gamificatio
 -- Created: 2025-11-02
 -- Purpose: Calendly-style booking links with availability checking
 
+-- Enable btree_gist extension for UUID equality in GiST indexes
+CREATE EXTENSION IF NOT EXISTS btree_gist;
+
 -- Booking links (user's shareable scheduling links)
 CREATE TABLE IF NOT EXISTS booking_links (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
