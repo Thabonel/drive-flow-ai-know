@@ -13,6 +13,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { PageHelp } from '@/components/PageHelp';
+import { AIQueryInput } from '@/components/AIQueryInput';
 
 const KnowledgeBases = () => {
   const { user } = useAuth();
@@ -323,6 +324,9 @@ const KnowledgeBases = () => {
             </Button>
           </DialogTrigger>
         </div>
+
+        {/* AI Assistant for querying knowledge bases */}
+        <AIQueryInput />
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {isLoading ? (

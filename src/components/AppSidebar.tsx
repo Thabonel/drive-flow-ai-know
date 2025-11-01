@@ -17,11 +17,11 @@ import {
 import { Button } from '@/components/ui/button';
 
 const navigationItems = [
-  { title: 'Dashboard', url: '/dashboard', icon: Home },
+  { title: 'Timeline', url: '/timeline', icon: Clock },
+  { title: 'AI Knowledge Assistant', url: '/dashboard', icon: Home },
   { title: 'Daily Brief', url: '/daily-brief', icon: Sparkles },
   { title: 'Email to Task', url: '/email-to-task', icon: Mail },
   { title: 'AI Assistant', url: '/conversations', icon: MessageSquare },
-  { title: 'Timeline', url: '/timeline', icon: Clock },
   { title: 'My Assistants', url: '/assistants', icon: Shield },
   { title: 'Assistant Portal', url: '/assistant-portal', icon: UserCircle },
   { title: 'Find Documents', url: '/documents', icon: FileText },

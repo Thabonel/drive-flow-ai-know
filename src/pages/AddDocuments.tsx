@@ -22,6 +22,7 @@ import DragDropUpload from '@/components/DragDropUpload';
 import LocalFilesPicker from '@/components/LocalFilesPicker';
 import { S3Setup } from '@/components/S3Setup';
 import { PageHelp } from '@/components/PageHelp';
+import { AIQueryInput } from '@/components/AIQueryInput';
 
 export default function AddDocuments() {
   const navigate = useNavigate();
@@ -236,6 +237,9 @@ export default function AddDocuments() {
           ]}
         />
       </div>
+
+      {/* AI Assistant for document queries */}
+      <AIQueryInput />
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-5">
