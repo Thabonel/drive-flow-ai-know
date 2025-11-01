@@ -1163,7 +1163,7 @@ DECLARE
   link RECORD;
   day_name TEXT;
   availability_windows JSONB;
-  window JSONB;
+  time_window JSONB;
   slot_start TIMESTAMPTZ;
   slot_end TIMESTAMPTZ;
   now_time TIMESTAMPTZ;
@@ -1191,12 +1191,12 @@ BEGIN
   now_time := NOW();
 
   -- Generate slots for each availability window
-  FOR window IN SELECT * FROM jsonb_array_elements(availability_windows)
+  FOR time_window IN SELECT * FROM jsonb_array_elements(availability_windows)
   LOOP
-    slot_start := (p_date::TEXT || ' ' || (window->>'start'))::TIMESTAMPTZ;
+    slot_start := (p_date::TEXT || ' ' || (time_window->>'start'))::TIMESTAMPTZ;
 
     -- Generate 30-minute slots within this window
-    WHILE slot_start < (p_date::TEXT || ' ' || (window->>'end'))::TIMESTAMPTZ
+    WHILE slot_start < (p_date::TEXT || ' ' || (time_window->>'end'))::TIMESTAMPTZ
     LOOP
       slot_end := slot_start + (link.duration_minutes || ' minutes')::INTERVAL;
 
