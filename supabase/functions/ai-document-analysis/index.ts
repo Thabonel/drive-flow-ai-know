@@ -15,7 +15,7 @@ async function anthropicCompletion(prompt: string, context: string) {
       'anthropic-version': '2023-06-01',
     },
     body: JSON.stringify({
-      model: 'claude-3-5-sonnet-20241022',
+      model: 'claude-sonnet-4-5-20250514',
       max_tokens: 4000,
       messages: [
         {
@@ -37,7 +37,7 @@ async function openAICompletion(prompt: string, context: string) {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'gpt-4o-mini',
+      model: 'gpt-5-mini',
       messages: [
         { role: 'system', content: context },
         { role: 'user', content: prompt },
@@ -57,7 +57,7 @@ async function openRouterCompletion(prompt: string, context: string) {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'openai/gpt-4o-mini',
+      model: 'openai/gpt-5-mini',
       messages: [
         { role: 'system', content: context },
         { role: 'user', content: prompt },
