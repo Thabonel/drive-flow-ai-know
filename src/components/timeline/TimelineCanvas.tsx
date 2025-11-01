@@ -30,11 +30,14 @@ interface TimelineCanvasProps {
   pastHours?: number;
   futureHours?: number;
   subdivisionMinutes?: number;
+  selectedItemId?: string | null;
+  bladeMode?: boolean;
   onItemClick: (item: TimelineItemType) => void;
   onDrag?: (deltaX: number) => void;
   onItemDrop?: (item: TimelineItemType, newStartTime: string, newLayerId: string) => void;
   onItemResize?: (item: TimelineItemType, newDurationMinutes: number) => void;
   onDoubleClick?: (startTime: string, layerId: string) => void;
+  onBladeClick?: (item: TimelineItemType, clickX: number) => void;
 }
 
 export function TimelineCanvas({
@@ -49,11 +52,14 @@ export function TimelineCanvas({
   pastHours = DEFAULT_PAST_HOURS,
   futureHours = DEFAULT_FUTURE_HOURS,
   subdivisionMinutes = 360,
+  selectedItemId = null,
+  bladeMode = false,
   onItemClick,
   onDrag,
   onItemDrop,
   onItemResize,
   onDoubleClick,
+  onBladeClick,
 }: TimelineCanvasProps) {
   const svgRef = useRef<SVGSVGElement>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -194,7 +200,7 @@ export function TimelineCanvas({
       className="w-full border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900"
       style={{
         height: `${totalHeight}px`,
-        cursor: isDragging ? 'grabbing' : (isLocked ? 'default' : 'grab'),
+        cursor: bladeMode ? 'crosshair' : (isDragging ? 'grabbing' : (isLocked ? 'default' : 'grab')),
       }}
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
@@ -403,11 +409,14 @@ export function TimelineCanvas({
               pixelsPerHour={pixelsPerHour}
               scrollOffset={scrollOffset}
               nowTime={nowTime}
+              isSelected={selectedItemId === item.id}
+              bladeMode={bladeMode}
               onClick={onItemClick}
               onDragStart={handleItemDragStart}
               onDragMove={handleItemDragMove}
               onDragEnd={handleItemDragEnd}
               onResize={onItemResize}
+              onBladeClick={onBladeClick}
             />
           </g>
         );

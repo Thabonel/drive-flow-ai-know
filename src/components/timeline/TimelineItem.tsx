@@ -22,11 +22,14 @@ interface TimelineItemProps {
   pixelsPerHour: number;
   scrollOffset: number;
   nowTime: Date;
+  isSelected?: boolean;
+  bladeMode?: boolean;
   onClick: (item: TimelineItemType) => void;
   onDragStart?: (item: TimelineItemType) => void;
   onDragMove?: (item: TimelineItemType, deltaX: number, deltaY: number) => void;
   onDragEnd?: (item: TimelineItemType, deltaX: number, deltaY: number) => void;
   onResize?: (item: TimelineItemType, newDurationMinutes: number) => void;
+  onBladeClick?: (item: TimelineItemType, clickX: number) => void;
 }
 
 export function TimelineItem({
@@ -37,11 +40,14 @@ export function TimelineItem({
   pixelsPerHour,
   scrollOffset,
   nowTime,
+  isSelected = false,
+  bladeMode = false,
   onClick,
   onDragStart,
   onDragMove,
   onDragEnd,
   onResize,
+  onBladeClick,
 }: TimelineItemProps) {
   const [isDragging, setIsDragging] = React.useState(false);
   const [isResizing, setIsResizing] = React.useState(false);
@@ -150,9 +156,24 @@ export function TimelineItem({
 
   // Handle click (only if not dragged)
   const handleClick = (e: React.MouseEvent) => {
-    if (!wasDragged) {
-      onClick(item);
+    if (wasDragged) return;
+
+    // If in blade mode and this item is selected, handle blade click
+    if (bladeMode && isSelected && onBladeClick) {
+      e.stopPropagation();
+      // Get click X position relative to the SVG
+      const target = e.currentTarget;
+      const svg = target.ownerSVGElement;
+      if (svg) {
+        const rect = svg.getBoundingClientRect();
+        const clickX = e.clientX - rect.left;
+        onBladeClick(item, clickX);
+      }
+      return;
     }
+
+    // Normal click
+    onClick(item);
   };
 
   // Calculate display position (with drag offset)
@@ -211,8 +232,19 @@ export function TimelineItem({
         ry={ITEM_BORDER_RADIUS}
         fill={item.color}
         opacity={isDragging || isResizing ? 0.6 : opacity}
-        stroke={isDragging || isResizing ? '#3b82f6' : (shouldPulse ? '#ef4444' : 'none')}
-        strokeWidth={isDragging || isResizing ? 2 : (shouldPulse ? 3 : 0)}
+        stroke={
+          isDragging || isResizing
+            ? '#3b82f6'
+            : isSelected
+            ? '#10b981'
+            : item.is_locked_time
+            ? '#f59e0b'
+            : shouldPulse
+            ? '#ef4444'
+            : 'none'
+        }
+        strokeWidth={isDragging || isResizing ? 2 : (isSelected || item.is_locked_time || shouldPulse) ? 3 : 0}
+        strokeDasharray={item.is_flexible && item.original_duration && item.duration_minutes < item.original_duration ? '4,2' : undefined}
         className={shouldPulse && !isDragging && !isResizing ? 'animate-pulse' : ''}
       />
 
@@ -273,6 +305,74 @@ export function TimelineItem({
             fill="none"
             strokeLinecap="round"
             strokeLinejoin="round"
+          />
+        </g>
+      )}
+
+      {/* Routine badge (template_id indicator) */}
+      {item.template_id && displayWidth > 30 && (
+        <g transform={`translate(${displayX + 5}, ${displayY + 5})`}>
+          <circle cx="6" cy="6" r="6" fill="rgba(255, 255, 255, 0.3)" />
+          <text
+            x="6"
+            y="6"
+            fontSize="10"
+            textAnchor="middle"
+            dominantBaseline="central"
+            fill="white"
+          >
+            🔄
+          </text>
+        </g>
+      )}
+
+      {/* Locked time indicator */}
+      {item.is_locked_time && displayWidth > 30 && (
+        <g transform={`translate(${displayX + displayWidth - 15}, ${displayY + height - 15})`}>
+          <circle cx="6" cy="6" r="5" fill="#f59e0b" />
+          <text
+            x="6"
+            y="6"
+            fontSize="8"
+            textAnchor="middle"
+            dominantBaseline="central"
+            fill="white"
+          >
+            🔒
+          </text>
+        </g>
+      )}
+
+      {/* Compressed/flexible indicator */}
+      {item.is_flexible && item.original_duration && item.duration_minutes < item.original_duration && displayWidth > 30 && (
+        <g transform={`translate(${displayX + displayWidth - 30}, ${displayY + height - 15})`}>
+          <circle cx="6" cy="6" r="5" fill="#ef4444" />
+          <text
+            x="6"
+            y="6"
+            fontSize="8"
+            textAnchor="middle"
+            dominantBaseline="central"
+            fill="white"
+          >
+            ⚠️
+          </text>
+        </g>
+      )}
+
+      {/* Blade mode indicator - show crosshair when in blade mode and selected */}
+      {bladeMode && isSelected && displayWidth > 40 && (
+        <g>
+          <line
+            x1={displayX}
+            y1={displayY + height / 2}
+            x2={displayX + displayWidth}
+            y2={displayY + height / 2}
+            stroke="white"
+            strokeWidth="1"
+            strokeDasharray="2,2"
+            opacity="0.5"
+            className="pointer-events-none"
           />
         </g>
       )}

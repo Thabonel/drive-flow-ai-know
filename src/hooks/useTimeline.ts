@@ -8,9 +8,16 @@ import {
   TimelineItem,
   TimelineSettings,
   ParkedItem,
+  TimelineLayer,
   shouldBeLogjammed,
   shouldBeArchived,
 } from '@/lib/timelineUtils';
+import {
+  applyMagneticReflow,
+  getMinutesFromMidnight,
+  createTimestampFromMinutes,
+  MagneticTimelineItem,
+} from '@/lib/magneticTimelineUtils';
 
 export function useTimeline() {
   const { user } = useAuth();
@@ -25,6 +32,90 @@ export function useTimeline() {
 
   const animationFrameRef = useRef<number>();
   const lastTickRef = useRef<number>(Date.now());
+
+  // Helper: Check if a layer is magnetic
+  const isLayerMagnetic = async (layerId: string): Promise<boolean> => {
+    try {
+      const { data, error } = await supabase
+        .from('timeline_layers')
+        .select('timeline_type')
+        .eq('id', layerId)
+        .single();
+
+      if (error) throw error;
+      return data?.timeline_type === 'magnetic';
+    } catch (error) {
+      console.error('Error checking layer type:', error);
+      return false;
+    }
+  };
+
+  // Helper: Apply magnetic reflow to items on a specific layer and date
+  const applyMagneticReflowToLayer = async (layerId: string, date: Date) => {
+    if (!user) return;
+
+    try {
+      // Get all items on this layer for this date
+      const startOfDay = new Date(date);
+      startOfDay.setHours(0, 0, 0, 0);
+
+      const endOfDay = new Date(date);
+      endOfDay.setHours(23, 59, 59, 999);
+
+      const { data: layerItems, error } = await supabase
+        .from('timeline_items')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('layer_id', layerId)
+        .gte('start_time', startOfDay.toISOString())
+        .lte('start_time', endOfDay.toISOString())
+        .neq('status', 'parked');
+
+      if (error) throw error;
+
+      if (!layerItems || layerItems.length === 0) return;
+
+      // Convert to MagneticTimelineItem format
+      const magneticItems: MagneticTimelineItem[] = layerItems.map(item => ({
+        ...item,
+        is_locked_time: item.is_locked_time || false,
+        is_flexible: item.is_flexible !== undefined ? item.is_flexible : true,
+      }));
+
+      // Apply magnetic reflow
+      const reflowedItems = applyMagneticReflow(magneticItems);
+
+      // Update all items in database
+      for (const item of reflowedItems) {
+        await supabase
+          .from('timeline_items')
+          .update({
+            start_time: item.start_time,
+            duration_minutes: item.duration_minutes,
+            original_duration: item.original_duration,
+          })
+          .eq('id', item.id);
+      }
+
+      // Update local state
+      setItems(prevItems =>
+        prevItems.map(prevItem => {
+          const reflowedItem = reflowedItems.find(r => r.id === prevItem.id);
+          if (reflowedItem) {
+            return {
+              ...prevItem,
+              start_time: reflowedItem.start_time,
+              duration_minutes: reflowedItem.duration_minutes,
+              original_duration: reflowedItem.original_duration,
+            };
+          }
+          return prevItem;
+        })
+      );
+    } catch (error) {
+      console.error('Error applying magnetic reflow:', error);
+    }
+  };
 
   // Fetch timeline items
   const fetchItems = async () => {
@@ -165,6 +256,13 @@ export function useTimeline() {
         description: `"${title}" has been added to the timeline`,
       });
 
+      // Apply magnetic reflow if on magnetic layer
+      const isMagnetic = await isLayerMagnetic(layerId);
+      if (isMagnetic) {
+        const itemDate = new Date(startTime);
+        await applyMagneticReflowToLayer(layerId, itemDate);
+      }
+
       return data;
     } catch (error: any) {
       console.error('Error adding item:', {
@@ -217,6 +315,16 @@ export function useTimeline() {
       if (error) throw error;
 
       setItems(items.map(item => item.id === itemId ? { ...item, ...allowedUpdates } : item));
+
+      // Apply magnetic reflow if on magnetic layer and start_time or duration changed
+      const item = items.find(i => i.id === itemId);
+      if (item && (allowedUpdates.start_time || allowedUpdates.duration_minutes)) {
+        const isMagnetic = await isLayerMagnetic(item.layer_id);
+        if (isMagnetic) {
+          const itemDate = new Date(allowedUpdates.start_time || item.start_time);
+          await applyMagneticReflowToLayer(item.layer_id, itemDate);
+        }
+      }
     } catch (error: any) {
       console.error('Error updating item:', {
         message: error?.message,
@@ -366,6 +474,11 @@ export function useTimeline() {
 
   // Delete an item
   const deleteItem = async (itemId: string) => {
+    // Get item info before deleting (for reflow)
+    const item = items.find(i => i.id === itemId);
+    const itemLayerId = item?.layer_id;
+    const itemDate = item ? new Date(item.start_time) : null;
+
     try {
       const { error } = await supabase
         .from('timeline_items')
@@ -379,6 +492,14 @@ export function useTimeline() {
         title: 'Item deleted',
         description: 'Timeline item has been removed',
       });
+
+      // Apply magnetic reflow if on magnetic layer
+      if (itemLayerId && itemDate) {
+        const isMagnetic = await isLayerMagnetic(itemLayerId);
+        if (isMagnetic) {
+          await applyMagneticReflowToLayer(itemLayerId, itemDate);
+        }
+      }
     } catch (error) {
       console.error('Error deleting item:', error);
       toast({
@@ -409,6 +530,109 @@ export function useTimeline() {
       toast({
         title: 'Error',
         description: 'Failed to delete parked item',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  // Split an item at a specific time (blade tool)
+  const splitItem = async (itemId: string, splitMinutesFromMidnight: number) => {
+    if (!user) return;
+
+    const itemToSplit = items.find(i => i.id === itemId);
+    if (!itemToSplit) {
+      toast({
+        title: 'Error',
+        description: 'Item not found',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      const itemStartMinutes = getMinutesFromMidnight(itemToSplit.start_time);
+      const itemEndMinutes = itemStartMinutes + itemToSplit.duration_minutes;
+
+      // Validate split is within item bounds
+      if (splitMinutesFromMidnight <= itemStartMinutes || splitMinutesFromMidnight >= itemEndMinutes) {
+        toast({
+          title: 'Invalid split position',
+          description: 'Split must be within the item boundaries',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      // Calculate durations for both parts
+      const firstPartDuration = splitMinutesFromMidnight - itemStartMinutes;
+      const secondPartDuration = itemEndMinutes - splitMinutesFromMidnight;
+
+      const itemDate = new Date(itemToSplit.start_time);
+
+      // Create two new items
+      const firstPartData = {
+        user_id: user.id,
+        layer_id: itemToSplit.layer_id,
+        title: `${itemToSplit.title} (1/2)`,
+        start_time: itemToSplit.start_time,
+        duration_minutes: firstPartDuration,
+        color: itemToSplit.color,
+        status: itemToSplit.status,
+        is_locked_time: itemToSplit.is_locked_time,
+        is_flexible: itemToSplit.is_flexible,
+        template_id: null, // Split items lose template association
+      };
+
+      const secondPartData = {
+        user_id: user.id,
+        layer_id: itemToSplit.layer_id,
+        title: `${itemToSplit.title} (2/2)`,
+        start_time: createTimestampFromMinutes(splitMinutesFromMidnight, itemDate),
+        duration_minutes: secondPartDuration,
+        color: itemToSplit.color,
+        status: itemToSplit.status,
+        is_locked_time: itemToSplit.is_locked_time,
+        is_flexible: itemToSplit.is_flexible,
+        template_id: null, // Split items lose template association
+      };
+
+      // Delete original item
+      await supabase
+        .from('timeline_items')
+        .delete()
+        .eq('id', itemId);
+
+      // Insert both parts
+      const { data: newItems, error } = await supabase
+        .from('timeline_items')
+        .insert([firstPartData, secondPartData])
+        .select();
+
+      if (error) throw error;
+
+      // Update local state
+      setItems(prevItems => [
+        ...prevItems.filter(i => i.id !== itemId),
+        ...(newItems || []),
+      ]);
+
+      toast({
+        title: 'Item split',
+        description: 'Item has been split into two parts',
+      });
+
+      // Apply magnetic reflow if on magnetic layer
+      const isMagnetic = await isLayerMagnetic(itemToSplit.layer_id);
+      if (isMagnetic) {
+        await applyMagneticReflowToLayer(itemToSplit.layer_id, itemDate);
+      }
+
+      return newItems;
+    } catch (error) {
+      console.error('Error splitting item:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to split item',
         variant: 'destructive',
       });
     }
@@ -502,6 +726,7 @@ export function useTimeline() {
     restoreParkedItem,
     deleteItem,
     deleteParkedItem,
+    splitItem,
     updateSettings,
     refetchItems: fetchItems,
     refetchParkedItems: fetchParkedItems,

@@ -24,7 +24,16 @@ export function useLayers() {
         .order('sort_order', { ascending: true });
 
       if (error) throw error;
-      setLayers(data || []);
+
+      // Check if "Me" layer exists
+      const meLayer = (data || []).find(l => l.is_primary_timeline);
+
+      if (!meLayer) {
+        // Create "Me" layer automatically
+        await createMeLayer();
+      } else {
+        setLayers(data || []);
+      }
     } catch (error) {
       console.error('Error fetching layers:', error);
       toast({
@@ -34,6 +43,44 @@ export function useLayers() {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Create the primary "Me" layer
+  const createMeLayer = async () => {
+    if (!user) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('timeline_layers')
+        .insert({
+          user_id: user.id,
+          name: 'Me',
+          color: '#6366f1', // Indigo
+          sort_order: 0,
+          is_primary_timeline: true,
+          timeline_type: 'magnetic',
+          is_visible: true,
+        })
+        .select();
+
+      if (error) throw error;
+
+      // Fetch all layers again to get complete list
+      const { data: allLayers } = await supabase
+        .from('timeline_layers')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('sort_order', { ascending: true });
+
+      setLayers(allLayers || []);
+    } catch (error) {
+      console.error('Error creating Me layer:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to create Me layer',
+        variant: 'destructive',
+      });
     }
   };
 
@@ -101,6 +148,17 @@ export function useLayers() {
   // Delete a layer
   const deleteLayer = async (layerId: string) => {
     try {
+      // Check if this is the primary "Me" layer
+      const layer = layers.find(l => l.id === layerId);
+      if (layer?.is_primary_timeline) {
+        toast({
+          title: 'Cannot delete Me layer',
+          description: 'The "Me" timeline layer cannot be deleted.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
       // Check if layer has items
       const { count, error: countError } = await supabase
         .from('timeline_items')

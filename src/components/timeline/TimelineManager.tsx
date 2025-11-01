@@ -23,11 +23,13 @@ import {
   VIEW_MODE_CONFIG,
 } from '@/lib/timelineConstants';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, Clock, Settings, Layers, Lock, Unlock, Archive } from 'lucide-react';
+import { Loader2, Clock, Settings, Layers, Lock, Unlock, Archive, Scissors } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
 import { PageHelp } from '@/components/PageHelp';
-import { MagneticTimeline } from '@/components/magnetic-timeline/MagneticTimeline';
+import { ResizeRoutineModal } from './ResizeRoutineModal';
+import { useRoutineTemplates } from '@/hooks/useRoutineTemplates';
+import { getMinutesFromMidnight } from '@/lib/magneticTimelineUtils';
 
 export function TimelineManager() {
   const {
@@ -46,6 +48,7 @@ export function TimelineManager() {
     restoreParkedItem,
     deleteItem,
     deleteParkedItem,
+    splitItem,
     updateSettings,
     refetchItems,
   } = useTimeline();
@@ -60,6 +63,11 @@ export function TimelineManager() {
     refetch: refetchLayers,
   } = useLayers();
 
+  const {
+    routineTemplates,
+    updateRoutineTemplateDuration,
+  } = useRoutineTemplates();
+
   // Real-time sync
   useTimelineSync({
     onItemsChange: refetchItems,
@@ -73,6 +81,11 @@ export function TimelineManager() {
   const [showParkedItems, setShowParkedItems] = useState(false);
   const [viewMode, setViewMode] = useState<TimelineViewMode>('week');
   const [initialFormValues, setInitialFormValues] = useState<{ startTime?: string; layerId?: string } | null>(null);
+  const [bladeMode, setBladeMode] = useState(false);
+  const [resizeModalData, setResizeModalData] = useState<{
+    item: TimelineItem;
+    newDuration: number;
+  } | null>(null);
 
   const animationFrameRef = useRef<number>();
   const lastTickRef = useRef<number>(Date.now());
@@ -116,9 +129,48 @@ export function TimelineManager() {
     };
   }, [settings?.is_locked, pixelsPerHour]);
 
+  // Keyboard shortcuts - blade mode toggle
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // 'B' key to toggle blade mode (only if an item is selected)
+      if ((e.key === 'b' || e.key === 'B') && selectedItem) {
+        setBladeMode(prev => !prev);
+      }
+      // Escape to cancel blade mode
+      if (e.key === 'Escape' && bladeMode) {
+        setBladeMode(false);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedItem, bladeMode]);
+
   // Handle item click
   const handleItemClick = (item: TimelineItem) => {
+    // If switching to different item, cancel blade mode
+    if (selectedItem?.id !== item.id) {
+      setBladeMode(false);
+    }
     setSelectedItem(item);
+  };
+
+  // Handle blade click - split item at click position
+  const handleBladeClick = async (item: TimelineItem, clickX: number) => {
+    if (!bladeMode || !selectedItem) return;
+
+    // Convert click X position to minutes from midnight
+    const nowLineX = (typeof window !== 'undefined' ? window.innerWidth : 1200) * 0.3; // NOW_LINE_POSITION
+    const minutesFromNow = ((clickX - nowLineX - scrollOffset) / pixelsPerHour) * 60;
+    const currentMinutes = nowTime.getHours() * 60 + nowTime.getMinutes();
+    const splitMinutes = currentMinutes + minutesFromNow;
+
+    // Ensure split is valid (positive and within the day)
+    if (splitMinutes >= 0 && splitMinutes < 1440) {
+      await splitItem(item.id, splitMinutes);
+      setBladeMode(false);
+      setSelectedItem(null);
+    }
   };
 
   // Handle edit item
@@ -186,7 +238,34 @@ export function TimelineManager() {
 
   // Handle item resize
   const handleItemResize = async (item: TimelineItem, newDurationMinutes: number) => {
-    await updateItem(item.id, { duration_minutes: newDurationMinutes });
+    // Check if this is a routine item (has template_id)
+    if (item.template_id) {
+      // Show modal to choose scope
+      setResizeModalData({ item, newDuration: newDurationMinutes });
+    } else {
+      // Normal item - just update duration
+      await updateItem(item.id, { duration_minutes: newDurationMinutes });
+    }
+  };
+
+  // Handle routine resize confirmation
+  const handleRoutineResizeConfirm = async (applyToAll: boolean) => {
+    if (!resizeModalData) return;
+
+    const { item, newDuration } = resizeModalData;
+
+    if (applyToAll && item.template_id) {
+      // Update the template (affects all instances)
+      await updateRoutineTemplateDuration(item.template_id, newDuration);
+    } else {
+      // Just update this one instance
+      await updateItem(item.id, {
+        duration_minutes: newDuration,
+        template_id: null, // Disconnect from template
+      });
+    }
+
+    setResizeModalData(null);
   };
 
   // Handle double-click on timeline - open form with pre-filled values
@@ -263,6 +342,18 @@ export function TimelineManager() {
               </>
             )}
           </Button>
+
+          {/* Blade Mode Toggle (only show when item selected) */}
+          {selectedItem && (
+            <Button
+              onClick={() => setBladeMode(!bladeMode)}
+              variant={bladeMode ? 'default' : 'outline'}
+              className="gap-2"
+            >
+              <Scissors className="h-4 w-4" />
+              Split (B)
+            </Button>
+          )}
 
           {/* Timeline Controls Dropdown */}
           <Popover>
@@ -354,17 +445,18 @@ export function TimelineManager() {
 
       {/* Main timeline area */}
       <div className="space-y-3">
-        {/* Magnetic timeline (Your Day) as part of timelines section */}
-        <MagneticTimeline
-          embedded
-          isLocked={settings?.is_locked ?? true}
-          pixelsPerHour={pixelsPerHour}
-          scrollOffset={scrollOffset}
-          onDrag={handleDrag}
-        />
+        {/* Blade mode indicator */}
+        {bladeMode && selectedItem && (
+          <Alert>
+            <Scissors className="h-4 w-4" />
+            <AlertDescription>
+              Blade mode active: Click on "{selectedItem.title}" to split it at that position. Press ESC to cancel.
+            </AlertDescription>
+          </Alert>
+        )}
 
         {/* Main timeline */}
-        {standardLayers.length === 0 ? (
+        {layers.length === 0 ? (
           <Alert>
             <AlertDescription>
               Create a layer first to start adding items to your timeline.
@@ -373,7 +465,7 @@ export function TimelineManager() {
         ) : (
           <TimelineCanvas
             items={items}
-            layers={standardLayers}
+            layers={layers}
             nowTime={nowTime}
             scrollOffset={scrollOffset}
             pixelsPerHour={pixelsPerHour}
@@ -383,11 +475,14 @@ export function TimelineManager() {
             pastHours={viewModeConfig.pastHours}
             futureHours={viewModeConfig.futureHours}
             subdivisionMinutes={viewModeConfig.subdivisionMinutes}
+            selectedItemId={selectedItem?.id || null}
+            bladeMode={bladeMode}
             onItemClick={handleItemClick}
             onDrag={handleDrag}
             onItemDrop={handleItemDrop}
             onItemResize={handleItemResize}
             onDoubleClick={handleTimelineDoubleClick}
+            onBladeClick={handleBladeClick}
           />
         )}
       </div>
@@ -427,6 +522,16 @@ export function TimelineManager() {
         layers={standardLayers}
         onRestoreItem={restoreParkedItem}
         onDeleteParkedItem={deleteParkedItem}
+      />
+
+      <ResizeRoutineModal
+        open={resizeModalData !== null}
+        onClose={() => setResizeModalData(null)}
+        routineName={resizeModalData?.item.title || ''}
+        currentDate={resizeModalData?.item.start_time || new Date().toISOString()}
+        oldDuration={resizeModalData?.item.duration_minutes || 0}
+        newDuration={resizeModalData?.newDuration || 0}
+        onConfirm={handleRoutineResizeConfirm}
       />
     </div>
   );
