@@ -11,7 +11,21 @@ import { Loader2 } from 'lucide-react';
 import { MagneticTimelineBar } from './MagneticTimelineBar';
 import { ToolboxPanel } from './ToolboxPanel';
 
-export function MagneticTimeline({ embedded = false }: { embedded?: boolean } = {}) {
+interface MagneticTimelineProps {
+  embedded?: boolean;
+  isLocked?: boolean;
+  pixelsPerHour?: number;
+  scrollOffset?: number;
+  onDrag?: (deltaX: number) => void;
+}
+
+export function MagneticTimeline({
+  embedded = false,
+  isLocked = false,
+  pixelsPerHour,
+  scrollOffset = 0,
+  onDrag,
+}: MagneticTimelineProps = {}) {
   const {
     items,
     loading,
@@ -162,10 +176,14 @@ export function MagneticTimeline({ embedded = false }: { embedded?: boolean } = 
         currentMinutes={currentMinutes}
         selectedItemId={selectedItemId}
         bladeMode={bladeMode}
+        isLocked={isLocked}
+        pixelsPerHour={pixelsPerHour}
+        scrollOffset={scrollOffset}
         onItemClick={handleItemClick}
         onItemMove={handleItemMove}
         onItemResize={handleItemResize}
         onBladeClick={handleBladeClick}
+        onDrag={onDrag}
       />
       {/* Toolbox Panel (conditional) */}
       {!embedded && showToolbox && (

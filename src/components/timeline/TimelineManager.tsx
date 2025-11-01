@@ -355,7 +355,13 @@ export function TimelineManager() {
       {/* Main timeline area */}
       <div className="space-y-3">
         {/* Magnetic timeline (Your Day) as part of timelines section */}
-        <MagneticTimeline embedded />
+        <MagneticTimeline
+          embedded
+          isLocked={settings?.is_locked ?? true}
+          pixelsPerHour={pixelsPerHour}
+          scrollOffset={scrollOffset}
+          onDrag={handleDrag}
+        />
 
         {/* Main timeline */}
         {standardLayers.length === 0 ? (
