@@ -66,6 +66,8 @@ export function TimelineManager() {
   const {
     routineTemplates,
     updateRoutineTemplateDuration,
+    hasRoutineItemsForDate,
+    instantiateRoutinesForDate,
   } = useRoutineTemplates();
 
   // Real-time sync
@@ -86,6 +88,7 @@ export function TimelineManager() {
     item: TimelineItem;
     newDuration: number;
   } | null>(null);
+  const [currentDate, setCurrentDate] = useState(new Date().toDateString());
 
   const animationFrameRef = useRef<number>();
   const lastTickRef = useRef<number>(Date.now());
@@ -145,6 +148,61 @@ export function TimelineManager() {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [selectedItem, bladeMode]);
+
+  // Auto-populate "Me" layer with routine items for current day
+  useEffect(() => {
+    const populateMeLayer = async () => {
+      // Wait for layers and routine templates to load
+      if (layersLoading || !layers || layers.length === 0 || !routineTemplates || routineTemplates.length === 0) {
+        return;
+      }
+
+      // Find the "Me" layer (primary timeline)
+      const meLayer = layers.find(l => l.is_primary_timeline);
+      if (!meLayer) return;
+
+      // Check if current day already has routine items
+      const today = new Date();
+      const hasItems = await hasRoutineItemsForDate(today, meLayer.id);
+
+      if (!hasItems) {
+        // Create routine items for today
+        await instantiateRoutinesForDate(today, meLayer.id);
+        // Refresh items to show the new routine items
+        refetchItems();
+      }
+    };
+
+    populateMeLayer();
+  }, [layers, layersLoading, routineTemplates, hasRoutineItemsForDate, instantiateRoutinesForDate, refetchItems]);
+
+  // Detect day changes and create routine items for new day
+  useEffect(() => {
+    const checkDayChange = () => {
+      const newDate = new Date().toDateString();
+      if (newDate !== currentDate) {
+        setCurrentDate(newDate);
+
+        // Find the "Me" layer
+        const meLayer = layers.find(l => l.is_primary_timeline);
+        if (meLayer) {
+          // Create routine items for the new day
+          const today = new Date();
+          hasRoutineItemsForDate(today, meLayer.id).then(hasItems => {
+            if (!hasItems) {
+              instantiateRoutinesForDate(today, meLayer.id).then(() => {
+                refetchItems();
+              });
+            }
+          });
+        }
+      }
+    };
+
+    // Check every minute for day change
+    const interval = setInterval(checkDayChange, 60000);
+    return () => clearInterval(interval);
+  }, [currentDate, layers, hasRoutineItemsForDate, instantiateRoutinesForDate, refetchItems]);
 
   // Handle item click
   const handleItemClick = (item: TimelineItem) => {
