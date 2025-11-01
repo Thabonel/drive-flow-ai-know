@@ -1,0 +1,51 @@
+====================================================================
+QUICK FIX GUIDE - Run These SQL Scripts (NOT the .md files!)
+====================================================================
+
+ERROR: "invitation_token does not exist"
+-----------------------------------------
+1. Run in SQL Editor:
+   File: CLEAN_AND_REAPPLY_ASSISTANT.sql
+
+2. Then run in SQL Editor:
+   File: migrations/20251102000012_create_assistant_system.sql
+
+
+ERROR: "unique_user_template_name already exists"
+--------------------------------------------------
+1. Run in SQL Editor:
+   File: CLEAN_AND_REAPPLY_DOCUMENTS.sql
+
+2. Then run in SQL Editor:
+   File: migrations/20251102000013_create_document_attachments.sql
+
+
+CORRECT ORDER (Fresh Setup)
+============================
+1. CLEAN_AND_REAPPLY_ASSISTANT.sql       (cleanup)
+2. 20251102000012_create_assistant_system.sql  (migration)
+3. CLEAN_AND_REAPPLY_DOCUMENTS.sql       (cleanup)
+4. 20251102000013_create_document_attachments.sql  (migration)
+5. Create storage bucket via Dashboard
+6. storage_setup.sql                     (policies)
+
+
+FILES YOU RUN (.sql):
+=====================
+✅ CLEAN_AND_REAPPLY_ASSISTANT.sql
+✅ CLEAN_AND_REAPPLY_DOCUMENTS.sql
+✅ migrations/20251102000012_create_assistant_system.sql
+✅ migrations/20251102000013_create_document_attachments.sql
+✅ storage_setup.sql
+
+
+FILES YOU READ (.md):
+=====================
+📖 ASSISTANT_MIGRATION_FIX_README.md
+📖 DOCUMENT_MIGRATION_FIX_README.md
+📖 COMPLETE_MIGRATION_GUIDE.md
+📖 DOCUMENT_ATTACHMENTS_SETUP.md
+
+
+TIP: Copy content from .sql files and paste into Supabase SQL Editor!
+====================================================================
