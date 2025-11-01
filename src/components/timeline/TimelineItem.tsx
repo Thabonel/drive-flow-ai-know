@@ -27,6 +27,7 @@ interface TimelineItemProps {
   onDragMove?: (item: TimelineItemType, deltaX: number, deltaY: number) => void;
   onDragEnd?: (item: TimelineItemType, deltaX: number, deltaY: number) => void;
   onResize?: (item: TimelineItemType, newDurationMinutes: number) => void;
+  documentCount?: number;
 }
 
 export function TimelineItem({
@@ -42,6 +43,7 @@ export function TimelineItem({
   onDragMove,
   onDragEnd,
   onResize,
+  documentCount = 0,
 }: TimelineItemProps) {
   const [isDragging, setIsDragging] = React.useState(false);
   const [isResizing, setIsResizing] = React.useState(false);
@@ -276,6 +278,41 @@ export function TimelineItem({
             strokeLinecap="round"
             strokeLinejoin="round"
           />
+        </g>
+      )}
+
+      {/* Document attachment indicator */}
+      {documentCount > 0 && displayWidth > 80 && (
+        <g transform={`translate(${displayX + displayWidth - (item.status === 'completed' ? 40 : 25)}, ${displayY + height - 18})`}>
+          {/* Paperclip icon background */}
+          <circle cx="8" cy="8" r="8" fill="rgba(255, 255, 255, 0.9)" />
+          {/* Paperclip icon - simplified */}
+          <path
+            d="M6 10 L6 6 C6 5 7 4 8 4 C9 4 10 5 10 6 L10 10 C10 11.5 9 12.5 7.5 12.5 C6 12.5 5 11.5 5 10 L5 6"
+            stroke="#3b82f6"
+            strokeWidth="1"
+            fill="none"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          {/* Count badge */}
+          {documentCount > 1 && (
+            <>
+              <circle cx="12" cy="4" r="4" fill="#ef4444" />
+              <text
+                x="12"
+                y="4"
+                dominantBaseline="middle"
+                textAnchor="middle"
+                fill="white"
+                fontSize="6"
+                fontWeight="bold"
+                className="pointer-events-none select-none"
+              >
+                {documentCount > 9 ? '9+' : documentCount}
+              </text>
+            </>
+          )}
         </g>
       )}
 
