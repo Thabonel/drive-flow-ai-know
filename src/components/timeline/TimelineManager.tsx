@@ -8,6 +8,7 @@ import { AddItemForm } from './AddItemForm';
 import { ItemActionMenu } from './ItemActionMenu';
 import { ParkedItemsPanel } from './ParkedItemsPanel';
 import { ViewModeSwitcher } from './ViewModeSwitcher';
+import { CalendarSyncButton } from './CalendarSyncButton';
 import { useTimeline } from '@/hooks/useTimeline';
 import { useLayers } from '@/hooks/useLayers';
 import { useTimelineSync } from '@/hooks/useTimelineSync';
@@ -313,6 +314,9 @@ export function TimelineManager() {
             <Archive className="h-4 w-4" />
             Parked ({parkedItems?.length || 0})
           </Button>
+
+          {/* Google Calendar Sync Button */}
+          <CalendarSyncButton />
 
           {/* View Mode Switcher */}
           <div className="ml-auto">
