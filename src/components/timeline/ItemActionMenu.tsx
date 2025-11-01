@@ -1,6 +1,6 @@
 // Action menu for timeline items (especially logjammed items)
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -9,9 +9,12 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { TimelineItem, rescheduleItem as calculateReschedule } from '@/lib/timelineUtils';
 import { RESCHEDULE_OPTIONS } from '@/lib/timelineConstants';
-import { Check, Clock, Pause, Trash2, Edit } from 'lucide-react';
+import { Check, Clock, Pause, Trash2, Edit, Paperclip } from 'lucide-react';
+import { DocumentViewer } from '@/components/documents/DocumentViewer';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ItemActionMenuProps {
   item: TimelineItem | null;
@@ -34,6 +37,30 @@ export function ItemActionMenu({
   onPark,
   onDelete,
 }: ItemActionMenuProps) {
+  const [documentCount, setDocumentCount] = useState(0);
+  const [showDocumentViewer, setShowDocumentViewer] = useState(false);
+
+  // Fetch document count when item changes
+  useEffect(() => {
+    if (!item) return;
+
+    const fetchDocumentCount = async () => {
+      try {
+        const { count, error } = await supabase
+          .from('timeline_item_documents')
+          .select('*', { count: 'exact', head: true })
+          .eq('timeline_item_id', item.id);
+
+        if (error) throw error;
+        setDocumentCount(count || 0);
+      } catch (error) {
+        console.error('Error fetching document count:', error);
+      }
+    };
+
+    fetchDocumentCount();
+  }, [item]);
+
   if (!item) return null;
 
   const handleEdit = () => {
@@ -92,6 +119,21 @@ export function ItemActionMenu({
           >
             <Edit className="mr-2 h-4 w-4" />
             Edit Item
+          </Button>
+
+          {/* View Documents */}
+          <Button
+            onClick={() => setShowDocumentViewer(true)}
+            className="w-full justify-start"
+            variant="outline"
+          >
+            <Paperclip className="mr-2 h-4 w-4" />
+            View Documents
+            {documentCount > 0 && (
+              <Badge variant="secondary" className="ml-auto">
+                {documentCount}
+              </Badge>
+            )}
           </Button>
 
           {/* Mark as Done */}
@@ -156,6 +198,24 @@ export function ItemActionMenu({
           <p>Started: {new Date(item.start_time).toLocaleString()}</p>
         </div>
       </DialogContent>
+
+      {/* Document Viewer Modal */}
+      <DocumentViewer
+        open={showDocumentViewer}
+        onClose={() => {
+          setShowDocumentViewer(false);
+          // Refresh document count after closing
+          if (item) {
+            supabase
+              .from('timeline_item_documents')
+              .select('*', { count: 'exact', head: true })
+              .eq('timeline_item_id', item.id)
+              .then(({ count }) => setDocumentCount(count || 0));
+          }
+        }}
+        timelineItemId={item.id}
+        timelineItemTitle={item.title}
+      />
     </Dialog>
   );
 }
