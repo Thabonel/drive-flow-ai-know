@@ -13,10 +13,10 @@ GRANT USAGE ON SCHEMA cron TO postgres;
 GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA cron TO postgres;
 
 -- ============================================================================
--- STEP 2: Create Edge Function wrapper for scheduled sync
+-- STEP 2: Note about Edge Function
 -- ============================================================================
 
--- Note: The actual Edge Function (google-calendar-sync-scheduled) will be created
+-- The Edge Function (google-calendar-sync-scheduled) has been created
 -- in supabase/functions/google-calendar-sync-scheduled/index.ts
 --
 -- It will:
@@ -29,116 +29,16 @@ GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA cron TO postgres;
 -- ============================================================================
 
 -- Remove any existing calendar sync jobs
-SELECT cron.unschedule('google-calendar-sync-all-users');
-
--- Schedule new job (every 15 minutes)
-SELECT cron.schedule(
-  'google-calendar-sync-all-users',
-  '*/15 * * * *', -- Cron expression: every 15 minutes
-  $$
-  SELECT
-    net.http_post(
-      url := current_setting('app.settings.supabase_url') || '/functions/v1/google-calendar-sync-scheduled',
-      headers := jsonb_build_object(
-        'Content-Type', 'application/json',
-        'Authorization', 'Bearer ' || current_setting('app.settings.service_role_key')
-      ),
-      body := jsonb_build_object(
-        'sync_type', 'scheduled',
-        'triggered_at', NOW()
-      )
-    ) as request_id;
-  $$
+SELECT cron.unschedule('google-calendar-sync-all-users')
+WHERE EXISTS (
+  SELECT 1 FROM cron.job WHERE jobname = 'google-calendar-sync-all-users'
 );
 
--- ============================================================================
--- STEP 4: Create function to update sync intervals dynamically
--- ============================================================================
-
-CREATE OR REPLACE FUNCTION update_calendar_sync_schedule()
-RETURNS void AS $$
-DECLARE
-  most_common_interval INTEGER;
-BEGIN
-  -- Find the most common sync interval among active users
-  SELECT sync_interval_minutes INTO most_common_interval
-  FROM calendar_sync_settings
-  WHERE enabled = true AND auto_sync_enabled = true
-  GROUP BY sync_interval_minutes
-  ORDER BY COUNT(*) DESC
-  LIMIT 1;
-
-  -- If no interval found, default to 15 minutes
-  IF most_common_interval IS NULL THEN
-    most_common_interval := 15;
-  END IF;
-
-  -- Reschedule the cron job with new interval
-  PERFORM cron.unschedule('google-calendar-sync-all-users');
-
-  PERFORM cron.schedule(
-    'google-calendar-sync-all-users',
-    '*/' || most_common_interval || ' * * * *',
-    $$
-    SELECT
-      net.http_post(
-        url := current_setting('app.settings.supabase_url') || '/functions/v1/google-calendar-sync-scheduled',
-        headers := jsonb_build_object(
-          'Content-Type', 'application/json',
-          'Authorization', 'Bearer ' || current_setting('app.settings.service_role_key')
-        ),
-        body := jsonb_build_object(
-          'sync_type', 'scheduled',
-          'triggered_at', NOW()
-        )
-      ) as request_id;
-    $$
-  );
-
-  RAISE NOTICE 'Calendar sync schedule updated to run every % minutes', most_common_interval;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
-
-COMMENT ON FUNCTION update_calendar_sync_schedule IS 'Updates the pg_cron schedule based on most common user sync interval preference';
+-- Note: The actual cron job scheduling needs to be done after setting
+-- the required database settings. See STEP 6 below for the schedule command.
 
 -- ============================================================================
--- STEP 5: Create trigger to update schedule when settings change
--- ============================================================================
-
-CREATE OR REPLACE FUNCTION trigger_update_sync_schedule()
-RETURNS TRIGGER AS $$
-BEGIN
-  -- Only update schedule if sync_interval_minutes changed
-  IF (TG_OP = 'UPDATE' AND OLD.sync_interval_minutes != NEW.sync_interval_minutes)
-     OR (TG_OP = 'INSERT' AND NEW.enabled = true) THEN
-    -- Call update function in background (don't block the transaction)
-    PERFORM update_calendar_sync_schedule();
-  END IF;
-
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
-DROP TRIGGER IF EXISTS sync_schedule_updater ON calendar_sync_settings;
-CREATE TRIGGER sync_schedule_updater
-  AFTER INSERT OR UPDATE ON calendar_sync_settings
-  FOR EACH ROW
-  EXECUTE FUNCTION trigger_update_sync_schedule();
-
--- ============================================================================
--- STEP 6: Set required app settings for pg_cron
--- ============================================================================
-
--- Note: These need to be set via SQL or Supabase Dashboard:
--- ALTER DATABASE postgres SET app.settings.supabase_url = 'https://your-project.supabase.co';
--- ALTER DATABASE postgres SET app.settings.service_role_key = 'your-service-role-key';
-
--- For now, add helpful comments:
-COMMENT ON EXTENSION pg_cron IS
-  'Scheduled jobs for Google Calendar sync. Requires app.settings.supabase_url and app.settings.service_role_key to be configured.';
-
--- ============================================================================
--- STEP 7: Create monitoring view for cron jobs
+-- STEP 4: Create monitoring view for cron jobs
 -- ============================================================================
 
 CREATE OR REPLACE VIEW calendar_sync_cron_status AS
@@ -161,6 +61,74 @@ COMMENT ON VIEW calendar_sync_cron_status IS 'Monitor Google Calendar sync cron 
 GRANT SELECT ON calendar_sync_cron_status TO authenticated;
 
 -- ============================================================================
+-- STEP 5: Create helper function to manually trigger sync for all users
+-- ============================================================================
+
+CREATE OR REPLACE FUNCTION trigger_calendar_sync_for_all_users()
+RETURNS jsonb AS $func$
+DECLARE
+  result jsonb;
+  supabase_url text;
+  service_key text;
+BEGIN
+  -- Get required settings
+  BEGIN
+    supabase_url := current_setting('app.settings.supabase_url');
+    service_key := current_setting('app.settings.service_role_key');
+  EXCEPTION
+    WHEN undefined_object THEN
+      RAISE EXCEPTION 'Required settings not configured. Run the configuration commands in STEP 6.';
+  END;
+
+  -- Call the Edge Function via HTTP
+  SELECT content::jsonb INTO result
+  FROM http_post(
+    supabase_url || '/functions/v1/google-calendar-sync-scheduled',
+    jsonb_build_object(
+      'sync_type', 'manual',
+      'triggered_at', NOW()
+    ),
+    'application/json',
+    ARRAY[
+      http_header('Authorization', 'Bearer ' || service_key),
+      http_header('Content-Type', 'application/json')
+    ]
+  );
+
+  RETURN result;
+END;
+$func$ LANGUAGE plpgsql SECURITY DEFINER;
+
+COMMENT ON FUNCTION trigger_calendar_sync_for_all_users IS 'Manually trigger calendar sync for all users with auto-sync enabled';
+
+-- ============================================================================
+-- STEP 6: Configuration Instructions
+-- ============================================================================
+
+-- IMPORTANT: Before scheduling the cron job, you must configure these settings:
+--
+-- Option A: Via Supabase Dashboard SQL Editor, run:
+--
+-- ALTER DATABASE postgres SET app.settings.supabase_url = 'https://fskwutnoxbbflzqrphro.supabase.co';
+-- ALTER DATABASE postgres SET app.settings.service_role_key = 'your-service-role-key-here';
+--
+-- Option B: Via command line with psql:
+--
+-- psql -h db.xxx.supabase.co -U postgres -d postgres -c "ALTER DATABASE postgres SET app.settings.supabase_url = 'https://fskwutnoxbbflzqrphro.supabase.co';"
+-- psql -h db.xxx.supabase.co -U postgres -d postgres -c "ALTER DATABASE postgres SET app.settings.service_role_key = 'your-key';"
+--
+-- After setting the configuration, schedule the cron job by running:
+--
+-- SELECT cron.schedule(
+--   'google-calendar-sync-all-users',
+--   '*/15 * * * *',
+--   $$ SELECT trigger_calendar_sync_for_all_users(); $$
+-- );
+
+COMMENT ON EXTENSION pg_cron IS
+  'Scheduled jobs for Google Calendar sync. See migration 20251102000001 for configuration instructions.';
+
+-- ============================================================================
 -- VERIFICATION QUERIES (commented out - uncomment to check)
 -- ============================================================================
 
@@ -173,10 +141,15 @@ GRANT SELECT ON calendar_sync_cron_status TO authenticated;
 -- ) ORDER BY start_time DESC LIMIT 10;
 
 -- Manually trigger the sync function (for testing)
--- SELECT update_calendar_sync_schedule();
+-- SELECT trigger_calendar_sync_for_all_users();
 
 -- View all active sync settings
 -- SELECT user_id, enabled, auto_sync_enabled, sync_interval_minutes, last_sync_at
 -- FROM calendar_sync_settings
 -- WHERE enabled = true
 -- ORDER BY last_sync_at DESC;
+
+-- Check if settings are configured
+-- SELECT current_setting('app.settings.supabase_url', true) as url,
+--        CASE WHEN current_setting('app.settings.service_role_key', true) IS NOT NULL
+--             THEN 'configured' ELSE 'not configured' END as service_key_status;
