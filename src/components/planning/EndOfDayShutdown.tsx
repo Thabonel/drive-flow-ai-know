@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useDailyPlanning } from '@/hooks/useDailyPlanning';
 import { useTimeline } from '@/hooks/useTimeline';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -346,6 +347,13 @@ export function EndOfDayShutdown({ open, onClose }: EndOfDayShutdownProps) {
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <VisuallyHidden>
+          <DialogTitle>End of Day Shutdown</DialogTitle>
+          <DialogDescription>
+            Complete your end-of-day ritual to reflect and prepare for tomorrow
+          </DialogDescription>
+        </VisuallyHidden>
+
         <div className="min-h-[500px]">
           {renderStep()}
         </div>

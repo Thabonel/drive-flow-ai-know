@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useDailyPlanning } from '@/hooks/useDailyPlanning';
 import { useTimeline } from '@/hooks/useTimeline';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
@@ -577,6 +578,13 @@ export function DailyPlanningFlow({ open, onClose, isQuickMode = false }: DailyP
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <VisuallyHidden>
+          <DialogTitle>Daily Planning Flow</DialogTitle>
+          <DialogDescription>
+            Complete your daily planning ritual to organize your day
+          </DialogDescription>
+        </VisuallyHidden>
+
         {/* Progress bar */}
         <div className="space-y-2 mb-6">
           <Progress value={progressPercent} className="h-2" />
