@@ -50,10 +50,10 @@ interface Message {
 }
 
 const PROVIDER_TOKEN_LIMITS = {
-  claude: 200000, // Claude 3.5 Sonnet
-  'gpt-4o': 128000,
-  gemini: 100000,
-  openrouter: 128000,
+  claude: 200000, // Claude 4.x Sonnet
+  'gpt-5': 200000, // GPT-5 family
+  gemini: 100000, // Gemini 2.5
+  openrouter: 200000,
 } as const;
 
 function estimateTokens(text: string): number {
@@ -99,7 +99,7 @@ function getProviderTokenLimit(providerName: string): number {
   const lowerProvider = providerName?.toLowerCase() || '';
 
   if (lowerProvider.includes('claude')) return PROVIDER_TOKEN_LIMITS.claude;
-  if (lowerProvider.includes('gpt-4o')) return PROVIDER_TOKEN_LIMITS['gpt-4o'];
+  if (lowerProvider.includes('gpt-5') || lowerProvider.includes('gpt-4')) return PROVIDER_TOKEN_LIMITS['gpt-5'];
   if (lowerProvider.includes('gemini')) return PROVIDER_TOKEN_LIMITS.gemini;
 
   return PROVIDER_TOKEN_LIMITS.openrouter;
@@ -137,7 +137,7 @@ async function claudeCompletion(messages: Message[], systemMessage: string) {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'claude-3-5-sonnet-20241022',
+      model: 'claude-sonnet-4-5-20250514',
       max_tokens: 4096,
       system: systemMessage,
       messages: userMessages,
@@ -190,7 +190,7 @@ async function claudeCompletion(messages: Message[], systemMessage: string) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'claude-3-5-sonnet-20241022',
+          model: 'claude-sonnet-4-5-20250514',
           max_tokens: 4096,
           system: systemMessage,
           messages: followUpMessages,
@@ -221,7 +221,7 @@ async function openRouterCompletion(messages: Message[], systemMessage: string) 
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'openai/gpt-4o',
+      model: 'openai/gpt-5',
       messages: allMessages,
     }),
   });

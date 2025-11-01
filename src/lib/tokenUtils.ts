@@ -104,9 +104,9 @@ export function getConversationTokenBudget(
  * Provider-specific token limits
  */
 export const PROVIDER_TOKEN_LIMITS = {
-  claude: 200000,      // Claude Sonnet 3.5: ~200K context window
-  'gpt-4o': 128000,    // GPT-4o: 128K context window
-  gemini: 100000,      // Gemini Pro: ~100K context window
+  claude: 200000,      // Claude Sonnet 4.5: ~200K context window
+  'gpt-5': 200000,     // GPT-5: 200K context window
+  gemini: 100000,      // Gemini 2.5: ~100K context window
   ollama: 8192,        // Ollama (typical): 8K context window
   openrouter: 128000,  // OpenRouter (varies, using GPT-4 default)
 } as const;
@@ -118,7 +118,7 @@ export function getProviderTokenLimit(modelName: string): number {
   const lowerModel = modelName.toLowerCase();
 
   if (lowerModel.includes('claude')) return PROVIDER_TOKEN_LIMITS.claude;
-  if (lowerModel.includes('gpt-4o')) return PROVIDER_TOKEN_LIMITS['gpt-4o'];
+  if (lowerModel.includes('gpt-5') || lowerModel.includes('gpt-4')) return PROVIDER_TOKEN_LIMITS['gpt-5'];
   if (lowerModel.includes('gemini')) return PROVIDER_TOKEN_LIMITS.gemini;
   if (lowerModel.includes('ollama') || lowerModel.includes('llama')) return PROVIDER_TOKEN_LIMITS.ollama;
 

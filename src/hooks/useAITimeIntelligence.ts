@@ -139,7 +139,7 @@ export const useAITimeIntelligence = () => {
       ];
 
       const response = await createChatCompletion(messages, {
-        model: 'gpt-4o-mini',
+        model: 'gpt-5',
         temperature: 0.7,
         maxTokens: 2000,
       });
