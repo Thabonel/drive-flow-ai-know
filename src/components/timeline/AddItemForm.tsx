@@ -12,6 +12,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Select,
   SelectContent,
@@ -21,6 +22,7 @@ import {
 } from '@/components/ui/select';
 import { TimelineLayer, getRandomItemColor, TimelineItem } from '@/lib/timelineUtils';
 import { QUICK_ADD_DURATIONS } from '@/lib/timelineConstants';
+import { TimeEstimateInput } from './TimeEstimateInput';
 
 interface AddItemFormProps {
   open: boolean;
@@ -55,8 +57,9 @@ export function AddItemForm({
   const [title, setTitle] = useState('');
   const [hoursFromNow, setHoursFromNow] = useState(1);
   const [duration, setDuration] = useState(60);
-  const [durationValue, setDurationValue] = useState(60); // User input value
-  const [durationUnit, setDurationUnit] = useState<'minutes' | 'hours' | 'days'>('minutes');
+  const [plannedDuration, setPlannedDuration] = useState<number>(30); // Default 30 min estimate
+  const [isMeeting, setIsMeeting] = useState(false);
+  const [isFlexible, setIsFlexible] = useState(true);
   const [selectedLayerId, setSelectedLayerId] = useState('');
   const [newLayerName, setNewLayerName] = useState('');
   const [isCreatingLayer, setIsCreatingLayer] = useState(false);
@@ -81,8 +84,9 @@ export function AddItemForm({
       setSelectedLayerId(editingItem.layer_id);
       setColor(editingItem.color);
       setDuration(editingItem.duration_minutes);
-      setDurationValue(editingItem.duration_minutes);
-      setDurationUnit('minutes');
+      setPlannedDuration(editingItem.planned_duration_minutes || editingItem.duration_minutes);
+      setIsMeeting(editingItem.is_meeting || false);
+      setIsFlexible(editingItem.is_flexible !== undefined ? editingItem.is_flexible : true);
 
       // Calculate hours from now
       const now = new Date();
@@ -94,38 +98,15 @@ export function AddItemForm({
       setTitle('');
       setHoursFromNow(1);
       setDuration(60);
-      setDurationValue(60);
-      setDurationUnit('minutes');
+      setPlannedDuration(30);
+      setIsMeeting(false);
+      setIsFlexible(true);
       setColor(getRandomItemColor());
       setNewLayerName('');
       setIsCreatingLayer(false);
     }
   }, [editingItem]);
 
-  // Convert duration value to minutes based on unit
-  const convertToMinutes = (value: number, unit: 'minutes' | 'hours' | 'days'): number => {
-    switch (unit) {
-      case 'minutes':
-        return value;
-      case 'hours':
-        return value * 60;
-      case 'days':
-        return value * 60 * 24;
-      default:
-        return value;
-    }
-  };
-
-  // Update duration whenever value or unit changes
-  const handleDurationValueChange = (value: number) => {
-    setDurationValue(value);
-    setDuration(convertToMinutes(value, durationUnit));
-  };
-
-  const handleDurationUnitChange = (unit: 'minutes' | 'hours' | 'days') => {
-    setDurationUnit(unit);
-    setDuration(convertToMinutes(durationValue, unit));
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -157,6 +138,9 @@ export function AddItemForm({
         layer_id: layerId,
         start_time: startTime.toISOString(),
         duration_minutes: duration,
+        planned_duration_minutes: plannedDuration,
+        is_meeting: isMeeting,
+        is_flexible: isFlexible,
         color: color,
       });
     } else {
@@ -174,8 +158,9 @@ export function AddItemForm({
     setTitle('');
     setHoursFromNow(1);
     setDuration(60);
-    setDurationValue(60);
-    setDurationUnit('minutes');
+    setPlannedDuration(30);
+    setIsMeeting(false);
+    setIsFlexible(true);
     setColor(getRandomItemColor());
     setNewLayerName('');
     setIsCreatingLayer(false);
@@ -184,8 +169,6 @@ export function AddItemForm({
 
   const handleQuickDuration = (minutes: number) => {
     setDuration(minutes);
-    setDurationValue(minutes);
-    setDurationUnit('minutes');
   };
 
   return (
@@ -231,46 +214,61 @@ export function AddItemForm({
             </p>
           </div>
 
-          {/* Duration */}
+          {/* Duration (actual timeline block size) */}
           <div className="space-y-2">
-            <Label htmlFor="duration">Duration *</Label>
-            <div className="flex items-center gap-2">
-              <Input
-                id="duration"
-                type="number"
-                value={durationValue}
-                onChange={(e) => handleDurationValueChange(Number(e.target.value))}
-                min="1"
-                step="any"
-                required
-                className="flex-1"
-              />
-              <Select
-                value={durationUnit}
-                onValueChange={handleDurationUnitChange}
-              >
-                <SelectTrigger className="w-32">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="minutes">Minutes</SelectItem>
-                  <SelectItem value="hours">Hours</SelectItem>
-                  <SelectItem value="days">Days</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            <Label htmlFor="duration">Timeline Block Duration *</Label>
             <div className="flex gap-2 flex-wrap">
               {QUICK_ADD_DURATIONS.map((minutes) => (
                 <Button
                   key={minutes}
                   type="button"
-                  variant="outline"
+                  variant={duration === minutes ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => handleQuickDuration(minutes)}
                 >
                   {minutes}m
                 </Button>
               ))}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              How much time to block on the timeline
+            </p>
+          </div>
+
+          {/* Time Estimate */}
+          <TimeEstimateInput
+            value={plannedDuration}
+            onChange={setPlannedDuration}
+            label="Time Estimate"
+          />
+
+          {/* Task Type Flags */}
+          <div className="space-y-3">
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="is-meeting"
+                checked={isMeeting}
+                onCheckedChange={(checked) => setIsMeeting(checked === true)}
+              />
+              <Label
+                htmlFor="is-meeting"
+                className="text-sm font-normal cursor-pointer"
+              >
+                This is a meeting (synced from calendar)
+              </Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="is-flexible"
+                checked={isFlexible}
+                onCheckedChange={(checked) => setIsFlexible(checked === true)}
+              />
+              <Label
+                htmlFor="is-flexible"
+                className="text-sm font-normal cursor-pointer"
+              >
+                Flexible timing (can be rescheduled)
+              </Label>
             </div>
           </div>
 

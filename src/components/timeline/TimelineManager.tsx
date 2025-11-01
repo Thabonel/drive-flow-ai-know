@@ -9,6 +9,7 @@ import { ItemActionMenu } from './ItemActionMenu';
 import { ParkedItemsPanel } from './ParkedItemsPanel';
 import { ViewModeSwitcher } from './ViewModeSwitcher';
 import { CalendarSyncButton } from './CalendarSyncButton';
+import { WorkloadIndicator } from './WorkloadIndicator';
 import { useTimeline } from '@/hooks/useTimeline';
 import { useLayers } from '@/hooks/useLayers';
 import { useTimelineSync } from '@/hooks/useTimelineSync';
@@ -337,6 +338,9 @@ export function TimelineManager() {
           </AlertDescription>
         </Alert>
       )}
+
+      {/* Workload Indicator */}
+      <WorkloadIndicator items={items} />
 
       {/* Main timeline area */}
       <div className="space-y-4">

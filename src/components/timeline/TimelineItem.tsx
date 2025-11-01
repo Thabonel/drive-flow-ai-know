@@ -247,7 +247,9 @@ export function TimelineItem({
           opacity={0.8}
           className="pointer-events-none select-none"
         >
-          {isResizing ? formatDuration(Math.max(15, item.duration_minutes + Math.round((resizeDelta * 60) / pixelsPerHour))) : formatDuration(item.duration_minutes)}
+          {isResizing
+            ? formatDuration(Math.max(15, item.duration_minutes + Math.round((resizeDelta * 60) / pixelsPerHour)))
+            : formatDuration(item.planned_duration_minutes || item.duration_minutes)}
         </text>
       )}
 
