@@ -255,7 +255,7 @@ DECLARE
   window JSONB;
   slot_start TIMESTAMPTZ;
   slot_end TIMESTAMPTZ;
-  current_time TIMESTAMPTZ;
+  now_time TIMESTAMPTZ;
 BEGIN
   -- Get booking link details
   SELECT * INTO link
@@ -277,7 +277,7 @@ BEGIN
     RETURN;
   END IF;
 
-  current_time := NOW();
+  now_time := NOW();
 
   -- Generate slots for each availability window
   FOR window IN SELECT * FROM jsonb_array_elements(availability_windows)
@@ -290,8 +290,8 @@ BEGIN
       slot_end := slot_start + (link.duration_minutes || ' minutes')::INTERVAL;
 
       -- Check if slot is in the future and within constraints
-      IF slot_start > current_time + (link.min_notice_hours || ' hours')::INTERVAL
-         AND slot_start < current_time + (link.max_days_advance || ' days')::INTERVAL
+      IF slot_start > now_time + (link.min_notice_hours || ' hours')::INTERVAL
+         AND slot_start < now_time + (link.max_days_advance || ' days')::INTERVAL
       THEN
         RETURN QUERY SELECT
           slot_start,
