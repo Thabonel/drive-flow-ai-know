@@ -39,10 +39,12 @@ export function AIDailyBrief({ date = new Date(), autoGenerate = true }: AIDaily
   const [showFullInsights, setShowFullInsights] = useState(false);
 
   useEffect(() => {
-    if (autoGenerate && !brief && !loading) {
+    // Only auto-generate once on mount if enabled, and don't retry on error
+    if (autoGenerate && !brief && !loading && !error) {
       generateBrief();
     }
-  }, [autoGenerate, brief, loading, generateBrief]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoGenerate, brief, loading, error]); // Removed generateBrief to prevent infinite loop
 
   if (loading) {
     return (
