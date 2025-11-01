@@ -68,6 +68,7 @@ export function TimelineManager() {
     updateRoutineTemplateDuration,
     hasRoutineItemsForDate,
     instantiateRoutinesForDate,
+    deleteAllRoutineItems, // TEMPORARY
   } = useRoutineTemplates();
 
   // Real-time sync
@@ -412,6 +413,23 @@ export function TimelineManager() {
               Split (B)
             </Button>
           )}
+
+          {/* TEMPORARY: Delete all routine items button */}
+          <Button
+            onClick={async () => {
+              const meLayer = layers.find(l => l.is_primary_timeline);
+              if (meLayer) {
+                const success = await deleteAllRoutineItems(meLayer.id);
+                if (success) {
+                  refetchItems();
+                }
+              }
+            }}
+            variant="destructive"
+            className="gap-2"
+          >
+            Clear Routines
+          </Button>
 
           {/* Timeline Controls Dropdown */}
           <Popover>

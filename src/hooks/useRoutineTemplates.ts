@@ -31,7 +31,7 @@ const DEFAULT_ROUTINES = [
     default_start_time: '00:00:00',
     color: '#6366f1', // Indigo
     icon: '🌙',
-    is_locked_time: false,
+    is_locked_time: true,
     is_flexible: false,
     is_system_default: true,
     description: 'Your nightly sleep routine',
@@ -43,7 +43,7 @@ const DEFAULT_ROUTINES = [
     default_start_time: '08:00:00',
     color: '#f59e0b', // Amber
     icon: '☀️',
-    is_locked_time: false,
+    is_locked_time: true,
     is_flexible: true,
     is_system_default: true,
     description: 'Getting ready for the day',
@@ -56,7 +56,7 @@ const DEFAULT_ROUTINES = [
     color: '#3b82f6', // Blue
     icon: '💼',
     is_locked_time: false,
-    is_flexible: true,
+    is_flexible: false,
     is_system_default: true,
     description: 'Main activities of the day',
   },
@@ -244,6 +244,37 @@ export function useRoutineTemplates() {
     }
   };
 
+  // TEMPORARY: Delete all routine items from a layer (for testing)
+  const deleteAllRoutineItems = async (layerId: string) => {
+    if (!user) return;
+
+    try {
+      const { error } = await supabase
+        .from('timeline_items')
+        .delete()
+        .eq('user_id', user.id)
+        .eq('layer_id', layerId)
+        .not('template_id', 'is', null);
+
+      if (error) throw error;
+
+      toast({
+        title: 'Success',
+        description: 'All routine items deleted',
+      });
+
+      return true;
+    } catch (error) {
+      console.error('Error deleting routine items:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to delete routine items',
+        variant: 'destructive',
+      });
+      return false;
+    }
+  };
+
   useEffect(() => {
     fetchRoutineTemplates();
   }, [user]);
@@ -255,6 +286,7 @@ export function useRoutineTemplates() {
     getTemplateByName,
     hasRoutineItemsForDate,
     instantiateRoutinesForDate,
+    deleteAllRoutineItems, // TEMPORARY
     refetch: fetchRoutineTemplates,
   };
 }
