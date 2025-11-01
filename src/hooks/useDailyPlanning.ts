@@ -245,6 +245,21 @@ export const useDailyPlanning = () => {
     try {
       const today = new Date().toISOString().split('T')[0];
 
+      // Check if session already exists for today
+      const { data: existingSession } = await supabase
+        .from('daily_planning_sessions')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('planning_date', today)
+        .maybeSingle();
+
+      // If session already exists, return it
+      if (existingSession) {
+        setTodaySession(existingSession);
+        return existingSession;
+      }
+
+      // Create new session
       const { data, error } = await supabase
         .from('daily_planning_sessions')
         .insert({
