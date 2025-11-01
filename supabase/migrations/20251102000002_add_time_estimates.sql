@@ -19,13 +19,14 @@ UPDATE timeline_items
 SET planned_duration_minutes = duration_minutes
 WHERE planned_duration_minutes IS NULL;
 
--- Add index for workload queries (date-based filtering)
-CREATE INDEX IF NOT EXISTS idx_timeline_items_start_time_date
-  ON timeline_items(DATE(start_time));
-
--- Add index for meeting queries
+-- Add index for meeting queries (user + meeting flag)
 CREATE INDEX IF NOT EXISTS idx_timeline_items_is_meeting
-  ON timeline_items(user_id, is_meeting);
+  ON timeline_items(user_id, is_meeting)
+  WHERE is_meeting = true;
+
+-- Add index for start_time queries (used by workload calculations)
+CREATE INDEX IF NOT EXISTS idx_timeline_items_start_time
+  ON timeline_items(user_id, start_time);
 
 COMMENT ON COLUMN timeline_items.planned_duration_minutes IS
   'Estimated duration for the task in minutes';
