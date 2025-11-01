@@ -31,7 +31,11 @@ import { TimelineLayer, getRandomItemColor, TimelineItem } from '@/lib/timelineU
 import { QUICK_ADD_DURATIONS } from '@/lib/timelineConstants';
 import { TimeEstimateInput } from './TimeEstimateInput';
 import { useAITimeIntelligence } from '@/hooks/useAITimeIntelligence';
-import { Brain, Sparkles } from 'lucide-react';
+import { Brain, Sparkles, ListTree } from 'lucide-react';
+import { AITaskBreakdown } from '@/components/ai/AITaskBreakdown';
+import { AIMeetingPrep } from '@/components/ai/AIMeetingPrep';
+import { shouldAutoDecompose } from '@/lib/ai/prompts/task-breakdown';
+import type { Subtask } from '@/lib/ai/prompts/task-breakdown';
 
 interface AddItemFormProps {
   open: boolean;
@@ -439,6 +443,58 @@ export function AddItemForm({
               </Button>
             </div>
           </div>
+
+          {/* AI Task Breakdown Suggestion */}
+          {!isEditMode && shouldAutoDecompose(duration, title) && (
+            <div className="border rounded-lg p-4 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20">
+              <div className="flex items-start gap-3">
+                <ListTree className="h-5 w-5 text-purple-600 mt-0.5" />
+                <div className="flex-1">
+                  <h4 className="font-medium text-sm mb-1">Break down this task?</h4>
+                  <p className="text-xs text-muted-foreground mb-3">
+                    This task looks complex. Let AI break it into smaller subtasks with time estimates.
+                  </p>
+                  <AITaskBreakdown
+                    task={{
+                      title,
+                      description: '',
+                      estimated_duration: duration,
+                      task_type: isMeeting ? 'meeting' : 'work',
+                    }}
+                    onAddToTimeline={(subtasks: Subtask[]) => {
+                      // Close the current dialog and let user add subtasks individually
+                      onClose();
+                      // TODO: Implement batch add to timeline
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* AI Meeting Prep for Meetings */}
+          {!isEditMode && isMeeting && (
+            <div className="border rounded-lg p-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20">
+              <div className="flex items-start gap-3">
+                <Sparkles className="h-5 w-5 text-blue-600 mt-0.5" />
+                <div className="flex-1">
+                  <h4 className="font-medium text-sm mb-1">Prepare for this meeting?</h4>
+                  <p className="text-xs text-muted-foreground mb-3">
+                    Get AI-generated talking points, questions, and a meeting brief.
+                  </p>
+                  <AIMeetingPrep
+                    meeting={{
+                      id: '',
+                      title,
+                      description: '',
+                      duration_minutes: duration,
+                      meeting_type: 'other',
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={onClose}>
