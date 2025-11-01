@@ -20,9 +20,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { TimelineLayer, getRandomItemColor, TimelineItem } from '@/lib/timelineUtils';
 import { QUICK_ADD_DURATIONS } from '@/lib/timelineConstants';
 import { TimeEstimateInput } from './TimeEstimateInput';
+import { useAITimeIntelligence } from '@/hooks/useAITimeIntelligence';
+import { Brain, Sparkles } from 'lucide-react';
 
 interface AddItemFormProps {
   open: boolean;
@@ -65,6 +74,14 @@ export function AddItemForm({
   const [isCreatingLayer, setIsCreatingLayer] = useState(false);
   const [color, setColor] = useState(getRandomItemColor());
 
+  // AI Time Intelligence
+  const { getAIEstimate, isConfigured } = useAITimeIntelligence();
+  const [aiEstimate, setAiEstimate] = useState<{
+    estimated_minutes: number;
+    confidence: number;
+    reasoning: string;
+  } | null>(null);
+
   // Set initial values when provided (from double-click)
   useEffect(() => {
     if (initialStartTime && initialLayerId) {
@@ -106,6 +123,23 @@ export function AddItemForm({
       setIsCreatingLayer(false);
     }
   }, [editingItem]);
+
+  // Calculate AI estimate when title or meeting status changes
+  useEffect(() => {
+    if (!isConfigured || !title.trim() || isEditMode) {
+      setAiEstimate(null);
+      return;
+    }
+
+    // Debounce the AI estimate calculation
+    const timeoutId = setTimeout(() => {
+      const taskType = isMeeting ? 'meeting' : 'work';
+      const estimate = getAIEstimate(title.trim(), taskType);
+      setAiEstimate(estimate);
+    }, 500); // Wait 500ms after user stops typing
+
+    return () => clearTimeout(timeoutId);
+  }, [title, isMeeting, isConfigured, isEditMode, getAIEstimate]);
 
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -169,6 +203,19 @@ export function AddItemForm({
 
   const handleQuickDuration = (minutes: number) => {
     setDuration(minutes);
+  };
+
+  const handleApplyAIEstimate = () => {
+    if (aiEstimate) {
+      setPlannedDuration(aiEstimate.estimated_minutes);
+      setDuration(aiEstimate.estimated_minutes);
+    }
+  };
+
+  const getConfidenceBadgeColor = (confidence: number) => {
+    if (confidence >= 0.7) return 'bg-green-500';
+    if (confidence >= 0.4) return 'bg-yellow-500';
+    return 'bg-orange-500';
   };
 
   return (
@@ -241,6 +288,50 @@ export function AddItemForm({
             onChange={setPlannedDuration}
             label="Time Estimate"
           />
+
+          {/* AI Estimate Display */}
+          {aiEstimate && !isEditMode && (
+            <div className="border rounded-lg p-3 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Brain className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                  <span className="text-sm font-medium text-purple-900 dark:text-purple-100">
+                    AI Suggestion:
+                  </span>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div className="flex items-center gap-1.5 cursor-help">
+                          <span className="text-sm font-semibold text-purple-700 dark:text-purple-300">
+                            {aiEstimate.estimated_minutes} min
+                          </span>
+                          <Badge
+                            variant="outline"
+                            className={`text-xs text-white border-0 ${getConfidenceBadgeColor(aiEstimate.confidence)}`}
+                          >
+                            {Math.round(aiEstimate.confidence * 100)}% confident
+                          </Badge>
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs">
+                        <p className="text-sm">{aiEstimate.reasoning}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  onClick={handleApplyAIEstimate}
+                  className="gap-1.5 text-purple-700 hover:text-purple-900 dark:text-purple-300 dark:hover:text-purple-100"
+                >
+                  <Sparkles className="h-3 w-3" />
+                  Apply
+                </Button>
+              </div>
+            </div>
+          )}
 
           {/* Task Type Flags */}
           <div className="space-y-3">

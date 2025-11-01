@@ -10,8 +10,16 @@ import { ParkedItemsPanel } from './ParkedItemsPanel';
 import { ViewModeSwitcher } from './ViewModeSwitcher';
 import { CalendarSyncButton } from './CalendarSyncButton';
 import { WorkloadIndicator } from './WorkloadIndicator';
+import { TemplateLibrary } from '@/components/templates/TemplateLibrary';
+import { TemplateBuilder } from '@/components/templates/TemplateBuilder';
+import { AIDailyPlanningModal } from '@/components/ai/AIDailyPlanningModal';
+import { AITimeInsights } from '@/components/ai/AITimeInsights';
+import { RoutineManager } from '@/components/routines/RoutineManager';
+import { DailyPlanningFlow } from '@/components/planning/DailyPlanningFlow';
+import { EndOfDayShutdown } from '@/components/planning/EndOfDayShutdown';
 import { useTimeline } from '@/hooks/useTimeline';
 import { useLayers } from '@/hooks/useLayers';
+import { useRoutines } from '@/hooks/useRoutines';
 import { useTimelineSync } from '@/hooks/useTimelineSync';
 import { TimelineItem, clamp } from '@/lib/timelineUtils';
 import {
@@ -23,9 +31,10 @@ import {
   VIEW_MODE_CONFIG,
 } from '@/lib/timelineConstants';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, Clock, Settings, Layers, Lock, Unlock, Archive } from 'lucide-react';
+import { Loader2, Clock, Settings, Layers, Lock, Unlock, Archive, LayoutTemplate, Sparkles, RefreshCw, Calendar as CalIcon, Brain, Sunrise, Moon, Link as LinkIcon } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { PageHelp } from '@/components/PageHelp';
 
 export function TimelineManager() {
@@ -70,8 +79,18 @@ export function TimelineManager() {
   const [editingItem, setEditingItem] = useState<TimelineItem | null>(null);
   const [showAddItemForm, setShowAddItemForm] = useState(false);
   const [showParkedItems, setShowParkedItems] = useState(false);
+  const [showTemplates, setShowTemplates] = useState(false);
+  const [showTemplateBuilder, setShowTemplateBuilder] = useState(false);
+  const [showAIPlanning, setShowAIPlanning] = useState(false);
+  const [showAIInsights, setShowAIInsights] = useState(false);
+  const [showRoutines, setShowRoutines] = useState(false);
+  const [populatingRoutines, setPopulatingRoutines] = useState(false);
+  const [showDailyPlanning, setShowDailyPlanning] = useState(false);
+  const [showEndOfDay, setShowEndOfDay] = useState(false);
   const [viewMode, setViewMode] = useState<TimelineViewMode>('week');
   const [initialFormValues, setInitialFormValues] = useState<{ startTime?: string; layerId?: string } | null>(null);
+
+  const { populateRoutinesForDay } = useRoutines();
 
   const animationFrameRef = useRef<number>();
   const lastTickRef = useRef<number>(Date.now());
@@ -194,6 +213,19 @@ export function TimelineManager() {
     setShowAddItemForm(true);
   };
 
+  // Handle populate today's routines
+  const handlePopulateRoutines = async () => {
+    if (layers.length === 0) return;
+
+    setPopulatingRoutines(true);
+    const defaultLayer = layers.find(l => l.is_visible);
+    if (defaultLayer) {
+      await populateRoutinesForDay(new Date(), defaultLayer.id);
+      await refetchItems();
+    }
+    setPopulatingRoutines(false);
+  };
+
   if (timelineLoading || layersLoading) {
     return (
       <div className="flex items-center justify-center h-96">
@@ -240,6 +272,37 @@ export function TimelineManager() {
           >
             {layers.length === 0 ? 'Create a Layer First' : '+ Add Timeline Item'}
           </button>
+
+          {/* Daily Planning Ritual Button */}
+          <Button
+            onClick={() => setShowDailyPlanning(true)}
+            variant="default"
+            className="gap-2 bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 text-white"
+          >
+            <Sunrise className="h-4 w-4" />
+            Daily Planning
+          </Button>
+
+          {/* AI Planning Button */}
+          <Button
+            onClick={() => setShowAIPlanning(true)}
+            variant="default"
+            className="gap-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white"
+            disabled={layers.length === 0}
+          >
+            <Sparkles className="h-4 w-4" />
+            AI Plan My Day
+          </Button>
+
+          {/* End of Day Button */}
+          <Button
+            onClick={() => setShowEndOfDay(true)}
+            variant="outline"
+            className="gap-2"
+          >
+            <Moon className="h-4 w-4" />
+            End of Day
+          </Button>
 
           {/* Lock/Unlock Toggle Button */}
           <Button
@@ -314,6 +377,66 @@ export function TimelineManager() {
           >
             <Archive className="h-4 w-4" />
             Parked ({parkedItems?.length || 0})
+          </Button>
+
+          {/* Day Templates Button */}
+          <Button
+            onClick={() => setShowTemplates(true)}
+            variant="outline"
+            className="gap-2"
+          >
+            <LayoutTemplate className="h-4 w-4" />
+            Templates
+          </Button>
+
+          {/* Routines Button */}
+          <Button
+            onClick={() => setShowRoutines(true)}
+            variant="outline"
+            className="gap-2"
+          >
+            <CalIcon className="h-4 w-4" />
+            Routines
+          </Button>
+
+          {/* Populate Today's Routines Button */}
+          <Button
+            onClick={handlePopulateRoutines}
+            variant="outline"
+            className="gap-2"
+            disabled={populatingRoutines || layers.length === 0}
+          >
+            {populatingRoutines ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Adding...
+              </>
+            ) : (
+              <>
+                <RefreshCw className="h-4 w-4" />
+                Add Today's Routines
+              </>
+            )}
+          </Button>
+
+          {/* AI Time Insights Button */}
+          <Button
+            onClick={() => setShowAIInsights(true)}
+            variant="outline"
+            className="gap-2"
+          >
+            <Brain className="h-4 w-4" />
+            AI Insights
+          </Button>
+
+          {/* Booking Links Button */}
+          <Button
+            onClick={() => window.location.href = '/booking-links'}
+            variant="outline"
+            className="gap-2"
+          >
+            <LinkIcon className="h-4 w-4" />
+            Booking Links
           </Button>
 
           {/* Google Calendar Sync Button */}
@@ -408,6 +531,75 @@ export function TimelineManager() {
         layers={layers}
         onRestoreItem={restoreParkedItem}
         onDeleteParkedItem={deleteParkedItem}
+      />
+
+      {/* Template Library Dialog */}
+      <Dialog open={showTemplates} onOpenChange={setShowTemplates}>
+        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+          <TemplateLibrary
+            onCreateCustom={() => {
+              setShowTemplates(false);
+              setShowTemplateBuilder(true);
+            }}
+            onTemplateApplied={() => {
+              refetchItems();
+              setShowTemplates(false);
+            }}
+          />
+        </DialogContent>
+      </Dialog>
+
+      {/* Template Builder */}
+      <TemplateBuilder
+        open={showTemplateBuilder}
+        onClose={() => setShowTemplateBuilder(false)}
+        onSaved={() => {
+          setShowTemplateBuilder(false);
+          setShowTemplates(true);
+        }}
+      />
+
+      {/* AI Daily Planning Modal */}
+      <AIDailyPlanningModal
+        open={showAIPlanning}
+        onClose={() => setShowAIPlanning(false)}
+        onPlanApplied={() => {
+          refetchItems();
+          setShowAIPlanning(false);
+        }}
+      />
+
+      {/* Routine Manager Dialog */}
+      <Dialog open={showRoutines} onOpenChange={setShowRoutines}>
+        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+          <RoutineManager onClose={() => setShowRoutines(false)} />
+        </DialogContent>
+      </Dialog>
+
+      {/* AI Time Insights Dialog */}
+      <Dialog open={showAIInsights} onOpenChange={setShowAIInsights}>
+        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+          <AITimeInsights />
+        </DialogContent>
+      </Dialog>
+
+      {/* Daily Planning Flow */}
+      <DailyPlanningFlow
+        open={showDailyPlanning}
+        onClose={() => {
+          setShowDailyPlanning(false);
+          refetchItems();
+        }}
+        isQuickMode={false}
+      />
+
+      {/* End of Day Shutdown */}
+      <EndOfDayShutdown
+        open={showEndOfDay}
+        onClose={() => {
+          setShowEndOfDay(false);
+          refetchItems();
+        }}
       />
     </div>
   );

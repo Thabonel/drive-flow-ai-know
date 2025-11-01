@@ -34,13 +34,16 @@ import AcceptableUse from "./pages/AcceptableUse";
 import Support from "./pages/Support";
 import AdminSupportTickets from "./pages/AdminSupportTickets";
 import Timeline from "./pages/Timeline";
+import BookingPage from "./pages/BookingPage";
+import BookingLinks from "./pages/BookingLinks";
+import { DailyPlanningTrigger } from "./components/planning/DailyPlanningTrigger";
 
 const queryClient = new QueryClient();
 
 function AppLayout({ children }: { children: React.ReactNode }) {
   const offline = offlineEnabled();
   useKeyboardShortcuts(globalShortcuts);
-  
+
   return (
     <SidebarProvider>
       <div className="min-h-screen flex flex-col w-full">
@@ -56,6 +59,9 @@ function AppLayout({ children }: { children: React.ReactNode }) {
             <div className="p-6">{children}</div>
           </main>
         </div>
+
+        {/* Daily Planning Automatic Triggers */}
+        <DailyPlanningTrigger />
       </div>
     </SidebarProvider>
   );
@@ -184,6 +190,12 @@ const App = () => (
                 <Timeline />
               </ProtectedRoute>
             } />
+            <Route path="/booking-links" element={
+              <ProtectedRoute>
+                <BookingLinks />
+              </ProtectedRoute>
+            } />
+            <Route path="/book/:slug" element={<BookingPage />} />
             <Route path="/terms" element={<Terms />} />
             <Route path="/privacy" element={<Privacy />} />
             <Route path="/disclaimer" element={<Disclaimer />} />
