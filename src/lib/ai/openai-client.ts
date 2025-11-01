@@ -143,6 +143,31 @@ export async function createChatCompletionWithRetry(
 }
 
 /**
+ * Simple wrapper for making OpenAI calls with a single prompt
+ */
+export async function callOpenAI(
+  prompt: string,
+  options: {
+    model?: string;
+    temperature?: number;
+    max_tokens?: number;
+  } = {}
+): Promise<string> {
+  const messages: ChatMessage[] = [
+    {
+      role: 'user',
+      content: prompt,
+    },
+  ];
+
+  return createChatCompletion(messages, {
+    model: options.model,
+    temperature: options.temperature,
+    maxTokens: options.max_tokens,
+  });
+}
+
+/**
  * Check if OpenAI is properly configured
  */
 export function isOpenAIConfigured(): boolean {
