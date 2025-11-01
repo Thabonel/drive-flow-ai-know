@@ -38,7 +38,10 @@ import BookingPage from "./pages/BookingPage";
 import BookingLinks from "./pages/BookingLinks";
 import AssistantManagement from "./pages/AssistantManagement";
 import AssistantPortalPage from "./pages/AssistantPortalPage";
+import DailyBrief from "./pages/DailyBrief";
+import EmailToTask from "./pages/EmailToTask";
 import { DailyPlanningTrigger } from "./components/planning/DailyPlanningTrigger";
+import { FeedbackWidget } from "./components/FeedbackWidget";
 
 const queryClient = new QueryClient();
 
@@ -64,6 +67,9 @@ function AppLayout({ children }: { children: React.ReactNode }) {
 
         {/* Daily Planning Automatic Triggers */}
         <DailyPlanningTrigger />
+
+        {/* Feedback Widget */}
+        <FeedbackWidget />
       </div>
     </SidebarProvider>
   );
@@ -205,6 +211,16 @@ const App = () => (
             <Route path="/assistant-portal" element={
               <ProtectedRoute>
                 <AssistantPortalPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/daily-brief" element={
+              <ProtectedRoute>
+                <DailyBrief />
+              </ProtectedRoute>
+            } />
+            <Route path="/email-to-task" element={
+              <ProtectedRoute>
+                <EmailToTask />
               </ProtectedRoute>
             } />
             <Route path="/book/:slug" element={<BookingPage />} />

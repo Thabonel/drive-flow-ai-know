@@ -1,4 +1,4 @@
-import { Home, FolderOpen, FileText, Brain, Settings, LogOut, RefreshCw, Upload, MessageSquare, HelpCircle, Clock, Shield, UserCircle } from 'lucide-react';
+import { Home, FolderOpen, FileText, Brain, Settings, LogOut, RefreshCw, Upload, MessageSquare, HelpCircle, Clock, Shield, UserCircle, Sparkles, Mail } from 'lucide-react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import {
@@ -18,6 +18,8 @@ import { Button } from '@/components/ui/button';
 
 const navigationItems = [
   { title: 'Dashboard', url: '/dashboard', icon: Home },
+  { title: 'Daily Brief', url: '/daily-brief', icon: Sparkles },
+  { title: 'Email to Task', url: '/email-to-task', icon: Mail },
   { title: 'AI Assistant', url: '/conversations', icon: MessageSquare },
   { title: 'Timeline', url: '/timeline', icon: Clock },
   { title: 'My Assistants', url: '/assistants', icon: Shield },
