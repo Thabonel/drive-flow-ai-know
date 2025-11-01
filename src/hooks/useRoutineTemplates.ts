@@ -25,7 +25,7 @@ export interface RoutineTemplate {
 // Default routine templates
 const DEFAULT_ROUTINES = [
   {
-    category: 'sleep',
+    category: 'rest' as const,
     name: 'Sleep',
     duration_minutes: 480, // 8 hours
     default_start_time: '00:00:00',
@@ -37,7 +37,7 @@ const DEFAULT_ROUTINES = [
     description: 'Your nightly sleep routine',
   },
   {
-    category: 'morning_routine',
+    category: 'personal' as const,
     name: 'Morning Routine',
     duration_minutes: 60, // 1 hour
     default_start_time: '08:00:00',
@@ -49,7 +49,7 @@ const DEFAULT_ROUTINES = [
     description: 'Getting ready for the day',
   },
   {
-    category: 'daily_routine',
+    category: 'work' as const,
     name: 'Daily Routine',
     duration_minutes: 480, // 8 hours
     default_start_time: '09:00:00',
@@ -61,7 +61,7 @@ const DEFAULT_ROUTINES = [
     description: 'Main activities of the day',
   },
   {
-    category: 'evening_routine',
+    category: 'personal' as const,
     name: 'Evening Routine',
     duration_minutes: 420, // 7 hours
     default_start_time: '17:00:00',
@@ -89,7 +89,7 @@ export function useRoutineTemplates() {
         .from('timeline_templates')
         .select('*')
         .eq('user_id', user.id)
-        .in('category', ['sleep', 'morning_routine', 'daily_routine', 'evening_routine'])
+        .eq('is_system_default', true)
         .order('default_start_time', { ascending: true });
 
       if (error) throw error;
@@ -166,9 +166,9 @@ export function useRoutineTemplates() {
     }
   };
 
-  // Get template by category
-  const getTemplateByCategory = (category: string): RoutineTemplate | undefined => {
-    return routineTemplates.find(t => t.category === category);
+  // Get template by name
+  const getTemplateByName = (name: string): RoutineTemplate | undefined => {
+    return routineTemplates.find(t => t.name === name);
   };
 
   // Check if a date has routine items instantiated
@@ -252,7 +252,7 @@ export function useRoutineTemplates() {
     routineTemplates,
     loading,
     updateRoutineTemplateDuration,
-    getTemplateByCategory,
+    getTemplateByName,
     hasRoutineItemsForDate,
     instantiateRoutinesForDate,
     refetch: fetchRoutineTemplates,
