@@ -40,7 +40,6 @@ import AssistantManagement from "./pages/AssistantManagement";
 import AssistantPortalPage from "./pages/AssistantPortalPage";
 import DailyBrief from "./pages/DailyBrief";
 import EmailToTask from "./pages/EmailToTask";
-import { DailyPlanningTrigger } from "./components/planning/DailyPlanningTrigger";
 import { FeedbackWidget } from "./components/FeedbackWidget";
 
 const queryClient = new QueryClient();
@@ -64,9 +63,6 @@ function AppLayout({ children }: { children: React.ReactNode }) {
             <div className="p-6">{children}</div>
           </main>
         </div>
-
-        {/* Daily Planning Automatic Triggers */}
-        <DailyPlanningTrigger />
 
         {/* Feedback Widget */}
         <FeedbackWidget />

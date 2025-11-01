@@ -12,6 +12,7 @@ import { DocumentViewerModal } from '@/components/DocumentViewerModal';
 import { ConfirmationDialog } from '@/components/ConfirmationDialog';
 import { PaginationControls } from '@/components/PaginationControls';
 import { PageHelp } from '@/components/PageHelp';
+import { AIQueryInput } from '@/components/AIQueryInput';
 
 const Documents = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -230,6 +231,9 @@ const Documents = () => {
           }
         />
       </div>
+
+      {/* AI Assistant for querying documents */}
+      <AIQueryInput />
 
       <DocumentSearchFilter
         searchTerm={searchTerm}

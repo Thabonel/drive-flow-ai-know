@@ -19,6 +19,7 @@ import Billing from "./Settings/Billing";
 import { PersonalPrompt } from "@/components/PersonalPrompt";
 import { supabase } from "@/integrations/supabase/client";
 import { useTheme } from "@/components/ThemeProvider";
+import { AIQueryInput } from "@/components/AIQueryInput";
 import {
   User,
   Bell,
@@ -133,6 +134,9 @@ const Settings = () => {
                 Change your account and app settings
               </p>
             </div>
+
+            {/* AI Assistant */}
+            <AIQueryInput />
 
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
               <TabsList className="grid w-full grid-cols-5">
