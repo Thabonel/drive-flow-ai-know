@@ -17,9 +17,9 @@ import {
 import { Button } from '@/components/ui/button';
 
 const navigationItems = [
-  { title: 'Dashboard', url: '/dashboard', icon: Home },
-  { title: 'Documents', url: '/documents', icon: FileText },
   { title: 'Timeline', url: '/timeline', icon: Clock },
+  { title: 'AI Knowledge Assistant', url: '/dashboard', icon: Home },
+  { title: 'Documents', url: '/documents', icon: FileText },
 ];
 
 export function AppSidebar() {
