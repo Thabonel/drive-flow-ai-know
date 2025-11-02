@@ -258,7 +258,7 @@ export function TimelineManager() {
               ]}
             />
           </h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-2">
+          <p className="text-muted-foreground mt-2">
             Manage your time with a flowing timeline. Items move toward NOW and logjam when overdue.
           </p>
         </div>
