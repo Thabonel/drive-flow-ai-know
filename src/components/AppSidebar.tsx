@@ -18,7 +18,7 @@ import { Button } from '@/components/ui/button';
 
 const navigationItems = [
   { title: 'Timeline', url: '/timeline', icon: Clock },
-  { title: 'AI Knowledge Assistant', url: '/dashboard', icon: Home },
+  { title: 'AI Knowledge Assistant', url: '/dashboard', icon: Brain },
   { title: 'Documents', url: '/documents', icon: FileText },
 ];
 

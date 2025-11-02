@@ -99,17 +99,13 @@ export function DailyPlanningTrigger() {
         <div className="fixed bottom-4 right-4 z-50 w-full max-w-2xl px-4">
           <Alert className="border-2 border-blue-500 shadow-lg bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-950/50 dark:to-purple-950/50">
             <div className="flex items-start gap-4">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center flex-shrink-0">
-                <Moon className="h-5 w-5 text-primary-foreground" />
-              </div>
-
               {/* Left side: Shutdown content or Planning prompt */}
               <div className="flex-1 space-y-3">
                 {shutdownNeeded && settings?.enable_shutdown_ritual ? (
                   <>
                     <div>
-                      <h4 className="font-semibold mb-1 text-slate-900 dark:text-slate-50">Time to wrap up!</h4>
-                      <AlertDescription className="text-sm text-slate-700 dark:text-slate-300">
+                      <h4 className="font-semibold mb-1 text-black dark:text-slate-50">Time to wrap up!</h4>
+                      <AlertDescription className="text-sm text-gray-800 dark:text-slate-300">
                         Reflect on today and prepare for tomorrow.
                       </AlertDescription>
                     </div>
