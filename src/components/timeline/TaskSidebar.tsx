@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
+import { PageHelp } from '@/components/PageHelp';
 import {
   Clock,
   GripVertical,
@@ -167,7 +168,20 @@ export function TaskSidebar({ isOpen, onToggle, onTaskScheduled }: TaskSidebarPr
         <div className="flex flex-col h-full">
           {/* Header */}
           <div className="p-4 border-b">
-            <h2 className="text-lg font-semibold mb-3">Unscheduled Tasks</h2>
+            <div className="flex items-center gap-2 mb-3">
+              <h2 className="text-lg font-semibold">Unscheduled Tasks</h2>
+              <PageHelp
+                title="Unscheduled Tasks Help"
+                description="Tasks you've created but haven't scheduled yet. Drag them onto your timeline when you're ready to work on them."
+                tips={[
+                  "Create tasks quickly without committing to a time",
+                  "Drag tasks onto the timeline to schedule them",
+                  "Tasks snap to 15-minute intervals when dropped",
+                  "Use search to filter by title, description, or tags",
+                  "Tasks persist until you schedule or delete them"
+                ]}
+              />
+            </div>
 
             {/* Search */}
             <div className="relative">
