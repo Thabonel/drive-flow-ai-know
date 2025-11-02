@@ -6,7 +6,7 @@ import { SidebarTrigger } from '@/components/ui/sidebar';
 import { KeyboardShortcutsHelp } from '@/components/KeyboardShortcutsHelp';
 import { useOffline } from '@/hooks/useOffline';
 import { useUserSettings } from '@/hooks/useUserSettings';
-import { Bell, LogOut, Settings, User } from 'lucide-react';
+import { LogOut, Settings, User } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const Header = () => {
@@ -35,10 +35,6 @@ const Header = () => {
       
       <div className="flex items-center gap-2">
         <KeyboardShortcutsHelp />
-        
-        <Button variant="ghost" size="sm" aria-label="Notifications">
-          <Bell className="h-4 w-4" />
-        </Button>
 
         {user && (
           <DropdownMenu>

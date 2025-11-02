@@ -17,6 +17,7 @@ import { useUserSettings } from "@/hooks/useUserSettings";
 import EnterpriseServer from "./Settings/EnterpriseServer";
 import Billing from "./Settings/Billing";
 import { PersonalPrompt } from "@/components/PersonalPrompt";
+import { PageHelp } from "@/components/PageHelp";
 import { supabase } from "@/integrations/supabase/client";
 import { useTheme } from "@/components/ThemeProvider";
 import { AIQueryInput } from "@/components/AIQueryInput";
@@ -128,11 +129,24 @@ const Settings = () => {
         <AppSidebar />
         <main className="flex-1 overflow-auto">
           <div className="max-w-7xl mx-auto w-full p-6 lg:p-8 space-y-8">
-            <div>
-              <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
-              <p className="text-muted-foreground">
-                Change your account and app settings
-              </p>
+            <div className="flex items-start gap-3">
+              <div className="flex-1">
+                <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
+                <p className="text-muted-foreground">
+                  Change your account and app settings
+                </p>
+              </div>
+              <PageHelp
+                title="Settings Help"
+                description="Customize your AI Query Hub experience. Configure AI providers, manage your profile, adjust notifications, and control data preferences."
+                tips={[
+                  "General: Update your profile information and personal preferences",
+                  "Billing: View subscription status and manage payments",
+                  "AI & Data: Choose your preferred AI model and customize behavior",
+                  "Security: Configure offline mode and privacy settings",
+                  "Enterprise: Connect to enterprise servers (for teams)"
+                ]}
+              />
             </div>
 
             {/* AI Assistant */}
