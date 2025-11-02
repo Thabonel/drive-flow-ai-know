@@ -148,13 +148,13 @@ export function DailyPlanningTrigger() {
           <Alert className="border-2 border-blue-500 shadow-lg bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-950/50 dark:to-purple-950/50">
             <div className="flex items-start gap-4">
               <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center flex-shrink-0">
-                <Moon className="h-5 w-5 text-white" />
+                <Moon className="h-5 w-5 text-primary-foreground" />
               </div>
 
               <div className="flex-1 space-y-3">
                 <div>
-                  <h4 className="font-semibold mb-1">Time to wrap up!</h4>
-                  <AlertDescription className="text-sm">
+                  <h4 className="font-semibold mb-1 text-foreground">Time to wrap up!</h4>
+                  <AlertDescription className="text-sm text-muted-foreground">
                     Reflect on today and prepare for tomorrow.
                   </AlertDescription>
                 </div>
