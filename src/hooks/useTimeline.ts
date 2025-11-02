@@ -124,6 +124,14 @@ export function useTimeline() {
     if (!user) return;
 
     try {
+      console.log('Adding timeline item:', {
+        user_id: user.id,
+        layer_id: layerId,
+        title,
+        start_time: startTime,
+        duration_minutes: durationMinutes,
+      });
+
       const { data, error } = await supabase
         .from('timeline_items')
         .insert({
@@ -142,7 +150,15 @@ export function useTimeline() {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase error details:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code,
+        });
+        throw error;
+      }
 
       setItems([...items, data]);
       toast({
@@ -155,7 +171,7 @@ export function useTimeline() {
       console.error('Error adding item:', error);
       toast({
         title: 'Error',
-        description: 'Failed to add timeline item',
+        description: error instanceof Error ? error.message : 'Failed to add timeline item',
         variant: 'destructive',
       });
     }
