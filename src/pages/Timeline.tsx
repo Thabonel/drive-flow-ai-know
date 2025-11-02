@@ -101,7 +101,7 @@ export default function Timeline() {
 
             <div className="flex-1 space-y-3">
               <div>
-                <h4 className="font-semibold text-lg mb-1">Ready to plan your day? ☀️</h4>
+                <h4 className="font-semibold text-lg mb-1">Ready to plan your day?</h4>
                 <AlertDescription>
                   Take a few minutes to set yourself up for success today.
                 </AlertDescription>
@@ -157,7 +157,7 @@ export default function Timeline() {
 
             <div className="flex-1 space-y-3">
               <div>
-                <h4 className="font-semibold mb-1">Time to wrap up! 🌙</h4>
+                <h4 className="font-semibold mb-1">Time to wrap up!</h4>
                 <AlertDescription className="text-sm">
                   Reflect on today and prepare for tomorrow.
                 </AlertDescription>

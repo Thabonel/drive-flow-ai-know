@@ -22,10 +22,10 @@ interface TemplateBuilderProps {
 }
 
 const BLOCK_TYPES = [
-  { value: 'work', label: 'Work', icon: '💼', defaultColor: '#3b82f6' },
-  { value: 'meeting', label: 'Meeting', icon: '👥', defaultColor: '#8b5cf6' },
-  { value: 'break', label: 'Break', icon: '☕', defaultColor: '#f59e0b' },
-  { value: 'personal', label: 'Personal', icon: '🏠', defaultColor: '#10b981' },
+  { value: 'work', label: 'Work', defaultColor: '#3b82f6' },
+  { value: 'meeting', label: 'Meeting', defaultColor: '#8b5cf6' },
+  { value: 'break', label: 'Break', defaultColor: '#f59e0b' },
+  { value: 'personal', label: 'Personal', defaultColor: '#10b981' },
 ] as const;
 
 export function TemplateBuilder({ open, onClose, onSaved }: TemplateBuilderProps) {
@@ -228,7 +228,7 @@ export function TemplateBuilder({ open, onClose, onSaved }: TemplateBuilderProps
                         <SelectContent>
                           {BLOCK_TYPES.map((type) => (
                             <SelectItem key={type.value} value={type.value}>
-                              {type.icon} {type.label}
+                              {type.label}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -388,7 +388,6 @@ function SortableBlockItem({ id, block, onDelete, formatDuration }: SortableBloc
 
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
-          <span className="text-sm">{typeConfig?.icon}</span>
           <span className="font-medium">{block.title}</span>
           {!block.is_flexible && (
             <Badge variant="secondary" className="text-xs">Fixed</Badge>

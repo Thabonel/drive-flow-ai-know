@@ -331,7 +331,7 @@ export const useDailyPlanning = () => {
       await checkPlanningNeeded();
 
       toast({
-        title: '🎉 Planning complete!',
+        title: 'Planning complete!',
         description: `You're ready to crush today! ${streak ? `${streak.current_streak + 1} day streak!` : ''}`,
       });
 
@@ -382,7 +382,7 @@ export const useDailyPlanning = () => {
       await fetchTodayShutdown();
 
       toast({
-        title: '✨ Day complete!',
+        title: 'Day complete!',
         description: `${stats.tasksCompleted} tasks done. Great work today!`,
       });
 

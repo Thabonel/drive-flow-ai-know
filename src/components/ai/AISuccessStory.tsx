@@ -191,7 +191,7 @@ export const ACHIEVEMENT_TEMPLATES = {
   timeSaved: (hours: number): Achievement => ({
     id: `time-saved-${Date.now()}`,
     type: 'time_saved',
-    title: '⏰ Time Saved!',
+    title: 'Time Saved!',
     message: 'AI automation has saved you valuable time today',
     icon: 'clock',
     value: hours,
@@ -203,7 +203,7 @@ export const ACHIEVEMENT_TEMPLATES = {
   tasksCompleted: (count: number, total: number): Achievement => ({
     id: `tasks-completed-${Date.now()}`,
     type: 'tasks_completed',
-    title: '✅ All Tasks Completed!',
+    title: 'All Tasks Completed!',
     message: `You completed all ${total} AI-suggested tasks this week`,
     icon: 'check',
     value: count,
@@ -215,7 +215,7 @@ export const ACHIEVEMENT_TEMPLATES = {
   streak: (days: number): Achievement => ({
     id: `streak-${Date.now()}`,
     type: 'streak',
-    title: '🔥 Streak Achievement!',
+    title: 'Streak Achievement!',
     message: 'You\'ve been consistent with your daily AI briefs',
     icon: 'calendar',
     value: days,
@@ -227,7 +227,7 @@ export const ACHIEVEMENT_TEMPLATES = {
   efficiency: (percentage: number): Achievement => ({
     id: `efficiency-${Date.now()}`,
     type: 'efficiency',
-    title: '📈 Efficiency Boost!',
+    title: 'Efficiency Boost!',
     message: 'Your productivity increased this week',
     icon: 'trending',
     value: percentage,
@@ -239,7 +239,7 @@ export const ACHIEVEMENT_TEMPLATES = {
   milestone: (count: number, milestone: string): Achievement => ({
     id: `milestone-${Date.now()}`,
     type: 'milestone',
-    title: '🎯 Milestone Reached!',
+    title: 'Milestone Reached!',
     message: `You've ${milestone}`,
     icon: 'trophy',
     value: count,

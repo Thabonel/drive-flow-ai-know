@@ -157,7 +157,7 @@ export default function BookingPage() {
             </div>
 
             <div>
-              <h2 className="text-3xl font-bold mb-2">You're all set! 🎉</h2>
+              <h2 className="text-3xl font-bold mb-2">You're all set!</h2>
               <p className="text-muted-foreground">
                 Your meeting with {bookingLink.title} has been confirmed
               </p>

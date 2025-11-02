@@ -193,7 +193,7 @@ export function DailyPlanningFlow({ open, onClose, isQuickMode = false }: DailyP
 
             <div>
               <h2 className="text-3xl font-bold mb-2">
-                Good {new Date().getHours() < 12 ? 'morning' : 'afternoon'}! ☀️
+                Good {new Date().getHours() < 12 ? 'morning' : 'afternoon'}!
               </h2>
               <p className="text-lg text-muted-foreground">
                 Let's plan your perfect day
@@ -247,9 +247,9 @@ export function DailyPlanningFlow({ open, onClose, isQuickMode = false }: DailyP
                     {yesterdayStats.completed === 0 ? (
                       <span className="text-muted-foreground">No tasks completed yesterday</span>
                     ) : yesterdayStats.completed === 1 ? (
-                      <span>task completed! 🎉</span>
+                      <span>task completed!</span>
                     ) : (
-                      <span>tasks completed! 🎉</span>
+                      <span>tasks completed!</span>
                     )}
                   </div>
 
@@ -265,7 +265,7 @@ export function DailyPlanningFlow({ open, onClose, isQuickMode = false }: DailyP
                   {completionRate >= 80 && (
                     <div className="bg-green-50 dark:bg-green-950 p-4 rounded-lg">
                       <p className="font-semibold text-green-700 dark:text-green-300">
-                        ⭐ Outstanding work! You're crushing it!
+                        Outstanding work! You're crushing it!
                       </p>
                     </div>
                   )}
@@ -273,7 +273,7 @@ export function DailyPlanningFlow({ open, onClose, isQuickMode = false }: DailyP
                   {completionRate >= 50 && completionRate < 80 && (
                     <div className="bg-blue-50 dark:bg-blue-950 p-4 rounded-lg">
                       <p className="font-semibold text-blue-700 dark:text-blue-300">
-                        💪 Great progress! Keep up the momentum!
+                        Great progress! Keep up the momentum!
                       </p>
                     </div>
                   )}
@@ -281,7 +281,7 @@ export function DailyPlanningFlow({ open, onClose, isQuickMode = false }: DailyP
                   {yesterdayStats.completed === 0 && yesterdayStats.total === 0 && (
                     <div className="bg-purple-50 dark:bg-purple-950 p-4 rounded-lg">
                       <p className="font-semibold text-purple-700 dark:text-purple-300">
-                        ✨ Fresh start! Today is a new opportunity!
+                        Fresh start! Today is a new opportunity!
                       </p>
                     </div>
                   )}
@@ -476,7 +476,7 @@ export function DailyPlanningFlow({ open, onClose, isQuickMode = false }: DailyP
                   {isOverloaded && (
                     <Alert variant="destructive">
                       <AlertDescription>
-                        ⚠️ Your day might be too packed! Consider moving some tasks to tomorrow.
+                        Your day might be too packed! Consider moving some tasks to tomorrow.
                       </AlertDescription>
                     </Alert>
                   )}
@@ -484,7 +484,7 @@ export function DailyPlanningFlow({ open, onClose, isQuickMode = false }: DailyP
                   {isReasonable && (
                     <Alert>
                       <AlertDescription>
-                        ✅ Your workload looks balanced and achievable!
+                        Your workload looks balanced and achievable!
                       </AlertDescription>
                     </Alert>
                   )}
@@ -492,7 +492,7 @@ export function DailyPlanningFlow({ open, onClose, isQuickMode = false }: DailyP
                   {!isOverloaded && !isReasonable && hoursPlanned < 4 && (
                     <Alert>
                       <AlertDescription>
-                        💡 You have room for more! Consider adding important tasks.
+                        You have room for more! Consider adding important tasks.
                       </AlertDescription>
                     </Alert>
                   )}
@@ -531,7 +531,7 @@ export function DailyPlanningFlow({ open, onClose, isQuickMode = false }: DailyP
             <PartyPopper className="h-16 w-16 mx-auto text-primary" />
 
             <div>
-              <h2 className="text-3xl font-bold mb-2">You're All Set! 🎉</h2>
+              <h2 className="text-3xl font-bold mb-2">You're All Set!</h2>
               <p className="text-lg text-muted-foreground">Ready to crush your day</p>
             </div>
 

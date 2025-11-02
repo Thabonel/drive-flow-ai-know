@@ -7,7 +7,7 @@ export const AI_PERSONALITIES = {
   alex: {
     name: 'Alex',
     title: 'Your AI Planner',
-    avatar: '🤖',
+    avatar: 'A',
     color: 'from-purple-500 to-blue-500',
     icon: Brain,
     personality: 'professional',
@@ -17,7 +17,7 @@ export const AI_PERSONALITIES = {
   sage: {
     name: 'Sage',
     title: 'AI Wisdom Guide',
-    avatar: '🧙‍♂️',
+    avatar: 'S',
     color: 'from-indigo-500 to-purple-500',
     icon: Sparkles,
     personality: 'wise',
@@ -27,7 +27,7 @@ export const AI_PERSONALITIES = {
   nova: {
     name: 'Nova',
     title: 'AI Productivity Coach',
-    avatar: '⚡',
+    avatar: 'N',
     color: 'from-blue-500 to-cyan-500',
     icon: Zap,
     personality: 'energetic',
