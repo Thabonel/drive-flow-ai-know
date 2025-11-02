@@ -10,6 +10,8 @@ import { ParkedItemsPanel } from './ParkedItemsPanel';
 import { ViewModeSwitcher } from './ViewModeSwitcher';
 import { CalendarSyncButton } from './CalendarSyncButton';
 import { WorkloadIndicator } from './WorkloadIndicator';
+import { TaskHeaderPanel } from './TaskHeaderPanel';
+import { AddTaskOverlay } from './AddTaskOverlay';
 import { TemplateLibrary } from '@/components/templates/TemplateLibrary';
 import { TemplateBuilder } from '@/components/templates/TemplateBuilder';
 import { AIDailyPlanningModal } from '@/components/ai/AIDailyPlanningModal';
@@ -88,6 +90,7 @@ export function TimelineManager() {
   const [populatingRoutines, setPopulatingRoutines] = useState(false);
   const [showDailyPlanning, setShowDailyPlanning] = useState(false);
   const [showEndOfDay, setShowEndOfDay] = useState(false);
+  const [showAddTask, setShowAddTask] = useState(false);
   const [viewMode, setViewMode] = useState<TimelineViewMode>('week');
   const [initialFormValues, setInitialFormValues] = useState<{ startTime?: string; layerId?: string } | null>(null);
 
@@ -415,8 +418,17 @@ export function TimelineManager() {
               onModeChange={setViewMode}
             />
           </div>
+
+          {/* Unscheduled Tasks Panel */}
+          <TaskHeaderPanel onAddTaskClick={() => setShowAddTask(true)} />
         </div>
       </div>
+
+      {/* Add Task Overlay */}
+      <AddTaskOverlay
+        isOpen={showAddTask}
+        onClose={() => setShowAddTask(false)}
+      />
 
       {/* Logjam alert */}
       {logjamCount > 0 && (
