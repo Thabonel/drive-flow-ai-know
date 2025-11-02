@@ -19,6 +19,8 @@ import { useTimeline } from '@/hooks/useTimeline';
 import { useLayers } from '@/hooks/useLayers';
 import { Badge } from '@/components/ui/badge';
 import { Clock } from 'lucide-react';
+import { calculateRecurringDates } from '@/lib/recurrence';
+import { useToast } from '@/hooks/use-toast';
 
 export function TimelineWithDnd() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -34,6 +36,7 @@ export function TimelineWithDnd() {
   const { deleteTask } = useTasks();
   const { addItem } = useTimeline();
   const { layers } = useLayers();
+  const { toast } = useToast();
 
   // Configure sensors for drag and drop
   const mouseSensor = useSensor(MouseSensor, {
@@ -126,31 +129,90 @@ export function TimelineWithDnd() {
     }
 
     try {
-      console.log('Scheduling task:', {
-        layerId: dropPreview.layerId,
-        title: task.title,
-        time: dropPreview.time,
-        duration: task.planned_duration_minutes,
-        color: task.color
-      });
+      // Check if this is a recurring task
+      if (task.is_recurring && task.recurrence_pattern) {
+        console.log('Scheduling recurring task:', {
+          layerId: dropPreview.layerId,
+          title: task.title,
+          time: dropPreview.time,
+          duration: task.planned_duration_minutes,
+          pattern: task.recurrence_pattern,
+        });
 
-      // Create timeline item from task
-      const item = await addItem(
-        dropPreview.layerId,
-        task.title,
-        dropPreview.time,
-        task.planned_duration_minutes,
-        task.color
-      );
+        // Calculate all occurrence dates
+        const occurrenceDates = calculateRecurringDates(
+          dropPreview.time,
+          task.recurrence_pattern,
+          task.recurrence_end_date,
+          52 // Generate up to 52 occurrences (~1 year)
+        );
 
-      if (item) {
-        // Only delete task if item was successfully created
-        await deleteTask(task.id);
-        console.log('Task scheduled successfully');
+        console.log(`Generating ${occurrenceDates.length} recurring instances`);
+
+        // Create timeline items for each occurrence
+        const createdItems = [];
+        for (const occurrenceDate of occurrenceDates) {
+          try {
+            const item = await addItem(
+              dropPreview.layerId,
+              task.title,
+              occurrenceDate,
+              task.planned_duration_minutes,
+              task.color
+            );
+            if (item) {
+              createdItems.push(item);
+            }
+          } catch (error) {
+            console.error(`Failed to create occurrence at ${occurrenceDate}:`, error);
+            // Continue with other occurrences
+          }
+        }
+
+        if (createdItems.length > 0) {
+          // Delete the task from unscheduled list
+          await deleteTask(task.id);
+
+          toast({
+            title: 'Recurring task scheduled',
+            description: `Created ${createdItems.length} recurring instances`,
+          });
+
+          console.log(`Successfully scheduled ${createdItems.length} recurring instances`);
+        } else {
+          toast({
+            title: 'Failed to schedule recurring task',
+            description: 'No instances could be created',
+            variant: 'destructive',
+          });
+        }
+      } else {
+        // Non-recurring task - single instance
+        console.log('Scheduling single task:', {
+          layerId: dropPreview.layerId,
+          title: task.title,
+          time: dropPreview.time,
+          duration: task.planned_duration_minutes,
+          color: task.color,
+        });
+
+        const item = await addItem(
+          dropPreview.layerId,
+          task.title,
+          dropPreview.time,
+          task.planned_duration_minutes,
+          task.color
+        );
+
+        if (item) {
+          // Only delete task if item was successfully created
+          await deleteTask(task.id);
+          console.log('Task scheduled successfully');
+        }
       }
     } catch (error) {
       console.error('Failed to schedule task:', error);
-      // Error toast is already shown by addItem
+      // Error toast is already shown by addItem for non-recurring tasks
     } finally {
       setActiveTask(null);
       setDropPreview(null);

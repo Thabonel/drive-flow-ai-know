@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useTasks, Task } from '@/hooks/useTasks';
+import { useTasks, Task, RecurrencePattern } from '@/hooks/useTasks';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Input } from '@/components/ui/input';
@@ -8,6 +8,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 import { PageHelp } from '@/components/PageHelp';
+import { RecurrenceSelector } from '@/components/RecurrenceSelector';
 import {
   Clock,
   GripVertical,
@@ -126,6 +127,8 @@ export function TaskSidebar({ isOpen, onToggle, onTaskScheduled }: TaskSidebarPr
   const [showAddForm, setShowAddForm] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [newTaskDuration, setNewTaskDuration] = useState(30);
+  const [recurrencePattern, setRecurrencePattern] = useState<RecurrencePattern | null>(null);
+  const [recurrenceEndDate, setRecurrenceEndDate] = useState<string | null>(null);
 
   // Filter tasks by search query
   const filteredTasks = tasks.filter(
@@ -140,9 +143,15 @@ export function TaskSidebar({ isOpen, onToggle, onTaskScheduled }: TaskSidebarPr
     if (!newTaskTitle.trim()) return;
 
     try {
-      await addTask(newTaskTitle.trim(), newTaskDuration);
+      await addTask(newTaskTitle.trim(), newTaskDuration, {
+        isRecurring: !!recurrencePattern,
+        recurrencePattern,
+        recurrenceEndDate,
+      });
       setNewTaskTitle('');
       setNewTaskDuration(30);
+      setRecurrencePattern(null);
+      setRecurrenceEndDate(null);
       setShowAddForm(false);
     } catch (error) {
       console.error('Failed to add task:', error);
@@ -271,6 +280,13 @@ export function TaskSidebar({ isOpen, onToggle, onTaskScheduled }: TaskSidebarPr
                   />
                 </div>
 
+                <RecurrenceSelector
+                  value={recurrencePattern}
+                  onChange={setRecurrencePattern}
+                  endDate={recurrenceEndDate}
+                  onEndDateChange={setRecurrenceEndDate}
+                />
+
                 <div className="flex gap-2">
                   <Button
                     onClick={handleAddTask}
@@ -285,6 +301,8 @@ export function TaskSidebar({ isOpen, onToggle, onTaskScheduled }: TaskSidebarPr
                       setShowAddForm(false);
                       setNewTaskTitle('');
                       setNewTaskDuration(30);
+                      setRecurrencePattern(null);
+                      setRecurrenceEndDate(null);
                     }}
                     size="sm"
                     variant="outline"

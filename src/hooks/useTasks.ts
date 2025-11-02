@@ -2,6 +2,13 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 
+export interface RecurrencePattern {
+  frequency: 'daily' | 'weekly' | 'monthly';
+  interval: number; // Every N days/weeks/months
+  daysOfWeek?: number[]; // For weekly: 0=Sunday, 1=Monday, etc.
+  dayOfMonth?: number; // For monthly: 1-31
+}
+
 export interface Task {
   id: string;
   user_id: string;
@@ -11,6 +18,10 @@ export interface Task {
   priority: number;
   color: string;
   tags: string[];
+  is_recurring: boolean;
+  recurrence_pattern: RecurrencePattern | null;
+  recurrence_end_date: string | null;
+  parent_task_id: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -59,6 +70,9 @@ export const useTasks = () => {
       priority?: number;
       color?: string;
       tags?: string[];
+      isRecurring?: boolean;
+      recurrencePattern?: RecurrencePattern;
+      recurrenceEndDate?: string;
     }
   ) => {
     if (!user) return;
@@ -74,6 +88,10 @@ export const useTasks = () => {
           priority: options?.priority ?? 0,
           color: options?.color ?? '#3b82f6',
           tags: options?.tags ?? [],
+          is_recurring: options?.isRecurring ?? false,
+          recurrence_pattern: options?.recurrencePattern ?? null,
+          recurrence_end_date: options?.recurrenceEndDate ?? null,
+          parent_task_id: null,
         })
         .select()
         .single();
