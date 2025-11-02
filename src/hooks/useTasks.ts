@@ -61,6 +61,31 @@ export const useTasks = () => {
     fetchTasks();
   }, [user]);
 
+  // Real-time subscription
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel('tasks_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'tasks',
+          filter: `user_id=eq.${user.id}`,
+        },
+        () => {
+          fetchTasks();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user]);
+
   // Add task
   const addTask = async (
     title: string,
@@ -96,10 +121,16 @@ export const useTasks = () => {
         .select()
         .single();
 
-      if (error) throw error;
-      if (data) {
-        setTasks((prev) => [data, ...prev]);
+      if (error) {
+        console.error('Error adding task:', error);
+        throw new Error(error.message || 'Failed to add task');
       }
+
+      if (!data) {
+        throw new Error('No data returned from task creation');
+      }
+
+      setTasks((prev) => [data, ...prev]);
       return data;
     } catch (error) {
       console.error('Error adding task:', error);

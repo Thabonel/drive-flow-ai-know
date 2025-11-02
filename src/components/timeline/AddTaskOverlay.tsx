@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RecurrenceSelector } from '@/components/RecurrenceSelector';
+import { useToast } from '@/hooks/use-toast';
 import {
   Dialog,
   DialogContent,
@@ -18,6 +19,7 @@ interface AddTaskOverlayProps {
 
 export function AddTaskOverlay({ isOpen, onClose }: AddTaskOverlayProps) {
   const { addTask } = useTasks();
+  const { toast } = useToast();
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [newTaskDuration, setNewTaskDuration] = useState(30);
   const [recurrencePattern, setRecurrencePattern] = useState<RecurrencePattern | null>(null);
@@ -33,6 +35,12 @@ export function AddTaskOverlay({ isOpen, onClose }: AddTaskOverlayProps) {
         recurrenceEndDate,
       });
 
+      // Show success toast
+      toast({
+        title: "Task created",
+        description: "Your task has been added to the unscheduled tasks list.",
+      });
+
       // Reset form
       setNewTaskTitle('');
       setNewTaskDuration(30);
@@ -41,6 +49,14 @@ export function AddTaskOverlay({ isOpen, onClose }: AddTaskOverlayProps) {
       onClose();
     } catch (error) {
       console.error('Failed to add task:', error);
+
+      // Show error toast
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to create task. Please try again.",
+        variant: "destructive",
+      });
+      // Don't close modal so user can retry
     }
   };
 
