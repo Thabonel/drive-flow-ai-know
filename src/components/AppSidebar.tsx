@@ -1,4 +1,4 @@
-import { Home, FolderOpen, FileText, Brain, Settings, LogOut, RefreshCw, Upload, MessageSquare, HelpCircle, Clock, Shield, UserCircle, Sparkles, Mail } from 'lucide-react';
+import { Home, FileText, Brain, Settings, LogOut, HelpCircle, Clock } from 'lucide-react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import {
@@ -17,16 +17,9 @@ import {
 import { Button } from '@/components/ui/button';
 
 const navigationItems = [
+  { title: 'Dashboard', url: '/dashboard', icon: Home },
+  { title: 'Documents', url: '/documents', icon: FileText },
   { title: 'Timeline', url: '/timeline', icon: Clock },
-  { title: 'AI Knowledge Assistant', url: '/dashboard', icon: Home },
-  { title: 'Daily Brief', url: '/daily-brief', icon: Sparkles },
-  { title: 'Email to Task', url: '/email-to-task', icon: Mail },
-  { title: 'AI Assistant', url: '/conversations', icon: MessageSquare },
-  { title: 'My Assistants', url: '/assistants', icon: Shield },
-  { title: 'Assistant Portal', url: '/assistant-portal', icon: UserCircle },
-  { title: 'Find Documents', url: '/documents', icon: FileText },
-  { title: 'Add Documents', url: '/add-documents', icon: Upload },
-  { title: 'Knowledge Bases', url: '/knowledge', icon: Brain },
 ];
 
 export function AppSidebar() {

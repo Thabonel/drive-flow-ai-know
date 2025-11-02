@@ -31,8 +31,9 @@ import {
   VIEW_MODE_CONFIG,
 } from '@/lib/timelineConstants';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, Clock, Settings, Layers, Lock, Unlock, Archive, LayoutTemplate, Sparkles, RefreshCw, Calendar as CalIcon, Brain, Sunrise, Moon, Link as LinkIcon } from 'lucide-react';
+import { Loader2, Clock, Settings, Layers, Lock, Unlock, Archive, LayoutTemplate, Sparkles, RefreshCw, Calendar as CalIcon, Brain, Sunrise, Moon, Link as LinkIcon, MoreHorizontal } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuLabel } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { PageHelp } from '@/components/PageHelp';
@@ -262,7 +263,7 @@ export function TimelineManager() {
           </p>
         </div>
 
-        {/* Action Buttons Row */}
+        {/* Action Buttons Row - Simplified to 5 Primary Actions */}
         <div className="flex items-center gap-3 flex-wrap">
           {/* Primary Add Item Button */}
           <button
@@ -270,45 +271,47 @@ export function TimelineManager() {
             className="px-6 py-3 bg-primary text-primary-foreground rounded-lg font-semibold hover:bg-primary/90 transition-colors shadow-sm"
             disabled={layers.length === 0}
           >
-            {layers.length === 0 ? 'Create a Layer First' : '+ Add Timeline Item'}
+            {layers.length === 0 ? 'Create a Layer First' : '+ Add Item'}
           </button>
 
-          {/* Daily Planning Ritual Button */}
-          <Button
-            onClick={() => setShowDailyPlanning(true)}
-            variant="default"
-            className="gap-2 bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 text-white"
-          >
-            <Sunrise className="h-4 w-4" />
-            Daily Planning
-          </Button>
-
-          {/* AI Planning Button */}
-          <Button
-            onClick={() => setShowAIPlanning(true)}
-            variant="default"
-            className="gap-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white"
-            disabled={layers.length === 0}
-          >
-            <Sparkles className="h-4 w-4" />
-            AI Plan My Day
-          </Button>
-
-          {/* End of Day Button */}
-          <Button
-            onClick={() => setShowEndOfDay(true)}
-            variant="outline"
-            className="gap-2"
-          >
-            <Moon className="h-4 w-4" />
-            End of Day
-          </Button>
+          {/* Unified Planning Button */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="default" className="gap-2">
+                <Sparkles className="h-4 w-4" />
+                Plan Day
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start">
+              <DropdownMenuItem onClick={() => setShowDailyPlanning(true)}>
+                <Sunrise className="h-4 w-4 mr-2" />
+                Daily Planning
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setShowAIPlanning(true)} disabled={layers.length === 0}>
+                <Sparkles className="h-4 w-4 mr-2" />
+                AI Plan My Day
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => setShowTemplates(true)}>
+                <LayoutTemplate className="h-4 w-4 mr-2" />
+                Templates
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setShowRoutines(true)}>
+                <CalIcon className="h-4 w-4 mr-2" />
+                Manage Routines
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handlePopulateRoutines} disabled={populatingRoutines || layers.length === 0}>
+                <RefreshCw className="h-4 w-4 mr-2" />
+                {populatingRoutines ? 'Adding...' : "Add Today's Routines"}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
 
           {/* Lock/Unlock Toggle Button */}
           <Button
             onClick={handleToggleLock}
             variant={settings?.is_locked ? 'default' : 'outline'}
-            className="gap-2 w-32"
+            className="gap-2"
           >
             {settings?.is_locked ? (
               <>
@@ -323,124 +326,87 @@ export function TimelineManager() {
             )}
           </Button>
 
-          {/* Timeline Controls Dropdown */}
-          <Popover>
-            <PopoverTrigger asChild>
+          {/* More Actions Dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
               <Button variant="outline" className="gap-2">
-                <Settings className="h-4 w-4" />
-                Controls
+                <MoreHorizontal className="h-4 w-4" />
+                More
               </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-72 max-h-[80vh] overflow-y-auto" align="start">
-              <div className="space-y-2">
-                <h3 className="font-semibold text-sm">Timeline Controls</h3>
-                <p className="text-xs text-muted-foreground">Manage your timeline view</p>
-              </div>
-              <TimelineControls
-                zoomHorizontal={settings?.zoom_horizontal ?? 100}
-                zoomVertical={settings?.zoom_vertical ?? 80}
-                onZoomHorizontalChange={handleZoomHorizontalChange}
-                onZoomVerticalChange={handleZoomVerticalChange}
-                onFitAllLayers={handleFitAllLayers}
-              />
-            </PopoverContent>
-          </Popover>
-
-          {/* Timeline Layers Dropdown */}
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button variant="outline" className="gap-2">
-                <Layers className="h-4 w-4" />
-                Layers ({layers.length})
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-72 max-h-[80vh] overflow-y-auto" align="start">
-              <div className="space-y-2">
-                <h3 className="font-semibold text-sm">Timeline Layers</h3>
-                <p className="text-xs text-muted-foreground">Organize your items into layers</p>
-              </div>
-              <TimelineLayerManager
-                layers={layers}
-                onAddLayer={addLayer}
-                onUpdateLayer={updateLayer}
-                onDeleteLayer={deleteLayer}
-                onToggleVisibility={toggleLayerVisibility}
-              />
-            </PopoverContent>
-          </Popover>
-
-          {/* Parked Items Button */}
-          <Button
-            onClick={() => setShowParkedItems(true)}
-            variant="outline"
-            className="gap-2"
-          >
-            <Archive className="h-4 w-4" />
-            Parked ({parkedItems?.length || 0})
-          </Button>
-
-          {/* Day Templates Button */}
-          <Button
-            onClick={() => setShowTemplates(true)}
-            variant="outline"
-            className="gap-2"
-          >
-            <LayoutTemplate className="h-4 w-4" />
-            Templates
-          </Button>
-
-          {/* Routines Button */}
-          <Button
-            onClick={() => setShowRoutines(true)}
-            variant="outline"
-            className="gap-2"
-          >
-            <CalIcon className="h-4 w-4" />
-            Routines
-          </Button>
-
-          {/* Populate Today's Routines Button */}
-          <Button
-            onClick={handlePopulateRoutines}
-            variant="outline"
-            className="gap-2"
-            disabled={populatingRoutines || layers.length === 0}
-          >
-            {populatingRoutines ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Adding...
-              </>
-            ) : (
-              <>
-                <RefreshCw className="h-4 w-4" />
-                Add Today's Routines
-              </>
-            )}
-          </Button>
-
-          {/* AI Time Insights Button */}
-          <Button
-            onClick={() => setShowAIInsights(true)}
-            variant="outline"
-            className="gap-2"
-          >
-            <Brain className="h-4 w-4" />
-            AI Insights
-          </Button>
-
-          {/* Booking Links Button */}
-          <Button
-            onClick={() => window.location.href = '/booking-links'}
-            variant="outline"
-            className="gap-2"
-          >
-            <LinkIcon className="h-4 w-4" />
-            Booking Links
-          </Button>
-
-          {/* Google Calendar Sync Button */}
-          <CalendarSyncButton />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-56">
+              <DropdownMenuItem onClick={() => setShowEndOfDay(true)}>
+                <Moon className="h-4 w-4 mr-2" />
+                End of Day
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setShowAIInsights(true)}>
+                <Brain className="h-4 w-4 mr-2" />
+                AI Insights
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setShowParkedItems(true)}>
+                <Archive className="h-4 w-4 mr-2" />
+                Parked Items ({parkedItems?.length || 0})
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => window.location.href = '/booking-links'}>
+                <LinkIcon className="h-4 w-4 mr-2" />
+                Booking Links
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuLabel>Timeline Settings</DropdownMenuLabel>
+              <DropdownMenuItem asChild>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <button className="w-full flex items-center px-2 py-1.5 text-sm">
+                      <Layers className="h-4 w-4 mr-2" />
+                      Layers ({layers.length})
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-72 max-h-[80vh] overflow-y-auto" side="right">
+                    <div className="space-y-2">
+                      <h3 className="font-semibold text-sm">Timeline Layers</h3>
+                      <p className="text-xs text-muted-foreground">Organize your items into layers</p>
+                    </div>
+                    <TimelineLayerManager
+                      layers={layers}
+                      onAddLayer={addLayer}
+                      onUpdateLayer={updateLayer}
+                      onDeleteLayer={deleteLayer}
+                      onToggleVisibility={toggleLayerVisibility}
+                    />
+                  </PopoverContent>
+                </Popover>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <button className="w-full flex items-center px-2 py-1.5 text-sm">
+                      <Settings className="h-4 w-4 mr-2" />
+                      Zoom Controls
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-72 max-h-[80vh] overflow-y-auto" side="right">
+                    <div className="space-y-2">
+                      <h3 className="font-semibold text-sm">Timeline Controls</h3>
+                      <p className="text-xs text-muted-foreground">Manage your timeline view</p>
+                    </div>
+                    <TimelineControls
+                      zoomHorizontal={settings?.zoom_horizontal ?? 100}
+                      zoomVertical={settings?.zoom_vertical ?? 80}
+                      onZoomHorizontalChange={handleZoomHorizontalChange}
+                      onZoomVerticalChange={handleZoomVerticalChange}
+                      onFitAllLayers={handleFitAllLayers}
+                    />
+                  </PopoverContent>
+                </Popover>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem asChild>
+                <div className="w-full">
+                  <CalendarSyncButton />
+                </div>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
 
           {/* View Mode Switcher */}
           <div className="ml-auto">
