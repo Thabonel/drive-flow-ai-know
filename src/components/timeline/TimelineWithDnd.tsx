@@ -117,9 +117,25 @@ export function TimelineWithDnd() {
       return;
     }
 
+    // Check if there are visible layers
+    if (layers.filter(l => l.is_visible).length === 0) {
+      console.error('No visible layers available');
+      setActiveTask(null);
+      setDropPreview(null);
+      return;
+    }
+
     try {
+      console.log('Scheduling task:', {
+        layerId: dropPreview.layerId,
+        title: task.title,
+        time: dropPreview.time,
+        duration: task.planned_duration_minutes,
+        color: task.color
+      });
+
       // Create timeline item from task
-      await addItem(
+      const item = await addItem(
         dropPreview.layerId,
         task.title,
         dropPreview.time,
@@ -127,12 +143,14 @@ export function TimelineWithDnd() {
         task.color
       );
 
-      // Delete task from unscheduled list
-      await deleteTask(task.id);
-
-      console.log('Task scheduled successfully');
+      if (item) {
+        // Only delete task if item was successfully created
+        await deleteTask(task.id);
+        console.log('Task scheduled successfully');
+      }
     } catch (error) {
       console.error('Failed to schedule task:', error);
+      // Error toast is already shown by addItem
     } finally {
       setActiveTask(null);
       setDropPreview(null);

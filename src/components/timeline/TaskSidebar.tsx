@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
+import { Label } from '@/components/ui/label';
 import { PageHelp } from '@/components/PageHelp';
 import {
   Clock,
@@ -124,6 +125,7 @@ export function TaskSidebar({ isOpen, onToggle, onTaskScheduled }: TaskSidebarPr
   const [searchQuery, setSearchQuery] = useState('');
   const [showAddForm, setShowAddForm] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState('');
+  const [newTaskDuration, setNewTaskDuration] = useState(30);
 
   // Filter tasks by search query
   const filteredTasks = tasks.filter(
@@ -138,8 +140,9 @@ export function TaskSidebar({ isOpen, onToggle, onTaskScheduled }: TaskSidebarPr
     if (!newTaskTitle.trim()) return;
 
     try {
-      await addTask(newTaskTitle.trim());
+      await addTask(newTaskTitle.trim(), newTaskDuration);
       setNewTaskTitle('');
+      setNewTaskDuration(30);
       setShowAddForm(false);
     } catch (error) {
       console.error('Failed to add task:', error);
@@ -221,17 +224,53 @@ export function TaskSidebar({ isOpen, onToggle, onTaskScheduled }: TaskSidebarPr
           {/* Footer - Add task */}
           <div className="p-4 border-t">
             {showAddForm ? (
-              <div className="space-y-2">
-                <Input
-                  placeholder="Task title..."
-                  value={newTaskTitle}
-                  onChange={(e) => setNewTaskTitle(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') handleAddTask();
-                    if (e.key === 'Escape') setShowAddForm(false);
-                  }}
-                  autoFocus
-                />
+              <div className="space-y-3">
+                <div>
+                  <Label htmlFor="task-title" className="text-xs">Task Title</Label>
+                  <Input
+                    id="task-title"
+                    placeholder="What needs to be done?"
+                    value={newTaskTitle}
+                    onChange={(e) => setNewTaskTitle(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && newTaskTitle.trim()) handleAddTask();
+                      if (e.key === 'Escape') {
+                        setShowAddForm(false);
+                        setNewTaskTitle('');
+                        setNewTaskDuration(30);
+                      }
+                    }}
+                    autoFocus
+                    className="mt-1"
+                  />
+                </div>
+
+                <div>
+                  <Label className="text-xs">Duration</Label>
+                  <div className="grid grid-cols-4 gap-1 mt-1">
+                    {[15, 30, 60, 120].map((mins) => (
+                      <Button
+                        key={mins}
+                        type="button"
+                        size="sm"
+                        variant={newTaskDuration === mins ? 'default' : 'outline'}
+                        onClick={() => setNewTaskDuration(mins)}
+                        className="text-xs"
+                      >
+                        {mins < 60 ? `${mins}m` : `${mins / 60}h`}
+                      </Button>
+                    ))}
+                  </div>
+                  <Input
+                    type="number"
+                    placeholder="Custom (minutes)"
+                    value={newTaskDuration}
+                    onChange={(e) => setNewTaskDuration(Math.max(1, parseInt(e.target.value) || 30))}
+                    className="mt-2"
+                    min="1"
+                  />
+                </div>
+
                 <div className="flex gap-2">
                   <Button
                     onClick={handleAddTask}
@@ -239,12 +278,13 @@ export function TaskSidebar({ isOpen, onToggle, onTaskScheduled }: TaskSidebarPr
                     className="flex-1"
                     disabled={!newTaskTitle.trim()}
                   >
-                    Add
+                    Add Task
                   </Button>
                   <Button
                     onClick={() => {
                       setShowAddForm(false);
                       setNewTaskTitle('');
+                      setNewTaskDuration(30);
                     }}
                     size="sm"
                     variant="outline"
