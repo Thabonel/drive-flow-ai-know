@@ -219,17 +219,6 @@ export const ShareableAchievementCard = React.forwardRef<
   HTMLDivElement,
   ShareableAchievementCardProps
 >(({ achievement, className }, ref) => {
-  const iconEmojis: Record<string, string> = {
-    trophy: '🏆',
-    star: '⭐',
-    trending: '📈',
-    target: '🎯',
-    zap: '⚡',
-    calendar: '📅',
-    check: '✅',
-    clock: '⏰',
-  };
-
   return (
     <div
       ref={ref}
@@ -247,7 +236,7 @@ export const ShareableAchievementCard = React.forwardRef<
         <div className="flex items-start justify-between">
           <div>
             <h3 className="text-3xl font-bold mb-2">
-              {iconEmojis[achievement.icon]} {achievement.title.replace(/[^\w\s]/g, '')}
+              {achievement.title.replace(/[^\w\s]/g, '')}
             </h3>
             <p className="text-white/80 text-sm max-w-md">{achievement.message}</p>
           </div>
@@ -270,9 +259,6 @@ export const ShareableAchievementCard = React.forwardRef<
         {/* Footer */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
-              <span className="text-lg">🤖</span>
-            </div>
             <div>
               <p className="font-semibold text-sm">Timeline AI</p>
               <p className="text-xs text-white/60">Powered by AI</p>

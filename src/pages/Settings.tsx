@@ -208,13 +208,13 @@ const Settings = () => {
                       <Label>Theme</Label>
                       <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                         {[
-                          { value: "system", label: "System preference", icon: "💻" },
-                          { value: "light", label: "Light", icon: "☀️" },
-                          { value: "pure-light", label: "Pure Light", icon: "✨" },
-                          { value: "dark", label: "Dark", icon: "🌙" },
-                          { value: "magic-blue", label: "Magic Blue", icon: "🔷" },
-                          { value: "classic-dark", label: "Classic Dark", icon: "⬛" },
-                        ].map(({ value, label, icon }) => (
+                          { value: "system", label: "System preference" },
+                          { value: "light", label: "Light" },
+                          { value: "pure-light", label: "Pure Light" },
+                          { value: "dark", label: "Dark" },
+                          { value: "magic-blue", label: "Magic Blue" },
+                          { value: "classic-dark", label: "Classic Dark" },
+                        ].map(({ value, label }) => (
                           <button
                             key={value}
                             onClick={() => setTheme(value as any)}
@@ -224,7 +224,6 @@ const Settings = () => {
                               ${theme === value ? 'border-primary bg-accent' : 'border-border'}
                             `}
                           >
-                            <span className="text-xl">{icon}</span>
                             <div className="flex-1 text-left">
                               <div className="font-medium text-sm">{label}</div>
                             </div>

@@ -449,7 +449,7 @@ export function AssistantAITools() {
                         </AlertDescription>
                         {suggestion.suggestedAction && (
                           <p className="text-xs text-muted-foreground italic">
-                            💡 Suggestion: {suggestion.suggestedAction}
+                            Suggestion: {suggestion.suggestedAction}
                           </p>
                         )}
                         <div className="flex gap-2 mt-3">

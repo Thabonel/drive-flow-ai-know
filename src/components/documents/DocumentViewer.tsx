@@ -167,20 +167,6 @@ export function DocumentViewer({
     }
   };
 
-  const getFileIcon = (mimeType: string) => {
-    switch (mimeType) {
-      case 'application/pdf':
-        return '📄';
-      case 'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
-        return '📝';
-      case 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet':
-        return '📊';
-      case 'application/vnd.openxmlformats-officedocument.presentationml.presentation':
-        return '📊';
-      default:
-        return '📎';
-    }
-  };
 
   const formatFileSize = (bytes: number): string => {
     if (bytes < 1024) return `${bytes} B`;
@@ -241,8 +227,8 @@ export function DocumentViewer({
                     `}
                   >
                     {/* File icon */}
-                    <div className="text-4xl flex-shrink-0">
-                      {getFileIcon(doc.mime_type)}
+                    <div className="flex-shrink-0">
+                      <FileText className="h-10 w-10 text-muted-foreground" />
                     </div>
 
                     {/* File details */}

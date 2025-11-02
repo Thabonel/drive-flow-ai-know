@@ -11,14 +11,14 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Loader2, Plus, Trash2, Edit, Clock, Calendar, Sparkles } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
-const ROUTINE_TYPES: { value: RoutineType; label: string; icon: string; defaultColor: string }[] = [
-  { value: 'lunch', label: 'Lunch', icon: '🍽️', defaultColor: '#f59e0b' },
-  { value: 'exercise', label: 'Exercise', icon: '💪', defaultColor: '#ef4444' },
-  { value: 'commute', label: 'Commute', icon: '🚗', defaultColor: '#6b7280' },
-  { value: 'break', label: 'Break', icon: '☕', defaultColor: '#f59e0b' },
-  { value: 'personal', label: 'Personal', icon: '🏠', defaultColor: '#10b981' },
-  { value: 'morning_routine', label: 'Morning Routine', icon: '🌅', defaultColor: '#10b981' },
-  { value: 'evening_routine', label: 'Evening Routine', icon: '🌙', defaultColor: '#10b981' },
+const ROUTINE_TYPES: { value: RoutineType; label: string; defaultColor: string }[] = [
+  { value: 'lunch', label: 'Lunch', defaultColor: '#f59e0b' },
+  { value: 'exercise', label: 'Exercise', defaultColor: '#ef4444' },
+  { value: 'commute', label: 'Commute', defaultColor: '#6b7280' },
+  { value: 'break', label: 'Break', defaultColor: '#f59e0b' },
+  { value: 'personal', label: 'Personal', defaultColor: '#10b981' },
+  { value: 'morning_routine', label: 'Morning Routine', defaultColor: '#10b981' },
+  { value: 'evening_routine', label: 'Evening Routine', defaultColor: '#10b981' },
 ];
 
 const DAYS_OF_WEEK = [
@@ -218,14 +218,11 @@ export function RoutineManager({ onClose }: RoutineManagerProps) {
               <Card key={routine.id}>
                 <CardHeader className="pb-3">
                   <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="text-2xl">{typeConfig?.icon}</span>
-                      <div>
-                        <CardTitle className="text-lg">{routine.title}</CardTitle>
-                        <CardDescription className="capitalize">
-                          {typeConfig?.label}
-                        </CardDescription>
-                      </div>
+                    <div>
+                      <CardTitle className="text-lg">{routine.title}</CardTitle>
+                      <CardDescription className="capitalize">
+                        {typeConfig?.label}
+                      </CardDescription>
                     </div>
                     <div className="flex items-center gap-2">
                       <Switch
@@ -339,7 +336,7 @@ export function RoutineManager({ onClose }: RoutineManagerProps) {
                 <SelectContent>
                   {ROUTINE_TYPES.map((type) => (
                     <SelectItem key={type.value} value={type.value}>
-                      {type.icon} {type.label}
+                      {type.label}
                     </SelectItem>
                   ))}
                 </SelectContent>

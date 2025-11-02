@@ -73,22 +73,6 @@ export function TemplateLibrary({ onCreateCustom, onTemplateApplied }: TemplateL
     return blocks.reduce((sum, block) => sum + block.duration_minutes, 0);
   };
 
-  // Get type icon
-  const getTypeIcon = (type: string) => {
-    switch (type) {
-      case 'meeting':
-        return '👥';
-      case 'work':
-        return '💼';
-      case 'break':
-        return '☕';
-      case 'personal':
-        return '🏠';
-      default:
-        return '📋';
-    }
-  };
-
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -138,7 +122,6 @@ export function TemplateLibrary({ onCreateCustom, onTemplateApplied }: TemplateL
               }}
               formatDuration={formatDuration}
               calculateTotalDuration={calculateTotalDuration}
-              getTypeIcon={getTypeIcon}
             />
           ))}
         </div>
@@ -166,7 +149,6 @@ export function TemplateLibrary({ onCreateCustom, onTemplateApplied }: TemplateL
                 isDeleting={deletingId === template.id}
                 formatDuration={formatDuration}
                 calculateTotalDuration={calculateTotalDuration}
-                getTypeIcon={getTypeIcon}
               />
             ))}
           </div>
@@ -269,7 +251,6 @@ interface TemplateCardProps {
   isDeleting?: boolean;
   formatDuration: (minutes: number) => string;
   calculateTotalDuration: (blocks: TemplateBlock[]) => number;
-  getTypeIcon: (type: string) => string;
 }
 
 function TemplateCard({
@@ -279,7 +260,6 @@ function TemplateCard({
   isDeleting,
   formatDuration,
   calculateTotalDuration,
-  getTypeIcon,
 }: TemplateCardProps) {
   const totalDuration = calculateTotalDuration(template.template_blocks);
   const blocksByType = template.template_blocks.reduce((acc, block) => {
@@ -332,8 +312,8 @@ function TemplateCard({
         {/* Block type breakdown */}
         <div className="flex flex-wrap gap-2">
           {Object.entries(blocksByType).map(([type, count]) => (
-            <Badge key={type} variant="outline" className="text-xs">
-              {getTypeIcon(type)} {count}
+            <Badge key={type} variant="outline" className="text-xs capitalize">
+              {type}: {count}
             </Badge>
           ))}
         </div>

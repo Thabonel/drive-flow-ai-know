@@ -112,8 +112,8 @@ export function WorkloadIndicator({ items, targetDate, compact = false }: Worklo
       {/* Positive feedback */}
       {!stats.isOvercommitted && stats.totalPlannedMinutes > 0 && (
         <p className="text-xs text-muted-foreground">
-          {stats.totalPlannedHours < 6 && '✓ Light workload - room for more tasks'}
-          {stats.totalPlannedHours >= 6 && stats.totalPlannedHours <= 8 && '✓ Healthy workload'}
+          {stats.totalPlannedHours < 6 && 'Light workload - room for more tasks'}
+          {stats.totalPlannedHours >= 6 && stats.totalPlannedHours <= 8 && 'Healthy workload'}
         </p>
       )}
     </div>

@@ -120,8 +120,8 @@ export function EndOfDayShutdown({ open, onClose }: EndOfDayShutdownProps) {
                       {completedItems.length === 0
                         ? 'No tasks completed'
                         : completedItems.length === 1
-                        ? 'task completed 🎉'
-                        : 'tasks completed 🎉'}
+                        ? 'task completed'
+                        : 'tasks completed'}
                     </div>
 
                     {todayItems.length > 0 && (
@@ -154,7 +154,7 @@ export function EndOfDayShutdown({ open, onClose }: EndOfDayShutdownProps) {
                   {completionRate >= 80 && (
                     <div className="bg-green-50 dark:bg-green-950 p-4 rounded-lg text-center">
                       <p className="font-semibold text-green-700 dark:text-green-300">
-                        🌟 Outstanding! You crushed today!
+                        Outstanding! You crushed today!
                       </p>
                     </div>
                   )}
@@ -162,7 +162,7 @@ export function EndOfDayShutdown({ open, onClose }: EndOfDayShutdownProps) {
                   {completionRate >= 50 && completionRate < 80 && (
                     <div className="bg-blue-50 dark:bg-blue-950 p-4 rounded-lg text-center">
                       <p className="font-semibold text-blue-700 dark:text-blue-300">
-                        💪 Solid work! You made real progress!
+                        Solid work! You made real progress!
                       </p>
                     </div>
                   )}
@@ -170,7 +170,7 @@ export function EndOfDayShutdown({ open, onClose }: EndOfDayShutdownProps) {
                   {completionRate < 50 && completionRate > 0 && (
                     <div className="bg-purple-50 dark:bg-purple-950 p-4 rounded-lg text-center">
                       <p className="font-semibold text-purple-700 dark:text-purple-300">
-                        ✨ Every step forward counts! Tomorrow is a new opportunity!
+                        Every step forward counts! Tomorrow is a new opportunity!
                       </p>
                     </div>
                   )}
@@ -273,7 +273,7 @@ export function EndOfDayShutdown({ open, onClose }: EndOfDayShutdownProps) {
             ) : (
               <div className="text-center py-8 text-muted-foreground">
                 <CheckCircle className="h-12 w-12 mx-auto mb-4 text-green-500" />
-                <p>All tasks completed! 🎉</p>
+                <p>All tasks completed!</p>
               </div>
             )}
 
@@ -295,7 +295,7 @@ export function EndOfDayShutdown({ open, onClose }: EndOfDayShutdownProps) {
             <PartyPopper className="h-20 w-20 mx-auto text-yellow-500" />
 
             <div>
-              <h2 className="text-4xl font-bold mb-2">Great Work Today! 🎉</h2>
+              <h2 className="text-4xl font-bold mb-2">Great Work Today!</h2>
               <p className="text-lg text-muted-foreground">Rest well, tomorrow is another opportunity</p>
             </div>
 
@@ -334,7 +334,7 @@ export function EndOfDayShutdown({ open, onClose }: EndOfDayShutdownProps) {
             </Card>
 
             <div className="text-sm text-muted-foreground">
-              See you tomorrow! 👋
+              See you tomorrow!
             </div>
           </div>
         );
