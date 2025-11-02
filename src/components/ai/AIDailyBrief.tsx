@@ -128,11 +128,11 @@ export function AIDailyBrief({ date = new Date(), autoGenerate = true }: AIDaily
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="prose prose-sm max-w-none">
+            <div className="max-w-none">
               {showFullInsights ? (
-                <p className="whitespace-pre-wrap">{brief.ai_insights}</p>
+                <p className="whitespace-pre-wrap text-foreground">{brief.ai_insights}</p>
               ) : (
-                <p className="line-clamp-3">{brief.ai_insights}</p>
+                <p className="line-clamp-3 text-foreground">{brief.ai_insights}</p>
               )}
             </div>
             {brief.ai_insights.length > 200 && (
