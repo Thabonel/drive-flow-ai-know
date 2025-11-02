@@ -13,7 +13,6 @@ import {
 } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { TimelineManager } from './TimelineManager';
-import { TaskSidebar } from './TaskSidebar';
 import { Task, useTasks } from '@/hooks/useTasks';
 import { useTimeline } from '@/hooks/useTimeline';
 import { useLayers } from '@/hooks/useLayers';
@@ -23,7 +22,6 @@ import { calculateRecurringDates } from '@/lib/recurrence';
 import { useToast } from '@/hooks/use-toast';
 
 export function TimelineWithDnd() {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [activeTask, setActiveTask] = useState<Task | null>(null);
   const [dropPreview, setDropPreview] = useState<{
     time: string;
@@ -234,12 +232,9 @@ export function TimelineWithDnd() {
       onDragMove={handleDragMove}
       onDragEnd={handleDragEnd}
     >
-      <div className="flex relative">
+      <div className="relative">
         {/* Main Timeline - with drop zone */}
-        <div
-          ref={timelineRef}
-          className="relative flex-1 transition-all duration-300"
-        >
+        <div ref={timelineRef} className="relative">
           <TimelineManager />
 
           {/* Drop preview indicator */}
@@ -262,12 +257,6 @@ export function TimelineWithDnd() {
             </div>
           )}
         </div>
-
-        {/* Task Sidebar */}
-        <TaskSidebar
-          isOpen={isSidebarOpen}
-          onToggle={() => setIsSidebarOpen(!isSidebarOpen)}
-        />
 
         {/* Drag Overlay - shows the dragged task */}
         <DragOverlay>
