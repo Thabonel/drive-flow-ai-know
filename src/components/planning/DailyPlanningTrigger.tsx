@@ -4,7 +4,7 @@ import { DailyPlanningFlow } from './DailyPlanningFlow';
 import { EndOfDayShutdown } from './EndOfDayShutdown';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import { X, Sparkles, Moon, Clock } from 'lucide-react';
+import { X, Moon, Clock } from 'lucide-react';
 
 /**
  * Automatically triggers daily planning prompts
@@ -97,46 +97,36 @@ export function DailyPlanningTrigger() {
       {/* Daily Planning Prompt */}
       {showPrompt && !todaySession?.completed_at && (
         <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 w-full max-w-lg px-4">
-          <Alert className="border-2 border-primary shadow-lg bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950/50 dark:to-pink-950/50">
-            <div className="flex items-start gap-4">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center flex-shrink-0">
-                <Sparkles className="h-5 w-5 text-white" />
+          <Alert className="border-2 border-primary shadow-lg bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950/50 dark:to-purple-950/50">
+            <div className="flex items-center gap-3 flex-wrap">
+              <div className="flex-shrink-0">
+                <h4 className="font-semibold text-sm text-foreground">Ready to plan your day?</h4>
               </div>
 
-              <div className="flex-1 space-y-3">
-                <div>
-                  <h4 className="font-semibold text-lg mb-1">Ready to plan your day?</h4>
-                  <AlertDescription>
-                    Take a few minutes to set yourself up for success today.
-                  </AlertDescription>
-                </div>
+              <div className="flex items-center gap-2 flex-wrap flex-1">
+                <Button onClick={handleStartPlanning} size="sm">
+                  Full Planning ({settings?.duration_minutes || 15} min)
+                </Button>
 
-                <div className="flex items-center gap-2 flex-wrap">
-                  <Button onClick={handleStartPlanning} size="sm" className="gap-1.5">
-                    <Sparkles className="h-3 w-3" />
-                    Full Planning ({settings?.duration_minutes || 15} min)
-                  </Button>
-
-                  {settings?.quick_planning_enabled && (
-                    <Button
-                      onClick={handleStartQuickPlanning}
-                      variant="outline"
-                      size="sm"
-                      className="gap-1.5"
-                    >
-                      <Clock className="h-3 w-3" />
-                      Quick (2 min)
-                    </Button>
-                  )}
-
+                {settings?.quick_planning_enabled && (
                   <Button
-                    onClick={handleSnooze}
-                    variant="ghost"
+                    onClick={handleStartQuickPlanning}
+                    variant="outline"
                     size="sm"
+                    className="gap-1.5"
                   >
-                    Snooze {settings?.snooze_duration_minutes || 15}m
+                    <Clock className="h-3 w-3" />
+                    Quick (2 min)
                   </Button>
-                </div>
+                )}
+
+                <Button
+                  onClick={handleSnooze}
+                  variant="outline"
+                  size="sm"
+                >
+                  Snooze {settings?.snooze_duration_minutes || 15}m
+                </Button>
               </div>
 
               <Button
