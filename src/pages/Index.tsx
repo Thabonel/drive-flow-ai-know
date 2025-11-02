@@ -62,10 +62,6 @@ const Index = () => {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div>
-              <h1 className="text-4xl font-bold text-foreground mb-2">Dashboard</h1>
-              <p className="text-muted-foreground text-lg">Hey {user?.user_metadata?.full_name || user?.email?.split('@')[0]}</p>
-            </div>
             <PageHelp
               title="Dashboard Help"
               description="Your dashboard provides a quick overview of your knowledge base and allows you to query your documents using AI. Use the AI query box to ask questions across all your documents or select a specific knowledge base."

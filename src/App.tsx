@@ -97,7 +97,7 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
   }
   
   if (user) {
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to="/timeline" replace />;
   }
   
   return <>{children}</>;
@@ -119,7 +119,11 @@ const App = () => (
             } />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/auth/microsoft/callback" element={<MicrosoftCallback />} />
-            <Route path="/" element={<Landing />} />
+            <Route path="/" element={
+              <PublicRoute>
+                <Landing />
+              </PublicRoute>
+            } />
             <Route path="/dashboard" element={
               <ProtectedRoute>
                 <Index />

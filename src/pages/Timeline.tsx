@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { TimelineWithDnd } from '@/components/timeline/TimelineWithDnd';
 import { useDailyPlanning } from '@/hooks/useDailyPlanning';
+import { useAuth } from '@/hooks/useAuth';
 import { DailyPlanningFlow } from '@/components/planning/DailyPlanningFlow';
 import { EndOfDayShutdown } from '@/components/planning/EndOfDayShutdown';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -10,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { X, Moon, Clock } from 'lucide-react';
 
 export default function Timeline() {
+  const { user } = useAuth();
   const {
     settings,
     planningNeeded,
@@ -91,21 +93,20 @@ export default function Timeline() {
 
   return (
     <div className="container mx-auto py-6 space-y-4">
+      {/* User Greeting */}
+      <p className="text-muted-foreground text-lg">Hey {user?.user_metadata?.full_name || user?.email?.split('@')[0]}</p>
+
       {/* Combined Planning & Shutdown Prompt */}
       {(showPrompt && !todaySession?.completed_at) || (shutdownNeeded && settings?.enable_shutdown_ritual) ? (
         <Alert className="border-2 border-blue-500 shadow-lg bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-950/50 dark:to-purple-950/50">
           <div className="flex items-start gap-4">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center flex-shrink-0">
-              <Moon className="h-5 w-5 text-primary-foreground" />
-            </div>
-
             {/* Left side: Shutdown content or Planning prompt */}
             <div className="flex-1 space-y-3">
               {shutdownNeeded && settings?.enable_shutdown_ritual ? (
                 <>
                   <div>
-                    <h4 className="font-semibold mb-1 text-slate-900 dark:text-slate-50">Time to wrap up!</h4>
-                    <AlertDescription className="text-sm text-slate-700 dark:text-slate-300">
+                    <h4 className="font-semibold mb-1 text-black dark:text-slate-50">Time to wrap up!</h4>
+                    <AlertDescription className="text-sm text-gray-800 dark:text-slate-300">
                       Reflect on today and prepare for tomorrow.
                     </AlertDescription>
                   </div>
