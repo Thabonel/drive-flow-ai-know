@@ -19,6 +19,7 @@ const Index = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [selectedKnowledgeBase, setSelectedKnowledgeBase] = useState<{ id: string; name: string } | undefined>();
+  const [showMore, setShowMore] = useState(false);
 
   const { data: stats } = useQuery({
     queryKey: ['stats', user?.id],
@@ -80,104 +81,130 @@ const Index = () => {
         </div>
 
         {/* AI Query Input - Prominent position */}
-        <AIQueryInput 
+        <AIQueryInput
           selectedKnowledgeBase={selectedKnowledgeBase}
           onClearSelection={clearKnowledgeBaseSelection}
         />
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Documents</CardTitle>
-              <FileText className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats?.docCount ?? 0}</div>
-              <p className="text-xs text-muted-foreground">Files you can search</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Collections</CardTitle>
-              <Brain className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats?.baseCount ?? 0}</div>
-              <p className="text-xs text-muted-foreground">Grouped docs</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Folders Synced</CardTitle>
-              <FolderOpen className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats?.folderCount ?? 0}</div>
-              <p className="text-xs text-muted-foreground">From Google Drive</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Last Sync</CardTitle>
-              <Clock className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats?.lastSync ? new Date(stats.lastSync).toLocaleDateString() : 'Never'}</div>
-              <p className="text-xs text-muted-foreground">{stats?.lastSync ? 'Latest update' : 'Not synced yet'}</p>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Main Content */}
+        {/* Main Content - Primary Sections */}
         <div className="space-y-8">
-          <KnowledgeBasePreview onAskQuestion={handleAskQuestion} />
-          
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <RecentDocuments />
             <DailyFocusModule />
+            <RecentDocuments />
           </div>
-          
-          <DocumentList />
-          
-          {/* Quick Actions */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Quick Actions</CardTitle>
-              <CardDescription>Common stuff you might need</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <Button
-                  onClick={() => navigate('/drive')}
-                  className="w-full justify-start h-auto py-4"
-                  variant="outline"
-                >
-                  <FolderOpen className="h-5 w-5 mr-2" />
-                  Sync Google Drive
-                </Button>
-                <Button
-                  onClick={() => navigate('/knowledge')}
-                  className="w-full justify-start h-auto py-4"
-                  variant="outline"
-                >
-                  <Brain className="h-5 w-5 mr-2" />
-                  View Collections
-                </Button>
-                <Button
-                  onClick={() => navigate('/documents')}
-                  className="w-full justify-start h-auto py-4"
-                  variant="outline"
-                >
-                  <FileText className="h-5 w-5 mr-2" />
-                  See All Documents
-                </Button>
+
+          {/* Additional Content - Hidden by default */}
+          {showMore && (
+            <div className="space-y-8 animate-in fade-in-50">
+              {/* Stats Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Documents</CardTitle>
+                    <FileText className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{stats?.docCount ?? 0}</div>
+                    <p className="text-xs text-muted-foreground">Files you can search</p>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Collections</CardTitle>
+                    <Brain className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{stats?.baseCount ?? 0}</div>
+                    <p className="text-xs text-muted-foreground">Grouped docs</p>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Folders Synced</CardTitle>
+                    <FolderOpen className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{stats?.folderCount ?? 0}</div>
+                    <p className="text-xs text-muted-foreground">From Google Drive</p>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Last Sync</CardTitle>
+                    <Clock className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{stats?.lastSync ? new Date(stats.lastSync).toLocaleDateString() : 'Never'}</div>
+                    <p className="text-xs text-muted-foreground">{stats?.lastSync ? 'Latest update' : 'Not synced yet'}</p>
+                  </CardContent>
+                </Card>
               </div>
-            </CardContent>
-          </Card>
+
+              <KnowledgeBasePreview onAskQuestion={handleAskQuestion} />
+
+              <DocumentList />
+
+              {/* Quick Actions */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Quick Actions</CardTitle>
+                  <CardDescription>Common stuff you might need</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <Button
+                      onClick={() => navigate('/drive')}
+                      className="w-full justify-start h-auto py-4"
+                      variant="outline"
+                    >
+                      <FolderOpen className="h-5 w-5 mr-2" />
+                      Sync Google Drive
+                    </Button>
+                    <Button
+                      onClick={() => navigate('/knowledge')}
+                      className="w-full justify-start h-auto py-4"
+                      variant="outline"
+                    >
+                      <Brain className="h-5 w-5 mr-2" />
+                      View Collections
+                    </Button>
+                    <Button
+                      onClick={() => navigate('/documents')}
+                      className="w-full justify-start h-auto py-4"
+                      variant="outline"
+                    >
+                      <FileText className="h-5 w-5 mr-2" />
+                      See All Documents
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
+          {/* Show More / Show Less Toggle */}
+          <div className="flex justify-center">
+            <Button
+              variant="ghost"
+              onClick={() => setShowMore(!showMore)}
+              className="gap-2"
+            >
+              {showMore ? (
+                <>
+                  <TrendingUp className="h-4 w-4 rotate-180" />
+                  Show Less
+                </>
+              ) : (
+                <>
+                  <TrendingUp className="h-4 w-4" />
+                  Show More
+                </>
+              )}
+            </Button>
+          </div>
         </div>
       </div>
     </div>
