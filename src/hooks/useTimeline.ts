@@ -134,6 +134,10 @@ export function useTimeline() {
           duration_minutes: durationMinutes,
           status: 'active',
           color,
+          is_meeting: false,
+          is_flexible: true,
+          sync_status: 'local_only',
+          sync_source: 'local',
         })
         .select()
         .single();
