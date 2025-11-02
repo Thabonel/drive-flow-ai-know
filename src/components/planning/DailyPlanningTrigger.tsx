@@ -153,8 +153,8 @@ export function DailyPlanningTrigger() {
 
               <div className="flex-1 space-y-3">
                 <div>
-                  <h4 className="font-semibold mb-1 text-foreground">Time to wrap up!</h4>
-                  <AlertDescription className="text-sm text-muted-foreground">
+                  <h4 className="font-semibold mb-1 text-slate-900 dark:text-slate-50">Time to wrap up!</h4>
+                  <AlertDescription className="text-sm text-slate-700 dark:text-slate-300">
                     Reflect on today and prepare for tomorrow.
                   </AlertDescription>
                 </div>
