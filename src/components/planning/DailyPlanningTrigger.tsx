@@ -94,89 +94,79 @@ export function DailyPlanningTrigger() {
 
   return (
     <>
-      {/* Daily Planning Prompt */}
-      {showPrompt && !todaySession?.completed_at && (
-        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 w-full max-w-lg px-4">
-          <Alert className="border-2 border-primary shadow-lg bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950/50 dark:to-purple-950/50">
-            <div className="flex items-center gap-3 flex-wrap">
-              <div className="flex-shrink-0">
-                <h4 className="font-semibold text-sm text-foreground">Ready to plan your day?</h4>
-              </div>
-
-              <div className="flex items-center gap-2 flex-wrap flex-1">
-                <Button onClick={handleStartPlanning} size="sm">
-                  Full Planning ({settings?.duration_minutes || 15} min)
-                </Button>
-
-                {settings?.quick_planning_enabled && (
-                  <Button
-                    onClick={handleStartQuickPlanning}
-                    variant="outline"
-                    size="sm"
-                    className="gap-1.5"
-                  >
-                    <Clock className="h-3 w-3" />
-                    Quick (2 min)
-                  </Button>
-                )}
-
-                <Button
-                  onClick={handleSnooze}
-                  variant="outline"
-                  size="sm"
-                >
-                  Snooze {settings?.snooze_duration_minutes || 15}m
-                </Button>
-              </div>
-
-              <Button
-                variant="ghost"
-                size="icon"
-                className="flex-shrink-0"
-                onClick={handleDismiss}
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-          </Alert>
-        </div>
-      )}
-
-      {/* Shutdown Prompt */}
-      {shutdownNeeded && settings?.enable_shutdown_ritual && (
-        <div className="fixed bottom-4 right-4 z-50 w-full max-w-sm px-4">
+      {/* Combined Planning & Shutdown Prompt */}
+      {(showPrompt && !todaySession?.completed_at) || (shutdownNeeded && settings?.enable_shutdown_ritual) ? (
+        <div className="fixed bottom-4 right-4 z-50 w-full max-w-2xl px-4">
           <Alert className="border-2 border-blue-500 shadow-lg bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-950/50 dark:to-purple-950/50">
             <div className="flex items-start gap-4">
               <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center flex-shrink-0">
                 <Moon className="h-5 w-5 text-primary-foreground" />
               </div>
 
+              {/* Left side: Shutdown content or Planning prompt */}
               <div className="flex-1 space-y-3">
-                <div>
-                  <h4 className="font-semibold mb-1 text-slate-900 dark:text-slate-50">Time to wrap up!</h4>
-                  <AlertDescription className="text-sm text-slate-700 dark:text-slate-300">
-                    Reflect on today and prepare for tomorrow.
-                  </AlertDescription>
-                </div>
-
-                <Button onClick={handleStartShutdown} size="sm" className="w-full gap-1.5">
-                  <Moon className="h-3 w-3" />
-                  Start Shutdown Ritual
-                </Button>
+                {shutdownNeeded && settings?.enable_shutdown_ritual ? (
+                  <>
+                    <div>
+                      <h4 className="font-semibold mb-1 text-slate-900 dark:text-slate-50">Time to wrap up!</h4>
+                      <AlertDescription className="text-sm text-slate-700 dark:text-slate-300">
+                        Reflect on today and prepare for tomorrow.
+                      </AlertDescription>
+                    </div>
+                    <Button onClick={handleStartShutdown} size="sm">
+                      Start Shutdown Ritual
+                    </Button>
+                  </>
+                ) : (
+                  <div className="flex-shrink-0">
+                    <h4 className="font-semibold text-sm text-slate-900 dark:text-slate-50">Ready to plan your day?</h4>
+                  </div>
+                )}
               </div>
 
+              {/* Right side: Planning buttons */}
+              {showPrompt && !todaySession?.completed_at && (
+                <div className="flex flex-col gap-2">
+                  <Button onClick={handleStartPlanning} size="sm" className="w-full">
+                    Full Planning ({settings?.duration_minutes || 15} min)
+                  </Button>
+
+                  {settings?.quick_planning_enabled && (
+                    <Button
+                      onClick={handleStartQuickPlanning}
+                      variant="outline"
+                      size="sm"
+                      className="gap-1.5 w-full"
+                    >
+                      <Clock className="h-3 w-3" />
+                      Quick (2 min)
+                    </Button>
+                  )}
+
+                  <Button
+                    onClick={handleSnooze}
+                    variant="outline"
+                    size="sm"
+                    className="w-full"
+                  >
+                    Snooze {settings?.snooze_duration_minutes || 15}m
+                  </Button>
+                </div>
+              )}
+
+              {/* Close button */}
               <Button
                 variant="ghost"
                 size="icon"
                 className="flex-shrink-0"
-                onClick={() => {}}
+                onClick={showPrompt ? handleDismiss : () => {}}
               >
                 <X className="h-4 w-4" />
               </Button>
             </div>
           </Alert>
         </div>
-      )}
+      ) : null}
 
       {/* Modals */}
       <DailyPlanningFlow
