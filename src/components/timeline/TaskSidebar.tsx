@@ -160,24 +160,51 @@ export function TaskSidebar({ isOpen, onToggle, onTaskScheduled }: TaskSidebarPr
 
   return (
     <>
-      {/* Toggle button */}
+      {/* Mobile toggle button */}
       <Button
         variant="outline"
         size="sm"
         onClick={onToggle}
-        className="fixed right-4 top-24 z-40 shadow-lg"
+        className="fixed right-4 top-24 z-40 shadow-lg md:hidden"
       >
         {isOpen ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
       </Button>
 
-      {/* Sidebar */}
+      {/* Desktop open button (when sidebar is closed) */}
+      {!isOpen && (
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={onToggle}
+          className="hidden md:flex fixed right-4 top-24 z-40 shadow-lg"
+        >
+          <ChevronLeft className="h-4 w-4" />
+        </Button>
+      )}
+
+      {/* Sidebar - Mobile: overlay with slide, Desktop: push content */}
       <div
-        className={`fixed right-0 top-0 h-screen bg-background border-l shadow-xl z-30 transition-transform duration-300 ${
-          isOpen ? 'translate-x-0' : 'translate-x-full'
-        }`}
-        style={{ width: '320px' }}
+        className={`
+          fixed md:relative right-0 top-0 h-screen bg-background border-l shadow-xl
+          transition-all duration-300 flex-shrink-0
+          ${isOpen ? 'md:w-80' : 'md:w-0'}
+          ${isOpen ? 'translate-x-0' : 'translate-x-full md:translate-x-0'}
+        `}
+        style={{
+          width: isOpen ? '320px' : '0',
+        }}
       >
-        <div className="flex flex-col h-full">
+        {/* Desktop toggle button (inside sidebar) */}
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={onToggle}
+          className="hidden md:flex absolute left-2 top-4 z-10 h-8 w-8 p-0"
+        >
+          <ChevronRight className="h-4 w-4" />
+        </Button>
+
+        <div className="flex flex-col h-full" style={{ width: '320px' }}>
           {/* Header */}
           <div className="p-4 border-b">
             <div className="flex items-center gap-2 mb-3">

@@ -234,9 +234,12 @@ export function TimelineWithDnd() {
       onDragMove={handleDragMove}
       onDragEnd={handleDragEnd}
     >
-      <div className="relative">
+      <div className="flex relative">
         {/* Main Timeline - with drop zone */}
-        <div ref={timelineRef} className="relative">
+        <div
+          ref={timelineRef}
+          className="relative flex-1 transition-all duration-300"
+        >
           <TimelineManager />
 
           {/* Drop preview indicator */}
