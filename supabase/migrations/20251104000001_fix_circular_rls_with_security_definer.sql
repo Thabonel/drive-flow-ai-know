@@ -11,16 +11,19 @@ DROP POLICY IF EXISTS "Users can view their teams" ON teams;
 -- Create a SECURITY DEFINER function that bypasses RLS when querying team_members
 -- This breaks the circular reference because it doesn't trigger RLS policies
 CREATE OR REPLACE FUNCTION get_user_team_ids(input_user_id UUID)
-RETURNS SETOF UUID
-LANGUAGE sql
+RETURNS TABLE(team_id UUID)
+LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public
 STABLE
-AS $$
-  SELECT team_id
-  FROM team_members
-  WHERE user_id = input_user_id
-$$;
+AS $function$
+BEGIN
+  RETURN QUERY
+  SELECT tm.team_id
+  FROM team_members tm
+  WHERE tm.user_id = input_user_id;
+END;
+$function$;
 
 -- Grant execute permission to authenticated users
 GRANT EXECUTE ON FUNCTION get_user_team_ids(UUID) TO authenticated;
