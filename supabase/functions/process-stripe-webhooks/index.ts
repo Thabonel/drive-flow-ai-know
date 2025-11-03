@@ -127,22 +127,9 @@ async function processWebhookEvent(event: any, supabase: any) {
         throw error;
       }
 
-      // Initialize usage tracking for new period
-      const { error: usageError } = await supabase
-        .from("usage_tracking")
-        .insert({
-          user_id: userId,
-          query_count: 0,
-          period_start: new Date(subscription.current_period_start * 1000).toISOString(),
-          period_end: new Date(subscription.current_period_end * 1000).toISOString(),
-        })
-        .onConflict("user_id, period_start")
-        .ignore();
-
-      if (usageError) {
-        console.error("Error initializing usage tracking:", usageError);
-        // Don't throw - this is non-critical
-      }
+      // TODO: Initialize usage tracking for new period
+      // Skipping for now - needs proper implementation with user_usage table
+      // and correct column names (ai_queries_count, etc.)
 
       break;
     }
