@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-AI Query Hub (formerly Knowledge Base App) is a React/TypeScript application that enables users to sync documents from Google Drive, create knowledge bases, and query them using AI. The app supports multiple AI providers (Gemini via Lovable Gateway, OpenRouter, local Ollama) and includes an optional research-agent component for deep research capabilities.
+AI Query Hub (formerly Knowledge Base App) is a React/TypeScript application that enables users to sync documents from Google Drive, create knowledge bases, and query them using AI. The app supports multiple AI providers (Claude Sonnet 4.5 primary, OpenRouter fallback, local Ollama) and includes an optional research-agent component for deep research capabilities.
 
 Built with Vite, React, shadcn-ui, Tailwind CSS, and Supabase backend.
 
@@ -79,10 +79,11 @@ cd DeepResearchAgency && python agency.py
 #### AI Query Flow
 1. User submits query via `AIQueryInput` component
 2. Request sent to `ai-query` Edge Function with optional `knowledge_base_id`
-3. Function retrieves user's documents/knowledge base content from Supabase
-4. Context prepared and sent to LLM provider (Gemini → OpenRouter → Ollama fallback chain)
-5. Response returned with document count and context metadata
-6. Query saved to `ai_query_history` table
+3. Function retrieves user's documents/knowledge base content from Supabase (including team documents if applicable)
+4. Context prepared and sent to LLM provider (Claude → OpenRouter fallback chain)
+5. Claude may invoke web search tool for current information
+6. Response returned with document count and context metadata
+7. Query saved to `ai_query_history` table
 
 #### Offline Mode
 - Toggled via `localStorage.getItem('offline-mode')`
@@ -111,12 +112,13 @@ VITE_SUPABASE_ANON_KEY=<anon-key>
 ```
 
 ### Supabase Edge Functions
+- `ANTHROPIC_API_KEY` – For Claude models (primary AI provider)
+- `OPENROUTER_API_KEY` – For OpenRouter API access (fallback provider)
 - `OPENAI_API_KEY` – For OpenAI models (research agent)
-- `OPENROUTER_API_KEY` – For OpenRouter API access
-- `LOVABLE_API_KEY` – For Gemini via Lovable AI Gateway (primary provider)
+- `BRAVE_SEARCH_API_KEY` – For web search tool in Claude
 - `SUPABASE_URL` – Supabase project URL
 - `SUPABASE_SERVICE_ROLE_KEY` – Service role key for database operations
-- `MODEL_PROVIDER` – Override LLM provider (gemini/openrouter/ollama)
+- `MODEL_PROVIDER` – Override LLM provider (claude/openrouter/ollama)
 - `USE_OPENROUTER` – Set to 'true' to prefer OpenRouter
 - `USE_LOCAL_LLM` – Set to 'true' to use local Ollama
 
@@ -126,6 +128,60 @@ OPENAI_API_KEY=your_key_here
 VECTOR_STORE_ID=vs_xxxxx  # Optional, auto-detected from files_vs_* folders
 MCP_SERVER_URL=https://your-ngrok-url.ngrok-free.app/sse
 ```
+
+## AI Model Reference
+
+### Claude Models (Anthropic API)
+
+**Current Models (as of November 2025):**
+
+- **Claude Sonnet 4.5** - Flagship model for complex agents and coding
+  - API ID: `claude-sonnet-4-5-20250929` or alias `claude-sonnet-4-5`
+  - Best for: Advanced reasoning, computer use, coding, multi-step actions
+  - Currently used in: `ai-query` Edge Function
+
+- **Claude Haiku 4.5** - Fastest model with near-frontier performance
+  - API ID: `claude-haiku-4-5-20251001` or alias `claude-haiku-4-5`
+  - Best for: Rapid responses, customer service, cost-sensitive applications
+
+- **Claude Opus 4.1** - Most powerful model
+  - API ID: `claude-opus-4-1-20250805`
+  - Best for: Most complex reasoning tasks
+
+- **Claude Opus 4**
+  - API ID: `claude-opus-4-20250320`
+
+- **Claude Sonnet 4**
+  - API ID: `claude-sonnet-4-20250320`
+
+**Note:** Model names and availability may change. Always verify current models at [Anthropic's API documentation](https://docs.anthropic.com/en/api/messages).
+
+### OpenAI Models (via OpenRouter)
+
+**GPT Family:**
+- `gpt-5` - Flagship GPT model
+- `gpt-5-mini` - Cheaper/faster GPT variant
+- `gpt-5-pro` - Higher-compute GPT-5 snapshot
+- `gpt-4.1` - Stable GPT-4 family option
+- `gpt-4o` - Omni multimodal model
+- `gpt-4o-mini` - Small/fast omni model
+
+**Reasoning-Optimized (o-series):**
+- `o3` - Top reasoning model
+- `o4-mini` - Fast, cost-efficient reasoning
+- `o3-mini` - Smaller reasoning model
+
+**OpenRouter Model Format:** When using via OpenRouter, prefix with provider: `openai/gpt-5`
+
+### Model Selection Strategy
+
+The `ai-query` Edge Function implements a fallback chain:
+1. **Claude** (default) - Uses `ANTHROPIC_API_KEY`
+2. **OpenRouter** - Uses `OPENROUTER_API_KEY` (if Claude fails)
+
+Override via environment variables:
+- `MODEL_PROVIDER` - Force specific provider (claude/openrouter)
+- `USE_OPENROUTER` - Set to 'true' to prefer OpenRouter
 
 ## Database Schema Notes
 
@@ -159,10 +215,12 @@ MCP_SERVER_URL=https://your-ngrok-url.ngrok-free.app/sse
 5. Add environment variables to Supabase dashboard
 
 ### Working with AI Providers
-- Primary: Gemini via Lovable Gateway (always available)
-- Fallback chain in `getLLMResponse()` in `ai-query/index.ts`
+- Primary: Claude Sonnet 4.5 (default provider via Anthropic API)
+- Fallback: OpenRouter (if Claude fails)
+- Provider selection via `getLLMResponse()` in `ai-query/index.ts`
 - User preference stored in `user_settings.model_preference`
 - Local development uses Ollama when offline mode enabled
+- See "AI Model Reference" section above for current model names
 
 ### Document Processing
 - Parse documents using `parse-document` Edge Function
