@@ -98,7 +98,7 @@ export default function Timeline() {
 
       {/* Combined Planning & Shutdown Prompt */}
       {(showPrompt && !todaySession?.completed_at) || (shutdownNeeded && settings?.enable_shutdown_ritual) ? (
-        <Alert className="border-2 border-blue-500 shadow-lg bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-950/50 dark:to-purple-950/50">
+        <Alert className="border-2 border-blue-500 shadow-lg bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-950/50 dark:to-purple-950/50 p-2">
           <div className="flex items-start gap-4">
             {/* Left side: Shutdown content or Planning prompt */}
             <div className="flex-1 space-y-3">
