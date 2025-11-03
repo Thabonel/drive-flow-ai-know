@@ -1,0 +1,234 @@
+import React, { useState } from 'react';
+import { useTeam } from '@/hooks/useTeam';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Loader2, Building2, Trash2, Save } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+
+/**
+ * Team Settings Page
+ *
+ * Allows team owners and admins to manage team settings:
+ * - Team name
+ * - Team slug
+ * - Member limits
+ * - Delete team (owners only)
+ */
+export default function TeamSettings() {
+  const { team, isOwner, isAdmin, isLoading, updateTeam, deleteTeam, isUpdating, isDeleting } = useTeam();
+
+  const [teamName, setTeamName] = useState(team?.name || '');
+  const [teamSlug, setTeamSlug] = useState(team?.slug || '');
+
+  // Update form when team data loads
+  React.useEffect(() => {
+    if (team) {
+      setTeamName(team.name);
+      setTeamSlug(team.slug);
+    }
+  }, [team]);
+
+  const handleSaveSettings = () => {
+    if (!team) return;
+
+    updateTeam({
+      teamId: team.id,
+      updates: {
+        name: teamName,
+        slug: teamSlug.toLowerCase().replace(/[^a-z0-9-]/g, '-'),
+      },
+    });
+  };
+
+  const handleDeleteTeam = () => {
+    if (!team) return;
+    deleteTeam(team.id);
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (!team) {
+    return (
+      <div className="container mx-auto py-8">
+        <Alert>
+          <AlertDescription>
+            You don't have a team yet. Create one to access team features.
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
+
+  const hasChanges = teamName !== team.name || teamSlug !== team.slug;
+
+  return (
+    <div className="container mx-auto py-8 max-w-4xl space-y-6">
+      {/* Header */}
+      <div>
+        <h1 className="text-3xl font-bold flex items-center gap-2">
+          <Building2 className="h-8 w-8" />
+          Team Settings
+        </h1>
+        <p className="text-muted-foreground mt-2">
+          Manage your team's configuration and settings
+        </p>
+      </div>
+
+      {/* General Settings */}
+      <Card>
+        <CardHeader>
+          <CardTitle>General</CardTitle>
+          <CardDescription>Basic team information and settings</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="team-name">Team Name</Label>
+            <Input
+              id="team-name"
+              value={teamName}
+              onChange={(e) => setTeamName(e.target.value)}
+              placeholder="Acme Inc."
+              disabled={!isAdmin}
+            />
+            <p className="text-sm text-muted-foreground">
+              This is your team's display name.
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="team-slug">Team Slug</Label>
+            <Input
+              id="team-slug"
+              value={teamSlug}
+              onChange={(e) => setTeamSlug(e.target.value)}
+              placeholder="acme-inc"
+              disabled={!isAdmin}
+            />
+            <p className="text-sm text-muted-foreground">
+              Used in URLs and team identification. Only lowercase letters, numbers, and hyphens.
+            </p>
+          </div>
+
+          {isAdmin && (
+            <div className="flex justify-end pt-4">
+              <Button
+                onClick={handleSaveSettings}
+                disabled={!hasChanges || isUpdating}
+              >
+                {isUpdating ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <Save className="mr-2 h-4 w-4" />
+                    Save Changes
+                  </>
+                )}
+              </Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Team Info */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Team Information</CardTitle>
+          <CardDescription>Details about your team subscription</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="flex justify-between py-2 border-b">
+            <span className="text-muted-foreground">Team ID</span>
+            <span className="font-mono text-sm">{team.id}</span>
+          </div>
+          <div className="flex justify-between py-2 border-b">
+            <span className="text-muted-foreground">Member Limit</span>
+            <span className="font-medium">{team.max_members} members</span>
+          </div>
+          <div className="flex justify-between py-2 border-b">
+            <span className="text-muted-foreground">Created</span>
+            <span className="font-medium">
+              {new Date(team.created_at).toLocaleDateString()}
+            </span>
+          </div>
+          <div className="flex justify-between py-2">
+            <span className="text-muted-foreground">Last Updated</span>
+            <span className="font-medium">
+              {new Date(team.updated_at).toLocaleDateString()}
+            </span>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Danger Zone - Only visible to owners */}
+      {isOwner && (
+        <Card className="border-destructive">
+          <CardHeader>
+            <CardTitle className="text-destructive">Danger Zone</CardTitle>
+            <CardDescription>
+              Irreversible actions that affect your entire team
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="destructive" disabled={isDeleting}>
+                  {isDeleting ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Deleting...
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      Delete Team
+                    </>
+                  )}
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This action cannot be undone. This will permanently delete your team,
+                    remove all members, and delete all team-shared documents and timeline items.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={handleDeleteTeam}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  >
+                    Delete Team
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+}
