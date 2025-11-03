@@ -410,15 +410,27 @@ serve(async (req) => {
     // Default behavior (when use_documents is undefined or false) is to NOT search documents
     const shouldFetchDocuments = (use_documents === true) || (knowledge_base_id !== undefined && knowledge_base_id !== null);
 
+    // TEAM CONTEXT SUPPORT: Fetch user's team memberships for team document access
+    const { data: teamMemberships, error: teamError } = await supabaseService
+      .from('team_members')
+      .select('team_id, teams(name)')
+      .eq('user_id', user_id);
+
+    const teamIds = teamMemberships?.map(m => m.team_id) || [];
+    const teamNamesMap = new Map(teamMemberships?.map(m => [m.team_id, m.teams?.name]) || []);
+    console.log('User is member of teams:', teamIds.length, 'teams');
+
     if (shouldFetchDocuments && knowledge_base_id) {
       console.log('Searching for specific knowledge base:', knowledge_base_id);
       
-      // Get specific knowledge base content
+      // Get specific knowledge base content (personal OR team)
       const { data: knowledgeBase, error: kbError } = await supabaseService
         .from('knowledge_bases')
         .select('*')
         .eq('id', knowledge_base_id)
-        .eq('user_id', user_id)
+        .or(teamIds.length > 0
+          ? `user_id.eq.${user_id},and(team_id.in.(${teamIds.join(',')}),visibility.eq.team)`
+          : `user_id.eq.${user_id}`)
         .single();
 
       console.log('Knowledge base query result:', { found: !!knowledgeBase, error: kbError?.message });
@@ -431,11 +443,14 @@ serve(async (req) => {
       if (knowledgeBase.source_document_ids && knowledgeBase.source_document_ids.length > 0) {
         console.log('Fetching documents from knowledge base, count:', knowledgeBase.source_document_ids.length);
         
+        // Fetch documents (personal OR team)
         const { data: documents, error: docsError } = await supabaseService
           .from('knowledge_documents')
-          .select('title, content, ai_summary, tags, file_type')
+          .select('title, content, ai_summary, tags, file_type, user_id, team_id')
           .in('id', knowledgeBase.source_document_ids)
-          .eq('user_id', user_id);
+          .or(teamIds.length > 0
+            ? `user_id.eq.${user_id},and(team_id.in.(${teamIds.join(',')}),visibility.eq.team)`
+            : `user_id.eq.${user_id}`);
 
         console.log('Knowledge base documents result:', { found: documents?.length || 0, error: docsError?.message });
 
@@ -475,12 +490,13 @@ serve(async (req) => {
       if (isMarketingQuery) {
         console.log('Searching for marketing documents...');
         
-        // Cast query for marketing documents with broader search
-        const { data: marketingDocs, error: marketingError } = await supabaseService
+        // Cast query for marketing documents with broader search (personal OR team)
+        const { data: marketingDocs, error: marketingError} = await supabaseService
           .from('knowledge_documents')
-          .select('title, content, ai_summary, tags, file_type')
-          .eq('user_id', user_id)
-          .or('title.ilike.%marketing%,content.ilike.%marketing%,tags.cs.["marketing"],title.ilike.%wheels%,title.ilike.%wins%,file_type.eq.json')
+          .select('title, content, ai_summary, tags, file_type, user_id, team_id')
+          .or(teamIds.length > 0
+            ? `and(user_id.eq.${user_id},or(title.ilike.%marketing%,content.ilike.%marketing%,tags.cs.["marketing"],title.ilike.%wheels%,title.ilike.%wins%,file_type.eq.json)),and(team_id.in.(${teamIds.join(',')}),visibility.eq.team,or(title.ilike.%marketing%,content.ilike.%marketing%,tags.cs.["marketing"]))`
+            : `user_id.eq.${user_id},or(title.ilike.%marketing%,content.ilike.%marketing%,tags.cs.["marketing"],title.ilike.%wheels%,title.ilike.%wins%,file_type.eq.json)`)
           .limit(30);
         
         console.log('Marketing documents found:', marketingDocs?.length || 0, 'Error:', marketingError?.message);
@@ -494,10 +510,13 @@ serve(async (req) => {
       if (contextDocuments.length === 0) {
         console.log('Getting recent documents as fallback...');
         
+        // Get recent documents (personal OR team)
         const { data: documents, error: docsError } = await supabaseService
           .from('knowledge_documents')
-          .select('title, content, ai_summary, tags, file_type')
-          .eq('user_id', user_id)
+          .select('title, content, ai_summary, tags, file_type, user_id, team_id')
+          .or(teamIds.length > 0
+            ? `user_id.eq.${user_id},and(team_id.in.(${teamIds.join(',')}),visibility.eq.team)`
+            : `user_id.eq.${user_id}`)
           .order('updated_at', { ascending: false })
           .limit(30);
 
@@ -511,14 +530,21 @@ serve(async (req) => {
 
     console.log('Final context documents count:', contextDocuments.length);
 
-    // Prepare context for AI
+    // Prepare context for AI with source attribution (Personal vs Team)
     let documentContext = '';
     if (contextDocuments.length > 0) {
       documentContext = contextDocuments.map((doc, index) => {
         // Use full content if no summary, but limit to reasonable size for AI
         const content = doc.ai_summary || doc.content?.substring(0, 3000) || 'No content available';
-        console.log(`Document ${index + 1}: ${doc.title} - Content length: ${content.length}`);
-        return `Title: ${doc.title}\nContent: ${content}\nTags: ${doc.tags?.join(', ') || 'None'}\nFile Type: ${doc.file_type}\n---`;
+
+        // Determine source: Personal or Team
+        const isTeamDoc = doc.team_id && doc.team_id !== null;
+        const source = isTeamDoc
+          ? `Team: ${teamNamesMap.get(doc.team_id) || 'Unknown Team'}`
+          : 'Personal';
+
+        console.log(`Document ${index + 1}: ${doc.title} - Source: ${source} - Content length: ${content.length}`);
+        return `[${source}] Title: ${doc.title}\nContent: ${content}\nTags: ${doc.tags?.join(', ') || 'None'}\nFile Type: ${doc.file_type}\n---`;
       }).join('\n');
     }
 
@@ -544,10 +570,13 @@ serve(async (req) => {
     let systemMessage = '';
 
     if (documentContext) {
-      // System message for document-focused queries
-      systemMessage = `You are an AI assistant that helps analyze and answer questions about the user's knowledge documents.
-      You have access to their document summaries, content, and knowledge bases.
+      // System message for document-focused queries with team context support
+      const hasTeamDocs = teamIds.length > 0 && contextDocuments.some(doc => doc.team_id);
 
+      systemMessage = `You are an AI assistant that helps analyze and answer questions about the user's knowledge documents.
+      You have access to their document summaries, content, and knowledge bases${hasTeamDocs ? ', including team-shared documents' : ''}.
+
+      ${hasTeamDocs ? 'CONTEXT SOURCES:\n- [Personal] = User\'s personal documents\n- [Team: Name] = Documents shared with their team\nAll team members have access to the same team documents, enabling "context fluency" across the organization.\n' : ''}
       TOOLS AVAILABLE:
       - web_search: Use this to search the internet for current information when needed
 
@@ -558,6 +587,7 @@ serve(async (req) => {
       - Focus on answering the user's actual question using the relevant information
       - Use web search when you need current information beyond your training data
       - The user is responsible for their own security practices
+      ${hasTeamDocs ? '- When answering, you can reference whether information came from personal or team documents\n- Remember: Team documents are shared context - all team members can query against them' : ''}
 
       Provide helpful, specific answers based on the available context.
       If you can't find relevant information in the provided documents, say so clearly.

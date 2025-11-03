@@ -67,122 +67,48 @@ Deno.serve(async (request) => {
     });
   }
 
-  // Process the event
+  // Queue the event for async processing (prevents Stripe timeout)
   const supabase = createClient(
     Deno.env.get("SUPABASE_URL") ?? "",
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
   );
 
-  console.log(`Processing webhook event: ${receivedEvent.type}`);
+  console.log(`Queueing webhook event: ${receivedEvent.type} (${receivedEvent.id})`);
 
   try {
-    switch (receivedEvent.type) {
-      case "customer.subscription.created":
-      case "customer.subscription.updated": {
-        const subscription = receivedEvent.data.object as Stripe.Subscription;
-        const userId = subscription.metadata.user_id;
-        const planType = subscription.metadata.plan_type;
+    // Store event in queue for async processing
+    const { error: queueError } = await supabase
+      .from("webhook_events_queue")
+      .insert({
+        event_id: receivedEvent.id,
+        event_type: receivedEvent.type,
+        event_data: receivedEvent,
+        processed: false,
+      });
 
-        if (!userId) {
-          console.error("No user_id in subscription metadata");
-          break;
-        }
-
-        // Upsert subscription
-        const { error } = await supabase
-          .from("subscriptions")
-          .upsert({
-            user_id: userId,
-            stripe_customer_id: subscription.customer as string,
-            stripe_subscription_id: subscription.id,
-            stripe_price_id: subscription.items.data[0].price.id,
-            plan_type: planType,
-            status: subscription.status,
-            trial_start: subscription.trial_start
-              ? new Date(subscription.trial_start * 1000).toISOString()
-              : null,
-            trial_end: subscription.trial_end
-              ? new Date(subscription.trial_end * 1000).toISOString()
-              : null,
-            current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
-            current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
-            cancel_at_period_end: subscription.cancel_at_period_end,
-          }, {
-            onConflict: "stripe_subscription_id",
-          });
-
-        if (error) {
-          console.error("Error upserting subscription:", error);
-        }
-
-        // Initialize usage tracking for new period
-        await supabase
-          .from("usage_tracking")
-          .insert({
-            user_id: userId,
-            query_count: 0,
-            period_start: new Date(subscription.current_period_start * 1000).toISOString(),
-            period_end: new Date(subscription.current_period_end * 1000).toISOString(),
-          })
-          .onConflict("user_id, period_start")
-          .ignore();
-
-        break;
+    if (queueError) {
+      // If duplicate event_id, ignore (idempotency)
+      if (queueError.code === '23505') {
+        console.log(`Duplicate event ${receivedEvent.id}, already queued`);
+      } else {
+        console.error("Error queueing webhook event:", queueError);
+        throw queueError;
       }
-
-      case "customer.subscription.deleted": {
-        const subscription = receivedEvent.data.object as Stripe.Subscription;
-
-        // Mark subscription as canceled
-        await supabase
-          .from("subscriptions")
-          .update({ status: "canceled" })
-          .eq("stripe_subscription_id", subscription.id);
-
-        break;
-      }
-
-      case "invoice.payment_succeeded": {
-        const invoice = receivedEvent.data.object as Stripe.Invoice;
-
-        // Update subscription status on successful payment
-        if (invoice.subscription) {
-          await supabase
-            .from("subscriptions")
-            .update({ status: "active" })
-            .eq("stripe_subscription_id", invoice.subscription as string);
-        }
-
-        break;
-      }
-
-      case "invoice.payment_failed": {
-        const invoice = receivedEvent.data.object as Stripe.Invoice;
-
-        // Update subscription status on failed payment
-        if (invoice.subscription) {
-          await supabase
-            .from("subscriptions")
-            .update({ status: "past_due" })
-            .eq("stripe_subscription_id", invoice.subscription as string);
-        }
-
-        break;
-      }
-
-      default:
-        console.log(`Unhandled event type: ${receivedEvent.type}`);
     }
 
+    // ✅ IMMEDIATELY return 200 to Stripe (before processing)
+    console.log(`✅ Event ${receivedEvent.id} queued successfully`);
     return new Response(JSON.stringify({ received: true }), {
       status: 200,
       headers: { 'Content-Type': 'application/json' }
     });
   } catch (error) {
-    console.error("Event processing error:", error);
+    console.error("Event queueing error:", error);
+    // Even on error, return 200 to prevent Stripe retry storms
+    // The event will be in Stripe's logs and can be manually retried
     return new Response(
-      JSON.stringify({ error: error.message }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } }
+      JSON.stringify({ received: true, warning: 'Event queuing failed' }),
+      { status: 200, headers: { 'Content-Type': 'application/json' } }
     );
   }
 });
