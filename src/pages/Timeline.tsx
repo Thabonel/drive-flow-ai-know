@@ -92,16 +92,16 @@ export default function Timeline() {
   };
 
   return (
-    <div className="container mx-auto py-4 space-y-3">
+    <div className="container mx-auto py-2 space-y-2">
       {/* User Greeting */}
-      <p className="text-muted-foreground text-lg">Hey {user?.user_metadata?.full_name || user?.email?.split('@')[0]}</p>
+      <p className="text-muted-foreground text-sm">Hey {user?.user_metadata?.full_name || user?.email?.split('@')[0]}</p>
 
       {/* Combined Planning & Shutdown Prompt */}
       {(showPrompt && !todaySession?.completed_at) || (shutdownNeeded && settings?.enable_shutdown_ritual) ? (
-        <Alert className="border-2 border-blue-500 shadow-lg bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-950/50 dark:to-purple-950/50 p-2">
-          <div className="flex items-start gap-4">
+        <Alert className="border-2 border-blue-500 shadow-lg bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-950/50 dark:to-purple-950/50 p-1">
+          <div className="flex items-start gap-2">
             {/* Left side: Shutdown content or Planning prompt */}
-            <div className="flex-1 space-y-3">
+            <div className="flex-1 space-y-1">
               {shutdownNeeded && settings?.enable_shutdown_ritual ? (
                 <>
                   <div>
