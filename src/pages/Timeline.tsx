@@ -92,7 +92,7 @@ export default function Timeline() {
   };
 
   return (
-    <div className="container mx-auto py-6 space-y-4">
+    <div className="container mx-auto py-4 space-y-3">
       {/* User Greeting */}
       <p className="text-muted-foreground text-lg">Hey {user?.user_metadata?.full_name || user?.email?.split('@')[0]}</p>
 
