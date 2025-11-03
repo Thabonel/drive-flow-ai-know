@@ -137,7 +137,7 @@ async function claudeCompletion(messages: Message[], systemMessage: string) {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'claude-sonnet-4-5-20250514',
+      model: 'claude-sonnet-4-20250320',
       max_tokens: 4096,
       system: systemMessage,
       messages: userMessages,
@@ -190,7 +190,7 @@ async function claudeCompletion(messages: Message[], systemMessage: string) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'claude-sonnet-4-5-20250514',
+          model: 'claude-sonnet-4-20250320',
           max_tokens: 4096,
           system: systemMessage,
           messages: followUpMessages,
