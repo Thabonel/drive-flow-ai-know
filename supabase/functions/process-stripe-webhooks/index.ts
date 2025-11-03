@@ -99,9 +99,9 @@ async function processWebhookEvent(event: any, supabase: any) {
         return;
       }
 
-      // Upsert subscription
+      // Upsert subscription (FIXED: use correct table name)
       const { error } = await supabase
-        .from("subscriptions")
+        .from("user_subscriptions")
         .upsert({
           user_id: userId,
           stripe_customer_id: subscription.customer as string,
@@ -150,9 +150,9 @@ async function processWebhookEvent(event: any, supabase: any) {
     case "customer.subscription.deleted": {
       const subscription = event.data.object as Stripe.Subscription;
 
-      // Mark subscription as canceled
+      // Mark subscription as canceled (FIXED: use correct table name)
       const { error } = await supabase
-        .from("subscriptions")
+        .from("user_subscriptions")
         .update({ status: "canceled" })
         .eq("stripe_subscription_id", subscription.id);
 
@@ -167,10 +167,10 @@ async function processWebhookEvent(event: any, supabase: any) {
     case "invoice.payment_succeeded": {
       const invoice = event.data.object as Stripe.Invoice;
 
-      // Update subscription status on successful payment
+      // Update subscription status on successful payment (FIXED: use correct table name)
       if (invoice.subscription) {
         const { error } = await supabase
-          .from("subscriptions")
+          .from("user_subscriptions")
           .update({ status: "active" })
           .eq("stripe_subscription_id", invoice.subscription as string);
 
@@ -186,10 +186,10 @@ async function processWebhookEvent(event: any, supabase: any) {
     case "invoice.payment_failed": {
       const invoice = event.data.object as Stripe.Invoice;
 
-      // Update subscription status on failed payment
+      // Update subscription status on failed payment (FIXED: use correct table name)
       if (invoice.subscription) {
         const { error } = await supabase
-          .from("subscriptions")
+          .from("user_subscriptions")
           .update({ status: "past_due" })
           .eq("stripe_subscription_id", invoice.subscription as string);
 
