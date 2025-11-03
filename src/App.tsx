@@ -40,6 +40,12 @@ import AssistantManagement from "./pages/AssistantManagement";
 import AssistantPortalPage from "./pages/AssistantPortalPage";
 import DailyBrief from "./pages/DailyBrief";
 import EmailToTask from "./pages/EmailToTask";
+import TeamSettings from "./pages/Team/Settings";
+import TeamMembers from "./pages/Team/Members";
+import TeamDocuments from "./pages/Team/Documents";
+import TeamTimeline from "./pages/Team/TeamTimeline";
+import CreateTeam from "./pages/Team/CreateTeam";
+import AcceptInvite from "./pages/Team/AcceptInvite";
 
 const queryClient = new QueryClient();
 
@@ -217,6 +223,36 @@ const App = () => (
             <Route path="/email-to-task" element={
               <ProtectedRoute>
                 <EmailToTask />
+              </ProtectedRoute>
+            } />
+            <Route path="/team/settings" element={
+              <ProtectedRoute>
+                <TeamSettings />
+              </ProtectedRoute>
+            } />
+            <Route path="/team/members" element={
+              <ProtectedRoute>
+                <TeamMembers />
+              </ProtectedRoute>
+            } />
+            <Route path="/team/documents" element={
+              <ProtectedRoute>
+                <TeamDocuments />
+              </ProtectedRoute>
+            } />
+            <Route path="/team/timeline" element={
+              <ProtectedRoute>
+                <TeamTimeline />
+              </ProtectedRoute>
+            } />
+            <Route path="/team/create" element={
+              <ProtectedRoute>
+                <CreateTeam />
+              </ProtectedRoute>
+            } />
+            <Route path="/accept-invite/:token" element={
+              <ProtectedRoute>
+                <AcceptInvite />
               </ProtectedRoute>
             } />
             <Route path="/book/:slug" element={<BookingPage />} />

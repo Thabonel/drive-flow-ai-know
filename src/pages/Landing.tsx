@@ -157,6 +157,30 @@ const features = [
     description: 'Open it in any browser. Desktop, laptop, tablet, phone—doesn\'t matter.',
     benefit: 'No app to install',
   },
+  {
+    icon: Users,
+    title: 'Context Operates at Team Level',
+    description: 'Team-shared documents mean everyone's AI has access to the same knowledge. No more asking "who has that file?"',
+    benefit: 'Shared organizational context',
+  },
+  {
+    icon: Lock,
+    title: 'Context is Local',
+    description: 'Your team\'s knowledge stays within your organization. AI assistants only see what your team uploads—context that\'s private and controlled.',
+    benefit: 'Your data, your boundaries',
+  },
+  {
+    icon: Sparkles,
+    title: 'Context Fluency Across Organization',
+    description: 'Everyone sings from the same song list. Team members get consistent AI responses because they\'re all working from shared documents.',
+    benefit: 'Organization-wide alignment',
+  },
+  {
+    icon: TrendingUp,
+    title: 'Meaningfully Upshift Bottom Line',
+    description: 'Teams waste hours searching for information. Context fluency eliminates duplicate work and accelerates decision-making.',
+    benefit: 'ROI you can measure',
+  },
 ];
 
 export default function Landing() {

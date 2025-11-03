@@ -1,6 +1,7 @@
-import { Home, FileText, Brain, Settings, LogOut, HelpCircle, Clock } from 'lucide-react';
+import { Home, FileText, Brain, Settings, LogOut, HelpCircle, Clock, Users, UserCog, Building2, Calendar } from 'lucide-react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+import { FeatureGate } from '@/components/FeatureGate';
 import {
   Sidebar,
   SidebarContent,
@@ -64,6 +65,49 @@ export function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+
+        {/* Team Navigation - Only visible for Business tier and above */}
+        <FeatureGate requiredTier="business">
+          <SidebarGroup>
+            <SidebarGroupLabel>Team</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild>
+                    <NavLink to="/team/timeline" className={getNavCls}>
+                      <Calendar className="h-4 w-4" />
+                      {!collapsed && <span>Team Timeline</span>}
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild>
+                    <NavLink to="/team/documents" className={getNavCls}>
+                      <FileText className="h-4 w-4" />
+                      {!collapsed && <span>Team Documents</span>}
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild>
+                    <NavLink to="/team/members" className={getNavCls}>
+                      <Users className="h-4 w-4" />
+                      {!collapsed && <span>Team Members</span>}
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild>
+                    <NavLink to="/team/settings" className={getNavCls}>
+                      <Building2 className="h-4 w-4" />
+                      {!collapsed && <span>Team Settings</span>}
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        </FeatureGate>
       </SidebarContent>
 
       <SidebarFooter className="border-t border-sidebar-border p-4">
