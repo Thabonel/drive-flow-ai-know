@@ -123,8 +123,8 @@ export default function Timeline() {
 
             {/* Right side: Planning buttons */}
             {showPrompt && !todaySession?.completed_at && (
-              <div className="flex flex-col gap-2">
-                <Button onClick={handleStartPlanning} size="sm" className="w-full">
+              <div className="flex flex-row gap-2">
+                <Button onClick={handleStartPlanning} size="sm">
                   Full Planning ({settings?.duration_minutes || 15} min)
                 </Button>
 
@@ -133,7 +133,7 @@ export default function Timeline() {
                     onClick={handleStartQuickPlanning}
                     variant="outline"
                     size="sm"
-                    className="gap-1.5 w-full"
+                    className="gap-1.5"
                   >
                     <Clock className="h-3 w-3" />
                     Quick (2 min)
@@ -144,7 +144,6 @@ export default function Timeline() {
                   onClick={handleSnooze}
                   variant="outline"
                   size="sm"
-                  className="w-full"
                 >
                   Snooze {settings?.snooze_duration_minutes || 15}m
                 </Button>
