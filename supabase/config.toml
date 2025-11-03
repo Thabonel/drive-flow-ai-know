@@ -38,3 +38,15 @@ verify_jwt = true
 
 [functions.stripe-webhook]
 verify_jwt = false
+
+[functions.create-team]
+verify_jwt = true
+
+[functions.invite-team-member]
+verify_jwt = true
+
+[functions.accept-team-invitation]
+verify_jwt = true
+
+[functions.process-stripe-webhooks]
+verify_jwt = false
