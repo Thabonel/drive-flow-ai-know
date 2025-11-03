@@ -160,7 +160,7 @@ const features = [
   {
     icon: Users,
     title: 'Context Operates at Team Level',
-    description: 'Team-shared documents mean everyone's AI has access to the same knowledge. No more asking "who has that file?"',
+    description: 'Team-shared documents mean everyone\'s AI has access to the same knowledge. No more asking "who has that file?"',
     benefit: 'Shared organizational context',
   },
   {
