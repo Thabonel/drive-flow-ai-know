@@ -416,8 +416,13 @@ serve(async (req) => {
       .select('team_id, teams(name)')
       .eq('user_id', user_id);
 
-    const teamIds = teamMemberships?.map(m => m.team_id) || [];
-    const teamNamesMap = new Map(teamMemberships?.map(m => [m.team_id, m.teams?.name]) || []);
+    if (teamError) {
+      console.error('Error fetching team memberships:', teamError);
+      // Continue without team context rather than failing
+    }
+
+    const teamIds = (teamMemberships || []).map(m => m.team_id).filter(Boolean);
+    const teamNamesMap = new Map((teamMemberships || []).map(m => [m.team_id, m.teams?.name]) || []);
     console.log('User is member of teams:', teamIds.length, 'teams');
 
     if (shouldFetchDocuments && knowledge_base_id) {
@@ -663,7 +668,11 @@ serve(async (req) => {
       aiAnswer = await getLLMResponse(messages, systemMessage, providerOverride);
       console.log('AI response generated successfully:', aiAnswer ? 'Yes' : 'No', 'Length:', aiAnswer?.length || 0);
     } catch (aiError) {
-      console.error('AI model error:', aiError);
+      console.error('AI model error details:', {
+        error: aiError,
+        message: aiError instanceof Error ? aiError.message : String(aiError),
+        stack: aiError instanceof Error ? aiError.stack : undefined
+      });
       const errorStr = String(aiError);
 
       // Better error categorization
