@@ -267,7 +267,7 @@ export default function Landing() {
       <section className="relative pt-8 pb-20 px-6 bg-white">
         <div className="max-w-7xl mx-auto">
           {/* Top Text */}
-          <div className="text-center space-y-3 mb-6 animate-fade-in">
+          <div className="text-center space-y-3 mb-2 animate-fade-in">
             <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight leading-tight">
               <span className="bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent animate-gradient-shift bg-[length:200%_auto] drop-shadow-lg">
                 AI Query Hub
