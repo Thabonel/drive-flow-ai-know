@@ -20,9 +20,12 @@ import { Button } from '@/components/ui/button';
 const navigationItems = [
   { title: 'Timeline', url: '/timeline', icon: Clock },
   { title: 'AI Chat', url: '/conversations', icon: MessageSquare },
-  { title: 'AI Assistant', url: '/assistants', icon: Bot },
   { title: 'AI Document Assistant', url: '/dashboard', icon: Brain },
   { title: 'Documents', url: '/documents', icon: FileText },
+];
+
+const executiveNavigationItems = [
+  { title: 'Assistant Setup', url: '/assistants', icon: Bot },
 ];
 
 export function AppSidebar() {
@@ -106,6 +109,27 @@ export function AppSidebar() {
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        </FeatureGate>
+
+        {/* Executive Navigation - Only visible for Executive tier */}
+        <FeatureGate requiredTier="executive">
+          <SidebarGroup>
+            <SidebarGroupLabel>Executive</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {executiveNavigationItems.map((item) => (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton asChild>
+                      <NavLink to={item.url} className={getNavCls}>
+                        <item.icon className="h-4 w-4" />
+                        {!collapsed && <span>{item.title}</span>}
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
