@@ -275,7 +275,7 @@ export default function Landing() {
             </h1>
 
             <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight leading-tight">
-              <span className="bg-gradient-to-r from-blue-600 via-cyan-500 to-blue-600 dark:from-blue-400 dark:via-cyan-300 dark:to-blue-500 bg-clip-text text-transparent animate-gradient-shift bg-[length:200%_auto] drop-shadow-lg">
+              <span className="bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent animate-gradient-shift bg-[length:200%_auto] drop-shadow-lg">
                 Ask Questions.
               </span>
             </h2>
