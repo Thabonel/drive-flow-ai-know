@@ -269,13 +269,13 @@ export default function Landing() {
           {/* Top Text */}
           <div className="text-center space-y-3 mb-2 animate-fade-in">
             <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight leading-tight">
-              <span className="bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent animate-gradient-shift bg-[length:200%_auto] drop-shadow-lg">
+              <span className="bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent drop-shadow-lg">
                 AI Query Hub
               </span>
             </h1>
 
             <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight leading-tight">
-              <span className="bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent animate-gradient-shift bg-[length:200%_auto] drop-shadow-lg">
+              <span className="bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent drop-shadow-lg">
                 Ask Questions.
               </span>
             </h2>
