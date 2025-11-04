@@ -103,6 +103,76 @@ cd DeepResearchAgency && python agency.py
 - MCP server provides internal document search capabilities
 - Must be publicly accessible (via ngrok) when used with OpenAI API
 
+## Design System & Theming
+
+### Color Scheme
+
+The application uses a **"Deep Corporate" Navy & Gold** theme for professional, authoritative branding.
+
+**Primary Colors:**
+- **Navy**: #0A2342 (HSL: 213 74% 15%) - Used for headers, main text, primary UI elements
+- **Gold**: #FFC300 (HSL: 46 100% 50%) - Used for CTAs, accents, highlights
+- **Secondary**: Lighter navy tones for gradients and variations
+- **Backgrounds**: White and light gray (#F8F8F8 / HSL: 0 0% 97%)
+
+**Implementation:**
+- All colors defined as CSS variables in `src/index.css`
+- Uses HSL format for consistency with Tailwind and shadcn-ui
+- Supports light and dark modes with separate color definitions
+- Additional theme variants available: `.pure-light`, `.magic-blue`, `.classic-dark`
+
+### Color Variables (src/index.css)
+
+```css
+:root {
+  --primary: 213 74% 15%;           /* Deep Navy */
+  --primary-foreground: 0 0% 100%;  /* White text on navy */
+  --accent: 46 100% 50%;            /* Vibrant Gold */
+  --accent-foreground: 213 74% 15%; /* Navy text on gold */
+  --secondary: 213 74% 20%;         /* Lighter navy */
+  --muted: 0 0% 97%;                /* Light gray backgrounds */
+  --success: 165 98% 30%;           /* Teal for success states */
+
+  /* Gradients */
+  --gradient-primary: linear-gradient(90deg, hsl(213 74% 15%) 0%, hsl(213 74% 20%) 100%);
+  --gradient-accent: linear-gradient(135deg, hsl(46 100% 50%) 0%, hsl(213 74% 20%) 100%);
+
+  /* Shadows */
+  --shadow-glow: 0 0 60px -10px hsl(213 74% 15% / 0.5);
+  --shadow-card: 0 4px 20px -2px hsl(213 74% 15% / 0.15);
+}
+```
+
+### Using Theme Colors
+
+**In Components:**
+```tsx
+// Use Tailwind classes with theme colors
+<h1 className="text-primary">AI Query Hub</h1>
+<Button className="bg-accent hover:bg-accent/90">Get Started</Button>
+<div className="bg-muted border border-primary/20">Content</div>
+```
+
+**Design Principles:**
+- Use solid colors instead of animated gradients for professional look
+- Navy for trust and authority (headers, navigation, primary actions)
+- Gold for high-value CTAs and important highlights
+- White/light gray for clean, accessible backgrounds
+- Consistent shadow and border treatments using theme variables
+
+### Modifying Colors
+
+To change the theme:
+1. Edit CSS variables in `src/index.css` (`:root` section)
+2. Update both light (`:root`) and dark (`.dark`) mode values
+3. Colors must be in HSL format without `hsl()` wrapper
+4. Test both light and dark modes
+5. Verify accessibility contrast ratios (WCAG AA minimum)
+
+**Color Conversion:**
+- Hex to HSL: Use tools like [HSL Color Converter](https://www.w3schools.com/colors/colors_hsl.asp)
+- Format: `213 74% 15%` (hue saturation lightness, space-separated, no commas)
+
 ## Environment Variables
 
 ### Frontend (.env)
