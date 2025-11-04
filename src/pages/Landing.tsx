@@ -264,17 +264,10 @@ export default function Landing() {
       </header>
 
       {/* Hero Section */}
-      <section className="relative pt-16 pb-20 px-6 bg-gradient-to-br from-slate-50 via-blue-50 to-slate-100 dark:from-slate-900 dark:via-blue-900 dark:to-slate-800">
+      <section className="relative pt-8 pb-20 px-6 bg-white">
         <div className="max-w-7xl mx-auto">
-          {/* Top Text - No Overlay */}
-          <div className="text-center space-y-4 mb-8 animate-fade-in">
-            <div className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-primary/20 border border-primary/30 backdrop-blur-xl shadow-glow">
-              <Sparkles className="w-5 h-5 text-primary animate-pulse-glow" />
-              <span className="text-sm font-semibold text-primary">
-                Search your documents with AI
-              </span>
-            </div>
-
+          {/* Top Text */}
+          <div className="text-center space-y-3 mb-6 animate-fade-in">
             <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight leading-tight">
               <span className="bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent animate-gradient-shift bg-[length:200%_auto] drop-shadow-lg">
                 AI Query Hub
@@ -285,9 +278,11 @@ export default function Landing() {
               <span className="bg-gradient-to-r from-blue-600 via-cyan-500 to-blue-600 dark:from-blue-400 dark:via-cyan-300 dark:to-blue-500 bg-clip-text text-transparent animate-gradient-shift bg-[length:200%_auto] drop-shadow-lg">
                 Ask Questions.
               </span>
-              <br />
-              <span className="text-foreground drop-shadow-lg">Get Answers From Your Files.</span>
             </h2>
+
+            <h3 className="text-2xl md:text-3xl lg:text-4xl font-bold tracking-tight leading-tight text-foreground">
+              Get Answers From Your Files.
+            </h3>
           </div>
 
           {/* Hero Illustration - Full Visibility */}
