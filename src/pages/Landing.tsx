@@ -26,64 +26,63 @@ import {
 
 const plans = [
   {
-    name: 'AI Starter',
-    price: '$29',
+    name: 'Starter',
+    price: '$9',
     period: '/month',
     description: 'Perfect for getting started with AI assistance',
     features: [
-      '500 AI queries/month',
-      '30 daily briefs',
-      '100 email-to-task conversions',
-      '10 GB storage',
-      'AI Meeting Prep & Task Breakdown',
-      '2 assistant invitations',
-      'Advanced AI features'
+      '200 AI queries/month',
+      '5 GB storage',
+      '3 knowledge bases',
+      'AI document analysis',
+      'Timeline management',
+      'Search your documents',
+      'Basic support'
     ],
     popular: false,
     trial: true,
     savings: null,
-    priceId: 'ai_starter',
+    priceId: 'price_1SJ242DXysaVZSVh4s8X7pQX',
   },
   {
-    name: 'Professional',
-    price: '$79',
+    name: 'Pro',
+    price: '$45',
     period: '/month',
     description: 'For professionals using AI daily',
     features: [
-      '2,000 AI queries/month',
-      '100 daily briefs',
-      '500 email-to-task conversions',
+      '1,000 AI queries/month',
       '50 GB storage',
+      'Unlimited knowledge bases',
       'All AI features',
-      '10 assistant invitations',
+      'Advanced timeline features',
+      'Daily planning & shutdown rituals',
       'Priority support',
-      'Custom integrations'
+      'AI Chat conversations'
     ],
     popular: true,
     trial: true,
     savings: null,
-    priceId: 'professional',
+    priceId: 'price_1SJ24pDXysaVZSVhjWh5Z9dk',
   },
   {
-    name: 'Executive',
-    price: '$299',
+    name: 'Business',
+    price: '$150',
     period: '/month',
-    description: 'Unlimited AI for executives and teams',
+    description: 'Team collaboration with unlimited queries',
     features: [
-      '10,000 AI queries/month',
-      'Unlimited daily briefs',
-      '2,000 email-to-task conversions',
+      'Unlimited AI queries',
       '500 GB storage',
-      'All AI features + Team features',
-      'Unlimited assistants',
-      'Dedicated account manager',
-      'White-glove onboarding',
-      'Custom AI training'
+      'Team collaboration features',
+      'Team shared documents',
+      'Team timeline',
+      'Up to 5 team members',
+      'Context fluency across organization',
+      'Dedicated account manager'
     ],
     popular: false,
     trial: true,
     savings: null,
-    priceId: 'executive',
+    priceId: 'price_1SJ25YDXysaVZSVhyjwdk3HN',
   },
 ];
 
@@ -535,11 +534,11 @@ export default function Landing() {
           
           <div className="text-center mt-8">
             <p className="text-muted-foreground mb-2 text-sm">
-              Try any plan free for 14 days. Need more questions? $0.02 per extra question.
+              Try any plan free for 14 days. All prices in AUD.
             </p>
             <p className="text-xs text-muted-foreground flex items-center justify-center gap-2">
               <Shield className="h-3 w-3" />
-              Cancel anytime • Pay annually, save 17%
+              Cancel anytime • 14-day free trial
             </p>
           </div>
         </div>
