@@ -1,4 +1,4 @@
-import { Home, FileText, Brain, Settings, LogOut, HelpCircle, Clock, Users, UserCog, Building2, Calendar } from 'lucide-react';
+import { Home, FileText, Brain, Settings, LogOut, HelpCircle, Clock, Users, UserCog, Building2, Calendar, Bot } from 'lucide-react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { FeatureGate } from '@/components/FeatureGate';
@@ -19,7 +19,8 @@ import { Button } from '@/components/ui/button';
 
 const navigationItems = [
   { title: 'Timeline', url: '/timeline', icon: Clock },
-  { title: 'AI Knowledge Assistant', url: '/dashboard', icon: Brain },
+  { title: 'AI Assistant', url: '/assistants', icon: Bot },
+  { title: 'AI Document Assistant', url: '/dashboard', icon: Brain },
   { title: 'Documents', url: '/documents', icon: FileText },
 ];
 
