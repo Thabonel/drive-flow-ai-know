@@ -268,16 +268,12 @@ export default function Landing() {
         <div className="max-w-7xl mx-auto">
           {/* Top Text */}
           <div className="text-center space-y-3 mb-2 animate-fade-in">
-            <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight leading-tight">
-              <span className="bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent drop-shadow-lg">
-                AI Query Hub
-              </span>
+            <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight leading-tight text-primary">
+              AI Query Hub
             </h1>
 
-            <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight leading-tight">
-              <span className="bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent drop-shadow-lg">
-                Ask Questions.
-              </span>
+            <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight leading-tight text-primary">
+              Ask Questions.
             </h2>
 
             <h3 className="text-2xl md:text-3xl lg:text-4xl font-bold tracking-tight leading-tight text-foreground">
@@ -354,10 +350,8 @@ export default function Landing() {
       <section id="how-it-works" className="relative py-16 px-6">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-12">
-            <h2 className="text-4xl md:text-5xl font-bold mb-3">
-              <span className="bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent">
-                How It Works
-              </span>
+            <h2 className="text-4xl md:text-5xl font-bold mb-3 text-primary">
+              How It Works
             </h2>
             <p className="text-lg text-muted-foreground">Three steps. That's it.</p>
           </div>
@@ -401,10 +395,8 @@ export default function Landing() {
       <section id="features" className="relative py-16 px-6">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-12">
-            <h2 className="text-4xl md:text-5xl font-bold mb-3">
-              <span className="bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent">
-                What You Get
-              </span>
+            <h2 className="text-4xl md:text-5xl font-bold mb-3 text-primary">
+              What You Get
             </h2>
             <p className="text-lg text-muted-foreground">The stuff that actually matters</p>
           </div>
@@ -429,10 +421,8 @@ export default function Landing() {
       <section id="testimonials" className="relative py-16 px-6">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-12">
-            <h2 className="text-4xl md:text-5xl font-bold mb-3">
-              <span className="bg-gradient-to-r from-primary via-accent to-secondary bg-clip-text text-transparent">
-                What People Say
-              </span>
+            <h2 className="text-4xl md:text-5xl font-bold mb-3 text-primary">
+              What People Say
             </h2>
             <p className="text-lg text-muted-foreground">Real feedback from early users</p>
             <p className="text-xs text-muted-foreground/60 mt-2 italic">*Example testimonials for demonstration</p>
@@ -476,10 +466,8 @@ export default function Landing() {
                 14-Day Free Trial • No Credit Card Required
               </span>
             </div>
-            <h2 className="text-4xl md:text-5xl font-bold mb-3">
-              <span className="bg-gradient-to-r from-primary via-accent to-secondary bg-clip-text text-transparent">
-                Pricing
-              </span>
+            <h2 className="text-4xl md:text-5xl font-bold mb-3 text-primary">
+              Pricing
             </h2>
             <p className="text-lg text-muted-foreground">Pick what works for you</p>
           </div>
@@ -595,10 +583,8 @@ export default function Landing() {
       <section className="relative py-12 px-6 bg-muted/50">
         <div className="max-w-4xl mx-auto text-center">
           <div className="p-8 rounded-2xl bg-card border border-border shadow-card">
-            <h2 className="text-3xl font-bold mb-4">
-              <span className="bg-gradient-to-r from-primary via-accent to-secondary bg-clip-text text-transparent">
-                Need Help?
-              </span>
+            <h2 className="text-3xl font-bold mb-4 text-primary">
+              Need Help?
             </h2>
             <p className="text-lg text-muted-foreground mb-6 max-w-2xl mx-auto">
               If something does not work, let me know and I will fix it immediately.
