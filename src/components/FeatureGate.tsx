@@ -19,11 +19,37 @@ interface FeatureGateProps {
  * - business: Business ($150/month) - Team features (5 members, shared docs, team timeline)
  * - enterprise: Enterprise ($299/month) - Executive assistant + team features
  *
+ * Admin Override:
+ * - Users with role = "admin" in user_roles table have full access to ALL features
+ * - Bypasses all tier restrictions for testing and administration
+ *
  * Features are COMPLETELY INVISIBLE until the required tier is subscribed.
  * No "upgrade" banners or locked feature teasers - pay to see.
  */
 export function FeatureGate({ children, requiredTier, fallback = null }: FeatureGateProps) {
   const { user } = useAuth();
+
+  // Check user role
+  const { data: userRole } = useQuery({
+    queryKey: ['user-role', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return null;
+
+      const { data, error } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (error) {
+        console.error('Error fetching user role:', error);
+        return null;
+      }
+
+      return data;
+    },
+    enabled: !!user?.id,
+  });
 
   const { data: subscription, isLoading } = useQuery({
     queryKey: ['user-subscription', user?.id],
@@ -52,6 +78,11 @@ export function FeatureGate({ children, requiredTier, fallback = null }: Feature
   // Don't render anything while loading
   if (isLoading) {
     return null;
+  }
+
+  // Admins have full access to everything
+  if (userRole?.role === 'admin') {
+    return <>{children}</>;
   }
 
   // No subscription = entry tier (free/trial)
