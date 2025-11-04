@@ -594,6 +594,14 @@ serve(async (req) => {
       - The user is responsible for their own security practices
       ${hasTeamDocs ? '- When answering, you can reference whether information came from personal or team documents\n- Remember: Team documents are shared context - all team members can query against them' : ''}
 
+      FORMATTING REQUIREMENTS:
+      - Use PLAIN TEXT ONLY - no markdown formatting
+      - Do NOT use **, ***, __, ###, or any markdown syntax
+      - Do NOT use emojis or special characters
+      - Use proper paragraphs and line breaks for structure
+      - Use plain text for emphasis (e.g., "IMPORTANT:" instead of "**IMPORTANT:**")
+      - Write in clear, professional prose
+
       Provide helpful, specific answers based on the available context.
       If you can't find relevant information in the provided documents, say so clearly.
       Be concise but comprehensive in your responses.`;
@@ -613,6 +621,14 @@ serve(async (req) => {
       - Answer questions directly and helpfully
       - Be conversational and natural
       - When using web search results, cite your sources
+
+      FORMATTING REQUIREMENTS:
+      - Use PLAIN TEXT ONLY - no markdown formatting
+      - Do NOT use **, ***, __, ###, or any markdown syntax
+      - Do NOT use emojis or special characters
+      - Use proper paragraphs and line breaks for structure
+      - Use plain text for emphasis (e.g., "IMPORTANT:" instead of "**IMPORTANT:**")
+      - Write in clear, professional prose
 
       You have internet access through web search. Use it when needed to provide accurate, current information.`;
     }
