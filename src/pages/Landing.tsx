@@ -264,15 +264,14 @@ export default function Landing() {
       </header>
 
       {/* Hero Section */}
-      <section className="relative pt-16 pb-20 px-6 overflow-hidden bg-gradient-to-br from-slate-900 via-blue-900 to-slate-800">
+      <section className="relative pt-16 pb-20 px-6 overflow-hidden bg-gradient-to-br from-slate-50 via-blue-50 to-slate-100 dark:from-slate-900 dark:via-blue-900 dark:to-slate-800">
         {/* Hero Background Image */}
-        <div className="absolute inset-0 z-0">
+        <div className="absolute inset-0 z-0 flex items-center justify-center">
           <img
-            src="https://fskwutnoxbbflzqrphro.supabase.co/storage/v1/object/public/assets/Hero%20AI.png?v=2"
-            alt="AI Knowledge Background"
-            className="w-full h-full object-cover opacity-90"
+            src="https://fskwutnoxbbflzqrphro.supabase.co/storage/v1/object/public/assets/AI%20Qyeryhubhero.jpg"
+            alt="AI Query Hub - AI Knowledge Assistant"
+            className="max-w-4xl w-full h-auto object-contain opacity-20 dark:opacity-30"
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/30 to-transparent"></div>
         </div>
 
         <div className="max-w-7xl mx-auto relative z-10">
@@ -285,14 +284,20 @@ export default function Landing() {
             </div>
 
             <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight leading-tight">
-              <span className="bg-gradient-to-r from-blue-400 via-cyan-300 to-blue-500 bg-clip-text text-transparent animate-gradient-shift bg-[length:200%_auto] drop-shadow-lg">
+              <span className="bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent animate-gradient-shift bg-[length:200%_auto] drop-shadow-lg">
+                AI Query Hub
+              </span>
+            </h1>
+
+            <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight leading-tight">
+              <span className="bg-gradient-to-r from-blue-600 via-cyan-500 to-blue-600 dark:from-blue-400 dark:via-cyan-300 dark:to-blue-500 bg-clip-text text-transparent animate-gradient-shift bg-[length:200%_auto] drop-shadow-lg">
                 Ask Questions.
               </span>
               <br />
-              <span className="text-white drop-shadow-lg">Get Answers From Your Files.</span>
-            </h1>
+              <span className="text-foreground drop-shadow-lg">Get Answers From Your Files.</span>
+            </h2>
 
-            <p className="text-lg md:text-xl text-white/90 max-w-3xl mx-auto leading-relaxed drop-shadow-md">
+            <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
               Upload your documents. Ask questions in plain English. The AI reads through everything and
               tells you what's there. No more digging through folders.
             </p>
@@ -308,17 +313,17 @@ export default function Landing() {
 
             {/* Trust Indicators */}
             <div className="flex flex-wrap gap-6 justify-center items-center pt-6 text-sm">
-              <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-primary border border-primary">
-                <Shield className="w-4 h-4 text-white" />
-                <span className="font-medium text-white">Your data stays private</span>
+              <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/30 backdrop-blur-sm">
+                <Shield className="w-4 h-4 text-primary" />
+                <span className="font-medium text-primary">Your data stays private</span>
               </div>
-              <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-success border border-success">
-                <Zap className="w-4 h-4 text-white" />
-                <span className="font-medium text-white">Searches in under 1 second</span>
+              <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-success/10 border border-success/30 backdrop-blur-sm">
+                <Zap className="w-4 h-4 text-success" />
+                <span className="font-medium text-success">Searches in under 1 second</span>
               </div>
-              <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-accent border border-accent">
-                <Users className="w-4 h-4 text-white" />
-                <span className="font-medium text-white">Free 14-day trial</span>
+              <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-accent/10 border border-accent/30 backdrop-blur-sm">
+                <Users className="w-4 h-4 text-accent" />
+                <span className="font-medium text-accent">Free 14-day trial</span>
               </div>
             </div>
           </div>
