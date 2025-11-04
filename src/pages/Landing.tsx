@@ -290,7 +290,7 @@ export default function Landing() {
             <img
               src="https://fskwutnoxbbflzqrphro.supabase.co/storage/v1/object/public/assets/AI%20Qyeryhubhero.jpg"
               alt="AI Query Hub - AI Knowledge Assistant"
-              className="max-w-4xl w-full h-auto object-contain"
+              className="max-w-6xl w-full h-auto object-contain"
             />
           </div>
 
