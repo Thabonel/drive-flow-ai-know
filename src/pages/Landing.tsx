@@ -264,18 +264,10 @@ export default function Landing() {
       </header>
 
       {/* Hero Section */}
-      <section className="relative pt-16 pb-20 px-6 overflow-hidden bg-gradient-to-br from-slate-50 via-blue-50 to-slate-100 dark:from-slate-900 dark:via-blue-900 dark:to-slate-800">
-        {/* Hero Background Image */}
-        <div className="absolute inset-0 z-0 flex items-center justify-center">
-          <img
-            src="https://fskwutnoxbbflzqrphro.supabase.co/storage/v1/object/public/assets/AI%20Qyeryhubhero.jpg"
-            alt="AI Query Hub - AI Knowledge Assistant"
-            className="max-w-4xl w-full h-auto object-contain opacity-20 dark:opacity-30"
-          />
-        </div>
-
-        <div className="max-w-7xl mx-auto relative z-10">
-          <div className="text-center space-y-6 animate-fade-in">
+      <section className="relative pt-16 pb-20 px-6 bg-gradient-to-br from-slate-50 via-blue-50 to-slate-100 dark:from-slate-900 dark:via-blue-900 dark:to-slate-800">
+        <div className="max-w-7xl mx-auto">
+          {/* Top Text - No Overlay */}
+          <div className="text-center space-y-4 mb-8 animate-fade-in">
             <div className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-primary/20 border border-primary/30 backdrop-blur-xl shadow-glow">
               <Sparkles className="w-5 h-5 text-primary animate-pulse-glow" />
               <span className="text-sm font-semibold text-primary">
@@ -296,7 +288,19 @@ export default function Landing() {
               <br />
               <span className="text-foreground drop-shadow-lg">Get Answers From Your Files.</span>
             </h2>
+          </div>
 
+          {/* Hero Illustration - Full Visibility */}
+          <div className="flex justify-center mb-12">
+            <img
+              src="https://fskwutnoxbbflzqrphro.supabase.co/storage/v1/object/public/assets/AI%20Qyeryhubhero.jpg"
+              alt="AI Query Hub - AI Knowledge Assistant"
+              className="max-w-4xl w-full h-auto object-contain"
+            />
+          </div>
+
+          {/* Content Below Illustration */}
+          <div className="text-center space-y-6 animate-fade-in">
             <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
               Upload your documents. Ask questions in plain English. The AI reads through everything and
               tells you what's there. No more digging through folders.
