@@ -1,6 +1,6 @@
 // Timeline Manager Utility Functions
 
-import { NOW_LINE_POSITION, DEFAULT_PIXELS_PER_HOUR, LOGJAM_THRESHOLD_MINUTES } from './timelineConstants';
+import { NOW_LINE_POSITION, DEFAULT_PIXELS_PER_HOUR, LOGJAM_THRESHOLD_MINUTES, AUTO_PARK_HOURS } from './timelineConstants';
 
 export interface TimelineItem {
   id: string;
@@ -105,6 +105,23 @@ export function shouldBeLogjammed(item: TimelineItem, nowTime: Date): boolean {
   const minutesPastEnd = (nowTime.getTime() - endTime.getTime()) / (1000 * 60);
 
   return minutesPastEnd > LOGJAM_THRESHOLD_MINUTES;
+}
+
+/**
+ * Check if an item should be automatically parked
+ * @param item - Timeline item
+ * @param nowTime - Current time (Date object)
+ * @returns True if item is overdue by 8+ hours and not completed/parked
+ */
+export function shouldBeAutoPark(item: TimelineItem, nowTime: Date): boolean {
+  if (item.status === 'completed' || item.status === 'parked') {
+    return false;
+  }
+
+  const endTime = calculateEndTime(item.start_time, item.duration_minutes);
+  const hoursPastEnd = (nowTime.getTime() - endTime.getTime()) / (1000 * 60 * 60);
+
+  return hoursPastEnd > AUTO_PARK_HOURS;
 }
 
 /**

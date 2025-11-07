@@ -10,6 +10,7 @@ import {
   ParkedItem,
   shouldBeLogjammed,
   shouldBeArchived,
+  shouldBeAutoPark,
 } from '@/lib/timelineUtils';
 
 export function useTimeline() {
@@ -119,7 +120,13 @@ export function useTimeline() {
     title: string,
     startTime: string,
     durationMinutes: number,
-    color: string
+    color: string,
+    options?: {
+      team_id?: string | null;
+      visibility?: 'personal' | 'team' | 'assigned';
+      assigned_to?: string | null;
+      assigned_by?: string | null;
+    }
   ) => {
     if (!user) return;
 
@@ -130,6 +137,7 @@ export function useTimeline() {
         title,
         start_time: startTime,
         duration_minutes: durationMinutes,
+        ...options,
       });
 
       const { data, error } = await supabase
@@ -146,6 +154,10 @@ export function useTimeline() {
           is_flexible: true,
           sync_status: 'local_only',
           sync_source: 'local',
+          team_id: options?.team_id,
+          visibility: options?.visibility || 'personal',
+          assigned_to: options?.assigned_to,
+          assigned_by: options?.assigned_by,
         })
         .select()
         .single();
@@ -160,7 +172,8 @@ export function useTimeline() {
         throw error;
       }
 
-      setItems([...items, data]);
+      // Use functional form to avoid stale closure issues
+      setItems(prevItems => [...prevItems, data]);
       toast({
         title: 'Item added',
         description: `"${title}" has been added to the timeline`,
@@ -187,7 +200,8 @@ export function useTimeline() {
 
       if (error) throw error;
 
-      setItems(items.map(item => item.id === itemId ? { ...item, ...updates } : item));
+      // Use functional form to avoid stale closure issues
+      setItems(prevItems => prevItems.map(item => item.id === itemId ? { ...item, ...updates } : item));
     } catch (error) {
       console.error('Error updating item:', error);
       toast({
@@ -259,7 +273,8 @@ export function useTimeline() {
 
       if (deleteError) throw deleteError;
 
-      setItems(items.filter(i => i.id !== itemId));
+      // Use functional form to avoid stale closure issues
+      setItems(prevItems => prevItems.filter(i => i.id !== itemId));
       await fetchParkedItems();
 
       toast({
@@ -305,7 +320,8 @@ export function useTimeline() {
 
       if (error) throw error;
 
-      setParkedItems(parkedItems.filter(p => p.id !== parkedItemId));
+      // Use functional form to avoid stale closure issues
+      setParkedItems(prevParkedItems => prevParkedItems.filter(p => p.id !== parkedItemId));
     } catch (error) {
       console.error('Error restoring parked item:', error);
       toast({
@@ -326,7 +342,8 @@ export function useTimeline() {
 
       if (error) throw error;
 
-      setItems(items.filter(i => i.id !== itemId));
+      // Use functional form to avoid stale closure issues
+      setItems(prevItems => prevItems.filter(i => i.id !== itemId));
       toast({
         title: 'Item deleted',
         description: 'Timeline item has been removed',
@@ -351,7 +368,8 @@ export function useTimeline() {
 
       if (error) throw error;
 
-      setParkedItems(parkedItems.filter(p => p.id !== parkedItemId));
+      // Use functional form to avoid stale closure issues
+      setParkedItems(prevParkedItems => prevParkedItems.filter(p => p.id !== parkedItemId));
       toast({
         title: 'Parked item deleted',
         description: 'Parked item has been removed',
@@ -397,24 +415,76 @@ export function useTimeline() {
     // Always update NOW time (in both locked and unlocked mode)
     setNowTime(new Date());
 
-    // Check for logjammed items
-    setItems(prevItems =>
-      prevItems.map(item => {
-        if (shouldBeLogjammed(item, new Date()) && item.status === 'active') {
+    const currentTime = new Date();
+
+    // Check for logjammed items and auto-park items
+    setItems(prevItems => {
+      const updatedItems: TimelineItem[] = [];
+      const itemsToAutoPark: TimelineItem[] = [];
+
+      prevItems.forEach(item => {
+        // Check if item should be auto-parked (8+ hours overdue)
+        if (shouldBeAutoPark(item, currentTime)) {
+          itemsToAutoPark.push(item);
+          return; // Don't add to updatedItems - will be removed
+        }
+
+        // Check if item should be marked as logjam
+        if (shouldBeLogjammed(item, currentTime) && item.status === 'active') {
           // Update in database
           supabase
             .from('timeline_items')
             .update({ status: 'logjam' })
             .eq('id', item.id);
 
-          return { ...item, status: 'logjam' as const };
+          updatedItems.push({ ...item, status: 'logjam' as const });
+        } else {
+          updatedItems.push(item);
         }
-        return item;
-      })
-    );
+      });
+
+      // Auto-park items that are 8+ hours overdue
+      if (itemsToAutoPark.length > 0 && user) {
+        itemsToAutoPark.forEach(async (item) => {
+          try {
+            // Add to parked items
+            await supabase
+              .from('timeline_parked_items')
+              .insert({
+                user_id: user.id,
+                title: item.title,
+                duration_minutes: item.duration_minutes,
+                original_layer_id: item.layer_id,
+                color: item.color,
+              });
+
+            // Delete from timeline items
+            await supabase
+              .from('timeline_items')
+              .delete()
+              .eq('id', item.id);
+
+            console.log(`Auto-parked item: ${item.title} (${item.id})`);
+          } catch (error) {
+            console.error('Error auto-parking item:', error);
+          }
+        });
+
+        // Show toast notification
+        toast({
+          title: 'Items auto-parked',
+          description: `${itemsToAutoPark.length} item${itemsToAutoPark.length > 1 ? 's' : ''} moved to Parked Items (8+ hours overdue)`,
+        });
+
+        // Refetch parked items after auto-parking
+        fetchParkedItems();
+      }
+
+      return updatedItems;
+    });
 
     animationFrameRef.current = requestAnimationFrame(tick);
-  }, []);
+  }, [user]);
 
   // Start/stop animation loop (always runs, but behavior changes based on locked state)
   useEffect(() => {

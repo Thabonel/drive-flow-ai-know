@@ -118,12 +118,23 @@ export default function TeamTimeline() {
 
   if (!team) {
     return (
-      <div className="container mx-auto py-8">
-        <Alert>
+      <div className="container mx-auto py-8 max-w-4xl">
+        <Alert className="mb-6">
+          <Users className="h-4 w-4" />
           <AlertDescription>
-            You don't have a team yet. Create one to access team features.
+            <p className="font-semibold mb-2">No Team Found</p>
+            <p>You need to create a team to use team features. Team features require a Business subscription.</p>
           </AlertDescription>
         </Alert>
+        <Card className="p-6 text-center">
+          <CardTitle className="mb-4">Get Started with Teams</CardTitle>
+          <CardDescription className="mb-6">
+            Collaborate with your team on shared documents, tasks, and timelines.
+          </CardDescription>
+          <Button onClick={() => window.location.href = '/team/create'}>
+            Create Your Team
+          </Button>
+        </Card>
       </div>
     );
   }
@@ -208,16 +219,16 @@ export default function TeamTimeline() {
                         <div className="flex-1">
                           <h3 className="font-semibold text-lg">{item.title}</h3>
                           <div className="flex items-center gap-3 mt-2 text-sm text-muted-foreground">
-                            <div className="flex items-center gap-1">
-                              <Calendar className="h-3 w-3" />
+                            <div className="flex items-center gap-2">
+                              <Calendar className="h-4 w-4 flex-shrink-0" />
                               {new Date(item.start_time).toLocaleDateString()} at{' '}
                               {new Date(item.start_time).toLocaleTimeString([], {
                                 hour: '2-digit',
                                 minute: '2-digit',
                               })}
                             </div>
-                            <div className="flex items-center gap-1">
-                              <Clock className="h-3 w-3" />
+                            <div className="flex items-center gap-2">
+                              <Clock className="h-4 w-4 flex-shrink-0" />
                               {item.duration_minutes} min
                             </div>
                           </div>

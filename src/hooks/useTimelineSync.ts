@@ -1,6 +1,6 @@
 // Hook for real-time synchronization with Supabase
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { RealtimeChannel } from '@supabase/supabase-js';
 import { useAuth } from './useAuth';
@@ -9,15 +9,39 @@ interface TimelineSyncCallbacks {
   onItemsChange?: () => void;
   onLayersChange?: () => void;
   onSettingsChange?: () => void;
+  onParkedItemsChange?: () => void;
 }
 
 export function useTimelineSync(callbacks: TimelineSyncCallbacks) {
   const { user } = useAuth();
 
+  // Debounce timers to prevent rapid refetches
+  const itemsDebounceTimer = useRef<NodeJS.Timeout | null>(null);
+  const layersDebounceTimer = useRef<NodeJS.Timeout | null>(null);
+  const settingsDebounceTimer = useRef<NodeJS.Timeout | null>(null);
+  const parkedItemsDebounceTimer = useRef<NodeJS.Timeout | null>(null);
+
   useEffect(() => {
     if (!user) return;
 
     const channels: RealtimeChannel[] = [];
+
+    // Debounced callback wrapper
+    const debounce = (
+      callback: () => void,
+      timerRef: React.MutableRefObject<NodeJS.Timeout | null>,
+      delay: number = 100
+    ) => {
+      return () => {
+        if (timerRef.current) {
+          clearTimeout(timerRef.current);
+        }
+        timerRef.current = setTimeout(() => {
+          callback();
+          timerRef.current = null;
+        }, delay);
+      };
+    };
 
     // Subscribe to timeline_items changes
     if (callbacks.onItemsChange) {
@@ -31,9 +55,7 @@ export function useTimelineSync(callbacks: TimelineSyncCallbacks) {
             table: 'timeline_items',
             filter: `user_id=eq.${user.id}`,
           },
-          () => {
-            callbacks.onItemsChange?.();
-          }
+          debounce(callbacks.onItemsChange, itemsDebounceTimer, 150)
         )
         .subscribe();
 
@@ -52,9 +74,7 @@ export function useTimelineSync(callbacks: TimelineSyncCallbacks) {
             table: 'timeline_layers',
             filter: `user_id=eq.${user.id}`,
           },
-          () => {
-            callbacks.onLayersChange?.();
-          }
+          debounce(callbacks.onLayersChange, layersDebounceTimer, 150)
         )
         .subscribe();
 
@@ -73,20 +93,44 @@ export function useTimelineSync(callbacks: TimelineSyncCallbacks) {
             table: 'timeline_settings',
             filter: `user_id=eq.${user.id}`,
           },
-          () => {
-            callbacks.onSettingsChange?.();
-          }
+          debounce(callbacks.onSettingsChange, settingsDebounceTimer, 150)
         )
         .subscribe();
 
       channels.push(settingsChannel);
     }
 
+    // Subscribe to timeline_parked_items changes
+    if (callbacks.onParkedItemsChange) {
+      const parkedItemsChannel = supabase
+        .channel('timeline_parked_items_changes')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'timeline_parked_items',
+            filter: `user_id=eq.${user.id}`,
+          },
+          debounce(callbacks.onParkedItemsChange, parkedItemsDebounceTimer, 150)
+        )
+        .subscribe();
+
+      channels.push(parkedItemsChannel);
+    }
+
     // Cleanup subscriptions on unmount
     return () => {
+      // Clear any pending debounce timers
+      if (itemsDebounceTimer.current) clearTimeout(itemsDebounceTimer.current);
+      if (layersDebounceTimer.current) clearTimeout(layersDebounceTimer.current);
+      if (settingsDebounceTimer.current) clearTimeout(settingsDebounceTimer.current);
+      if (parkedItemsDebounceTimer.current) clearTimeout(parkedItemsDebounceTimer.current);
+
+      // Remove all channels
       channels.forEach(channel => {
         supabase.removeChannel(channel);
       });
     };
-  }, [user, callbacks.onItemsChange, callbacks.onLayersChange, callbacks.onSettingsChange]);
+  }, [user, callbacks.onItemsChange, callbacks.onLayersChange, callbacks.onSettingsChange, callbacks.onParkedItemsChange]);
 }

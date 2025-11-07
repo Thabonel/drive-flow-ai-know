@@ -132,9 +132,9 @@ export function DailyPlanningTrigger() {
                       onClick={handleStartQuickPlanning}
                       variant="outline"
                       size="sm"
-                      className="gap-1.5 w-full"
+                      className="gap-2 w-full"
                     >
-                      <Clock className="h-3 w-3" />
+                      <Clock className="h-4 w-4 flex-shrink-0" />
                       Quick (2 min)
                     </Button>
                   )}
