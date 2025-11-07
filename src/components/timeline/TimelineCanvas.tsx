@@ -177,7 +177,7 @@ export function TimelineCanvas({
       style={{
         height: `${totalHeight}px`,
         cursor: isDragging ? 'grabbing' : (isLocked ? 'default' : 'grab'),
-        boxShadow: '4px 4px 0px rgba(10, 35, 66, 0.6), 6px 6px 4px rgba(10, 35, 66, 0.3)',
+        boxShadow: '-5px 0px 0px rgba(10, 35, 66, 0.7), -8px 0px 4px rgba(10, 35, 66, 0.4), 0px 5px 0px rgba(10, 35, 66, 0.5)',
       }}
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
@@ -185,95 +185,75 @@ export function TimelineCanvas({
       onMouseLeave={handleMouseUp}
       onDoubleClick={handleCanvasDoubleClick}
     >
-      {/* SVG Filter Definitions for Professional 3D Effect */}
+      {/* SVG Filter Definitions for Left-Edge 3D Shadow Effect */}
       <defs>
-        {/* Normal state - sharp 3D shadow with highlight */}
+        {/* Normal state - prominent left-edge shadow like stacked cards */}
         <filter id="timeline-shadow-normal" x="-50%" y="-50%" width="200%" height="200%">
-          {/* Hard primary shadow (bottom-right) */}
+          {/* Hard left-edge shadow */}
           <feDropShadow
-            dx="4"
-            dy="4"
+            dx="-5"
+            dy="0"
             stdDeviation="0"
-            floodColor="rgba(10, 35, 66, 0.6)"
-            result="hardShadow"
+            floodColor="rgba(10, 35, 66, 0.7)"
+            result="hardLeftShadow"
           />
-          {/* Soft depth shadow (bottom-right) */}
+          {/* Soft left shadow for depth */}
           <feDropShadow
-            dx="6"
-            dy="6"
-            stdDeviation="1.5"
-            floodColor="rgba(10, 35, 66, 0.3)"
-            result="softShadow"
+            dx="-8"
+            dy="0"
+            stdDeviation="2"
+            floodColor="rgba(10, 35, 66, 0.4)"
+            result="softLeftShadow"
           />
-          {/* Top-left specular highlight for raised edge */}
-          <feSpecularLighting
-            in="SourceAlpha"
-            surfaceScale="4"
-            specularConstant="0.7"
-            specularExponent="25"
-            lightingColor="white"
-            result="highlight"
-          >
-            <feDistantLight azimuth="225" elevation="45" />
-          </feSpecularLighting>
-          {/* Clip highlight to shape */}
-          <feComposite
-            in="highlight"
-            in2="SourceAlpha"
-            operator="in"
-            result="highlightClipped"
+          {/* Bottom edge shadow for additional depth */}
+          <feDropShadow
+            dx="0"
+            dy="5"
+            stdDeviation="0"
+            floodColor="rgba(10, 35, 66, 0.5)"
+            result="bottomShadow"
           />
           {/* Combine all layers */}
           <feMerge>
-            <feMergeNode in="softShadow" />
-            <feMergeNode in="hardShadow" />
+            <feMergeNode in="softLeftShadow" />
+            <feMergeNode in="hardLeftShadow" />
+            <feMergeNode in="bottomShadow" />
             <feMergeNode in="SourceGraphic" />
-            <feMergeNode in="highlightClipped" />
           </feMerge>
         </filter>
 
-        {/* Active state - enhanced 3D effect when dragging/resizing */}
+        {/* Active state - stronger left-edge shadow when dragging/resizing */}
         <filter id="timeline-shadow-active" x="-50%" y="-50%" width="200%" height="200%">
-          {/* Stronger hard shadow */}
+          {/* Very hard left-edge shadow */}
           <feDropShadow
-            dx="6"
-            dy="6"
+            dx="-7"
+            dy="0"
             stdDeviation="0"
-            floodColor="rgba(10, 35, 66, 0.7)"
-            result="hardShadow"
+            floodColor="rgba(10, 35, 66, 0.8)"
+            result="hardLeftShadow"
           />
-          {/* Extended soft shadow */}
+          {/* Extended soft left shadow */}
           <feDropShadow
-            dx="10"
-            dy="10"
-            stdDeviation="2"
-            floodColor="rgba(10, 35, 66, 0.4)"
-            result="softShadow"
+            dx="-12"
+            dy="0"
+            stdDeviation="3"
+            floodColor="rgba(10, 35, 66, 0.5)"
+            result="softLeftShadow"
           />
-          {/* Brighter highlight for active state */}
-          <feSpecularLighting
-            in="SourceAlpha"
-            surfaceScale="5"
-            specularConstant="0.8"
-            specularExponent="30"
-            lightingColor="white"
-            result="highlight"
-          >
-            <feDistantLight azimuth="225" elevation="45" />
-          </feSpecularLighting>
-          {/* Clip highlight to shape */}
-          <feComposite
-            in="highlight"
-            in2="SourceAlpha"
-            operator="in"
-            result="highlightClipped"
+          {/* Stronger bottom shadow */}
+          <feDropShadow
+            dx="0"
+            dy="7"
+            stdDeviation="0"
+            floodColor="rgba(10, 35, 66, 0.6)"
+            result="bottomShadow"
           />
           {/* Combine all layers */}
           <feMerge>
-            <feMergeNode in="softShadow" />
-            <feMergeNode in="hardShadow" />
+            <feMergeNode in="softLeftShadow" />
+            <feMergeNode in="hardLeftShadow" />
+            <feMergeNode in="bottomShadow" />
             <feMergeNode in="SourceGraphic" />
-            <feMergeNode in="highlightClipped" />
           </feMerge>
         </filter>
 
