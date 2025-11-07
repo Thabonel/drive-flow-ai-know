@@ -29,7 +29,7 @@ serve(async (req) => {
 
     // Get user's subscription to find customer ID (get most recent one)
     const { data: subscriptions, error: subError } = await supabaseClient
-      .from("subscriptions")
+      .from("user_subscriptions")
       .select("stripe_customer_id")
       .eq("user_id", user.id)
       .in("status", ["active", "trialing"])

@@ -46,7 +46,7 @@ serve(async (req) => {
 
     // Check if customer exists
     const { data: subscription } = await supabaseClient
-      .from("subscriptions")
+      .from("user_subscriptions")
       .select("stripe_customer_id")
       .eq("user_id", user.id)
       .single();

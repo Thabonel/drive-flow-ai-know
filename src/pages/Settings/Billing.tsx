@@ -49,7 +49,7 @@ export default function Billing() {
       if (!user) return null;
 
       const { data, error } = await supabase
-        .from('subscriptions')
+        .from('user_subscriptions')
         .select('*')
         .eq('user_id', user.id)
         .in('status', ['active', 'trialing'])
@@ -89,7 +89,7 @@ export default function Billing() {
       const pollForSubscription = async () => {
         try {
           const { data, error } = await supabase
-            .from('subscriptions')
+            .from('user_subscriptions')
             .select('*')
             .eq('user_id', user.id)
             .in('status', ['active', 'trialing'])
