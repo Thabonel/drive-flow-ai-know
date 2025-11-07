@@ -99,7 +99,8 @@ export default function TeamMembers() {
     }
   };
 
-  if (teamLoading || isLoading) {
+  // Step 1: Show spinner while loading team data
+  if (teamLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -107,6 +108,7 @@ export default function TeamMembers() {
     );
   }
 
+  // Step 2: If team loading is done and no team exists, show message immediately
   if (!team) {
     return (
       <div className="container mx-auto py-8">
@@ -115,6 +117,15 @@ export default function TeamMembers() {
             You don't have a team yet. Create one to access team features.
           </AlertDescription>
         </Alert>
+      </div>
+    );
+  }
+
+  // Step 3: Team exists, now check if members data is loading
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     );
   }

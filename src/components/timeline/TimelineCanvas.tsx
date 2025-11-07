@@ -173,7 +173,7 @@ export function TimelineCanvas({
   return (
     <svg
       ref={svgRef}
-      className="w-full border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900"
+      className="w-full border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 shadow-[0_4px_20px_-2px_rgba(10,35,66,0.15),0_16px_40px_-4px_rgba(10,35,66,0.25)]"
       style={{
         height: `${totalHeight}px`,
         cursor: isDragging ? 'grabbing' : (isLocked ? 'default' : 'grab'),
@@ -184,6 +184,50 @@ export function TimelineCanvas({
       onMouseLeave={handleMouseUp}
       onDoubleClick={handleCanvasDoubleClick}
     >
+      {/* SVG Filter Definitions for 3D Shadow Effect */}
+      <defs>
+        {/* Normal state shadow - dual layer for 3D depth */}
+        <filter id="timeline-shadow-normal" x="-50%" y="-50%" width="200%" height="200%">
+          <feDropShadow
+            dx="0"
+            dy="4"
+            stdDeviation="4"
+            floodColor="rgba(0, 0, 0, 0.15)"
+          />
+          <feDropShadow
+            dx="0"
+            dy="16"
+            stdDeviation="16"
+            floodColor="rgba(0, 0, 0, 0.25)"
+          />
+        </filter>
+
+        {/* Active state shadow (dragging/resizing) - stronger 3D effect */}
+        <filter id="timeline-shadow-active" x="-50%" y="-50%" width="200%" height="200%">
+          <feDropShadow
+            dx="0"
+            dy="8"
+            stdDeviation="8"
+            floodColor="rgba(0, 0, 0, 0.25)"
+          />
+          <feDropShadow
+            dx="0"
+            dy="24"
+            stdDeviation="24"
+            floodColor="rgba(0, 0, 0, 0.35)"
+          />
+        </filter>
+
+        {/* NOW line glow effect */}
+        <filter id="now-line-glow" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+          <feMerge>
+            <feMergeNode in="coloredBlur"/>
+            <feMergeNode in="SourceGraphic"/>
+          </feMerge>
+        </filter>
+      </defs>
+
       {/* Background */}
       <rect
         x="0"
@@ -286,6 +330,7 @@ export function TimelineCanvas({
           stroke="#ef4444"
           strokeWidth={3}
           opacity={0.8}
+          filter="url(#now-line-glow)"
         />
         {/* Date label */}
         <text

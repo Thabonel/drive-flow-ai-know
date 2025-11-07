@@ -21,7 +21,7 @@ const GoogleAuthStatus = () => {
         .from('user_google_tokens')
         .select('*')
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
 
       if (error || !data) {
         setTokenStatus('missing');

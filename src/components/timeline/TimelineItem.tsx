@@ -203,20 +203,21 @@ export function TimelineItem({
       onMouseLeave={handleMouseUp}
       onClick={handleClick}
     >
-      {/* Item rectangle */}
-      <rect
-        x={displayX}
-        y={displayY}
-        width={Math.max(displayWidth, 2)}
-        height={height}
-        rx={ITEM_BORDER_RADIUS}
-        ry={ITEM_BORDER_RADIUS}
-        fill={item.color}
-        opacity={isDragging || isResizing ? 0.6 : opacity}
-        stroke={isDragging || isResizing ? '#3b82f6' : (shouldPulse ? '#ef4444' : 'none')}
-        strokeWidth={isDragging || isResizing ? 2 : (shouldPulse ? 3 : 0)}
-        className={shouldPulse && !isDragging && !isResizing ? 'animate-pulse' : ''}
-      />
+        {/* Item rectangle */}
+        <rect
+          x={displayX}
+          y={displayY}
+          width={Math.max(displayWidth, 2)}
+          height={height}
+          rx={ITEM_BORDER_RADIUS}
+          ry={ITEM_BORDER_RADIUS}
+          fill={item.color}
+          opacity={isDragging || isResizing ? 0.6 : opacity}
+          stroke={isDragging || isResizing ? '#3b82f6' : (shouldPulse ? '#ef4444' : 'none')}
+          strokeWidth={isDragging || isResizing ? 2 : (shouldPulse ? 3 : 0)}
+          className={shouldPulse && !isDragging && !isResizing ? 'animate-pulse' : ''}
+          filter={isDragging || isResizing ? 'url(#timeline-shadow-active)' : 'url(#timeline-shadow-normal)'}
+        />
 
       {/* Item text (only if wide enough) */}
       {displayWidth > 60 && (
