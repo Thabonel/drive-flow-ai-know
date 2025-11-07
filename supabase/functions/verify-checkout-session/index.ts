@@ -11,6 +11,16 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Map frontend plan names to database plan_tier values
+function mapPlanTier(frontendPlan: string): string {
+  const mapping: Record<string, string> = {
+    'starter': 'ai_starter',
+    'pro': 'professional',
+    'business': 'executive',
+  };
+  return mapping[frontendPlan] || frontendPlan;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -64,18 +74,18 @@ Deno.serve(async (req) => {
 
     // Save subscription to database
     const { error: dbError } = await supabaseClient
-      .from("subscriptions")
+      .from("user_subscriptions")
       .upsert({
         user_id: user.id,
         stripe_customer_id: subscription.customer as string,
         stripe_subscription_id: subscription.id,
         stripe_price_id: subscription.items.data[0].price.id,
-        plan_type: subscription.metadata.plan_type || 'starter',
+        plan_tier: mapPlanTier(subscription.metadata.plan_type || 'starter'),
         status: subscription.status,
-        trial_start: subscription.trial_start
+        trial_started_at: subscription.trial_start
           ? new Date(subscription.trial_start * 1000).toISOString()
           : null,
-        trial_end: subscription.trial_end
+        trial_ends_at: subscription.trial_end
           ? new Date(subscription.trial_end * 1000).toISOString()
           : null,
         current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),

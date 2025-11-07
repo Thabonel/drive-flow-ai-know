@@ -8,6 +8,18 @@ const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
 
 console.log("Stripe webhook processor initialized");
 
+// Map frontend plan names to database plan_tier values
+function mapPlanTier(frontendPlan: string | undefined): string {
+  if (!frontendPlan) return 'free';
+
+  const mapping: Record<string, string> = {
+    'starter': 'ai_starter',
+    'pro': 'professional',
+    'business': 'executive',
+  };
+  return mapping[frontendPlan] || frontendPlan;
+}
+
 // Process queued webhook events
 async function processQueuedEvents(supabase: any) {
   console.log("Fetching unprocessed webhook events...");
@@ -107,7 +119,7 @@ async function processWebhookEvent(event: any, supabase: any) {
           stripe_customer_id: subscription.customer as string,
           stripe_subscription_id: subscription.id,
           stripe_price_id: subscription.items.data[0].price.id,
-          plan_tier: planType,
+          plan_tier: mapPlanTier(planType),
           status: subscription.status,
           trial_started_at: subscription.trial_start
             ? new Date(subscription.trial_start * 1000).toISOString()
