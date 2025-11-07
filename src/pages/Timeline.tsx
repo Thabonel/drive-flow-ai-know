@@ -133,9 +133,9 @@ export default function Timeline() {
                     onClick={handleStartQuickPlanning}
                     variant="outline"
                     size="sm"
-                    className="gap-1.5"
+                    className="gap-2"
                   >
-                    <Clock className="h-3 w-3" />
+                    <Clock className="h-4 w-4 flex-shrink-0" />
                     Quick (2 min)
                   </Button>
                 )}

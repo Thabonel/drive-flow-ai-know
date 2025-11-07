@@ -58,6 +58,9 @@ export const DEFAULT_AUTO_ARCHIVE_HOURS = 24;
 // Logjam detection threshold (minutes past end time)
 export const LOGJAM_THRESHOLD_MINUTES = 0;
 
+// Auto-park threshold (hours past end time for overdue items)
+export const AUTO_PARK_HOURS = 8;
+
 // Quick-add durations (in minutes)
 export const QUICK_ADD_DURATIONS = [15, 30, 60, 120];
 

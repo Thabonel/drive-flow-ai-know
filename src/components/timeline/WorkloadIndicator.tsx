@@ -56,7 +56,7 @@ export function WorkloadIndicator({ items, targetDate, compact = false }: Worklo
   }
 
   return (
-    <div className="space-y-3 p-4 bg-card border rounded-lg">
+    <div className="space-y-3 p-4 bg-card border rounded-lg shadow-card">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">

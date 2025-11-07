@@ -31,6 +31,9 @@ import { TimelineLayer, getRandomItemColor, TimelineItem } from '@/lib/timelineU
 import { QUICK_ADD_DURATIONS } from '@/lib/timelineConstants';
 import { TimeEstimateInput } from './TimeEstimateInput';
 import { useAITimeIntelligence } from '@/hooks/useAITimeIntelligence';
+import { useTeam } from '@/hooks/useTeam';
+import { useTeamMembers } from '@/hooks/useTeamMembers';
+import { useAuth } from '@/hooks/useAuth';
 import { Brain, Sparkles, ListTree } from 'lucide-react';
 import { AITaskBreakdown } from '@/components/ai/AITaskBreakdown';
 import { AIMeetingPrep } from '@/components/ai/AIMeetingPrep';
@@ -46,7 +49,13 @@ interface AddItemFormProps {
     title: string,
     startTime: string,
     durationMinutes: number,
-    color: string
+    color: string,
+    options?: {
+      team_id?: string | null;
+      visibility?: 'personal' | 'team' | 'assigned';
+      assigned_to?: string | null;
+      assigned_by?: string | null;
+    }
   ) => Promise<void>;
   onUpdateItem?: (itemId: string, updates: Partial<TimelineItem>) => Promise<void>;
   onAddLayer: (name: string, color?: string) => Promise<any>;
@@ -67,6 +76,10 @@ export function AddItemForm({
   editingItem,
 }: AddItemFormProps) {
   const isEditMode = !!editingItem;
+  const { user } = useAuth();
+  const { team } = useTeam();
+  const { members } = useTeamMembers(team?.id);
+
   const [title, setTitle] = useState('');
   const [hoursFromNow, setHoursFromNow] = useState(1);
   const [duration, setDuration] = useState(60);
@@ -77,6 +90,10 @@ export function AddItemForm({
   const [newLayerName, setNewLayerName] = useState('');
   const [isCreatingLayer, setIsCreatingLayer] = useState(false);
   const [color, setColor] = useState(getRandomItemColor());
+
+  // Team-related state
+  const [visibility, setVisibility] = useState<'personal' | 'team' | 'assigned'>('personal');
+  const [assignedTo, setAssignedTo] = useState<string>('');
 
   // AI Time Intelligence
   const { getAIEstimate, isConfigured } = useAITimeIntelligence();
@@ -125,6 +142,8 @@ export function AddItemForm({
       setColor(getRandomItemColor());
       setNewLayerName('');
       setIsCreatingLayer(false);
+      setVisibility('personal');
+      setAssignedTo('');
     }
   }, [editingItem]);
 
@@ -183,12 +202,20 @@ export function AddItemForm({
       });
     } else {
       // Add new item
+      const teamOptions = team ? {
+        team_id: visibility !== 'personal' ? team.id : null,
+        visibility,
+        assigned_to: visibility === 'assigned' && assignedTo ? assignedTo : null,
+        assigned_by: visibility === 'assigned' && assignedTo ? user?.id : null,
+      } : undefined;
+
       await onAddItem(
         layerId,
         title.trim(),
         startTime.toISOString(),
         duration,
-        color
+        color,
+        teamOptions
       );
     }
 
@@ -202,6 +229,8 @@ export function AddItemForm({
     setColor(getRandomItemColor());
     setNewLayerName('');
     setIsCreatingLayer(false);
+    setVisibility('personal');
+    setAssignedTo('');
     onClose();
   };
 
@@ -366,6 +395,44 @@ export function AddItemForm({
               </Label>
             </div>
           </div>
+
+          {/* Team Options (only show if user has a team) */}
+          {team && !isEditMode && (
+            <div className="space-y-3 border-t pt-4">
+              <div className="space-y-2">
+                <Label htmlFor="visibility">Visibility</Label>
+                <Select value={visibility} onValueChange={(v: 'personal' | 'team' | 'assigned') => setVisibility(v)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="personal">Personal (only me)</SelectItem>
+                    <SelectItem value="team">Team (all members)</SelectItem>
+                    <SelectItem value="assigned">Assigned (specific member)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Show assignment selector when visibility is 'assigned' */}
+              {visibility === 'assigned' && members && members.length > 0 && (
+                <div className="space-y-2">
+                  <Label htmlFor="assigned-to">Assign To</Label>
+                  <Select value={assignedTo} onValueChange={setAssignedTo}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select team member" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {members.map((member) => (
+                        <SelectItem key={member.user_id} value={member.user_id}>
+                          {member.user?.user_metadata?.full_name || member.user?.email || 'Unknown'}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Layer Selection */}
           <div className="space-y-2">

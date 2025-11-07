@@ -53,7 +53,8 @@ All colors MUST be HSL.
                      radial-gradient(at 100% 100%, hsl(165 98% 30% / 0.15) 0px, transparent 50%);
 
     --shadow-glow: 0 0 60px -10px hsl(213 74% 15% / 0.5);
-    --shadow-card: 0 4px 20px -2px hsl(213 74% 15% / 0.15);
+    /* 3D effect: dual-shadow system with close proximity + primary drop shadow */
+    --shadow-card: 0 4px 8px rgba(0, 0, 0, 0.12), 0 16px 32px rgba(0, 0, 0, 0.2);
 
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 213 74% 15%;
@@ -105,7 +106,8 @@ All colors MUST be HSL.
                      radial-gradient(at 100% 100%, hsl(165 98% 35% / 0.2) 0px, transparent 50%);
 
     --shadow-glow: 0 0 80px -10px hsl(213 74% 25% / 0.6);
-    --shadow-card: 0 4px 30px -2px hsl(213 74% 25% / 0.25);
+    /* 3D effect: dual-shadow system (dark mode - more pronounced) */
+    --shadow-card: 0 4px 8px rgba(0, 0, 0, 0.3), 0 16px 32px rgba(0, 0, 0, 0.4);
 
     --sidebar-background: 213 74% 10%;
     --sidebar-foreground: 0 0% 96%;
@@ -251,5 +253,22 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+@layer utilities {
+  /* 3D card lighting effect: simulates top-down natural lighting */
+  .card-3d-lighting {
+    background: linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 0%, rgba(0, 0, 0, 0.02) 100%);
+  }
+
+  /* Elevated card variant: higher floating effect like main cards in sleep tracker */
+  .shadow-elevated {
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15), 0 24px 48px rgba(0, 0, 0, 0.25);
+  }
+
+  /* Force shadow-card on all cards for consistency */
+  .shadow-sm {
+    box-shadow: var(--shadow-card) !important;
   }
 }

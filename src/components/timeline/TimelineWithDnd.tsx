@@ -169,7 +169,8 @@ export function TimelineWithDnd() {
 
         if (createdItems.length > 0) {
           // Delete the task from unscheduled list
-          await deleteTask(task.id);
+          // Mark as intentional to prevent race condition with real-time subscription
+          await deleteTask(task.id, true);
 
           toast({
             title: 'Recurring task scheduled',
@@ -204,7 +205,8 @@ export function TimelineWithDnd() {
 
         if (item) {
           // Only delete task if item was successfully created
-          await deleteTask(task.id);
+          // Mark as intentional to prevent race condition with real-time subscription
+          await deleteTask(task.id, true);
           console.log('Task scheduled successfully');
         }
       }

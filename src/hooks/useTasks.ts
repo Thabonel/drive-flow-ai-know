@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 
@@ -30,6 +30,9 @@ export const useTasks = () => {
   const { user } = useAuth();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Track intentionally deleted tasks to prevent race conditions with real-time subscription
+  const intentionallyDeletedTaskIds = useRef<Set<string>>(new Set());
 
   // Fetch tasks
   const fetchTasks = async () => {
@@ -75,7 +78,14 @@ export const useTasks = () => {
           table: 'tasks',
           filter: `user_id=eq.${user.id}`,
         },
-        () => {
+        (payload) => {
+          // Skip refetch if this is an intentional deletion (from drag-and-drop)
+          if (payload.eventType === 'DELETE' && payload.old?.id) {
+            if (intentionallyDeletedTaskIds.current.has(payload.old.id)) {
+              console.log('Skipping refetch for intentionally deleted task:', payload.old.id);
+              return;
+            }
+          }
           fetchTasks();
         }
       )
@@ -160,18 +170,37 @@ export const useTasks = () => {
   };
 
   // Delete task
-  const deleteTask = async (taskId: string) => {
+  const deleteTask = async (taskId: string, markAsIntentional: boolean = false) => {
     try {
+      // If this is an intentional deletion (e.g., from drag-and-drop),
+      // mark it to prevent race condition with real-time subscription
+      if (markAsIntentional) {
+        intentionallyDeletedTaskIds.current.add(taskId);
+        console.log('Marking task as intentionally deleted:', taskId);
+
+        // Clear the tracking after 2 seconds to prevent memory leaks
+        setTimeout(() => {
+          intentionallyDeletedTaskIds.current.delete(taskId);
+          console.log('Cleared intentional deletion tracking for task:', taskId);
+        }, 2000);
+      }
+
+      // Optimistically update UI immediately
+      setTasks((prev) => prev.filter((task) => task.id !== taskId));
+
       const { error } = await supabase
         .from('tasks')
         .delete()
         .eq('id', taskId);
 
       if (error) throw error;
-
-      setTasks((prev) => prev.filter((task) => task.id !== taskId));
     } catch (error) {
       console.error('Error deleting task:', error);
+      // On error, refetch to restore correct state
+      if (markAsIntentional) {
+        intentionallyDeletedTaskIds.current.delete(taskId);
+      }
+      fetchTasks();
       throw error;
     }
   };

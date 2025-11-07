@@ -12,31 +12,6 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "12.2.3 (519615d)"
   }
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
-  }
   public: {
     Tables: {
       admin_messages: {
@@ -1473,45 +1448,62 @@ export type Database = {
           ai_generated_content: string | null
           content: Json
           created_at: string
+          created_by: string | null
           description: string | null
           id: string
           is_active: boolean | null
           last_updated_from_source: string | null
           source_document_ids: string[] | null
+          team_id: string | null
           title: string
           type: string
           updated_at: string
           user_id: string
+          visibility: string | null
         }
         Insert: {
           ai_generated_content?: string | null
           content?: Json
           created_at?: string
+          created_by?: string | null
           description?: string | null
           id?: string
           is_active?: boolean | null
           last_updated_from_source?: string | null
           source_document_ids?: string[] | null
+          team_id?: string | null
           title: string
           type: string
           updated_at?: string
           user_id: string
+          visibility?: string | null
         }
         Update: {
           ai_generated_content?: string | null
           content?: Json
           created_at?: string
+          created_by?: string | null
           description?: string | null
           id?: string
           is_active?: boolean | null
           last_updated_from_source?: string | null
           source_document_ids?: string[] | null
+          team_id?: string | null
           title?: string
           type?: string
           updated_at?: string
           user_id?: string
+          visibility?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "knowledge_bases_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       knowledge_documents: {
         Row: {
@@ -1537,9 +1529,12 @@ export type Database = {
           s3_last_modified: string | null
           server_id: string | null
           tags: string[] | null
+          team_id: string | null
           title: string
           updated_at: string
+          uploaded_by: string | null
           user_id: string
+          visibility: string | null
         }
         Insert: {
           ai_insights?: Json | null
@@ -1564,9 +1559,12 @@ export type Database = {
           s3_last_modified?: string | null
           server_id?: string | null
           tags?: string[] | null
+          team_id?: string | null
           title: string
           updated_at?: string
+          uploaded_by?: string | null
           user_id: string
+          visibility?: string | null
         }
         Update: {
           ai_insights?: Json | null
@@ -1591,9 +1589,12 @@ export type Database = {
           s3_last_modified?: string | null
           server_id?: string | null
           tags?: string[] | null
+          team_id?: string | null
           title?: string
           updated_at?: string
+          uploaded_by?: string | null
           user_id?: string
+          visibility?: string | null
         }
         Relationships: [
           {
@@ -1601,6 +1602,13 @@ export type Database = {
             columns: ["folder_id"]
             isOneToOne: false
             referencedRelation: "google_drive_folders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "knowledge_documents_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
             referencedColumns: ["id"]
           },
         ]
@@ -2349,6 +2357,170 @@ export type Database = {
           },
         ]
       }
+      team_invitations: {
+        Row: {
+          accepted_at: string | null
+          accepted_by: string | null
+          created_at: string | null
+          email: string
+          expires_at: string | null
+          id: string
+          invitation_token: string
+          invited_by: string
+          role: string
+          team_id: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          accepted_by?: string | null
+          created_at?: string | null
+          email: string
+          expires_at?: string | null
+          id?: string
+          invitation_token?: string
+          invited_by: string
+          role?: string
+          team_id: string
+        }
+        Update: {
+          accepted_at?: string | null
+          accepted_by?: string | null
+          created_at?: string | null
+          email?: string
+          expires_at?: string | null
+          id?: string
+          invitation_token?: string
+          invited_by?: string
+          role?: string
+          team_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_invitations_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      team_members: {
+        Row: {
+          created_at: string | null
+          id: string
+          invited_by: string | null
+          joined_at: string | null
+          role: string
+          team_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          invited_by?: string | null
+          joined_at?: string | null
+          role: string
+          team_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          invited_by?: string | null
+          joined_at?: string | null
+          role?: string
+          team_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_members_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      team_settings: {
+        Row: {
+          allow_member_document_upload: boolean | null
+          created_at: string | null
+          default_document_visibility: string | null
+          enable_assistant_features: boolean | null
+          require_document_approval: boolean | null
+          team_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          allow_member_document_upload?: boolean | null
+          created_at?: string | null
+          default_document_visibility?: string | null
+          enable_assistant_features?: boolean | null
+          require_document_approval?: boolean | null
+          team_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          allow_member_document_upload?: boolean | null
+          created_at?: string | null
+          default_document_visibility?: string | null
+          enable_assistant_features?: boolean | null
+          require_document_approval?: boolean | null
+          team_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_settings_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: true
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      teams: {
+        Row: {
+          created_at: string | null
+          id: string
+          max_members: number | null
+          name: string
+          owner_user_id: string
+          slug: string | null
+          subscription_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          max_members?: number | null
+          name: string
+          owner_user_id: string
+          slug?: string | null
+          subscription_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          max_members?: number | null
+          name?: string
+          owner_user_id?: string
+          slug?: string | null
+          subscription_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "teams_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "user_subscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       time_tracking: {
         Row: {
           accuracy_percent: number | null
@@ -2626,6 +2798,9 @@ export type Database = {
       timeline_items: {
         Row: {
           actual_duration_minutes: number | null
+          assigned_at: string | null
+          assigned_by: string | null
+          assigned_to: string | null
           color: string
           completed_at: string | null
           created_at: string | null
@@ -2646,13 +2821,18 @@ export type Database = {
           status: string
           sync_source: string | null
           sync_status: string | null
+          team_id: string | null
           template_id: string | null
           title: string
           updated_at: string | null
           user_id: string
+          visibility: string | null
         }
         Insert: {
           actual_duration_minutes?: number | null
+          assigned_at?: string | null
+          assigned_by?: string | null
+          assigned_to?: string | null
           color: string
           completed_at?: string | null
           created_at?: string | null
@@ -2673,13 +2853,18 @@ export type Database = {
           status?: string
           sync_source?: string | null
           sync_status?: string | null
+          team_id?: string | null
           template_id?: string | null
           title: string
           updated_at?: string | null
           user_id: string
+          visibility?: string | null
         }
         Update: {
           actual_duration_minutes?: number | null
+          assigned_at?: string | null
+          assigned_by?: string | null
+          assigned_to?: string | null
           color?: string
           completed_at?: string | null
           created_at?: string | null
@@ -2700,10 +2885,12 @@ export type Database = {
           status?: string
           sync_source?: string | null
           sync_status?: string | null
+          team_id?: string | null
           template_id?: string | null
           title?: string
           updated_at?: string | null
           user_id?: string
+          visibility?: string | null
         }
         Relationships: [
           {
@@ -2732,6 +2919,13 @@ export type Database = {
             columns: ["routine_id"]
             isOneToOne: false
             referencedRelation: "routine_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "timeline_items_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
             referencedColumns: ["id"]
           },
           {
@@ -3169,6 +3363,7 @@ export type Database = {
           stripe_customer_id: string | null
           stripe_price_id: string | null
           stripe_subscription_id: string | null
+          team_id: string | null
           trial_ends_at: string | null
           trial_started_at: string | null
           updated_at: string
@@ -3185,6 +3380,7 @@ export type Database = {
           stripe_customer_id?: string | null
           stripe_price_id?: string | null
           stripe_subscription_id?: string | null
+          team_id?: string | null
           trial_ends_at?: string | null
           trial_started_at?: string | null
           updated_at?: string
@@ -3201,12 +3397,21 @@ export type Database = {
           stripe_customer_id?: string | null
           stripe_price_id?: string | null
           stripe_subscription_id?: string | null
+          team_id?: string | null
           trial_ends_at?: string | null
           trial_started_at?: string | null
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "user_subscriptions_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_usage: {
         Row: {
@@ -3268,6 +3473,45 @@ export type Database = {
           timeline_items_total?: number | null
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      webhook_events_queue: {
+        Row: {
+          created_at: string | null
+          error_message: string | null
+          event_data: Json
+          event_id: string
+          event_type: string
+          id: string
+          processed: boolean | null
+          processed_at: string | null
+          retry_count: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          error_message?: string | null
+          event_data: Json
+          event_id: string
+          event_type: string
+          id?: string
+          processed?: boolean | null
+          processed_at?: string | null
+          retry_count?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          error_message?: string | null
+          event_data?: Json
+          event_id?: string
+          event_type?: string
+          id?: string
+          processed?: boolean | null
+          processed_at?: string | null
+          retry_count?: number | null
+          updated_at?: string | null
         }
         Relationships: []
       }
@@ -3531,6 +3775,22 @@ export type Database = {
         Args: { p_user_id: string }
         Returns: Database["public"]["Enums"]["user_role_type"]
       }
+      get_user_team_ids: {
+        Args: { input_user_id: string }
+        Returns: {
+          team_id: string
+        }[]
+      }
+      get_user_teams: {
+        Args: { p_user_id: string }
+        Returns: {
+          is_owner: boolean
+          member_count: number
+          team_id: string
+          team_name: string
+          user_role: string
+        }[]
+      }
       handle_new_user_v2: { Args: never; Returns: undefined }
       has_role: {
         Args: {
@@ -3539,10 +3799,22 @@ export type Database = {
         }
         Returns: boolean
       }
+      has_team_role: {
+        Args: { p_role: string; p_team_id: string; p_user_id: string }
+        Returns: boolean
+      }
       increment_query_count: { Args: { p_user_id: string }; Returns: undefined }
       initialize_onboarding: { Args: { p_user_id: string }; Returns: undefined }
       is_routine_scheduled_for_day: {
         Args: { routine_days: number[]; target_day: number }
+        Returns: boolean
+      }
+      is_team_admin: {
+        Args: { p_team_id: string; p_user_id: string }
+        Returns: boolean
+      }
+      is_team_member: {
+        Args: { p_team_id: string; p_user_id: string }
         Returns: boolean
       }
       is_time_slot_available: {
@@ -3921,9 +4193,6 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   public: {
     Enums: {
       app_role: ["admin", "moderator", "user"],
@@ -3967,5 +4236,3 @@ export const Constants = {
     },
   },
 } as const
-A new version of Supabase CLI is available: v2.54.11 (currently installed v2.22.6)
-We recommend updating regularly for new features and bug fixes: https://supabase.com/docs/guides/cli/getting-started#updating-the-supabase-cli

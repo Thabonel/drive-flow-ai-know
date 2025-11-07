@@ -59,6 +59,7 @@ export function TimelineManager() {
     deleteParkedItem,
     updateSettings,
     refetchItems,
+    refetchParkedItems,
   } = useTimeline();
 
   const {
@@ -76,6 +77,7 @@ export function TimelineManager() {
     onItemsChange: refetchItems,
     onLayersChange: refetchLayers,
     onSettingsChange: () => {}, // Settings are managed by useTimeline
+    onParkedItemsChange: refetchParkedItems,
   });
 
   const [selectedItem, setSelectedItem] = useState<TimelineItem | null>(null);
@@ -433,9 +435,23 @@ export function TimelineManager() {
       {/* Logjam alert */}
       {logjamCount > 0 && (
         <Alert variant="destructive">
-          <AlertDescription>
-            You have {logjamCount} overdue item{logjamCount > 1 ? 's' : ''}.
-            Click on them to reschedule, complete, or park.
+          <AlertDescription className="flex items-center justify-between">
+            <div className="flex-1">
+              <p className="font-semibold">
+                You have {logjamCount} overdue item{logjamCount > 1 ? 's' : ''}.
+              </p>
+              <p className="text-sm mt-1">
+                Scroll back in time to find them, or check Parked Items if they're 8+ hours overdue (auto-parked).
+              </p>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="ml-4"
+              onClick={() => setShowParked(true)}
+            >
+              View Parked Items
+            </Button>
           </AlertDescription>
         </Alert>
       )}
