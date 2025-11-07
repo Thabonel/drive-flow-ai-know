@@ -108,7 +108,7 @@ export default function TeamTimeline() {
     return members.find((m) => m.user_id === assignedTo);
   };
 
-  if (teamLoading || membersLoading || isLoading) {
+  if (teamLoading || membersLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />

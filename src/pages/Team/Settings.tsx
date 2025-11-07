@@ -67,13 +67,118 @@ export default function TeamSettings() {
   }
 
   if (!team) {
+    // Mock team data for demonstration
+    const mockTeamId = 'mock-team-id-12345';
+    const mockCreatedDate = '2024-01-01T10:00:00Z';
+    const mockUpdatedDate = '2024-01-15T14:30:00Z';
+
     return (
-      <div className="container mx-auto py-8">
-        <Alert>
-          <AlertDescription>
-            You don't have a team yet. Create one to access team features.
+      <div className="container mx-auto py-8 max-w-4xl space-y-6">
+        {/* Mock Data Banner */}
+        <Alert className="border-primary bg-primary/5">
+          <AlertDescription className="text-center font-medium">
+            📋 This is sample data to preview team features • When you create your own team, this will disappear
           </AlertDescription>
         </Alert>
+
+        {/* Header */}
+        <div>
+          <h1 className="text-3xl font-bold flex items-center gap-2">
+            <Building2 className="h-8 w-8" />
+            Team Settings
+          </h1>
+          <p className="text-muted-foreground mt-2">
+            Manage your team's configuration and settings
+          </p>
+        </div>
+
+        {/* General Settings */}
+        <Card className="opacity-75">
+          <CardHeader>
+            <CardTitle>General</CardTitle>
+            <CardDescription>Basic team information and settings</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="team-name">Team Name</Label>
+              <Input
+                id="team-name"
+                value="Acme Corporation"
+                disabled
+                placeholder="Acme Inc."
+              />
+              <p className="text-sm text-muted-foreground">
+                This is your team's display name.
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="team-slug">Team Slug</Label>
+              <Input
+                id="team-slug"
+                value="acme-corp"
+                disabled
+                placeholder="acme-inc"
+              />
+              <p className="text-sm text-muted-foreground">
+                Used in URLs and team identification. Only lowercase letters, numbers, and hyphens.
+              </p>
+            </div>
+
+            <div className="flex justify-end pt-4">
+              <Button disabled>
+                <Save className="mr-2 h-4 w-4" />
+                Save Changes
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Team Info */}
+        <Card className="opacity-75">
+          <CardHeader>
+            <CardTitle>Team Information</CardTitle>
+            <CardDescription>Details about your team subscription</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="flex justify-between py-2 border-b">
+              <span className="text-muted-foreground">Team ID</span>
+              <span className="font-mono text-sm">{mockTeamId}</span>
+            </div>
+            <div className="flex justify-between py-2 border-b">
+              <span className="text-muted-foreground">Member Limit</span>
+              <span className="font-medium">5 members</span>
+            </div>
+            <div className="flex justify-between py-2 border-b">
+              <span className="text-muted-foreground">Created</span>
+              <span className="font-medium">
+                {new Date(mockCreatedDate).toLocaleDateString()}
+              </span>
+            </div>
+            <div className="flex justify-between py-2">
+              <span className="text-muted-foreground">Last Updated</span>
+              <span className="font-medium">
+                {new Date(mockUpdatedDate).toLocaleDateString()}
+              </span>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Danger Zone */}
+        <Card className="border-destructive opacity-75">
+          <CardHeader>
+            <CardTitle className="text-destructive">Danger Zone</CardTitle>
+            <CardDescription>
+              Irreversible actions that affect your entire team
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button variant="destructive" disabled>
+              <Trash2 className="mr-2 h-4 w-4" />
+              Delete Team
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     );
   }
