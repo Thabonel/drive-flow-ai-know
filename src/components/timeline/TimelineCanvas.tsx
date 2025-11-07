@@ -177,13 +177,9 @@ export function TimelineCanvas({
       style={{
         height: `${totalHeight}px`,
         cursor: isDragging ? 'grabbing' : (isLocked ? 'default' : 'grab'),
-        // Multi-layer shadow system: contact + ambient + diffusion with asymmetric blur simulation
-        boxShadow: `
-          1.2px 3.2px 2px rgba(18, 25, 38, 0.07),
-          1.2px 3.2px 8px rgba(18, 25, 38, 0.08),
-          1.2px 3.2px 24px rgba(18, 25, 38, 0.10),
-          inset 0 1px 0 rgba(255, 255, 255, 0.5)
-        `,
+        // Pressed-in/Debossed effect: Inset shadow on top and left edges
+        // Light source from top-left, shadow appears inside the element
+        boxShadow: 'inset 2px 2px 5px rgba(0, 0, 0, 0.05)',
       }}
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
@@ -191,93 +187,40 @@ export function TimelineCanvas({
       onMouseLeave={handleMouseUp}
       onDoubleClick={handleCanvasDoubleClick}
     >
-      {/* SVG Filter Definitions - Professional Multi-Layer 3D Shadow System */}
+      {/* SVG Filter Definitions - Soft UI (Neumorphism-lite) 3D Effects */}
       <defs>
-        {/* Normal state - Triple shadow composite with mathematical falloff
-            Elevation = 4px
-            - Contact shadow: offset minimal, tight blur
-            - Soft ambient: medium offset, medium blur
-            - Diffusion shadow: large offset, large blur with asymmetric blur (horizontal 0.85x vertical)
+        {/* Normal state - Floating card effect (Embossed)
+            Soft, diffuse shadow offset to bottom-right, implying light from top-left
+            x-offset: 8px  (shadow moves to the right)
+            y-offset: 12px (shadow moves down)
+            blur:     30px (Very soft and blurred for natural look)
+            opacity:  0.08 (8% opacity for subtle effect)
         */}
         <filter id="timeline-shadow-normal" x="-100%" y="-100%" width="300%" height="300%">
-          {/* Layer 1: Contact Shadow - Creates immediate depth perception */}
           <feDropShadow
-            dx="1.2"
-            dy="3.2"
-            stdDeviation="1"
-            floodColor="rgba(18, 25, 38, 0.07)"
-            result="contactShadow"
+            dx="8"
+            dy="12"
+            stdDeviation="15"
+            floodColor="rgba(90, 90, 130, 0.08)"
+            result="floatingShadow"
           />
-
-          {/* Layer 2: Soft Ambient Shadow - Mid-range diffusion */}
-          <feGaussianBlur in="SourceAlpha" stdDeviation="4" result="ambientBlur"/>
-          <feOffset in="ambientBlur" dx="1.2" dy="3.2" result="ambientOffset"/>
-          <feFlood floodColor="rgba(18, 25, 38, 0.08)" result="ambientColor"/>
-          <feComposite in="ambientColor" in2="ambientOffset" operator="in" result="ambientShadow"/>
-
-          {/* Layer 3: Diffusion Shadow - Long-range soft shadow with asymmetric blur */}
-          <feGaussianBlur in="SourceAlpha" stdDeviation="12 10.2" result="diffusionBlur"/>
-          <feOffset in="diffusionBlur" dx="1.2" dy="3.2" result="diffusionOffset"/>
-          <feFlood floodColor="rgba(18, 25, 38, 0.10)" result="diffusionColor"/>
-          <feComposite in="diffusionColor" in2="diffusionOffset" operator="in" result="diffusionShadow"/>
-
-          {/* Edge Lighting - Top edge highlight for realism */}
-          <feFlood floodColor="rgba(255, 255, 255, 0.5)" result="edgeHighlight"/>
-          <feComposite in="edgeHighlight" in2="SourceAlpha" operator="in" result="edgeComp"/>
-          <feMorphology in="edgeComp" operator="erode" radius="0.5" result="edgeThin"/>
-
-          {/* Combine all layers with proper stacking order */}
-          <feMerge>
-            <feMergeNode in="diffusionShadow"/>
-            <feMergeNode in="ambientShadow"/>
-            <feMergeNode in="contactShadow"/>
-            <feMergeNode in="SourceGraphic"/>
-            <feMergeNode in="edgeThin"/>
-          </feMerge>
         </filter>
 
-        {/* Active state - Enhanced elevation for dragging/resizing
-            Elevation = 8px (2x normal)
-            Mathematical scaling: shadow_blur(8) = 2 + (8 * 1.5) = 14
-                                 shadow_offset_y(8) = 8 * 0.8 = 6.4
-                                 shadow_offset_x(8) = 8 * 0.3 = 2.4
-                                 shadow_opacity = base * (1 + 8 * 0.015) = base * 1.12
+        {/* Active state - Enhanced floating effect when dragging/resizing
+            Increased offset and blur for more pronounced elevation
+            x-offset: 12px (more offset to the right)
+            y-offset: 16px (more offset down)
+            blur:     40px (Larger blur for higher elevation)
+            opacity:  0.12 (12% opacity for stronger effect)
         */}
         <filter id="timeline-shadow-active" x="-100%" y="-100%" width="300%" height="300%">
-          {/* Layer 1: Contact Shadow - Increased opacity */}
           <feDropShadow
-            dx="2.4"
-            dy="6.4"
-            stdDeviation="1"
-            floodColor="rgba(18, 25, 38, 0.08)"
-            result="contactShadow"
+            dx="12"
+            dy="16"
+            stdDeviation="20"
+            floodColor="rgba(90, 90, 130, 0.12)"
+            result="activeFloatingShadow"
           />
-
-          {/* Layer 2: Soft Ambient Shadow - Scaled blur */}
-          <feGaussianBlur in="SourceAlpha" stdDeviation="8" result="ambientBlur"/>
-          <feOffset in="ambientBlur" dx="2.4" dy="6.4" result="ambientOffset"/>
-          <feFlood floodColor="rgba(18, 25, 38, 0.09)" result="ambientColor"/>
-          <feComposite in="ambientColor" in2="ambientOffset" operator="in" result="ambientShadow"/>
-
-          {/* Layer 3: Diffusion Shadow - Large asymmetric blur */}
-          <feGaussianBlur in="SourceAlpha" stdDeviation="24 20.4" result="diffusionBlur"/>
-          <feOffset in="diffusionBlur" dx="2.4" dy="6.4" result="diffusionOffset"/>
-          <feFlood floodColor="rgba(18, 25, 38, 0.12)" result="diffusionColor"/>
-          <feComposite in="diffusionColor" in2="diffusionOffset" operator="in" result="diffusionShadow"/>
-
-          {/* Edge Lighting - More pronounced on elevated items */}
-          <feFlood floodColor="rgba(255, 255, 255, 0.6)" result="edgeHighlight"/>
-          <feComposite in="edgeHighlight" in2="SourceAlpha" operator="in" result="edgeComp"/>
-          <feMorphology in="edgeComp" operator="erode" radius="0.5" result="edgeThin"/>
-
-          {/* Combine all layers */}
-          <feMerge>
-            <feMergeNode in="diffusionShadow"/>
-            <feMergeNode in="ambientShadow"/>
-            <feMergeNode in="contactShadow"/>
-            <feMergeNode in="SourceGraphic"/>
-            <feMergeNode in="edgeThin"/>
-          </feMerge>
         </filter>
 
         {/* NOW line glow effect */}
