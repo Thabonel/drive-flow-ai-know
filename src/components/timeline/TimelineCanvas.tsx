@@ -173,13 +173,10 @@ export function TimelineCanvas({
   return (
     <svg
       ref={svgRef}
-      className="w-full border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900"
+      className="w-full border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 shadow-[0_4px_20px_-2px_rgba(10,35,66,0.15),0_16px_40px_-4px_rgba(10,35,66,0.25)]"
       style={{
         height: `${totalHeight}px`,
         cursor: isDragging ? 'grabbing' : (isLocked ? 'default' : 'grab'),
-        // Pressed-in/Debossed effect: Inset shadow on top and left edges
-        // Light source from top-left, shadow appears inside the element
-        boxShadow: 'inset 2px 2px 5px rgba(0, 0, 0, 0.05)',
       }}
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
@@ -187,39 +184,37 @@ export function TimelineCanvas({
       onMouseLeave={handleMouseUp}
       onDoubleClick={handleCanvasDoubleClick}
     >
-      {/* SVG Filter Definitions - Soft UI (Neumorphism-lite) 3D Effects */}
+      {/* SVG Filter Definitions for 3D Shadow Effect */}
       <defs>
-        {/* Normal state - Floating card effect (Embossed)
-            Soft, diffuse shadow offset to bottom-right, implying light from top-left
-            x-offset: 8px  (shadow moves to the right)
-            y-offset: 12px (shadow moves down)
-            blur:     30px (Very soft and blurred for natural look)
-            opacity:  0.08 (8% opacity for subtle effect)
-        */}
-        <filter id="timeline-shadow-normal" x="-100%" y="-100%" width="300%" height="300%">
+        {/* Normal state shadow - dual layer for 3D depth */}
+        <filter id="timeline-shadow-normal" x="-50%" y="-50%" width="200%" height="200%">
           <feDropShadow
-            dx="8"
-            dy="12"
-            stdDeviation="15"
-            floodColor="rgba(90, 90, 130, 0.08)"
-            result="floatingShadow"
+            dx="0"
+            dy="4"
+            stdDeviation="4"
+            floodColor="rgba(0, 0, 0, 0.15)"
+          />
+          <feDropShadow
+            dx="0"
+            dy="16"
+            stdDeviation="16"
+            floodColor="rgba(0, 0, 0, 0.25)"
           />
         </filter>
 
-        {/* Active state - Enhanced floating effect when dragging/resizing
-            Increased offset and blur for more pronounced elevation
-            x-offset: 12px (more offset to the right)
-            y-offset: 16px (more offset down)
-            blur:     40px (Larger blur for higher elevation)
-            opacity:  0.12 (12% opacity for stronger effect)
-        */}
-        <filter id="timeline-shadow-active" x="-100%" y="-100%" width="300%" height="300%">
+        {/* Active state shadow (dragging/resizing) - stronger 3D effect */}
+        <filter id="timeline-shadow-active" x="-50%" y="-50%" width="200%" height="200%">
           <feDropShadow
-            dx="12"
-            dy="16"
-            stdDeviation="20"
-            floodColor="rgba(90, 90, 130, 0.12)"
-            result="activeFloatingShadow"
+            dx="0"
+            dy="8"
+            stdDeviation="8"
+            floodColor="rgba(0, 0, 0, 0.25)"
+          />
+          <feDropShadow
+            dx="0"
+            dy="24"
+            stdDeviation="24"
+            floodColor="rgba(0, 0, 0, 0.35)"
           />
         </filter>
 
