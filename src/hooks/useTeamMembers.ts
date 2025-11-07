@@ -37,32 +37,65 @@ export function useTeamMembers(teamId?: string) {
   const queryClient = useQueryClient();
 
   // Fetch team members
-  const { data: members, isLoading: membersLoading } = useQuery({
+  const { data: members, isLoading: membersLoading, error: membersError } = useQuery({
     queryKey: ['team-members', teamId],
     queryFn: async () => {
       if (!teamId) return [];
 
+      try {
+        // Try using the RPC function first (if it exists)
+        const { data: rpcData, error: rpcError } = await supabase
+          .rpc('get_team_members_with_users', { p_team_id: teamId });
+
+        if (!rpcError && rpcData) {
+          // Map RPC results to TeamMember format
+          return rpcData.map((member: any) => ({
+            id: member.id,
+            team_id: member.team_id,
+            user_id: member.user_id,
+            role: member.role,
+            joined_at: member.joined_at,
+            invited_by: member.invited_by,
+            created_at: member.created_at,
+            user: {
+              id: member.user_id,
+              email: member.user_email || `user-${member.user_id.substring(0, 8)}`,
+              user_metadata: {
+                full_name: member.user_full_name,
+              },
+            },
+          })) as TeamMember[];
+        }
+      } catch (rpcError) {
+        console.log('RPC function not available, falling back to direct query');
+      }
+
+      // Fallback: direct query without user info
       const { data, error } = await supabase
         .from('team_members')
-        .select(`
-          *,
-          user:user_id (
-            id,
-            email,
-            user_metadata
-          )
-        `)
+        .select('*')
         .eq('team_id', teamId)
         .order('joined_at', { ascending: true });
 
       if (error) {
         console.error('Error fetching team members:', error);
-        throw error;
+        return [];
       }
 
-      return data as TeamMember[];
+      // Map to include placeholder user data
+      return (data || []).map(member => ({
+        ...member,
+        user: {
+          id: member.user_id,
+          email: `user-${member.user_id.substring(0, 8)}`,
+          user_metadata: {},
+        }
+      })) as TeamMember[];
     },
     enabled: !!teamId,
+    initialData: [],
+    retry: 1,
+    retryDelay: 1000,
   });
 
   // Fetch pending invitations
@@ -81,12 +114,16 @@ export function useTeamMembers(teamId?: string) {
 
       if (error) {
         console.error('Error fetching team invitations:', error);
-        throw error;
+        // Return empty array instead of throwing to prevent infinite loading
+        return [];
       }
 
       return data as TeamInvitation[];
     },
     enabled: !!teamId,
+    initialData: [],
+    retry: 1,
+    retryDelay: 1000,
   });
 
   // Invite member mutation
@@ -202,7 +239,8 @@ export function useTeamMembers(teamId?: string) {
     pendingInvitationCount: invitations?.length || 0,
 
     // Loading states
-    isLoading: membersLoading || invitationsLoading,
+    // Only show loading if teamId exists and queries are actually running
+    isLoading: teamId ? (membersLoading || invitationsLoading) : false,
 
     // Mutations
     inviteMember: inviteMemberMutation.mutate,

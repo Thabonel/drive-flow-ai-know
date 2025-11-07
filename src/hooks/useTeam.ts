@@ -48,12 +48,17 @@ export function useTeam() {
 
       if (error) {
         console.error('Error fetching team memberships:', error);
-        throw error;
+        // Return empty array instead of throwing to prevent infinite loading
+        return [];
       }
 
       return data;
     },
     enabled: !!user?.id,
+    initialData: [],
+    // Add error handling
+    retry: 1,
+    retryDelay: 1000,
   });
 
   // Get the user's primary team (first one they're a member of)
@@ -74,12 +79,17 @@ export function useTeam() {
 
       if (error) {
         console.error('Error fetching team details:', error);
-        throw error;
+        // Return null instead of throwing to prevent infinite loading
+        return null;
       }
 
       return data as Team;
     },
     enabled: !!primaryTeam?.id,
+    initialData: undefined,
+    // Add error handling
+    retry: 1,
+    retryDelay: 1000,
   });
 
   // Create team mutation
@@ -157,7 +167,8 @@ export function useTeam() {
     role: primaryMembership?.role,
 
     // Loading states
-    isLoading: membershipsLoading || teamLoading,
+    // Only show teamLoading if the query is actually enabled (user has a team)
+    isLoading: membershipsLoading || (!!primaryTeam?.id && teamLoading),
 
     // Mutations
     createTeam: createTeamMutation.mutate,
