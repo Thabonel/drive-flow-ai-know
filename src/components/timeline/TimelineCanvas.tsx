@@ -173,10 +173,11 @@ export function TimelineCanvas({
   return (
     <svg
       ref={svgRef}
-      className="w-full border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 shadow-[0_4px_20px_-2px_rgba(10,35,66,0.15),0_16px_40px_-4px_rgba(10,35,66,0.25)]"
+      className="w-full border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900"
       style={{
         height: `${totalHeight}px`,
         cursor: isDragging ? 'grabbing' : (isLocked ? 'default' : 'grab'),
+        boxShadow: '4px 4px 0px rgba(10, 35, 66, 0.6), 6px 6px 4px rgba(10, 35, 66, 0.3)',
       }}
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
@@ -184,38 +185,96 @@ export function TimelineCanvas({
       onMouseLeave={handleMouseUp}
       onDoubleClick={handleCanvasDoubleClick}
     >
-      {/* SVG Filter Definitions for 3D Shadow Effect */}
+      {/* SVG Filter Definitions for Professional 3D Effect */}
       <defs>
-        {/* Normal state shadow - dual layer for 3D depth */}
+        {/* Normal state - sharp 3D shadow with highlight */}
         <filter id="timeline-shadow-normal" x="-50%" y="-50%" width="200%" height="200%">
+          {/* Hard primary shadow (bottom-right) */}
           <feDropShadow
-            dx="0"
+            dx="4"
             dy="4"
-            stdDeviation="4"
-            floodColor="rgba(0, 0, 0, 0.15)"
+            stdDeviation="0"
+            floodColor="rgba(10, 35, 66, 0.6)"
+            result="hardShadow"
           />
+          {/* Soft depth shadow (bottom-right) */}
           <feDropShadow
-            dx="0"
-            dy="16"
-            stdDeviation="16"
-            floodColor="rgba(0, 0, 0, 0.25)"
+            dx="6"
+            dy="6"
+            stdDeviation="1.5"
+            floodColor="rgba(10, 35, 66, 0.3)"
+            result="softShadow"
           />
+          {/* Top-left specular highlight for raised edge */}
+          <feSpecularLighting
+            in="SourceAlpha"
+            surfaceScale="4"
+            specularConstant="0.7"
+            specularExponent="25"
+            lightingColor="white"
+            result="highlight"
+          >
+            <feDistantLight azimuth="225" elevation="45" />
+          </feSpecularLighting>
+          {/* Clip highlight to shape */}
+          <feComposite
+            in="highlight"
+            in2="SourceAlpha"
+            operator="in"
+            result="highlightClipped"
+          />
+          {/* Combine all layers */}
+          <feMerge>
+            <feMergeNode in="softShadow" />
+            <feMergeNode in="hardShadow" />
+            <feMergeNode in="SourceGraphic" />
+            <feMergeNode in="highlightClipped" />
+          </feMerge>
         </filter>
 
-        {/* Active state shadow (dragging/resizing) - stronger 3D effect */}
+        {/* Active state - enhanced 3D effect when dragging/resizing */}
         <filter id="timeline-shadow-active" x="-50%" y="-50%" width="200%" height="200%">
+          {/* Stronger hard shadow */}
           <feDropShadow
-            dx="0"
-            dy="8"
-            stdDeviation="8"
-            floodColor="rgba(0, 0, 0, 0.25)"
+            dx="6"
+            dy="6"
+            stdDeviation="0"
+            floodColor="rgba(10, 35, 66, 0.7)"
+            result="hardShadow"
           />
+          {/* Extended soft shadow */}
           <feDropShadow
-            dx="0"
-            dy="24"
-            stdDeviation="24"
-            floodColor="rgba(0, 0, 0, 0.35)"
+            dx="10"
+            dy="10"
+            stdDeviation="2"
+            floodColor="rgba(10, 35, 66, 0.4)"
+            result="softShadow"
           />
+          {/* Brighter highlight for active state */}
+          <feSpecularLighting
+            in="SourceAlpha"
+            surfaceScale="5"
+            specularConstant="0.8"
+            specularExponent="30"
+            lightingColor="white"
+            result="highlight"
+          >
+            <feDistantLight azimuth="225" elevation="45" />
+          </feSpecularLighting>
+          {/* Clip highlight to shape */}
+          <feComposite
+            in="highlight"
+            in2="SourceAlpha"
+            operator="in"
+            result="highlightClipped"
+          />
+          {/* Combine all layers */}
+          <feMerge>
+            <feMergeNode in="softShadow" />
+            <feMergeNode in="hardShadow" />
+            <feMergeNode in="SourceGraphic" />
+            <feMergeNode in="highlightClipped" />
+          </feMerge>
         </filter>
 
         {/* NOW line glow effect */}
