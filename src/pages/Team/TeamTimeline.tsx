@@ -117,24 +117,151 @@ export default function TeamTimeline() {
   }
 
   if (!team) {
+    // Mock timeline items for demonstration
+    const mockTimelineItems = [
+      {
+        id: 'mock-task-1',
+        title: 'Q1 Planning Meeting',
+        start_time: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
+        duration_minutes: 60,
+        status: 'planned',
+        color: '#3b82f6',
+        visibility: 'team',
+        assigned_to: null,
+        member_name: null,
+      },
+      {
+        id: 'mock-task-2',
+        title: 'Review Marketing Materials',
+        start_time: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000).toISOString(),
+        duration_minutes: 90,
+        status: 'in_progress',
+        color: '#f59e0b',
+        visibility: 'assigned',
+        assigned_to: 'mock-user-1',
+        member_name: 'Sarah Johnson',
+      },
+      {
+        id: 'mock-task-3',
+        title: 'Update Product Documentation',
+        start_time: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+        duration_minutes: 120,
+        status: 'completed',
+        color: '#10b981',
+        visibility: 'assigned',
+        assigned_to: 'mock-user-2',
+        member_name: 'Michael Chen',
+      },
+      {
+        id: 'mock-task-4',
+        title: 'Team Standup',
+        start_time: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
+        duration_minutes: 30,
+        status: 'planned',
+        color: '#8b5cf6',
+        visibility: 'team',
+        assigned_to: null,
+        member_name: null,
+      },
+    ];
+
     return (
-      <div className="container mx-auto py-8 max-w-4xl">
-        <Alert className="mb-6">
-          <Users className="h-4 w-4" />
-          <AlertDescription>
-            <p className="font-semibold mb-2">No Team Found</p>
-            <p>You need to create a team to use team features. Team features require a Business subscription.</p>
+      <div className="container mx-auto py-8 max-w-6xl space-y-6">
+        {/* Mock Data Banner */}
+        <Alert className="border-primary bg-primary/5">
+          <AlertDescription className="text-center font-medium">
+            📋 This is sample data to preview team features • When you create your own team, this will disappear
           </AlertDescription>
         </Alert>
-        <Card className="p-6 text-center">
-          <CardTitle className="mb-4">Get Started with Teams</CardTitle>
-          <CardDescription className="mb-6">
-            Collaborate with your team on shared documents, tasks, and timelines.
-          </CardDescription>
-          <Button onClick={() => window.location.href = '/team/create'}>
-            Create Your Team
+
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold flex items-center gap-2">
+              <Calendar className="h-8 w-8" />
+              Team Timeline
+            </h1>
+            <p className="text-muted-foreground mt-2">
+              Shared tasks and events visible to all team members
+            </p>
+          </div>
+          <Button disabled>
+            View Full Timeline
           </Button>
-        </Card>
+        </div>
+
+        {/* Team Info */}
+        <Alert className="bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800 opacity-75">
+          <Users className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+          <AlertDescription className="text-blue-900 dark:text-blue-100">
+            <strong>Team Collaboration:</strong> View and manage shared tasks, assign work to team members, and stay synchronized with your team's schedule.
+          </AlertDescription>
+        </Alert>
+
+        {/* Filters */}
+        <div className="flex gap-4 opacity-75">
+          <div className="flex items-center gap-2">
+            <Filter className="h-4 w-4 text-muted-foreground" />
+            <Select disabled>
+              <SelectTrigger className="w-48">
+                <SelectValue placeholder="All Team Members" />
+              </SelectTrigger>
+            </Select>
+          </div>
+          <Select disabled>
+            <SelectTrigger className="w-40">
+              <SelectValue placeholder="All Statuses" />
+            </SelectTrigger>
+          </Select>
+        </div>
+
+        {/* Mock Timeline Items */}
+        <div className="space-y-3 opacity-75">
+          {mockTimelineItems.map((item) => (
+            <Card key={item.id} className="hover:shadow-md transition-shadow">
+              <CardContent className="p-4">
+                <div className="flex items-start justify-between">
+                  <div className="flex items-start gap-3 flex-1">
+                    <div
+                      className="w-1 h-16 rounded-full"
+                      style={{ backgroundColor: item.color }}
+                    />
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        {getStatusIcon(item.status)}
+                        <h3 className="font-semibold">{item.title}</h3>
+                      </div>
+                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                        <div className="flex items-center gap-1">
+                          <Calendar className="h-3 w-3" />
+                          {new Date(item.start_time).toLocaleDateString()}
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
+                          {item.duration_minutes} min
+                        </div>
+                        {item.member_name && (
+                          <div className="flex items-center gap-1">
+                            <Users className="h-3 w-3" />
+                            {item.member_name}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge variant={getStatusBadgeVariant(item.status)}>
+                      {item.status === 'in_progress' ? 'In Progress' : item.status.charAt(0).toUpperCase() + item.status.slice(1)}
+                    </Badge>
+                    <Badge variant="outline" className="text-xs">
+                      {item.visibility === 'team' ? 'Team' : 'Assigned'}
+                    </Badge>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       </div>
     );
   }

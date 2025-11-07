@@ -108,15 +108,150 @@ export default function TeamMembers() {
     );
   }
 
-  // Step 2: If team loading is done and no team exists, show message immediately
+  // Step 2: If team loading is done and no team exists, show mock data
   if (!team) {
+    // Mock data for demonstration
+    const mockMembers = [
+      {
+        id: 'mock-1',
+        name: 'Sarah Johnson',
+        email: 'sarah@example.com',
+        role: 'owner',
+        initials: 'SJ',
+      },
+      {
+        id: 'mock-2',
+        name: 'Michael Chen',
+        email: 'michael@example.com',
+        role: 'admin',
+        initials: 'MC',
+      },
+      {
+        id: 'mock-3',
+        name: 'Emily Rodriguez',
+        email: 'emily@example.com',
+        role: 'member',
+        initials: 'ER',
+      },
+    ];
+
+    const mockInvitations = [
+      {
+        id: 'mock-inv-1',
+        email: 'alex@example.com',
+        role: 'member',
+      },
+    ];
+
     return (
-      <div className="container mx-auto py-8">
-        <Alert>
-          <AlertDescription>
-            You don't have a team yet. Create one to access team features.
+      <div className="container mx-auto py-8 max-w-4xl space-y-6">
+        {/* Mock Data Banner */}
+        <Alert className="border-primary bg-primary/5">
+          <AlertDescription className="text-center font-medium">
+            📋 This is sample data to preview team features • When you create your own team, this will disappear
           </AlertDescription>
         </Alert>
+
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold flex items-center gap-2">
+              <Users className="h-8 w-8" />
+              Team Members
+            </h1>
+            <p className="text-muted-foreground mt-2">
+              Manage your team members and invitations (3/5 members)
+            </p>
+          </div>
+          <Button disabled>
+            <UserPlus className="mr-2 h-4 w-4" />
+            Invite Member
+          </Button>
+        </div>
+
+        {/* Mock Pending Invitations */}
+        <Card className="opacity-75">
+          <CardHeader>
+            <CardTitle>Pending Invitations (1)</CardTitle>
+            <CardDescription>
+              Invitations sent but not yet accepted
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {mockInvitations.map((invitation) => (
+                <div
+                  key={invitation.id}
+                  className="flex items-center justify-between p-3 border rounded-lg"
+                >
+                  <div className="flex items-center gap-3">
+                    <Mail className="h-5 w-5 text-muted-foreground" />
+                    <div>
+                      <p className="font-medium">{invitation.email}</p>
+                      <p className="text-sm text-muted-foreground">
+                        Invited 2 days ago • Expires in 5 days
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline">
+                      <div className="flex items-center gap-1">
+                        <UserCog className="h-4 w-4" />
+                        <span className="capitalize">{invitation.role}</span>
+                      </div>
+                    </Badge>
+                    <Button variant="ghost" size="icon" disabled>
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Mock Active Members */}
+        <Card className="opacity-75">
+          <CardHeader>
+            <CardTitle>Team Members (3)</CardTitle>
+            <CardDescription>
+              People with access to your team's documents and timeline
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {mockMembers.map((member) => (
+                <div
+                  key={member.id}
+                  className="flex items-center justify-between p-3 border rounded-lg"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                      <span className="text-sm font-medium">{member.initials}</span>
+                    </div>
+                    <div>
+                      <p className="font-medium">{member.name}</p>
+                      <p className="text-sm text-muted-foreground">{member.email}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge variant={getRoleBadgeVariant(member.role)}>
+                      <div className="flex items-center gap-1">
+                        {getRoleIcon(member.role)}
+                        <span className="capitalize">{member.role}</span>
+                      </div>
+                    </Badge>
+                    {member.role !== 'owner' && (
+                      <Button variant="ghost" size="icon" disabled>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
       </div>
     );
   }

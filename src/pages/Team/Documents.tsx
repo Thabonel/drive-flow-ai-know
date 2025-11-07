@@ -80,13 +80,123 @@ export default function TeamDocuments() {
   }
 
   if (!team) {
+    // Mock documents for demonstration
+    const mockDocuments = [
+      {
+        id: 'mock-doc-1',
+        title: 'Q4 Marketing Strategy',
+        summary: 'Comprehensive marketing plan for fourth quarter including social media campaigns, content calendar, and budget allocation.',
+        tags: ['marketing', 'strategy', 'q4-2024'],
+        created_at: '2024-01-15T10:00:00Z',
+        uploaded_by: 'Sarah Johnson',
+      },
+      {
+        id: 'mock-doc-2',
+        title: 'Product Requirements Document',
+        summary: 'Technical specifications and user stories for the new feature release scheduled for March 2024.',
+        tags: ['product', 'engineering', 'prd'],
+        created_at: '2024-01-10T14:30:00Z',
+        uploaded_by: 'Michael Chen',
+      },
+      {
+        id: 'mock-doc-3',
+        title: 'Team Onboarding Guide',
+        summary: 'Complete onboarding documentation for new team members including tools, processes, and company culture.',
+        tags: ['hr', 'onboarding', 'documentation'],
+        created_at: '2024-01-05T09:15:00Z',
+        uploaded_by: 'Emily Rodriguez',
+      },
+    ];
+
     return (
-      <div className="container mx-auto py-8">
-        <Alert>
-          <AlertDescription>
-            You don't have a team yet. Create one to access team features.
+      <div className="container mx-auto py-8 max-w-6xl space-y-6">
+        {/* Mock Data Banner */}
+        <Alert className="border-primary bg-primary/5">
+          <AlertDescription className="text-center font-medium">
+            📋 This is sample data to preview team features • When you create your own team, this will disappear
           </AlertDescription>
         </Alert>
+
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold flex items-center gap-2">
+              <FileText className="h-8 w-8" />
+              Team Documents
+            </h1>
+            <p className="text-muted-foreground mt-2">
+              Shared documents accessible by all team members
+            </p>
+          </div>
+          <Button disabled>
+            <Upload className="mr-2 h-4 w-4" />
+            Upload Document
+          </Button>
+        </div>
+
+        {/* Context Fluency Info */}
+        <Alert className="bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800 opacity-75">
+          <Users className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+          <AlertDescription className="text-blue-900 dark:text-blue-100">
+            <strong>Context Fluency:</strong> These documents are available to all team members
+            when using AI queries, ensuring everyone "sings from the same song list."
+          </AlertDescription>
+        </Alert>
+
+        {/* Search */}
+        <div className="flex gap-2 opacity-75">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search team documents..."
+              disabled
+              className="pl-10"
+            />
+          </div>
+        </div>
+
+        {/* Mock Documents List */}
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 opacity-75">
+          {mockDocuments.map((doc) => (
+            <Card
+              key={doc.id}
+              className="hover:shadow-md transition-shadow"
+            >
+              <CardHeader>
+                <div className="flex items-start justify-between">
+                  <FileText className="h-5 w-5 text-muted-foreground" />
+                  <Badge variant="secondary" className="text-xs">
+                    <Users className="h-3 w-3 mr-1" />
+                    Team
+                  </Badge>
+                </div>
+                <CardTitle className="text-lg mt-2">{doc.title}</CardTitle>
+                <CardDescription className="line-clamp-2">
+                  {doc.summary}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  {doc.tags && doc.tags.length > 0 && (
+                    <div className="flex flex-wrap gap-1">
+                      {doc.tags.map((tag) => (
+                        <Badge key={tag} variant="outline" className="text-xs">
+                          {tag}
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground pt-2 border-t">
+                    <Calendar className="h-3 w-3" />
+                    <span>{new Date(doc.created_at).toLocaleDateString()}</span>
+                    <span>•</span>
+                    <span>Uploaded by {doc.uploaded_by}</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       </div>
     );
   }
