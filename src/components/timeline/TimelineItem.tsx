@@ -219,7 +219,6 @@ export function TimelineItem({
           filter={isDragging || isResizing ? 'url(#timeline-shadow-active)' : 'url(#timeline-shadow-normal)'}
         />
 
-
       {/* Item text (only if wide enough) */}
       {displayWidth > 60 && (
         <text
