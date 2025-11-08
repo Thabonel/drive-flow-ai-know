@@ -39,7 +39,7 @@ export const CreateKnowledgeDocumentModal = ({ trigger }: CreateKnowledgeDocumen
           {
             title: data.title,
             content: data.content,
-            category: data.category,
+            category: data.category || null, // Set to null if empty, will be auto-categorized
             tags: data.tags,
             file_type: 'manual',
             google_file_id: `manual-${Date.now()}`, // Unique ID for manual docs
@@ -48,18 +48,33 @@ export const CreateKnowledgeDocumentModal = ({ trigger }: CreateKnowledgeDocumen
         ])
         .select()
         .single();
-      
+
       if (error) throw new Error(error.message);
       return result;
     },
-    onSuccess: () => {
+    onSuccess: async (result) => {
+      // If no category was provided, trigger AI analysis to auto-categorize
+      if (!result.category || result.category.trim() === '') {
+        try {
+          await supabase.functions.invoke('ai-document-analysis', {
+            body: { document_id: result.id }
+          });
+          console.log('AI categorization triggered for document:', result.id);
+        } catch (error) {
+          console.error('Failed to trigger AI categorization:', error);
+          // Don't block the success flow if AI categorization fails
+        }
+      }
+
       queryClient.invalidateQueries({ queryKey: ['recent-documents', user?.id] });
       queryClient.invalidateQueries({ queryKey: ['documents', user?.id] });
       setIsOpen(false);
       resetForm();
       toast({
         title: 'Document Created',
-        description: 'Your knowledge document has been created successfully.',
+        description: result.category ?
+          'Your knowledge document has been created successfully.' :
+          'Your knowledge document has been created. AI is analyzing to assign a category...',
       });
     },
     onError: (error) => {

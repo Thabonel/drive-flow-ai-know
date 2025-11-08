@@ -172,7 +172,6 @@ export default function Conversations() {
                   onClick={handleNewConversation}
                   title="Create new conversation"
                 >
-                  <Plus className="h-4 w-4 mr-2" />
                   New Chat
                 </Button>
               )}
@@ -302,7 +301,6 @@ export default function Conversations() {
                     Select a conversation from the list or start a new one
                   </p>
                   <Button onClick={handleNewConversation}>
-                    <Plus className="h-4 w-4 mr-2" />
                     Start New Conversation
                   </Button>
                 </div>
