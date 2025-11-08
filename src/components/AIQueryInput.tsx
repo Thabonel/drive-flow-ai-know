@@ -114,46 +114,71 @@ export const AIQueryInput = ({ selectedKnowledgeBase, onClearSelection }: AIQuer
     e.preventDefault();
     if (!query.trim() || !user) return;
 
-    savePrompt.mutate(query);
+    const userMessage = query.trim();
+    savePrompt.mutate(userMessage);
 
+    // Add user message to conversation
+    const newUserMessage: Message = {
+      role: 'user',
+      content: userMessage,
+      timestamp: new Date().toISOString()
+    };
+    setMessages(prev => [...prev, newUserMessage]);
+    setQuery('');
     setIsLoading(true);
-    setResponse('');
 
     try {
-      console.log('Invoking AI query function with:', { query: query.substring(0, 50) + '...', knowledge_base_id: selectedKnowledgeBase?.id });
-      
+      console.log('Invoking AI query function with:', { query: userMessage.substring(0, 50) + '...', knowledge_base_id: selectedKnowledgeBase?.id });
+
+      // Prepare conversation context
+      const conversationContext = messages.map(msg => ({
+        role: msg.role,
+        content: msg.content
+      }));
+
       const { data, error } = await supabase.functions.invoke('ai-query', {
         body: {
-          query: query,
+          query: userMessage,
           knowledge_base_id: selectedKnowledgeBase?.id,
-          use_documents: true
+          use_documents: true,
+          conversationContext
         }
       });
 
       console.log('AI query response:', { data, error });
 
       if (error) throw error;
-      
-      setResponse(data.response || 'No response generated');
-      setLastQuery(query);
+
+      // Add AI response to conversation
+      const aiResponse: Message = {
+        role: 'assistant',
+        content: data.response || 'No response generated',
+        timestamp: new Date().toISOString()
+      };
+      setMessages(prev => [...prev, aiResponse]);
     } catch (error) {
       console.error('Error querying AI:', error);
-      
+
       let errorMessage = 'Unknown error occurred';
       if (error instanceof Error) {
         errorMessage = error.message;
       } else if (typeof error === 'object' && error !== null && 'message' in error) {
         errorMessage = String(error.message);
       }
-      
+
       toast({
         title: 'Query Failed',
         description: `Failed to process your query: ${errorMessage}`,
         variant: 'destructive',
       });
-      
-      // Set a helpful response message
-      setResponse('Sorry, I encountered an error processing your query. Please try again or rephrase your question.');
+
+      // Add error message to conversation
+      const errorResponse: Message = {
+        role: 'assistant',
+        content: 'Sorry, I encountered an error processing your query. Please try again or rephrase your question.',
+        timestamp: new Date().toISOString()
+      };
+      setMessages(prev => [...prev, errorResponse]);
     } finally {
       setIsLoading(false);
     }
@@ -164,14 +189,19 @@ export const AIQueryInput = ({ selectedKnowledgeBase, onClearSelection }: AIQuer
   };
 
   const handleSaveAsDocument = async () => {
-    if (!response || !lastQuery || !user) return;
+    if (messages.length === 0 || !user) return;
+
+    // Get the full conversation as the content
+    const conversationText = messages.map(msg =>
+      `${msg.role === 'user' ? 'User' : 'AI'}: ${msg.content}`
+    ).join('\n\n');
 
     setIsSaving(true);
     try {
       const { data, error } = await supabase.functions.invoke('save-ai-document', {
         body: {
-          query: lastQuery,
-          response: response
+          query: `Document created using ${documentType}`,
+          response: conversationText
         }
       });
 
@@ -186,7 +216,10 @@ export const AIQueryInput = ({ selectedKnowledgeBase, onClearSelection }: AIQuer
       queryClient.invalidateQueries({ queryKey: ['knowledge-documents'] });
       queryClient.invalidateQueries({ queryKey: ['recent-documents'] });
       queryClient.invalidateQueries({ queryKey: ['stats'] });
-      
+
+      // Clear conversation after saving
+      setMessages([]);
+
     } catch (error) {
       console.error('Error saving document:', error);
       toast({
@@ -199,47 +232,138 @@ export const AIQueryInput = ({ selectedKnowledgeBase, onClearSelection }: AIQuer
     }
   };
 
+  const handleClearConversation = () => {
+    setMessages([]);
+    setQuery('');
+  };
+
   return (
     <Card className="w-full shadow-lg">
       <CardHeader className="pb-4">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <CardTitle className="flex items-center text-xl">
             <Brain className="h-6 w-6 mr-3 text-primary" />
-            AI Knowledge Assistant
+            Document Creator
           </CardTitle>
-          {selectedKnowledgeBase && (
-            <div className="flex items-center space-x-2">
-              <Badge variant="secondary" className="flex items-center py-1 px-3">
-                <Sparkles className="h-3 w-3 mr-1" />
-                {selectedKnowledgeBase.name}
-              </Badge>
-              <Button variant="ghost" size="sm" onClick={onClearSelection}>
-                ×
+
+          <div className="flex flex-wrap items-center gap-2">
+            {selectedKnowledgeBase && (
+              <div className="flex items-center space-x-2">
+                <Badge variant="secondary" className="flex items-center py-1 px-3">
+                  <Sparkles className="h-3 w-3 mr-1" />
+                  {selectedKnowledgeBase.name}
+                </Badge>
+                <Button variant="ghost" size="sm" onClick={onClearSelection}>
+                  ×
+                </Button>
+              </div>
+            )}
+
+            <Select value={documentType} onValueChange={setDocumentType}>
+              <SelectTrigger className="w-[140px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="report">📊 Report</SelectItem>
+                <SelectItem value="summary">📝 Summary</SelectItem>
+                <SelectItem value="analysis">🔍 Analysis</SelectItem>
+                <SelectItem value="notes">📋 Notes</SelectItem>
+                <SelectItem value="brief">⚡ Brief</SelectItem>
+              </SelectContent>
+            </Select>
+
+            {messages.length > 0 && (
+              <Button
+                onClick={handleClearConversation}
+                variant="ghost"
+                size="sm"
+                className="text-muted-foreground hover:text-foreground"
+              >
+                <PlusCircle className="h-4 w-4 mr-1" />
+                New
               </Button>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </CardHeader>
-      <CardContent className="space-y-6 pt-2">
+
+      <CardContent className="space-y-4 pt-2">
+        {/* Conversation History */}
+        {messages.length > 0 && (
+          <ScrollArea className="h-[400px] pr-4" ref={scrollRef}>
+            <div className="space-y-4">
+              {messages.map((message, index) => (
+                <div
+                  key={index}
+                  className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                >
+                  <div
+                    className={`max-w-[85%] rounded-lg p-4 ${
+                      message.role === 'user'
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-muted border border-border'
+                    }`}
+                  >
+                    <div className="flex items-start space-x-2">
+                      {message.role === 'assistant' && (
+                        <Brain className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                      )}
+                      <p className="text-sm leading-relaxed whitespace-pre-wrap">
+                        {message.content}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+              {isLoading && (
+                <div className="flex justify-start">
+                  <div className="bg-muted border border-border rounded-lg p-4">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  </div>
+                </div>
+              )}
+            </div>
+          </ScrollArea>
+        )}
+
+        {/* Quick Prompts - only show when no conversation */}
+        {messages.length === 0 && (
+          <div className="flex flex-wrap gap-2">
+            {quickPrompts.map((prompt, index) => (
+              <Button
+                key={index}
+                variant="outline"
+                size="sm"
+                onClick={() => handleQuickPrompt(prompt)}
+                disabled={isLoading}
+                className="text-xs"
+              >
+                {prompt}
+              </Button>
+            ))}
+          </div>
+        )}
+
+        {/* Input Form */}
         <form onSubmit={handleSubmit} className="flex space-x-3">
-          <Input
+          <Textarea
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder={selectedKnowledgeBase 
-              ? `Ask about ${selectedKnowledgeBase.name}...`
-              : "Ask about your documents..."
+            placeholder={selectedKnowledgeBase
+              ? `Create a ${documentType} using ${selectedKnowledgeBase.name}...`
+              : `Create a ${documentType} from your documents...`
             }
             disabled={isLoading}
-            className="flex-1 h-12 text-base"
+            className="flex-1 min-h-[60px] resize-none text-base"
             onKeyDown={(e) => {
               if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
                 e.preventDefault();
                 handleSubmit(e);
               }
             }}
-            maxLength={500}
+            maxLength={1000}
           />
-          <Button type="submit" disabled={isLoading || !query.trim() || query.length < 3} className="h-12 px-6">
+          <Button type="submit" disabled={isLoading || !query.trim() || query.length < 3} className="h-auto px-6">
             {isLoading ? (
               <Loader2 className="h-5 w-5 animate-spin" />
             ) : (
@@ -248,61 +372,34 @@ export const AIQueryInput = ({ selectedKnowledgeBase, onClearSelection }: AIQuer
           </Button>
         </form>
 
-        <div className="text-xs text-muted-foreground">
-          {query.length > 0 && (
-            <span className={query.length > 450 ? 'text-orange-500' : ''}>
-              {query.length}/500 characters
-            </span>
-          )}
-          {query.length === 0 && (
-            <span>Tip: Press Ctrl/Cmd + Enter to submit</span>
-          )}
-        </div>
+        <div className="flex justify-between items-center text-xs text-muted-foreground">
+          <span>
+            {query.length > 0 ? (
+              <span className={query.length > 900 ? 'text-orange-500' : ''}>
+                {query.length}/1000 characters
+              </span>
+            ) : (
+              <span>Tip: Press Ctrl/Cmd + Enter to submit</span>
+            )}
+          </span>
 
-        <div className="flex flex-wrap gap-2">
-          {quickPrompts.map((prompt, index) => (
+          {messages.length > 0 && (
             <Button
-              key={index}
-              variant="outline"
+              onClick={handleSaveAsDocument}
+              disabled={isSaving}
+              variant="default"
               size="sm"
-              onClick={() => handleQuickPrompt(prompt)}
-              disabled={isLoading}
-              className="text-xs"
+              className="flex items-center space-x-2"
             >
-              {prompt}
+              {isSaving ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Save className="h-4 w-4" />
+              )}
+              <span>{isSaving ? 'Saving...' : 'Save as Document'}</span>
             </Button>
-          ))}
+          )}
         </div>
-
-        {response && (
-          <div className="space-y-4">
-            <div className="p-6 bg-muted/50 rounded-lg border border-border">
-              <div className="flex items-start space-x-3">
-                <Brain className="h-5 w-5 mt-0.5 text-primary flex-shrink-0" />
-                <div className="flex-1">
-                  <p className="text-base leading-relaxed whitespace-pre-wrap">{response}</p>
-                </div>
-              </div>
-            </div>
-            
-            <div className="flex justify-end">
-              <Button
-                onClick={handleSaveAsDocument}
-                disabled={isSaving || !response}
-                variant="outline"
-                className="flex items-center space-x-2"
-              >
-                {isSaving ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Save className="h-4 w-4" />
-                )}
-                <span>{isSaving ? 'Saving...' : 'Save as Document'}</span>
-                <FileText className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-        )}
       </CardContent>
     </Card>
   );
