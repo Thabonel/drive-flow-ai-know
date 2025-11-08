@@ -145,7 +145,7 @@ export default function Conversations() {
         {/* Sidebar */}
         <Card className={`h-full flex flex-col overflow-hidden transition-all duration-200 ${sidebarCollapsed ? 'lg:w-20' : 'lg:col-span-1'}`}>
           <CardHeader className="flex-shrink-0">
-            <div className="flex justify-between items-center">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
               <div className="flex items-center gap-2">
                 {!sidebarCollapsed && <CardTitle>Conversations</CardTitle>}
                 {!sidebarCollapsed && (
@@ -164,13 +164,13 @@ export default function Conversations() {
                   size="sm"
                   variant="ghost"
                   onClick={toggleSidebar}
-                  className="h-8 w-8 p-0"
+                  className="h-8 w-8 p-0 flex-shrink-0"
                   title={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
                 >
                   {sidebarCollapsed ? <PanelLeftOpen className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
                 </Button>
               </div>
-              {!sidebarCollapsed && <div className="flex gap-2">
+              {!sidebarCollapsed && <div className="flex gap-2 w-full sm:w-auto">
                 <Button
                   size="sm"
                   variant={!isTemporaryMode ? "default" : "outline"}

@@ -1,13 +1,22 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Brain, Send, Sparkles, Loader2, Save, FileText } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Brain, Send, Sparkles, Loader2, Save, FileText, PlusCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
+
+interface Message {
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp: string;
+}
 
 interface AIQueryInputProps {
   selectedKnowledgeBase?: { id: string; name: string };
@@ -17,12 +26,13 @@ interface AIQueryInputProps {
 export const AIQueryInput = ({ selectedKnowledgeBase, onClearSelection }: AIQueryInputProps) => {
   const [query, setQuery] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [response, setResponse] = useState('');
-  const [lastQuery, setLastQuery] = useState('');
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [documentType, setDocumentType] = useState<string>('report');
   const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   const savePrompt = useMutation({
     mutationFn: async (text: string) => {
@@ -53,43 +63,52 @@ export const AIQueryInput = ({ selectedKnowledgeBase, onClearSelection }: AIQuer
     enabled: !!user,
   });
 
-  // Generate smart prompts based on user's actual documents
-  const generateQuickPrompts = (): string[] => {
-    if (!recentDocs || recentDocs.length === 0) {
-      // Fallback prompts if user has no documents yet
-      return [
-        "How can I organize my documents?",
-        "What types of documents can I upload?",
-        "Help me get started with knowledge bases",
-        "Explain the AI features"
-      ];
+  // Auto-scroll to bottom when messages change
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
+  }, [messages]);
 
-    const prompts: string[] = [];
+  // Document creation templates based on document type
+  const getTemplatesForType = (type: string): string[] => {
+    const templates: Record<string, string[]> = {
+      report: [
+        "Create a comprehensive report from my documents",
+        "Generate executive summary",
+        "Compile findings and recommendations",
+        "Analyze key trends and insights"
+      ],
+      summary: [
+        "Summarize all key points",
+        "Create bullet-point summary",
+        "Extract main takeaways",
+        "Brief overview of documents"
+      ],
+      analysis: [
+        "Detailed analysis of topics",
+        "Compare and contrast themes",
+        "Identify patterns and connections",
+        "Critical evaluation"
+      ],
+      notes: [
+        "Convert to structured notes",
+        "Create action items list",
+        "Extract important quotes",
+        "Organize by topics"
+      ],
+      brief: [
+        "One-page brief",
+        "Quick reference guide",
+        "Highlights and key facts",
+        "Essential information only"
+      ]
+    };
 
-    // Extract unique categories and tags
-    const categories = [...new Set(recentDocs.map(d => d.category).filter(Boolean))];
-    const allTags = recentDocs.flatMap(d => d.tags || []);
-    const topTags = [...new Set(allTags)].slice(0, 3);
-
-    // Generate prompts based on actual content
-    if (categories.length > 0) {
-      const cat = categories[0];
-      prompts.push(`Summarize my ${cat} documents`);
-    }
-
-    if (topTags.length > 0) {
-      prompts.push(`What are the key points about ${topTags[0]}?`);
-    }
-
-    // Always include these useful generic prompts
-    prompts.push("What should I focus on based on my documents?");
-    prompts.push("Find connections between my recent documents");
-
-    return prompts.slice(0, 4); // Return max 4 prompts
+    return templates[type] || templates.report;
   };
 
-  const quickPrompts = generateQuickPrompts();
+  const quickPrompts = getTemplatesForType(documentType);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
