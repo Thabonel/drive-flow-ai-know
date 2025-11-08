@@ -6,7 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Loader2, Send, Archive, Trash2, Edit2, Check, X } from 'lucide-react';
+import { Loader2, Send, Archive, Trash2, Edit2, Check, X, FileText, MessageCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 
@@ -24,9 +24,10 @@ interface ConversationChatProps {
   onConversationCreated?: (id: string) => void;
   onConversationDeleted?: () => void;
   onConversationSummarized?: () => void;
+  onDocumentAccessChange?: (useDocuments: boolean) => void;
 }
 
-export function ConversationChat({ conversationId: initialConversationId, isTemporary = false, onConversationCreated, onConversationDeleted, onConversationSummarized }: ConversationChatProps) {
+export function ConversationChat({ conversationId: initialConversationId, isTemporary = false, onConversationCreated, onConversationDeleted, onConversationSummarized, onDocumentAccessChange }: ConversationChatProps) {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [conversationId, setConversationId] = useState<string | null>(initialConversationId || null);
@@ -37,6 +38,7 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
   const [conversationTitle, setConversationTitle] = useState('AI Assistant');
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [editedTitle, setEditedTitle] = useState('');
+  const [useDocuments, setUseDocuments] = useState(true); // Toggle for document access
   const scrollRef = useRef<HTMLDivElement>(null);
   const isSubmittingRef = useRef(false);
 
@@ -71,6 +73,11 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages]);
+
+  // Notify parent of document access changes
+  useEffect(() => {
+    onDocumentAccessChange?.(useDocuments);
+  }, [useDocuments, onDocumentAccessChange]);
 
   const loadMessages = async () => {
     if (!conversationId) return;
@@ -242,7 +249,7 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
         body: {
           query: userMessage,
           conversationContext,
-          use_documents: false,
+          use_documents: useDocuments,
         },
       });
 
@@ -519,6 +526,17 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
           </div>
         )}
         <div className="flex gap-2">
+          {/* Document Access Toggle */}
+          <Button
+            size="sm"
+            variant={useDocuments ? "default" : "outline"}
+            onClick={() => setUseDocuments(!useDocuments)}
+            className="gap-2"
+            title={useDocuments ? "Documents: ON - AI can access your documents" : "Documents: OFF - General AI chat"}
+          >
+            <FileText className="h-4 w-4" />
+            {useDocuments ? "Docs: ON" : "Docs: OFF"}
+          </Button>
           {isTemporary && messages.length > 0 && (
             <div className="text-sm text-muted-foreground bg-yellow-50 dark:bg-yellow-900/20 px-3 py-1.5 rounded-md border border-yellow-200 dark:border-yellow-800">
               Temporary Chat (not saved)

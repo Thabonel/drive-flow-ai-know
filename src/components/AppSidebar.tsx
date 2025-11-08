@@ -20,7 +20,7 @@ import { Button } from '@/components/ui/button';
 const navigationItems = [
   { title: 'Timeline', url: '/timeline', icon: Clock },
   { title: 'AI Chat', url: '/conversations', icon: MessageSquare },
-  { title: 'AI Document Assistant', url: '/dashboard', icon: Brain },
+  { title: 'Document Creator', url: '/dashboard', icon: Brain },
   { title: 'Documents', url: '/documents', icon: FileText },
 ];
 
