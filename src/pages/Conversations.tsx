@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ConversationChat } from '@/components/ConversationChat';
 import { PageHelp } from '@/components/PageHelp';
-import { Plus, MessageSquare, Archive, Search, Trash2, Clock, PanelLeftClose, PanelLeftOpen, FileText, MessageCircle } from 'lucide-react';
+import { Plus, MessageSquare, Archive, Search, Trash2, PanelLeftClose, PanelLeftOpen, FileText, MessageCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 
@@ -33,7 +33,6 @@ export default function Conversations() {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<'active' | 'archived'>('active');
   const [isCreating, setIsCreating] = useState(true);
-  const [isTemporaryMode, setIsTemporaryMode] = useState(false);
   const [useDocuments, setUseDocuments] = useState(true);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
     const saved = localStorage.getItem('conversations-sidebar-collapsed');
@@ -76,13 +75,11 @@ export default function Conversations() {
   const handleNewConversation = () => {
     setSelectedConversation(null);
     setIsCreating(true);
-    // Keep current temporary mode setting when starting new chat
   };
 
   const handleSelectConversation = (id: string) => {
     setSelectedConversation(id);
     setIsCreating(false);
-    setIsTemporaryMode(false); // Existing conversations are always saved
   };
 
   const handleDeleteConversation = async (id: string, e: React.MouseEvent) => {
@@ -111,7 +108,6 @@ export default function Conversations() {
   const handleConversationCreated = (id: string) => {
     setSelectedConversation(id);
     setIsCreating(false);
-    setIsTemporaryMode(false); // Once a conversation is created, it's no longer temporary
     loadConversations();
   };
 
@@ -151,12 +147,12 @@ export default function Conversations() {
                 {!sidebarCollapsed && (
                   <PageHelp
                     title="AI Assistant Help"
-                    description="The AI Assistant allows you to have multi-turn conversations with AI. Conversations are saved by default, or you can toggle to temporary mode for quick chats."
+                    description="The AI Assistant allows you to have multi-turn conversations with AI. All conversations are automatically saved to your history."
                     tips={[
-                      "Conversations are saved by default and appear in your history",
-                      "Toggle to Temp mode for quick chats that won't be saved",
-                      "Switch between Saved and Temp modes before starting your chat",
-                      "Saved conversations can be archived when complete"
+                      "All conversations are automatically saved and appear in your history",
+                      "Use the document toggle to control whether AI has access to your documents",
+                      "Delete unwanted conversations anytime using the trash icon",
+                      "Archive completed conversations to keep your active list organized"
                     ]}
                   />
                 )}
@@ -170,44 +166,16 @@ export default function Conversations() {
                   {sidebarCollapsed ? <PanelLeftOpen className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
                 </Button>
               </div>
-              {!sidebarCollapsed && <div className="flex gap-2 w-full sm:w-auto">
+              {!sidebarCollapsed && (
                 <Button
                   size="sm"
-                  variant={!isTemporaryMode ? "default" : "outline"}
-                  onClick={() => {
-                    if (isCreating) {
-                      // Just toggle mode if already creating a new conversation
-                      setIsTemporaryMode(false);
-                    } else {
-                      // Start new saved conversation
-                      setIsTemporaryMode(false);
-                      handleNewConversation();
-                    }
-                  }}
-                  title="Saved conversation (default)"
+                  onClick={handleNewConversation}
+                  title="Create new conversation"
                 >
                   <Plus className="h-4 w-4 mr-2" />
-                  Saved
+                  New Chat
                 </Button>
-                <Button
-                  size="sm"
-                  variant={isTemporaryMode ? "default" : "outline"}
-                  onClick={() => {
-                    if (isCreating) {
-                      // Just toggle mode if already creating a new conversation
-                      setIsTemporaryMode(true);
-                    } else {
-                      // Start new temporary conversation
-                      setIsTemporaryMode(true);
-                      handleNewConversation();
-                    }
-                  }}
-                  title="Temporary chat (not saved)"
-                >
-                  <Clock className="h-4 w-4 mr-2" />
-                  Temp
-                </Button>
-              </div>}
+              )}
             </div>
             {!sidebarCollapsed && <CardDescription>Your AI conversation history</CardDescription>}
           </CardHeader>
@@ -318,7 +286,7 @@ export default function Conversations() {
           {selectedConversation || isCreating ? (
             <ConversationChat
               conversationId={selectedConversation || undefined}
-              isTemporary={isTemporaryMode && isCreating}
+              isTemporary={false}
               onConversationCreated={handleConversationCreated}
               onConversationDeleted={handleConversationDeleted}
               onConversationSummarized={handleConversationSummarized}
