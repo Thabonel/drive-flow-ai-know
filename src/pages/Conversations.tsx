@@ -7,9 +7,10 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ConversationChat } from '@/components/ConversationChat';
 import { PageHelp } from '@/components/PageHelp';
-import { Plus, MessageSquare, Archive, Search, Trash2, Clock, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { Plus, MessageSquare, Archive, Search, Trash2, Clock, PanelLeftClose, PanelLeftOpen, FileText, MessageCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 
@@ -33,6 +34,7 @@ export default function Conversations() {
   const [activeTab, setActiveTab] = useState<'active' | 'archived'>('active');
   const [isCreating, setIsCreating] = useState(true);
   const [isTemporaryMode, setIsTemporaryMode] = useState(false);
+  const [useDocuments, setUseDocuments] = useState(true);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
     const saved = localStorage.getItem('conversations-sidebar-collapsed');
     return saved === 'true';
@@ -293,7 +295,26 @@ export default function Conversations() {
         </Card>
 
         {/* Chat Area */}
-        <div className={`h-full overflow-hidden ${sidebarCollapsed ? 'lg:col-span-1' : 'lg:col-span-2'}`}>
+        <div className={`h-full overflow-hidden ${sidebarCollapsed ? 'lg:col-span-1' : 'lg:col-span-2'} flex flex-col gap-2`}>
+          {/* Info Banner */}
+          {(selectedConversation || isCreating) && (
+            <Alert className={`${useDocuments ? 'bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800' : 'bg-gray-50 dark:bg-gray-900/30 border-gray-200 dark:border-gray-800'}`}>
+              <AlertDescription className="flex items-center gap-2">
+                {useDocuments ? (
+                  <>
+                    <FileText className="h-4 w-4" />
+                    <span>💡 This AI has access to all your documents</span>
+                  </>
+                ) : (
+                  <>
+                    <MessageCircle className="h-4 w-4" />
+                    <span>ℹ️ Document access is OFF - this is a general AI chat</span>
+                  </>
+                )}
+              </AlertDescription>
+            </Alert>
+          )}
+
           {selectedConversation || isCreating ? (
             <ConversationChat
               conversationId={selectedConversation || undefined}
@@ -301,6 +322,7 @@ export default function Conversations() {
               onConversationCreated={handleConversationCreated}
               onConversationDeleted={handleConversationDeleted}
               onConversationSummarized={handleConversationSummarized}
+              onDocumentAccessChange={setUseDocuments}
             />
           ) : (
             <Card className="h-full flex items-center justify-center overflow-hidden">
