@@ -33,9 +33,22 @@ cd <YOUR_PROJECT_NAME>
 # Step 3: Install the necessary dependencies.
 npm i
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+# Step 4: Set up git hooks for security (prevents pushing secrets)
+./scripts/setup-git-hooks.sh
+
+# Step 5: Start the development server with auto-reloading and an instant preview.
 npm run dev
 ```
+
+### 🔒 Security Setup (Important!)
+
+After cloning, **immediately run** the git hooks setup:
+
+```bash
+./scripts/setup-git-hooks.sh
+```
+
+This installs a pre-push hook that scans for secrets (API keys, tokens, etc.) before you push to GitHub. See [`docs/GIT_HOOKS.md`](docs/GIT_HOOKS.md) for details.
 
 **Edit a file directly in GitHub**
 
