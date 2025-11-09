@@ -21,7 +21,9 @@ import {
   Sparkles,
   CheckCircle2,
   BarChart3,
-  Upload
+  Upload,
+  Menu,
+  X
 } from 'lucide-react';
 
 const plans = [
@@ -31,12 +33,12 @@ const plans = [
     period: '/month',
     description: 'Perfect for getting started with AI assistance',
     features: [
-      '200 AI queries/month',
+      'AI-powered document search',
       '5 GB storage',
       '3 knowledge bases',
       'AI document analysis',
       'Timeline management',
-      'Search your documents',
+      'Save all conversations',
       'Basic support'
     ],
     popular: false,
@@ -50,7 +52,7 @@ const plans = [
     period: '/month',
     description: 'For professionals using AI daily',
     features: [
-      '1,000 AI queries/month',
+      'Everything in Starter',
       '50 GB storage',
       'Unlimited knowledge bases',
       'All AI features',
@@ -68,14 +70,15 @@ const plans = [
     name: 'Business',
     price: '$150',
     period: '/month',
-    description: 'Team collaboration with unlimited queries',
+    description: 'Full team collaboration features',
     features: [
-      'Unlimited AI queries',
+      'Everything in Pro',
       '500 GB storage',
       'Team collaboration features',
       'Team shared documents',
       'Team timeline',
-      'Up to 5 team members',
+      'Includes 5 team members',
+      'Additional users $10/month each',
       'Context fluency across organization',
       'Dedicated account manager'
     ],
@@ -83,33 +86,6 @@ const plans = [
     trial: true,
     savings: null,
     priceId: 'price_1SJ25YDXysaVZSVhyjwdk3HN',
-  },
-];
-
-const testimonials = [
-  {
-    name: 'Sarah Chen',
-    role: 'Product Manager',
-    company: 'TechCorp',
-    content: 'We use this to search our company docs. Finds answers way faster than scrolling through Drive folders.',
-    rating: 5,
-    metric: 'Saves 2 hrs/day',
-  },
-  {
-    name: 'Michael Rodriguez',
-    role: 'Research Director',
-    company: 'InnovateLab',
-    content: 'Actually understands what I\'m asking. No more keyword searches that miss the point.',
-    rating: 5,
-    metric: '15 hrs/week saved',
-  },
-  {
-    name: 'Emily Thompson',
-    role: 'Legal Counsel',
-    company: 'LawFirm Plus',
-    content: 'Works with our sensitive files. Can keep everything on our own servers if we want.',
-    rating: 5,
-    metric: 'Client data stays private',
   },
 ];
 
@@ -123,14 +99,14 @@ const features = [
   {
     icon: Shield,
     title: 'Your Files, Your Rules',
-    description: 'Use our cloud, or connect Google Drive, Microsoft 365, S3. You can even run the AI on your own computer.',
+    description: 'Use our cloud, or connect Google Drive, Microsoft 365, or S3. Choose where your files live.',
     benefit: 'Keep control of your data',
   },
   {
     icon: Zap,
     title: 'Fast Search',
-    description: 'Scan thousands of documents in under a second. No more waiting around.',
-    benefit: 'Answers in milliseconds',
+    description: 'Search through all your documents quickly. Get answers in seconds, not hours.',
+    benefit: 'Fast answers',
   },
   {
     icon: Clock,
@@ -139,16 +115,16 @@ const features = [
     benefit: 'Time flows naturally',
   },
   {
-    icon: Brain,
+    icon: FileText,
     title: 'Group Your Documents',
     description: 'Make collections from related files. The AI reads them together to answer your questions.',
     benefit: 'Context-aware answers',
   },
   {
-    icon: FileText,
-    title: 'Save Your Chats',
-    description: 'Every conversation gets saved. Search through old questions and answers anytime.',
-    benefit: 'Nothing gets lost',
+    icon: Brain,
+    title: 'Persistent Knowledge Base',
+    description: 'Upload documents once and they stay forever. Every conversation has access to your entire library. No more re-uploading files.',
+    benefit: 'Upload once, use forever',
   },
   {
     icon: Globe,
@@ -183,6 +159,7 @@ const features = [
 ];
 
 export default function Landing() {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [stats, setStats] = useState([
     { value: '0', label: 'Questions Answered', icon: MessageSquare },
     { value: '0', label: 'Hours Saved', icon: Clock },
@@ -249,100 +226,130 @@ export default function Landing() {
             <span className="text-xl font-bold text-white">AI Query Hub</span>
             <Badge className="ml-2 hidden sm:inline-flex bg-secondary border-secondary text-white">Chat With Your Docs</Badge>
           </div>
-          
+
+          {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-8">
             <a href="#features" className="text-white/90 hover:text-white transition-colors font-medium">Features</a>
             <a href="#how-it-works" className="text-white/90 hover:text-white transition-colors font-medium">How It Works</a>
             <a href="#pricing" className="text-white/90 hover:text-white transition-colors font-medium">Pricing</a>
-            <a href="#testimonials" className="text-white/90 hover:text-white transition-colors font-medium">Reviews</a>
           </nav>
 
-          <Button asChild className="bg-accent hover:bg-accent/90 border-0 text-white shadow-lg hover:shadow-xl transition-all hover:scale-105">
+          {/* Desktop CTA */}
+          <Button asChild className="hidden md:flex bg-accent hover:bg-accent/90 border-0 text-white shadow-lg hover:shadow-xl transition-all hover:scale-105">
             <Link to="/auth">Get Started Free</Link>
           </Button>
+
+          {/* Mobile Menu Button */}
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="md:hidden p-2 text-white hover:bg-white/10 rounded-lg transition-colors"
+            aria-label="Toggle menu"
+          >
+            {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+          </button>
         </div>
+
+        {/* Mobile Menu */}
+        {mobileMenuOpen && (
+          <div className="md:hidden border-t border-white/20 bg-primary">
+            <nav className="container mx-auto px-4 py-4 flex flex-col space-y-4">
+              <a
+                href="#features"
+                onClick={() => setMobileMenuOpen(false)}
+                className="text-white/90 hover:text-white transition-colors font-medium py-2"
+              >
+                Features
+              </a>
+              <a
+                href="#how-it-works"
+                onClick={() => setMobileMenuOpen(false)}
+                className="text-white/90 hover:text-white transition-colors font-medium py-2"
+              >
+                How It Works
+              </a>
+              <a
+                href="#pricing"
+                onClick={() => setMobileMenuOpen(false)}
+                className="text-white/90 hover:text-white transition-colors font-medium py-2"
+              >
+                Pricing
+              </a>
+              <Button asChild className="w-full bg-accent hover:bg-accent/90 border-0 text-white shadow-lg">
+                <Link to="/auth">Get Started Free</Link>
+              </Button>
+            </nav>
+          </div>
+        )}
       </header>
 
       {/* Hero Section */}
       <section className="relative pt-8 pb-20 px-6 bg-white">
         <div className="max-w-7xl mx-auto">
-          {/* Top Text */}
-          <div className="text-center space-y-3 mb-2 animate-fade-in">
-            <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight leading-tight text-primary">
-              AI Query Hub
+          {/* Headline - Outcome-Based */}
+          <div className="text-center space-y-6 mb-8 animate-fade-in">
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight leading-tight text-primary max-w-4xl mx-auto">
+              Get Instant Answers From Your Documents
             </h1>
 
-            <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight leading-tight text-primary">
-              Ask Questions.
-            </h2>
-
-            <h3 className="text-2xl md:text-3xl lg:text-4xl font-bold tracking-tight leading-tight text-foreground">
-              Get Answers From Your Files.
-            </h3>
-          </div>
-
-          {/* Hero Illustration - Full Visibility */}
-          <div className="flex justify-center mb-12">
-            <img
-              src="https://fskwutnoxbbflzqrphro.supabase.co/storage/v1/object/public/assets/AI%20Qyeryhubhero.jpg"
-              alt="AI Query Hub - AI Knowledge Assistant"
-              className="max-w-6xl w-full h-auto object-contain"
-            />
-          </div>
-
-          {/* Content Below Illustration */}
-          <div className="text-center space-y-6 animate-fade-in">
             <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-              Upload your documents. Ask questions in plain English. The AI reads through everything and
-              tells you what's there. No more digging through folders.
+              <strong className="text-primary">Upload documents once, they stay forever.</strong> Every conversation has access to your entire library.
+              No more re-uploading the same files over and over.
             </p>
 
-            <div className="flex flex-wrap gap-4 justify-center items-center pt-2">
+            {/* CTA Above Fold */}
+            <div className="flex flex-wrap gap-4 justify-center items-center pt-4">
               <Button asChild size="lg" className="text-lg px-8 py-6 bg-accent hover:bg-accent/90 shadow-lg hover:shadow-xl transition-all hover:scale-105 border-0 text-white">
                 <Link to="/auth">
-                  Get Started Free
+                  Start Free 14-Day Trial
                   <ArrowRight className="ml-2 w-5 h-5" />
                 </Link>
               </Button>
             </div>
 
             {/* Trust Indicators */}
-            <div className="flex flex-wrap gap-6 justify-center items-center pt-6 text-sm">
+            <div className="flex flex-wrap gap-6 justify-center items-center pt-4 text-sm">
               <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/30 backdrop-blur-sm">
                 <Shield className="w-4 h-4 text-primary" />
                 <span className="font-medium text-primary">Your data stays private</span>
               </div>
               <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-success/10 border border-success/30 backdrop-blur-sm">
                 <Zap className="w-4 h-4 text-success" />
-                <span className="font-medium text-success">Searches in under 1 second</span>
+                <span className="font-medium text-success">Fast, reliable answers</span>
               </div>
               <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-accent/10 border border-accent/30 backdrop-blur-sm">
-                <Users className="w-4 h-4 text-accent" />
-                <span className="font-medium text-accent">Free 14-day trial</span>
+                <CheckCircle2 className="w-4 h-4 text-accent" />
+                <span className="font-medium text-accent">No credit card required</span>
               </div>
             </div>
           </div>
 
-          {/* Stats Section - Commented out until we have real user numbers
-          Showing "0 Questions Answered, 0 Hours Saved, 0 Active Users" kills credibility
-          Will uncomment when we have actual usage data to showcase
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mt-16 animate-slide-up">
-            {stats.map((stat, index) => {
-              const colors = ["text-white", "text-white", "text-white", "text-white"];
-              const bgColors = ["bg-primary", "bg-success", "bg-success", "bg-accent"];
-              const borderColors = ["border-primary", "border-success", "border-success", "border-accent"];
-              return (
-                <div key={index} className={`text-center p-6 rounded-2xl ${bgColors[index]} border ${borderColors[index]} shadow-card hover:shadow-lg transition-all hover:scale-105`}>
-                  <stat.icon className={`w-8 h-8 mx-auto mb-2 ${colors[index]}`} />
-                  <div className={`text-5xl font-bold ${colors[index]} mb-2`}>
-                    {stat.value}
-                  </div>
-                  <div className="text-white font-medium">{stat.label}</div>
-                </div>
-              );
-            })}
+          {/* Hero Illustration */}
+          <div className="flex justify-center mt-12">
+            <img
+              src="https://fskwutnoxbbflzqrphro.supabase.co/storage/v1/object/public/assets/AI%20Qyeryhubhero.jpg"
+              alt="AI Query Hub - AI Knowledge Assistant"
+              className="max-w-6xl w-full h-auto object-contain rounded-2xl"
+            />
           </div>
-          */}
+
+          {/* Trust Badges - Replacing Disabled Stats */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-16">
+            <div className="text-center p-6 rounded-2xl bg-primary/5 border border-primary/20 shadow-card hover:shadow-lg transition-all">
+              <Shield className="w-12 h-12 mx-auto mb-3 text-primary" />
+              <h3 className="text-xl font-bold text-primary mb-2">Secure & Encrypted</h3>
+              <p className="text-sm text-muted-foreground">Your documents are stored securely with industry-standard encryption.</p>
+            </div>
+            <div className="text-center p-6 rounded-2xl bg-success/5 border border-success/20 shadow-card hover:shadow-lg transition-all">
+              <Lock className="w-12 h-12 mx-auto mb-3 text-success" />
+              <h3 className="text-xl font-bold text-success mb-2">100% Private</h3>
+              <p className="text-sm text-muted-foreground">Your documents stay private. Use your own storage or ours - you choose.</p>
+            </div>
+            <div className="text-center p-6 rounded-2xl bg-accent/5 border border-accent/20 shadow-card hover:shadow-lg transition-all">
+              <Zap className="w-12 h-12 mx-auto mb-3 text-accent" />
+              <h3 className="text-xl font-bold text-accent mb-2">Lightning Fast</h3>
+              <p className="text-sm text-muted-foreground">Search all your documents in seconds. Get answers without the wait.</p>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -391,6 +398,94 @@ export default function Landing() {
         </div>
       </section>
 
+      {/* Document Context - Key Differentiator */}
+      <section className="relative py-16 px-6 bg-primary">
+        <div className="max-w-5xl mx-auto text-center">
+          <div className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-accent/20 border border-accent/30 backdrop-blur-xl mb-6">
+            <Brain className="w-5 h-5 text-accent" />
+            <span className="text-sm font-semibold text-accent">
+              The Problem With Other AI Chatbots
+            </span>
+          </div>
+
+          <h2 className="text-4xl md:text-5xl font-bold mb-6 text-white">
+            Your Documents Stay With The AI Forever
+          </h2>
+
+          <p className="text-xl text-white/90 mb-8 leading-relaxed max-w-3xl mx-auto">
+            Other AI chatbots lose your uploaded files when you start a new conversation.
+            <strong className="text-accent"> We keep everything.</strong>
+          </p>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-12 text-left">
+            <div className="p-6 rounded-2xl bg-white/10 backdrop-blur-xl border border-white/20">
+              <div className="flex items-start gap-4">
+                <div className="w-12 h-12 rounded-xl bg-red-500/20 border border-red-500/30 flex items-center justify-center flex-shrink-0">
+                  <X className="h-6 w-6 text-red-300" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-white mb-2">Other AI Chatbots</h3>
+                  <ul className="space-y-2 text-white/80">
+                    <li className="flex items-start gap-2">
+                      <span className="text-red-300 mt-1">•</span>
+                      <span>Upload files separately for each chat</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-red-300 mt-1">•</span>
+                      <span>Files disappear when you start new conversation</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-red-300 mt-1">•</span>
+                      <span>Can't search across all your documents</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-red-300 mt-1">•</span>
+                      <span>Re-upload same files over and over</span>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-6 rounded-2xl bg-accent/20 backdrop-blur-xl border border-accent/30">
+              <div className="flex items-start gap-4">
+                <div className="w-12 h-12 rounded-xl bg-accent/30 border border-accent/40 flex items-center justify-center flex-shrink-0">
+                  <CheckCircle2 className="w-6 h-6 text-accent" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-white mb-2">AI Query Hub</h3>
+                  <ul className="space-y-2 text-white/80">
+                    <li className="flex items-start gap-2">
+                      <span className="text-accent mt-1">•</span>
+                      <span>Upload documents once, available forever</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-accent mt-1">•</span>
+                      <span>AI has access to all files in every conversation</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-accent mt-1">•</span>
+                      <span>Search across your entire document library</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-accent mt-1">•</span>
+                      <span>Build persistent knowledge base over time</span>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-12 p-6 rounded-2xl bg-white/10 backdrop-blur-xl border border-white/20">
+            <p className="text-lg text-white/90 leading-relaxed">
+              <strong className="text-white">Upload once, use forever.</strong> Every document you add becomes part of your permanent knowledge base.
+              The AI can reference any file you've ever uploaded, in any conversation, at any time. No more re-uploading the same documents.
+            </p>
+          </div>
+        </div>
+      </section>
+
       {/* Features Section */}
       <section id="features" className="relative py-16 px-6">
         <div className="max-w-7xl mx-auto">
@@ -417,41 +512,50 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Testimonials */}
-      <section id="testimonials" className="relative py-16 px-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="text-4xl md:text-5xl font-bold mb-3 text-primary">
-              What People Say
-            </h2>
-            <p className="text-lg text-muted-foreground">Real feedback from early users</p>
-            <p className="text-xs text-muted-foreground/60 mt-2 italic">*Example testimonials for demonstration</p>
-          </div>
+      {/* Social Proof - Join Early Adopters */}
+      <section className="relative py-16 px-6 bg-muted/30">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center p-12 rounded-3xl bg-card border border-border shadow-card">
+            <div className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-success/20 border border-success/30 backdrop-blur-xl mb-6">
+              <Users className="w-5 h-5 text-success" />
+              <span className="text-sm font-semibold text-success">
+                Join Early Adopters
+              </span>
+            </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {testimonials.map((testimonial, i) => (
-              <div key={i} className={`p-6 rounded-2xl bg-muted/30 border border-border shadow-card backdrop-blur-xl transition-all hover:scale-105 hover:shadow-lg`}>
-                <div className="flex items-center gap-1 mb-3">
-                  {[...Array(5)].map((_, j) => (
-                    <Star key={j} className="w-4 h-4 fill-success text-success" />
-                  ))}
-                </div>
-                <p className="text-foreground/90 mb-4 italic leading-relaxed text-sm">"{testimonial.content}"</p>
-                <div className="flex items-center gap-3 pt-3 border-t border-border/50">
-                  <div className={`w-12 h-12 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center font-bold text-lg text-primary`}>
-                    {testimonial.name.split(' ').map(n => n[0]).join('')}
-                  </div>
-                  <div>
-                    <div className="font-bold text-sm text-primary">{testimonial.name}</div>
-                    <div className="text-xs text-muted-foreground">{testimonial.role}</div>
-                  </div>
-                </div>
-                <div className={`mt-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-success/10 border border-success/20`}>
-                  <TrendingUp className="w-4 h-4 text-success" />
-                  <span className="text-xs font-semibold text-success">{testimonial.metric}</span>
-                </div>
+            <h2 className="text-4xl md:text-5xl font-bold mb-6 text-primary">
+              Be Among The First
+            </h2>
+
+            <p className="text-lg text-muted-foreground max-w-3xl mx-auto mb-8 leading-relaxed">
+              Get early access to AI Query Hub and shape the future of document intelligence.
+              Early adopters get priority support, exclusive features, and special pricing.
+            </p>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
+              <div className="p-6 rounded-xl bg-primary/5 border border-primary/20">
+                <CheckCircle2 className="w-8 h-8 text-primary mx-auto mb-3" />
+                <h3 className="font-bold text-primary mb-2">Priority Support</h3>
+                <p className="text-sm text-muted-foreground">Direct line to our team for any issues or questions</p>
               </div>
-            ))}
+              <div className="p-6 rounded-xl bg-success/5 border border-success/20">
+                <Sparkles className="w-8 h-8 text-success mx-auto mb-3" />
+                <h3 className="font-bold text-success mb-2">Exclusive Features</h3>
+                <p className="text-sm text-muted-foreground">Get first access to new AI capabilities as we release them</p>
+              </div>
+              <div className="p-6 rounded-xl bg-accent/5 border border-accent/20">
+                <TrendingUp className="w-8 h-8 text-accent mx-auto mb-3" />
+                <h3 className="font-bold text-accent mb-2">Special Pricing</h3>
+                <p className="text-sm text-muted-foreground">Lock in early adopter rates before we raise prices</p>
+              </div>
+            </div>
+
+            <Button asChild size="lg" className="mt-8 text-lg px-8 py-6 bg-accent hover:bg-accent/90 shadow-lg hover:shadow-xl transition-all hover:scale-105 border-0 text-white">
+              <Link to="/auth">
+                Get Started Free
+                <ArrowRight className="ml-2 w-5 h-5" />
+              </Link>
+            </Button>
           </div>
         </div>
       </section>
@@ -579,47 +683,10 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Support Section */}
-      <section className="relative py-12 px-6 bg-muted/50">
-        <div className="max-w-4xl mx-auto text-center">
-          <div className="p-8 rounded-2xl bg-card border border-border shadow-card">
-            <h2 className="text-3xl font-bold mb-4 text-primary">
-              Need Help?
-            </h2>
-            <p className="text-lg text-muted-foreground mb-6 max-w-2xl mx-auto">
-              If something does not work, let me know and I will fix it immediately.
-            </p>
-            <Button asChild size="lg" className="text-lg px-8 py-6 bg-primary hover:bg-primary/90 text-white shadow-lg hover:shadow-xl transition-all hover:scale-105">
-              <Link to="/support">
-                Create Support Ticket
-                <ArrowRight className="ml-2 w-5 h-5" />
-              </Link>
-            </Button>
-          </div>
-        </div>
-      </section>
-
       {/* Footer */}
       <footer className="relative border-t border-border bg-muted py-8 px-4">
         <div className="container mx-auto">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-            <div className="flex items-center space-x-2">
-              <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-primary to-secondary flex items-center justify-center shadow-glow">
-                <FileText className="h-5 w-5 text-white" />
-              </div>
-              <span className="text-xl font-bold text-primary">AI Query Hub</span>
-            </div>
-
-            <div className="text-center md:text-left">
-              <p className="text-muted-foreground flex items-center gap-2 justify-center md:justify-start text-sm">
-                <Shield className="h-4 w-4 text-primary" />
-                Your files stay yours. Run the AI on our servers or your own.
-              </p>
-            </div>
-
-          </div>
-
-          <div className="mt-8 pt-6 border-t border-border">
+          <div className="mt-8 pt-6">
             <div className="flex flex-wrap justify-center gap-4 mb-4">
               <a href="/terms" className="text-xs text-muted-foreground hover:text-primary underline transition-colors">
                 Terms of Service

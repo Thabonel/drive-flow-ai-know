@@ -126,6 +126,8 @@ export function useTimeline() {
       visibility?: 'personal' | 'team' | 'assigned';
       assigned_to?: string | null;
       assigned_by?: string | null;
+      recurring_series_id?: string | null;
+      occurrence_index?: number | null;
     }
   ) => {
     if (!user) return;
@@ -158,6 +160,8 @@ export function useTimeline() {
           visibility: options?.visibility || 'personal',
           assigned_to: options?.assigned_to,
           assigned_by: options?.assigned_by,
+          recurring_series_id: options?.recurring_series_id,
+          occurrence_index: options?.occurrence_index,
         })
         .select()
         .single();
@@ -358,6 +362,87 @@ export function useTimeline() {
     }
   };
 
+  // Delete this and all following recurring items
+  const deleteRecurringThisAndFollowing = async (item: TimelineItem) => {
+    if (!item.recurring_series_id || item.occurrence_index === null) {
+      // Not a recurring item, just delete it
+      await deleteItem(item.id);
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('timeline_items')
+        .delete()
+        .eq('recurring_series_id', item.recurring_series_id)
+        .gte('occurrence_index', item.occurrence_index);
+
+      if (error) throw error;
+
+      // Use functional form to avoid stale closure issues
+      setItems(prevItems =>
+        prevItems.filter(i =>
+          !(i.recurring_series_id === item.recurring_series_id &&
+            (i.occurrence_index ?? 0) >= (item.occurrence_index ?? 0))
+        )
+      );
+
+      toast({
+        title: 'Recurring items deleted',
+        description: 'This and all following occurrences have been removed',
+      });
+    } catch (error) {
+      console.error('Error deleting recurring items:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to delete recurring items',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  // Update this and all following recurring items
+  const updateRecurringThisAndFollowing = async (item: TimelineItem, updates: Partial<TimelineItem>) => {
+    if (!item.recurring_series_id || item.occurrence_index === null) {
+      // Not a recurring item, just update it normally
+      await updateItem(item.id, updates);
+      return;
+    }
+
+    try {
+      // Update all items in the series from this occurrence onward
+      const { error } = await supabase
+        .from('timeline_items')
+        .update(updates)
+        .eq('recurring_series_id', item.recurring_series_id)
+        .gte('occurrence_index', item.occurrence_index);
+
+      if (error) throw error;
+
+      // Use functional form to avoid stale closure issues
+      setItems(prevItems =>
+        prevItems.map(i =>
+          i.recurring_series_id === item.recurring_series_id &&
+          (i.occurrence_index ?? 0) >= (item.occurrence_index ?? 0)
+            ? { ...i, ...updates }
+            : i
+        )
+      );
+
+      toast({
+        title: 'Recurring items updated',
+        description: 'This and all following occurrences have been updated',
+      });
+    } catch (error) {
+      console.error('Error updating recurring items:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to update recurring items',
+        variant: 'destructive',
+      });
+    }
+  };
+
   // Delete a parked item
   const deleteParkedItem = async (parkedItemId: string) => {
     try {
@@ -522,6 +607,8 @@ export function useTimeline() {
     parkItem,
     restoreParkedItem,
     deleteItem,
+    deleteRecurringThisAndFollowing,
+    updateRecurringThisAndFollowing,
     deleteParkedItem,
     updateSettings,
     refetchItems: fetchItems,

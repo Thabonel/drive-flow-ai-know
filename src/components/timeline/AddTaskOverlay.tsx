@@ -3,6 +3,7 @@ import { useTasks, RecurrencePattern } from '@/hooks/useTasks';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 import { RecurrenceSelector } from '@/components/RecurrenceSelector';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -15,13 +16,15 @@ import {
 interface AddTaskOverlayProps {
   isOpen: boolean;
   onClose: () => void;
+  onTaskCreated?: () => void;
 }
 
-export function AddTaskOverlay({ isOpen, onClose }: AddTaskOverlayProps) {
+export function AddTaskOverlay({ isOpen, onClose, onTaskCreated }: AddTaskOverlayProps) {
   const { addTask } = useTasks();
   const { toast } = useToast();
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [newTaskDuration, setNewTaskDuration] = useState(30);
+  const [isTemplate, setIsTemplate] = useState(false);
   const [recurrencePattern, setRecurrencePattern] = useState<RecurrencePattern | null>(null);
   const [recurrenceEndDate, setRecurrenceEndDate] = useState<string | null>(null);
 
@@ -30,10 +33,14 @@ export function AddTaskOverlay({ isOpen, onClose }: AddTaskOverlayProps) {
 
     try {
       await addTask(newTaskTitle.trim(), newTaskDuration, {
+        isTemplate,
         isRecurring: !!recurrencePattern,
         recurrencePattern,
         recurrenceEndDate,
       });
+
+      // Trigger refetch in parent components
+      onTaskCreated?.();
 
       // Show success toast
       toast({
@@ -44,6 +51,7 @@ export function AddTaskOverlay({ isOpen, onClose }: AddTaskOverlayProps) {
       // Reset form
       setNewTaskTitle('');
       setNewTaskDuration(30);
+      setIsTemplate(false);
       setRecurrencePattern(null);
       setRecurrenceEndDate(null);
       onClose();
@@ -63,6 +71,7 @@ export function AddTaskOverlay({ isOpen, onClose }: AddTaskOverlayProps) {
   const handleCancel = () => {
     setNewTaskTitle('');
     setNewTaskDuration(30);
+    setIsTemplate(false);
     setRecurrencePattern(null);
     setRecurrenceEndDate(null);
     onClose();
@@ -117,6 +126,25 @@ export function AddTaskOverlay({ isOpen, onClose }: AddTaskOverlayProps) {
               onChange={(e) => setNewTaskDuration(Math.max(1, parseInt(e.target.value) || 30))}
               className="mt-2"
               min="1"
+            />
+          </div>
+
+          {/* Task Type Toggle */}
+          <div className="flex items-center justify-between py-2 px-3 border rounded-lg bg-muted/50">
+            <div className="flex-1">
+              <Label htmlFor="task-type" className="text-sm font-medium cursor-pointer">
+                Task Type
+              </Label>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {isTemplate
+                  ? "Template: Stays in list for reuse"
+                  : "One-off: Removed after scheduling"}
+              </p>
+            </div>
+            <Switch
+              id="task-type"
+              checked={isTemplate}
+              onCheckedChange={setIsTemplate}
             />
           </div>
 

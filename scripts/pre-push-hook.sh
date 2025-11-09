@@ -11,21 +11,21 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
-# Secret patterns to check for
-declare -A PATTERNS=(
-    ["Supabase Service Role Key"]="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9\.eyJpc3MiOiJzdXBhYmFzZSI.*\.(role|service_role)"
-    ["Supabase Anon Key"]="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9\.eyJpc3MiOiJzdXBhYmFzZSI.*\.anon"
-    ["AWS Access Key"]="AKIA[0-9A-Z]{16}"
-    ["Stripe Secret Key"]="sk_(test|live)_[0-9a-zA-Z]{24,}"
-    ["Stripe Restricted Key"]="rk_(test|live)_[0-9a-zA-Z]{24,}"
-    ["OpenAI API Key"]="sk-[a-zA-Z0-9]{48}"
-    ["Anthropic API Key"]="sk-ant-[a-zA-Z0-9\-]{95,}"
-    ["Generic API Key"]="(api[_-]?key|apikey)['\"]?\s*[:=]\s*['\"][a-zA-Z0-9_\-]{20,}['\"]"
-    ["Bearer Token"]="[Bb]earer\s+[a-zA-Z0-9\-\._~\+\/]{20,}"
-    ["Private Key"]="-----BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY-----"
-    ["Database URL with Password"]="(postgres|mysql|mongodb):\/\/[^:]+:[^@]+@"
-    ["JWT Token (long)"]="eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}"
-    ["Environment Variable Assignment"]="(SECRET|PASSWORD|TOKEN|KEY)=['\"]?[a-zA-Z0-9_\-]{20,}['\"]?"
+# Secret patterns to check for (pattern_name|pattern)
+PATTERNS=(
+    "Supabase Service Role Key|eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9\.eyJpc3MiOiJzdXBhYmFzZSI.*service_role"
+    "Supabase Anon Key|eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9\.eyJpc3MiOiJzdXBhYmFzZSI.*\.anon"
+    "AWS Access Key|AKIA[0-9A-Z]{16}"
+    "Stripe Secret Key|sk_(test|live)_[0-9a-zA-Z]{24,}"
+    "Stripe Restricted Key|rk_(test|live)_[0-9a-zA-Z]{24,}"
+    "OpenAI API Key|sk-[a-zA-Z0-9]{48}"
+    "Anthropic API Key|sk-ant-[a-zA-Z0-9\-]{95,}"
+    "Generic API Key|(api[_-]?key|apikey)['\"]?\s*[:=]\s*['\"][a-zA-Z0-9_\-]{20,}['\"]"
+    "Bearer Token|[Bb]earer\s+[a-zA-Z0-9\-\._~\+\/]{20,}"
+    "Private Key|-----BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY-----"
+    "Database URL with Password|(postgres|mysql|mongodb):\/\/[^:]+:[^@]+@"
+    "JWT Token|eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}"
+    "Environment Secret|( SECRET|PASSWORD|TOKEN|KEY)=['\"]?[a-zA-Z0-9_\-]{20,}['\"]?"
 )
 
 # Files to always exclude from secret scanning
@@ -81,8 +81,9 @@ while IFS= read -r file; do
     fi
 
     # Check each pattern
-    for pattern_name in "${!PATTERNS[@]}"; do
-        pattern="${PATTERNS[$pattern_name]}"
+    for pattern_entry in "${PATTERNS[@]}"; do
+        pattern_name=$(echo "$pattern_entry" | cut -d'|' -f1)
+        pattern=$(echo "$pattern_entry" | cut -d'|' -f2-)
 
         # Use grep with Perl regex for better pattern matching
         matches=$(grep -nE "$pattern" "$file" 2>/dev/null)

@@ -97,11 +97,14 @@ function DraggableTask({ task, onDelete }: DraggableTaskProps) {
 }
 
 interface TaskHeaderPanelProps {
+  tasks: Task[];
+  loading: boolean;
+  onRefetch: () => void;
   onAddTaskClick: () => void;
 }
 
-export function TaskHeaderPanel({ onAddTaskClick }: TaskHeaderPanelProps) {
-  const { tasks, loading, deleteTask } = useTasks();
+export function TaskHeaderPanel({ tasks, loading, onRefetch, onAddTaskClick }: TaskHeaderPanelProps) {
+  const { deleteTask } = useTasks();
   const [searchQuery, setSearchQuery] = useState('');
   const [isOpen, setIsOpen] = useState(false);
 

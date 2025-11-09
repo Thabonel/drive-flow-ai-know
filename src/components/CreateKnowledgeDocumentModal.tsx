@@ -16,6 +16,9 @@ interface CreateKnowledgeDocumentModalProps {
   trigger?: React.ReactNode;
 }
 
+const MAX_CONTENT_SIZE = 10 * 1024 * 1024; // 10MB
+const MAX_TITLE_LENGTH = 500;
+
 export const CreateKnowledgeDocumentModal = ({ trigger }: CreateKnowledgeDocumentModalProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [formData, setFormData] = useState({
@@ -27,6 +30,7 @@ export const CreateKnowledgeDocumentModal = ({ trigger }: CreateKnowledgeDocumen
   const [newTag, setNewTag] = useState('');
   const [newCategory, setNewCategory] = useState('');
   const [showNewCategoryInput, setShowNewCategoryInput] = useState(false);
+  const [contentSize, setContentSize] = useState(0);
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -96,6 +100,25 @@ export const CreateKnowledgeDocumentModal = ({ trigger }: CreateKnowledgeDocumen
     setNewTag('');
     setNewCategory('');
     setShowNewCategoryInput(false);
+    setContentSize(0);
+  };
+
+  const handleContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const newContent = e.target.value;
+    const sizeBytes = new Blob([newContent]).size;
+
+    // Prevent paste/input that exceeds limit
+    if (sizeBytes > MAX_CONTENT_SIZE) {
+      toast({
+        title: 'Content too large',
+        description: `Maximum content size is ${(MAX_CONTENT_SIZE / 1024 / 1024).toFixed(0)}MB`,
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setFormData({ ...formData, content: newContent });
+    setContentSize(sizeBytes);
   };
 
   const handleCategorySelect = (value: string) => {
@@ -128,6 +151,8 @@ export const CreateKnowledgeDocumentModal = ({ trigger }: CreateKnowledgeDocumen
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Validate required fields
     if (!formData.title.trim() || !formData.content.trim()) {
       toast({
         title: 'Error',
@@ -136,6 +161,27 @@ export const CreateKnowledgeDocumentModal = ({ trigger }: CreateKnowledgeDocumen
       });
       return;
     }
+
+    // Validate title length
+    if (formData.title.length > MAX_TITLE_LENGTH) {
+      toast({
+        title: 'Error',
+        description: `Title is too long. Maximum ${MAX_TITLE_LENGTH} characters allowed.`,
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Validate content size
+    if (contentSize > MAX_CONTENT_SIZE) {
+      toast({
+        title: 'Error',
+        description: `Content is too large. Maximum size: ${(MAX_CONTENT_SIZE / 1024 / 1024).toFixed(0)}MB. Current size: ${(contentSize / 1024 / 1024).toFixed(2)}MB`,
+        variant: 'destructive',
+      });
+      return;
+    }
+
     createDocument.mutate(formData);
   };
 
@@ -181,12 +227,26 @@ export const CreateKnowledgeDocumentModal = ({ trigger }: CreateKnowledgeDocumen
       });
 
       if (error) throw error;
-      
+
+      const generatedContent = data.response || 'AI-generated content will appear here.';
+      const sizeBytes = new Blob([generatedContent]).size;
+
+      // Check if generated content exceeds size limit
+      if (sizeBytes > MAX_CONTENT_SIZE) {
+        toast({
+          title: 'Content too large',
+          description: `AI generated ${(sizeBytes / 1024 / 1024).toFixed(2)}MB of content, which exceeds the ${(MAX_CONTENT_SIZE / 1024 / 1024).toFixed(0)}MB limit. Try a more specific title.`,
+          variant: 'destructive',
+        });
+        return;
+      }
+
       setFormData({
         ...formData,
-        content: data.response || 'AI-generated content will appear here.'
+        content: generatedContent
       });
-      
+      setContentSize(sizeBytes);
+
       toast({
         title: 'Content Generated',
         description: 'AI has generated content based on your title.',
@@ -251,11 +311,21 @@ export const CreateKnowledgeDocumentModal = ({ trigger }: CreateKnowledgeDocumen
             <Textarea
               id="content"
               value={formData.content}
-              onChange={(e) => setFormData({ ...formData, content: e.target.value })}
+              onChange={handleContentChange}
               placeholder="Enter document content or use AI to generate..."
               rows={8}
               required
             />
+            <div className="flex justify-between items-center text-xs text-muted-foreground">
+              <span>
+                Size: {(contentSize / 1024).toFixed(2)} KB / {(MAX_CONTENT_SIZE / 1024 / 1024).toFixed(0)} MB
+              </span>
+              {contentSize > MAX_CONTENT_SIZE * 0.8 && (
+                <span className="text-orange-500 font-medium">
+                  Approaching size limit
+                </span>
+              )}
+            </div>
           </div>
 
           <div className="space-y-2">

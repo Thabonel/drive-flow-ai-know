@@ -138,6 +138,91 @@ function getMonthlyNext(
 }
 
 /**
+ * Align a start date to the next valid occurrence based on the recurrence pattern
+ * For example, if pattern is "Weekly on Monday" and startDate is Wednesday,
+ * this will return the next Monday at the same time.
+ *
+ * @param startDate - The proposed start date (e.g., drop position on timeline)
+ * @param pattern - The recurrence pattern
+ * @returns Aligned ISO date string
+ */
+export function alignStartDateToPattern(
+  startDate: string,
+  pattern: RecurrencePattern
+): string {
+  const start = new Date(startDate);
+
+  switch (pattern.frequency) {
+    case 'daily':
+      // Daily patterns don't need alignment - any day is valid
+      return startDate;
+
+    case 'weekly': {
+      const daysOfWeek = pattern.daysOfWeek || [];
+      if (daysOfWeek.length === 0) {
+        // No specific days selected, use start date as-is
+        return startDate;
+      }
+
+      const currentDayOfWeek = start.getDay();
+      const sortedDays = [...daysOfWeek].sort((a, b) => a - b);
+
+      // Check if current day is already in the pattern
+      if (sortedDays.includes(currentDayOfWeek)) {
+        return startDate;
+      }
+
+      // Find the next valid day
+      const nextDayInWeek = sortedDays.find(day => day > currentDayOfWeek);
+
+      if (nextDayInWeek !== undefined) {
+        // Next occurrence is later this week
+        const daysToAdd = nextDayInWeek - currentDayOfWeek;
+        const aligned = new Date(start);
+        aligned.setDate(aligned.getDate() + daysToAdd);
+        return aligned.toISOString();
+      } else {
+        // Next occurrence is next week (use first selected day)
+        const daysUntilNextWeek = 7 - currentDayOfWeek + sortedDays[0];
+        const aligned = new Date(start);
+        aligned.setDate(aligned.getDate() + daysUntilNextWeek);
+        return aligned.toISOString();
+      }
+    }
+
+    case 'monthly': {
+      const dayOfMonth = pattern.dayOfMonth || 1;
+      const currentDay = start.getDate();
+
+      // If we're already on the target day, use the start date
+      if (currentDay === dayOfMonth) {
+        return startDate;
+      }
+
+      // If the target day hasn't passed this month, use it
+      if (currentDay < dayOfMonth) {
+        const aligned = new Date(start);
+        const lastDayOfMonth = new Date(aligned.getFullYear(), aligned.getMonth() + 1, 0).getDate();
+        const targetDay = Math.min(dayOfMonth, lastDayOfMonth);
+        aligned.setDate(targetDay);
+        return aligned.toISOString();
+      }
+
+      // Target day has passed, move to next month
+      const aligned = new Date(start);
+      aligned.setMonth(aligned.getMonth() + 1);
+      const lastDayOfMonth = new Date(aligned.getFullYear(), aligned.getMonth() + 1, 0).getDate();
+      const targetDay = Math.min(dayOfMonth, lastDayOfMonth);
+      aligned.setDate(targetDay);
+      return aligned.toISOString();
+    }
+
+    default:
+      return startDate;
+  }
+}
+
+/**
  * Format a recurrence pattern into a human-readable description
  */
 export function formatRecurrenceDescription(pattern: RecurrencePattern): string {

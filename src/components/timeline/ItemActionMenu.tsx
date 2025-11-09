@@ -14,6 +14,7 @@ import { TimelineItem, rescheduleItem as calculateReschedule } from '@/lib/timel
 import { RESCHEDULE_OPTIONS } from '@/lib/timelineConstants';
 import { Check, Clock, Pause, Trash2, Edit, Paperclip } from 'lucide-react';
 import { DocumentViewer } from '@/components/documents/DocumentViewer';
+import { RecurringActionDialog } from './RecurringActionDialog';
 import { supabase } from '@/integrations/supabase/client';
 
 interface ItemActionMenuProps {
@@ -25,6 +26,8 @@ interface ItemActionMenuProps {
   onReschedule: (itemId: string, newStartTime: string) => void;
   onPark: (itemId: string) => void;
   onDelete: (itemId: string) => void;
+  onDeleteRecurringThisAndFollowing?: (item: TimelineItem) => void;
+  onUpdateRecurringThisAndFollowing?: (item: TimelineItem) => void;
 }
 
 export function ItemActionMenu({
@@ -36,9 +39,13 @@ export function ItemActionMenu({
   onReschedule,
   onPark,
   onDelete,
+  onDeleteRecurringThisAndFollowing,
+  onUpdateRecurringThisAndFollowing,
 }: ItemActionMenuProps) {
   const [documentCount, setDocumentCount] = useState(0);
   const [showDocumentViewer, setShowDocumentViewer] = useState(false);
+  const [showRecurringDialog, setShowRecurringDialog] = useState(false);
+  const [recurringActionType, setRecurringActionType] = useState<'delete' | 'edit'>('delete');
 
   // Fetch document count when item changes
   useEffect(() => {
@@ -64,8 +71,16 @@ export function ItemActionMenu({
   if (!item) return null;
 
   const handleEdit = () => {
-    onEdit(item.id);
-    onClose();
+    // Check if this is a recurring item
+    if (item.recurring_series_id && item.occurrence_index !== undefined && onUpdateRecurringThisAndFollowing) {
+      // Show recurring dialog for edit
+      setRecurringActionType('edit');
+      setShowRecurringDialog(true);
+    } else {
+      // Non-recurring item - edit normally
+      onEdit(item.id);
+      onClose();
+    }
   };
 
   const handleComplete = () => {
@@ -85,8 +100,40 @@ export function ItemActionMenu({
   };
 
   const handleDelete = () => {
-    if (confirm('Are you sure you want to delete this item?')) {
-      onDelete(item.id);
+    // Check if this is a recurring item
+    if (item.recurring_series_id && item.occurrence_index !== undefined && onDeleteRecurringThisAndFollowing) {
+      // Show recurring dialog
+      setRecurringActionType('delete');
+      setShowRecurringDialog(true);
+    } else {
+      // Non-recurring item - simple confirm
+      if (confirm('Are you sure you want to delete this item?')) {
+        onDelete(item.id);
+        onClose();
+      }
+    }
+  };
+
+  const handleDeleteThisOnly = () => {
+    onDelete(item.id);
+    onClose();
+  };
+
+  const handleDeleteThisAndFollowing = () => {
+    if (item && onDeleteRecurringThisAndFollowing) {
+      onDeleteRecurringThisAndFollowing(item);
+      onClose();
+    }
+  };
+
+  const handleEditThisOnly = () => {
+    onEdit(item.id);
+    onClose();
+  };
+
+  const handleEditThisAndFollowing = () => {
+    if (item && onUpdateRecurringThisAndFollowing) {
+      onUpdateRecurringThisAndFollowing(item);
       onClose();
     }
   };
@@ -215,6 +262,15 @@ export function ItemActionMenu({
         }}
         timelineItemId={item.id}
         timelineItemTitle={item.title}
+      />
+
+      {/* Recurring Action Dialog */}
+      <RecurringActionDialog
+        open={showRecurringDialog}
+        onClose={() => setShowRecurringDialog(false)}
+        actionType={recurringActionType}
+        onThisOnly={recurringActionType === 'delete' ? handleDeleteThisOnly : handleEditThisOnly}
+        onThisAndFollowing={recurringActionType === 'delete' ? handleDeleteThisAndFollowing : handleEditThisAndFollowing}
       />
     </Dialog>
   );

@@ -37,6 +37,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { Brain, Sparkles, ListTree } from 'lucide-react';
 import { AITaskBreakdown } from '@/components/ai/AITaskBreakdown';
 import { AIMeetingPrep } from '@/components/ai/AIMeetingPrep';
+import { RecurringActionDialog } from './RecurringActionDialog';
 import { shouldAutoDecompose } from '@/lib/ai/prompts/task-breakdown';
 import type { Subtask } from '@/lib/ai/prompts/task-breakdown';
 
@@ -58,6 +59,7 @@ interface AddItemFormProps {
     }
   ) => Promise<void>;
   onUpdateItem?: (itemId: string, updates: Partial<TimelineItem>) => Promise<void>;
+  onUpdateRecurringThisAndFollowing?: (item: TimelineItem, updates: Partial<TimelineItem>) => Promise<void>;
   onAddLayer: (name: string, color?: string) => Promise<any>;
   initialStartTime?: string;
   initialLayerId?: string;
@@ -70,6 +72,7 @@ export function AddItemForm({
   layers,
   onAddItem,
   onUpdateItem,
+  onUpdateRecurringThisAndFollowing,
   onAddLayer,
   initialStartTime,
   initialLayerId,
@@ -90,6 +93,8 @@ export function AddItemForm({
   const [newLayerName, setNewLayerName] = useState('');
   const [isCreatingLayer, setIsCreatingLayer] = useState(false);
   const [color, setColor] = useState(getRandomItemColor());
+  const [showRecurringDialog, setShowRecurringDialog] = useState(false);
+  const [pendingUpdates, setPendingUpdates] = useState<Partial<TimelineItem> | null>(null);
 
   // Team-related state
   const [visibility, setVisibility] = useState<'personal' | 'team' | 'assigned'>('personal');
@@ -189,8 +194,8 @@ export function AddItemForm({
     startTime.setHours(startTime.getHours() + hoursFromNow);
 
     if (isEditMode && editingItem && onUpdateItem) {
-      // Update existing item
-      await onUpdateItem(editingItem.id, {
+      // Prepare updates
+      const updates = {
         title: title.trim(),
         layer_id: layerId,
         start_time: startTime.toISOString(),
@@ -199,7 +204,18 @@ export function AddItemForm({
         is_meeting: isMeeting,
         is_flexible: isFlexible,
         color: color,
-      });
+      };
+
+      // Check if this is a recurring item
+      if (editingItem.recurring_series_id && editingItem.occurrence_index !== null && onUpdateRecurringThisAndFollowing) {
+        // Store pending updates and show recurring dialog
+        setPendingUpdates(updates);
+        setShowRecurringDialog(true);
+        return; // Don't close the form yet
+      } else {
+        // Non-recurring item - update normally
+        await onUpdateItem(editingItem.id, updates);
+      }
     } else {
       // Add new item
       const teamOptions = team ? {
@@ -218,6 +234,52 @@ export function AddItemForm({
         teamOptions
       );
     }
+
+    // Reset form
+    setTitle('');
+    setHoursFromNow(1);
+    setDuration(60);
+    setPlannedDuration(30);
+    setIsMeeting(false);
+    setIsFlexible(true);
+    setColor(getRandomItemColor());
+    setNewLayerName('');
+    setIsCreatingLayer(false);
+    setVisibility('personal');
+    setAssignedTo('');
+    onClose();
+  };
+
+  // Handle updating just this occurrence
+  const handleUpdateThisOnly = async () => {
+    if (!editingItem || !pendingUpdates || !onUpdateItem) return;
+
+    await onUpdateItem(editingItem.id, pendingUpdates);
+    setPendingUpdates(null);
+    setShowRecurringDialog(false);
+
+    // Reset form
+    setTitle('');
+    setHoursFromNow(1);
+    setDuration(60);
+    setPlannedDuration(30);
+    setIsMeeting(false);
+    setIsFlexible(true);
+    setColor(getRandomItemColor());
+    setNewLayerName('');
+    setIsCreatingLayer(false);
+    setVisibility('personal');
+    setAssignedTo('');
+    onClose();
+  };
+
+  // Handle updating this and all following occurrences
+  const handleUpdateThisAndFollowing = async () => {
+    if (!editingItem || !pendingUpdates || !onUpdateRecurringThisAndFollowing) return;
+
+    await onUpdateRecurringThisAndFollowing(editingItem, pendingUpdates);
+    setPendingUpdates(null);
+    setShowRecurringDialog(false);
 
     // Reset form
     setTitle('');
@@ -571,6 +633,15 @@ export function AddItemForm({
           </DialogFooter>
         </form>
       </DialogContent>
+
+      {/* Recurring Action Dialog */}
+      <RecurringActionDialog
+        open={showRecurringDialog}
+        onClose={() => setShowRecurringDialog(false)}
+        actionType="edit"
+        onThisOnly={handleUpdateThisOnly}
+        onThisAndFollowing={handleUpdateThisAndFollowing}
+      />
     </Dialog>
   );
 }

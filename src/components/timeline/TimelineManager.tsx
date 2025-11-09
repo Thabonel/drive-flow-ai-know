@@ -23,6 +23,7 @@ import { useTimeline } from '@/hooks/useTimeline';
 import { useLayers } from '@/hooks/useLayers';
 import { useRoutines } from '@/hooks/useRoutines';
 import { useTimelineSync } from '@/hooks/useTimelineSync';
+import { useTasks } from '@/hooks/useTasks';
 import { TimelineItem, clamp } from '@/lib/timelineUtils';
 import {
   DEFAULT_PIXELS_PER_HOUR,
@@ -56,6 +57,8 @@ export function TimelineManager() {
     parkItem,
     restoreParkedItem,
     deleteItem,
+    deleteRecurringThisAndFollowing,
+    updateRecurringThisAndFollowing,
     deleteParkedItem,
     updateSettings,
     refetchItems,
@@ -71,6 +74,12 @@ export function TimelineManager() {
     toggleLayerVisibility,
     refetch: refetchLayers,
   } = useLayers();
+
+  const {
+    tasks: unscheduledTasks,
+    loading: tasksLoading,
+    refetch: refetchTasks,
+  } = useTasks();
 
   // Real-time sync
   useTimelineSync({
@@ -152,6 +161,14 @@ export function TimelineManager() {
       setEditingItem(item);
       setShowAddItemForm(true);
     }
+  };
+
+  // Handle edit recurring item (this and following)
+  const handleEditRecurringThisAndFollowing = (item: TimelineItem) => {
+    // Open the edit form with the item
+    // AddItemForm will handle the "this and following" logic on submit
+    setEditingItem(item);
+    setShowAddItemForm(true);
   };
 
   // Handle lock toggle
@@ -422,7 +439,12 @@ export function TimelineManager() {
           </div>
 
           {/* Unscheduled Tasks Panel */}
-          <TaskHeaderPanel onAddTaskClick={() => setShowAddTask(true)} />
+          <TaskHeaderPanel
+            tasks={unscheduledTasks}
+            loading={tasksLoading}
+            onRefetch={refetchTasks}
+            onAddTaskClick={() => setShowAddTask(true)}
+          />
         </div>
       </div>
 
@@ -430,6 +452,7 @@ export function TimelineManager() {
       <AddTaskOverlay
         isOpen={showAddTask}
         onClose={() => setShowAddTask(false)}
+        onTaskCreated={refetchTasks}
       />
 
       {/* Logjam alert */}
@@ -501,6 +524,7 @@ export function TimelineManager() {
         layers={layers}
         onAddItem={addItem}
         onUpdateItem={updateItem}
+        onUpdateRecurringThisAndFollowing={updateRecurringThisAndFollowing}
         onAddLayer={addLayer}
         initialStartTime={initialFormValues?.startTime}
         initialLayerId={initialFormValues?.layerId}
@@ -516,6 +540,8 @@ export function TimelineManager() {
         onReschedule={rescheduleItem}
         onPark={parkItem}
         onDelete={deleteItem}
+        onDeleteRecurringThisAndFollowing={deleteRecurringThisAndFollowing}
+        onUpdateRecurringThisAndFollowing={handleEditRecurringThisAndFollowing}
       />
 
       <ParkedItemsPanel
