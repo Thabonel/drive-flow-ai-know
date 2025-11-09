@@ -332,30 +332,6 @@ serve(async (req) => {
     const user_id = user.id;
     console.log('Authenticated user ID:', user_id);
 
-    // Simple rate limiting: 100 queries/hour to prevent abuse
-    try {
-      const rateCheck = await supabaseService.rpc('check_query_limit', { p_user_id: user_id });
-
-      if (rateCheck.data && !rateCheck.data.allowed) {
-        console.warn(`User ${user_id} rate limited: ${rateCheck.data.queries_this_hour} queries this hour`);
-
-        return new Response(
-          JSON.stringify({
-            error: 'Rate limit exceeded',
-            response: 'You\'ve made too many queries in the past hour. Please take a short break and try again in a few minutes.',
-            queries_this_hour: rateCheck.data.queries_this_hour
-          }),
-          {
-            status: 429, // Too Many Requests
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          }
-        );
-      }
-    } catch (rateLimitError) {
-      console.error('Error checking rate limit:', rateLimitError);
-      // Fail open - don't block users if rate check fails
-    }
-
     const { data: settings } = await supabaseService
       .from('user_settings')
       .select('model_preference, personal_prompt')
@@ -733,15 +709,6 @@ serve(async (req) => {
     if (!aiAnswer || aiAnswer.trim() === '') {
       console.warn('Empty AI response received');
       aiAnswer = "I'm sorry, I couldn't generate a response to your question. Please try rephrasing or try again.";
-    }
-
-    // Increment query count for usage tracking
-    try {
-      await supabaseService.rpc('increment_query_count', { p_user_id: user_id });
-      console.log('Query count incremented');
-    } catch (countError) {
-      console.error('Failed to increment query count:', countError);
-      // Don't fail the main request
     }
 
     // Save query to history
