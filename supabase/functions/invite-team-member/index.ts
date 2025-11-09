@@ -1,13 +1,9 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
-import { getCorsHeaders } from "../_shared/cors.ts";
+import { corsHeaders } from "../_shared/cors.ts";
 
 console.log("Invite Team Member function initialized");
 
 Deno.serve(async (req) => {
-  // Get CORS headers with origin validation
-  const origin = req.headers.get('origin');
-  const corsHeaders = getCorsHeaders(origin);
-
   // Handle CORS preflight
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -145,23 +141,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Generate secure invitation token (plain and hashed)
-    const { data: tokenData, error: tokenError } = await supabase
-      .rpc('generate_invitation_token')
-      .single();
-
-    if (tokenError || !tokenData) {
-      console.error("Token generation error:", tokenError);
-      return new Response(
-        JSON.stringify({ error: "Failed to generate invitation token" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    const plainToken = tokenData.plain_token;
-    const hashedToken = tokenData.hashed_token;
-
-    // Create invitation with hashed token
+    // Create invitation
     const { data: invitation, error: inviteError } = await supabase
       .from("team_invitations")
       .insert({
@@ -169,9 +149,6 @@ Deno.serve(async (req) => {
         email: email.toLowerCase(),
         role,
         invited_by: user.id,
-        hashed_token: hashedToken,
-        // Keep old token for backward compatibility during migration
-        invitation_token: plainToken,
       })
       .select()
       .single();
@@ -184,9 +161,9 @@ Deno.serve(async (req) => {
       );
     }
 
-    // TODO: Send invitation email with plainToken
-    // IMPORTANT: Never log or store the plain token anywhere except in the email
-    const inviteUrl = `${Deno.env.get("FRONTEND_URL")}/accept-invite/${plainToken}`;
+    // TODO: Send invitation email
+    // For now, return the invitation token
+    const inviteUrl = `${Deno.env.get("FRONTEND_URL")}/accept-invite/${invitation.invitation_token}`;
 
     console.log(`Invitation created for ${email} to team ${team_id}`);
 
