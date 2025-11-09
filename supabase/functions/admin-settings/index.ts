@@ -1,12 +1,12 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+import { getCorsHeaders } from '../_shared/cors.ts';
 
 serve(async (req) => {
+  // Get CORS headers with origin validation
+  const origin = req.headers.get('origin');
+  const corsHeaders = getCorsHeaders(origin);
+
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -30,15 +30,16 @@ serve(async (req) => {
       throw new Error('User not authenticated');
     }
 
-    // Check if user is admin
-    const { data: userRoles, error: rolesError } = await supabaseClient
-      .from('user_roles')
-      .select('role')
-      .eq('user_id', user.id)
-      .eq('role', 'admin')
-      .single();
+    // Check if user is admin using secure RPC function
+    const { data: isAdmin, error: adminCheckError } = await supabaseClient
+      .rpc('is_user_admin', { p_user_id: user.id });
 
-    if (rolesError || !userRoles) {
+    if (adminCheckError) {
+      console.error('Admin check error:', adminCheckError);
+      throw new Error('Failed to verify admin status');
+    }
+
+    if (!isAdmin) {
       throw new Error('Unauthorized: Admin access required');
     }
 
