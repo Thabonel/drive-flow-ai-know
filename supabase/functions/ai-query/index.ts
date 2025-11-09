@@ -198,8 +198,24 @@ async function claudeCompletion(messages: Message[], systemMessage: string) {
         }),
       });
 
+      if (!followUpResponse.ok) {
+        console.error('Follow-up API error:', followUpResponse.status, followUpResponse.statusText);
+        const errorText = await followUpResponse.text();
+        console.error('Follow-up error details:', errorText);
+        throw new Error(`Follow-up Claude API error: ${followUpResponse.status}`);
+      }
+
       const followUpData = await followUpResponse.json();
-      return followUpData.content?.find((block: any) => block.type === 'text')?.text ?? '';
+      console.log('Follow-up response stop_reason:', followUpData.stop_reason);
+      console.log('Follow-up content blocks:', followUpData.content?.map((b: any) => ({ type: b.type, hasText: !!b.text })));
+
+      const textBlock = followUpData.content?.find((block: any) => block.type === 'text');
+      if (!textBlock || !textBlock.text) {
+        console.error('No text block in follow-up response. Full content:', JSON.stringify(followUpData.content));
+        return "I found search results but had trouble generating a response. Please try rephrasing your question.";
+      }
+      console.log('Extracted text length:', textBlock.text.length);
+      return textBlock.text;
     }
   }
 
