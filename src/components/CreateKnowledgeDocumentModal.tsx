@@ -219,46 +219,78 @@ export const CreateKnowledgeDocumentModal = ({ trigger }: CreateKnowledgeDocumen
       return;
     }
 
-    try {
-      const { data, error } = await supabase.functions.invoke('ai-query', {
-        body: {
-          query: `Write content for a document titled: "${formData.title}". Include main sections, key points, and useful info. Use markdown format.`
-        }
-      });
+    const maxRetries = 3;
+    let lastError;
 
-      if (error) throw error;
-
-      const generatedContent = data.response || 'AI-generated content will appear here.';
-      const sizeBytes = new Blob([generatedContent]).size;
-
-      // Check if generated content exceeds size limit
-      if (sizeBytes > MAX_CONTENT_SIZE) {
-        toast({
-          title: 'Content too large',
-          description: `AI generated ${(sizeBytes / 1024 / 1024).toFixed(2)}MB of content, which exceeds the ${(MAX_CONTENT_SIZE / 1024 / 1024).toFixed(0)}MB limit. Try a more specific title.`,
-          variant: 'destructive',
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        const { data, error } = await supabase.functions.invoke('ai-query', {
+          body: {
+            query: `Write content for a document titled: "${formData.title}". Include main sections, key points, and useful info. Use markdown format.`
+          }
         });
-        return;
+
+        if (error) {
+          // Check if it's an Overloaded error
+          const errorStr = JSON.stringify(error);
+          if (errorStr.includes('Overloaded') && attempt < maxRetries) {
+            // Wait before retrying (exponential backoff)
+            const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000);
+            console.log(`API overloaded, retrying in ${delay}ms (attempt ${attempt}/${maxRetries})`);
+            await new Promise(resolve => setTimeout(resolve, delay));
+            continue; // Try again
+          }
+          throw error;
+        }
+
+        const generatedContent = data.response || 'AI-generated content will appear here.';
+        const sizeBytes = new Blob([generatedContent]).size;
+
+        // Check if generated content exceeds size limit
+        if (sizeBytes > MAX_CONTENT_SIZE) {
+          toast({
+            title: 'Content too large',
+            description: `AI generated ${(sizeBytes / 1024 / 1024).toFixed(2)}MB of content, which exceeds the ${(MAX_CONTENT_SIZE / 1024 / 1024).toFixed(0)}MB limit. Try a more specific title.`,
+            variant: 'destructive',
+          });
+          return;
+        }
+
+        setFormData({
+          ...formData,
+          content: generatedContent
+        });
+        setContentSize(sizeBytes);
+
+        toast({
+          title: 'Content Generated',
+          description: 'AI has generated content based on your title.',
+        });
+        return; // Exit on success
+
+      } catch (error) {
+        lastError = error;
+        if (attempt < maxRetries) {
+          const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000);
+          console.log(`Error generating content, retrying in ${delay}ms (attempt ${attempt}/${maxRetries})`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+          continue;
+        }
       }
-
-      setFormData({
-        ...formData,
-        content: generatedContent
-      });
-      setContentSize(sizeBytes);
-
-      toast({
-        title: 'Content Generated',
-        description: 'AI has generated content based on your title.',
-      });
-    } catch (error) {
-      console.error('Error generating content:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to generate content. Please try again.',
-        variant: 'destructive',
-      });
     }
+
+    // All retries failed
+    console.error('Error generating content after retries:', lastError);
+    const errorStr = JSON.stringify(lastError);
+    const isOverloaded = errorStr.includes('Overloaded') || errorStr.includes('api_error');
+
+    toast({
+      title: isOverloaded ? 'AI Service Temporarily Unavailable' : 'Error',
+      description: isOverloaded
+        ? 'The AI provider is experiencing high load. Please try again in a moment.'
+        : 'Failed to generate content. Please try again.',
+      variant: 'destructive',
+    });
   };
 
   return (
@@ -271,7 +303,7 @@ export const CreateKnowledgeDocumentModal = ({ trigger }: CreateKnowledgeDocumen
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center">
             <FileText className="h-5 w-5 mr-2" />
