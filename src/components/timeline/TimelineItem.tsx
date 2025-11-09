@@ -216,7 +216,6 @@ export function TimelineItem({
           stroke={isDragging || isResizing ? '#3b82f6' : (shouldPulse ? '#ef4444' : 'none')}
           strokeWidth={isDragging || isResizing ? 2 : (shouldPulse ? 3 : 0)}
           className={shouldPulse && !isDragging && !isResizing ? 'animate-pulse' : ''}
-          filter={isDragging || isResizing ? 'url(#timeline-shadow-active)' : 'url(#timeline-shadow-normal)'}
         />
 
       {/* Item text (only if wide enough) */}

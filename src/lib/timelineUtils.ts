@@ -12,6 +12,8 @@ export interface TimelineItem {
   status: 'active' | 'logjam' | 'completed' | 'parked';
   color: string;
   completed_at?: string | null;
+  recurring_series_id?: string | null; // UUID to group recurring items
+  occurrence_index?: number | null; // Index of this occurrence (0-based)
   created_at: string;
   updated_at: string;
 }

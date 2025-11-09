@@ -18,6 +18,7 @@ export interface Task {
   priority: number;
   color: string;
   tags: string[];
+  is_template: boolean;
   is_recurring: boolean;
   recurrence_pattern: RecurrencePattern | null;
   recurrence_end_date: string | null;
@@ -105,6 +106,7 @@ export const useTasks = () => {
       priority?: number;
       color?: string;
       tags?: string[];
+      isTemplate?: boolean;
       isRecurring?: boolean;
       recurrencePattern?: RecurrencePattern;
       recurrenceEndDate?: string;
@@ -123,6 +125,7 @@ export const useTasks = () => {
           priority: options?.priority ?? 0,
           color: options?.color ?? '#3b82f6',
           tags: options?.tags ?? [],
+          is_template: options?.isTemplate ?? false,
           is_recurring: options?.isRecurring ?? false,
           recurrence_pattern: options?.recurrencePattern ?? null,
           recurrence_end_date: options?.recurrenceEndDate ?? null,

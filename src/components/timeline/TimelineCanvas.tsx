@@ -184,40 +184,8 @@ export function TimelineCanvas({
       onMouseLeave={handleMouseUp}
       onDoubleClick={handleCanvasDoubleClick}
     >
-      {/* SVG Filter Definitions for 3D Shadow Effect */}
+      {/* SVG Filter Definitions */}
       <defs>
-        {/* Normal state shadow - dual layer for 3D depth */}
-        <filter id="timeline-shadow-normal" x="-50%" y="-50%" width="200%" height="200%">
-          <feDropShadow
-            dx="0"
-            dy="4"
-            stdDeviation="4"
-            floodColor="rgba(0, 0, 0, 0.15)"
-          />
-          <feDropShadow
-            dx="0"
-            dy="16"
-            stdDeviation="16"
-            floodColor="rgba(0, 0, 0, 0.25)"
-          />
-        </filter>
-
-        {/* Active state shadow (dragging/resizing) - stronger 3D effect */}
-        <filter id="timeline-shadow-active" x="-50%" y="-50%" width="200%" height="200%">
-          <feDropShadow
-            dx="0"
-            dy="8"
-            stdDeviation="8"
-            floodColor="rgba(0, 0, 0, 0.25)"
-          />
-          <feDropShadow
-            dx="0"
-            dy="24"
-            stdDeviation="24"
-            floodColor="rgba(0, 0, 0, 0.35)"
-          />
-        </filter>
-
         {/* NOW line glow effect */}
         <filter id="now-line-glow" x="-50%" y="-50%" width="200%" height="200%">
           <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
@@ -369,18 +337,16 @@ export function TimelineCanvas({
 
         return (
           <g key={layer.id}>
-            {/* Layer background */}
+            {/* Layer background - uniform dark color with light border */}
             <rect
               x="0"
               y={y}
               width="100%"
               height={layerHeight}
               fill="currentColor"
-              className={
-                index % 2 === 0
-                  ? 'text-gray-50 dark:text-gray-900'
-                  : 'text-white dark:text-gray-850'
-              }
+              className="text-gray-50 dark:text-gray-900"
+              stroke="rgba(255, 255, 255, 0.1)"
+              strokeWidth={1}
               opacity={0.5}
             />
 

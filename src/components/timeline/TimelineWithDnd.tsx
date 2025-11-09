@@ -17,11 +17,17 @@ import { Task, useTasks } from '@/hooks/useTasks';
 import { useTimeline } from '@/hooks/useTimeline';
 import { useLayers } from '@/hooks/useLayers';
 import { Badge } from '@/components/ui/badge';
-import { Clock } from 'lucide-react';
-import { calculateRecurringDates } from '@/lib/recurrence';
+import { Clock, Loader2 } from 'lucide-react';
+import { calculateRecurringDates, alignStartDateToPattern } from '@/lib/recurrence';
 import { useToast } from '@/hooks/use-toast';
+import { NOW_LINE_POSITION, VIEW_MODE_CONFIG, TimelineViewMode } from '@/lib/timelineConstants';
 
-export function TimelineWithDnd() {
+interface TimelineWithDndProps {
+  refetchItems: () => Promise<void>;
+  refetchTasks: () => Promise<void>;
+}
+
+export function TimelineWithDnd({ refetchItems, refetchTasks }: TimelineWithDndProps) {
   const [activeTask, setActiveTask] = useState<Task | null>(null);
   const [dropPreview, setDropPreview] = useState<{
     time: string;
@@ -32,9 +38,24 @@ export function TimelineWithDnd() {
 
   const timelineRef = useRef<HTMLDivElement>(null);
   const { deleteTask } = useTasks();
-  const { addItem } = useTimeline();
+  const { addItem, settings, scrollOffset, nowTime } = useTimeline();
   const { layers } = useLayers();
   const { toast } = useToast();
+
+  // Loading guard - ensure all required data is loaded before rendering DndContext
+  if (layers.length === 0 || !nowTime || !settings) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  // Calculate pixelsPerHour from settings (same as TimelineManager)
+  const viewMode = (settings?.view_mode as TimelineViewMode) || 'day';
+  const viewModeConfig = VIEW_MODE_CONFIG[viewMode];
+  const basePixelsPerHour = viewModeConfig.pixelsPerHour;
+  const pixelsPerHour = ((settings?.zoom_horizontal || 100) / 100) * basePixelsPerHour;
 
   // Configure sensors for drag and drop
   const mouseSensor = useSensor(MouseSensor, {
@@ -54,11 +75,17 @@ export function TimelineWithDnd() {
 
   // Calculate drop position (time and layer) from mouse coordinates
   const calculateDropPosition = useCallback((event: DragMoveEvent | DragEndEvent) => {
-    if (!timelineRef.current || layers.length === 0) return null;
+    if (!timelineRef.current || layers.length === 0 || !nowTime) return null;
 
     const rect = timelineRef.current.getBoundingClientRect();
-    const x = event.activatorEvent ? (event.activatorEvent as MouseEvent).clientX : 0;
-    const y = event.activatorEvent ? (event.activatorEvent as MouseEvent).clientY : 0;
+
+    // Use final drop position: activatorEvent + delta
+    const activatorX = event.activatorEvent ? (event.activatorEvent as MouseEvent).clientX : 0;
+    const activatorY = event.activatorEvent ? (event.activatorEvent as MouseEvent).clientY : 0;
+    const deltaX = event.delta?.x || 0;
+    const deltaY = event.delta?.y || 0;
+    const x = activatorX + deltaX;
+    const y = activatorY + deltaY;
 
     // Calculate which layer based on Y position
     const relativeY = y - rect.top;
@@ -69,14 +96,14 @@ export function TimelineWithDnd() {
 
     if (!targetLayer) return null;
 
-    // Calculate time based on X position (simplified - assumes NOW line at center)
-    // In reality, this should use the timeline's scroll offset and zoom level
-    const now = new Date();
+    // Calculate time based on X position using proper timeline formula
+    // Formula: itemX = nowLineX + (hoursFromNow * pixelsPerHour) + scrollOffset
+    // Reverse: hoursFromNow = (x - nowLineX - scrollOffset) / pixelsPerHour
     const relativeX = x - rect.left;
-    const centerX = rect.width * 0.3; // NOW_LINE_POSITION
-    const hoursFromNow = (relativeX - centerX) / 60; // Rough estimate
+    const nowLineX = rect.width * NOW_LINE_POSITION;
+    const hoursFromNow = (relativeX - nowLineX - scrollOffset) / pixelsPerHour;
 
-    const targetTime = new Date(now.getTime() + hoursFromNow * 60 * 60 * 1000);
+    const targetTime = new Date(nowTime.getTime() + hoursFromNow * 60 * 60 * 1000);
 
     // Snap to 15-minute intervals
     const minutes = targetTime.getMinutes();
@@ -91,7 +118,7 @@ export function TimelineWithDnd() {
       x: relativeX,
       y: relativeY,
     };
-  }, [layers]);
+  }, [layers, nowTime, scrollOffset, pixelsPerHour]);
 
   // Handle drag start
   const handleDragStart = (event: DragStartEvent) => {
@@ -129,17 +156,25 @@ export function TimelineWithDnd() {
     try {
       // Check if this is a recurring task
       if (task.is_recurring && task.recurrence_pattern) {
+        // Align the start date to match the recurrence pattern
+        // E.g., if pattern is "Monday" but dropped on "Wednesday", start on next Monday
+        const alignedStartDate = alignStartDateToPattern(
+          dropPreview.time,
+          task.recurrence_pattern
+        );
+
         console.log('Scheduling recurring task:', {
           layerId: dropPreview.layerId,
           title: task.title,
-          time: dropPreview.time,
+          originalDropTime: dropPreview.time,
+          alignedStartTime: alignedStartDate,
           duration: task.planned_duration_minutes,
           pattern: task.recurrence_pattern,
         });
 
-        // Calculate all occurrence dates
+        // Calculate all occurrence dates starting from aligned date
         const occurrenceDates = calculateRecurringDates(
-          dropPreview.time,
+          alignedStartDate,
           task.recurrence_pattern,
           task.recurrence_end_date,
           52 // Generate up to 52 occurrences (~1 year)
@@ -147,16 +182,24 @@ export function TimelineWithDnd() {
 
         console.log(`Generating ${occurrenceDates.length} recurring instances`);
 
+        // Generate a unique series ID for this recurring task group
+        const recurringSeriesId = crypto.randomUUID();
+
         // Create timeline items for each occurrence
         const createdItems = [];
-        for (const occurrenceDate of occurrenceDates) {
+        for (let index = 0; index < occurrenceDates.length; index++) {
+          const occurrenceDate = occurrenceDates[index];
           try {
             const item = await addItem(
               dropPreview.layerId,
               task.title,
               occurrenceDate,
               task.planned_duration_minutes,
-              task.color
+              task.color,
+              {
+                recurring_series_id: recurringSeriesId,
+                occurrence_index: index,
+              }
             );
             if (item) {
               createdItems.push(item);
@@ -168,9 +211,17 @@ export function TimelineWithDnd() {
         }
 
         if (createdItems.length > 0) {
-          // Delete the task from unscheduled list
-          // Mark as intentional to prevent race condition with real-time subscription
-          await deleteTask(task.id, true);
+          // Only delete if this is a one-off task (not a template)
+          if (!task.is_template) {
+            // Delete the task from unscheduled list
+            // Mark as intentional to prevent race condition with real-time subscription
+            await deleteTask(task.id, true);
+          }
+
+          // Refetch tasks to update dropdown (remove if one-off, keep if template)
+          await refetchTasks();
+          // Ensure timeline refetches to show new items immediately
+          await refetchItems();
 
           toast({
             title: 'Recurring task scheduled',
@@ -193,6 +244,7 @@ export function TimelineWithDnd() {
           time: dropPreview.time,
           duration: task.planned_duration_minutes,
           color: task.color,
+          isTemplate: task.is_template,
         });
 
         const item = await addItem(
@@ -204,9 +256,17 @@ export function TimelineWithDnd() {
         );
 
         if (item) {
-          // Only delete task if item was successfully created
-          // Mark as intentional to prevent race condition with real-time subscription
-          await deleteTask(task.id, true);
+          // Only delete if this is a one-off task (not a template)
+          if (!task.is_template) {
+            // Delete the task from unscheduled list
+            // Mark as intentional to prevent race condition with real-time subscription
+            await deleteTask(task.id, true);
+          }
+
+          // Refetch tasks to update dropdown (remove if one-off, keep if template)
+          await refetchTasks();
+          // Ensure timeline refetches to show new item immediately
+          await refetchItems();
           console.log('Task scheduled successfully');
         }
       }

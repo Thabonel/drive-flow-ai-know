@@ -4,6 +4,8 @@ import React, { useState, useEffect } from 'react';
 import { TimelineWithDnd } from '@/components/timeline/TimelineWithDnd';
 import { useDailyPlanning } from '@/hooks/useDailyPlanning';
 import { useAuth } from '@/hooks/useAuth';
+import { useTimeline } from '@/hooks/useTimeline';
+import { useTasks } from '@/hooks/useTasks';
 import { DailyPlanningFlow } from '@/components/planning/DailyPlanningFlow';
 import { EndOfDayShutdown } from '@/components/planning/EndOfDayShutdown';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -12,6 +14,8 @@ import { X, Moon, Clock } from 'lucide-react';
 
 export default function Timeline() {
   const { user } = useAuth();
+  const { refetchItems } = useTimeline();
+  const { refetch: refetchTasks } = useTasks();
   const {
     settings,
     planningNeeded,
@@ -164,7 +168,7 @@ export default function Timeline() {
       ) : null}
 
       {/* Main Timeline Content */}
-      <TimelineWithDnd />
+      <TimelineWithDnd refetchItems={refetchItems} refetchTasks={refetchTasks} />
 
       {/* Planning Modals */}
       <DailyPlanningFlow
