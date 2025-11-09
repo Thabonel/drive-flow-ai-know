@@ -57,7 +57,10 @@ export const DocumentCard = ({
 
   return (
     <>
-    <Card className="hover:shadow-lg transition-all duration-200 h-full flex flex-col">
+    <Card
+      data-document-card
+      className="hover:shadow-lg transition-all duration-200 h-full flex flex-col"
+    >
       <CardHeader className="pb-4">
         <div className="flex items-start justify-between mb-2">
           <CardTitle className="text-lg line-clamp-2 pr-4">{doc.title}</CardTitle>
