@@ -2,7 +2,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, ArrowUpDown } from 'lucide-react';
+import { Search, ArrowUpDown, X } from 'lucide-react';
 
 interface DocumentSearchFilterProps {
   searchTerm: string;
@@ -23,6 +23,27 @@ export const DocumentSearchFilter = ({
   sortBy,
   onSortChange,
 }: DocumentSearchFilterProps) => {
+  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const firstDocument = document.querySelector('[data-document-card]');
+      if (firstDocument) {
+        firstDocument.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    }
+  };
+
+  const handleSearchClick = () => {
+    const firstDocument = document.querySelector('[data-document-card]');
+    if (firstDocument) {
+      firstDocument.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  };
+
+  const handleClearSearch = () => {
+    onSearchChange('');
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -30,15 +51,31 @@ export const DocumentSearchFilter = ({
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search documents... (Press / to focus)"
-              value={searchTerm}
-              onChange={(e) => onSearchChange(e.target.value)}
-              className="pl-10"
-              aria-label="Search documents"
-            />
+          <div className="flex gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search documents... (Press Enter to search)"
+                value={searchTerm}
+                onChange={(e) => onSearchChange(e.target.value)}
+                onKeyDown={handleSearchKeyDown}
+                className="pl-10 pr-10"
+                aria-label="Search documents"
+              />
+              {searchTerm && (
+                <button
+                  onClick={handleClearSearch}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  aria-label="Clear search"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+            <Button onClick={handleSearchClick} variant="default" size="default">
+              <Search className="h-4 w-4 mr-2" />
+              Search
+            </Button>
           </div>
           <div className="relative">
             <ArrowUpDown className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
