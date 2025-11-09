@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { DocumentCard } from '@/components/DocumentCard';
+import { DocumentViewerModal } from '@/components/DocumentViewerModal';
 
 function useDebounce<T>(value: T, delay = 300) {
   const [debounced, setDebounced] = useState(value);
@@ -23,6 +24,8 @@ export const DocumentList = () => {
   const { user } = useAuth();
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
+  const [viewerDocument, setViewerDocument] = useState<any>(null);
+  const [isViewerOpen, setIsViewerOpen] = useState(false);
   const debouncedSearch = useDebounce(search);
 
   const { data: documents, isLoading } = useQuery({
@@ -67,12 +70,34 @@ export const DocumentList = () => {
     return colors[category] || 'bg-muted';
   };
 
+  const isManualDocument = (doc: any) => {
+    // Check if document is manually created, uploaded, or AI-generated (not from Google Drive)
+    return doc.file_type === 'manual' ||
+           doc.google_file_id?.startsWith('manual-') ||
+           doc.google_file_id?.startsWith('upload_') ||
+           doc.google_file_id?.startsWith('ai_generated_');
+  };
+
   const handleViewDocument = (doc: any) => {
-    window.open(`https://drive.google.com/file/d/${doc.google_file_id}/view`, '_blank');
+    if (isManualDocument(doc)) {
+      // Open in modal viewer for manual/local documents
+      setViewerDocument(doc);
+      setIsViewerOpen(true);
+    } else {
+      // Open Google Drive for actual Drive documents
+      window.open(`https://drive.google.com/file/d/${doc.google_file_id}/view`, '_blank');
+    }
   };
 
   const handleEditDocument = (doc: any) => {
-    window.open(`https://docs.google.com/document/d/${doc.google_file_id}/edit`, '_blank');
+    if (isManualDocument(doc)) {
+      // Open in modal viewer for manual/local documents
+      setViewerDocument(doc);
+      setIsViewerOpen(true);
+    } else {
+      // Open Google Drive for actual Drive documents
+      window.open(`https://docs.google.com/document/d/${doc.google_file_id}/edit`, '_blank');
+    }
   };
 
   if (isLoading) {
@@ -121,6 +146,15 @@ export const DocumentList = () => {
           </Button>
         </div>
       )}
+
+      <DocumentViewerModal
+        document={viewerDocument}
+        isOpen={isViewerOpen}
+        onClose={() => {
+          setIsViewerOpen(false);
+          setViewerDocument(null);
+        }}
+      />
     </div>
   );
 };
