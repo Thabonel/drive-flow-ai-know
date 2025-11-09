@@ -1,13 +1,9 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
-import { getCorsHeaders } from "../_shared/cors.ts";
+import { corsHeaders } from "../_shared/cors.ts";
 
 console.log("Accept Team Invitation function initialized");
 
 Deno.serve(async (req) => {
-  // Get CORS headers with origin validation
-  const origin = req.headers.get('origin');
-  const corsHeaders = getCorsHeaders(origin);
-
   // Handle CORS preflight
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -42,54 +38,21 @@ Deno.serve(async (req) => {
       );
     }
 
-    const { token: plainToken, invitation_token } = await req.json();
+    const { invitation_token } = await req.json();
 
-    // Support both 'token' (new) and 'invitation_token' (legacy) parameter names
-    const tokenToUse = plainToken || invitation_token;
-
-    if (!tokenToUse) {
+    if (!invitation_token) {
       return new Response(
         JSON.stringify({ error: "Invitation token is required" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Hash the token for secure lookup
-    const { data: hashedToken, error: hashError } = await supabase
-      .rpc('hash_invitation_token', { token: tokenToUse })
-      .single();
-
-    if (hashError || !hashedToken) {
-      console.error("Token hashing error:", hashError);
-      return new Response(
-        JSON.stringify({ error: "Failed to process invitation token" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    // Get invitation using hashed token (secure)
-    let invitation, inviteError;
-    const invitationQuery = await supabase
+    // Get invitation
+    const { data: invitation, error: inviteError } = await supabase
       .from("team_invitations")
       .select("*, teams(*)")
-      .eq("hashed_token", hashedToken)
+      .eq("invitation_token", invitation_token)
       .single();
-
-    invitation = invitationQuery.data;
-    inviteError = invitationQuery.error;
-
-    // Fallback to old plaintext token lookup for backward compatibility
-    if (inviteError && inviteError.code === 'PGRST116') {
-      console.log("Trying legacy token lookup for backward compatibility");
-      const legacyQuery = await supabase
-        .from("team_invitations")
-        .select("*, teams(*)")
-        .eq("invitation_token", tokenToUse)
-        .single();
-
-      invitation = legacyQuery.data;
-      inviteError = legacyQuery.error;
-    }
 
     if (inviteError || !invitation) {
       console.error("Invitation lookup error:", inviteError);

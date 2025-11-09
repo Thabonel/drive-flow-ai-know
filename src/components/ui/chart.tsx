@@ -65,42 +65,6 @@ const ChartContainer = React.forwardRef<
 })
 ChartContainer.displayName = "Chart"
 
-// Sanitize CSS color values to prevent injection
-const sanitizeCSSColor = (color: string): string | null => {
-  if (!color || typeof color !== 'string') return null;
-
-  // Allow hex colors (#RGB, #RRGGBB, #RRGGBBAA)
-  if (/^#([0-9a-fA-F]{3}){1,2}([0-9a-fA-F]{2})?$/.test(color)) {
-    return color;
-  }
-
-  // Allow rgb/rgba
-  if (/^rgba?\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*(,\s*[\d.]+\s*)?\)$/.test(color)) {
-    return color;
-  }
-
-  // Allow hsl/hsla
-  if (/^hsla?\(\s*\d+\s*,\s*\d+%\s*,\s*\d+%\s*(,\s*[\d.]+\s*)?\)$/.test(color)) {
-    return color;
-  }
-
-  // Allow CSS named colors (basic allowlist)
-  const namedColors = /^(red|blue|green|yellow|orange|purple|pink|black|white|gray|grey|transparent|currentColor)$/i;
-  if (namedColors.test(color)) {
-    return color;
-  }
-
-  // Reject anything else (prevents injection)
-  return null;
-};
-
-// Sanitize CSS identifier to prevent injection
-const sanitizeCSSIdentifier = (identifier: string): string => {
-  if (!identifier || typeof identifier !== 'string') return 'invalid';
-  // Replace any characters that aren't alphanumeric, hyphen, or underscore
-  return identifier.replace(/[^a-zA-Z0-9_-]/g, '-');
-};
-
 const ChartStyle = ({ id, config }: { id: string; config: ChartConfig }) => {
   const colorConfig = Object.entries(config).filter(
     ([_, config]) => config.theme || config.color
@@ -110,29 +74,20 @@ const ChartStyle = ({ id, config }: { id: string; config: ChartConfig }) => {
     return null
   }
 
-  // Sanitize the id to prevent injection
-  const sanitizedId = sanitizeCSSIdentifier(id);
-
   return (
     <style
       dangerouslySetInnerHTML={{
         __html: Object.entries(THEMES)
           .map(
             ([theme, prefix]) => `
-${prefix} [data-chart=${sanitizedId}] {
+${prefix} [data-chart=${id}] {
 ${colorConfig
   .map(([key, itemConfig]) => {
     const color =
       itemConfig.theme?.[theme as keyof typeof itemConfig.theme] ||
       itemConfig.color
-
-    // Sanitize both the key and color value
-    const sanitizedKey = sanitizeCSSIdentifier(key);
-    const sanitizedColor = color ? sanitizeCSSColor(color) : null;
-
-    return sanitizedColor ? `  --color-${sanitizedKey}: ${sanitizedColor};` : null
+    return color ? `  --color-${key}: ${color};` : null
   })
-  .filter(Boolean)
   .join("\n")}
 }
 `
