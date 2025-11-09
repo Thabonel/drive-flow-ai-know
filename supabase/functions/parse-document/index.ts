@@ -1,9 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+import { basename } from "https://deno.land/std@0.168.0/path/mod.ts"
+import { getCorsHeaders } from '../_shared/cors.ts';
 
 interface DocumentParseRequest {
   fileName: string;
@@ -21,6 +18,10 @@ interface DocumentParseResponse {
 }
 
 serve(async (req) => {
+  // Get CORS headers with origin validation
+  const origin = req.headers.get('origin');
+  const corsHeaders = getCorsHeaders(origin);
+
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -28,20 +29,29 @@ serve(async (req) => {
 
   try {
     console.log('Document parsing request received');
-    
+
     const { fileName, mimeType, fileData }: DocumentParseRequest = await req.json();
-    
+
     if (!fileName || !fileData) {
       throw new Error('Missing required fields: fileName and fileData');
     }
 
-    console.log(`Processing file: ${fileName}, type: ${mimeType}`);
+    // Sanitize fileName to prevent path traversal attacks
+    // Extract only the basename and remove any path components
+    const sanitizedFileName = basename(fileName).replace(/[^a-zA-Z0-9._-]/g, '_');
+
+    // Validate sanitized filename
+    if (!sanitizedFileName || sanitizedFileName.length > 255) {
+      throw new Error('Invalid file name');
+    }
+
+    console.log(`Processing file: ${sanitizedFileName} (original: ${fileName}), type: ${mimeType}`);
 
     // Convert base64 back to binary data
     const binaryData = Uint8Array.from(atob(fileData), c => c.charCodeAt(0));
-    
-    // Create a temporary file for processing
-    const tempFileName = `/tmp/${fileName}`;
+
+    // Create a temporary file for processing using sanitized filename
+    const tempFileName = `/tmp/${sanitizedFileName}`;
     await Deno.writeFile(tempFileName, binaryData);
 
     let result: DocumentParseResponse;
