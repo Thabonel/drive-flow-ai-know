@@ -334,41 +334,39 @@ export function TimelineWithDnd({ refetchItems, refetchTasks }: TimelineWithDndP
         {/* Drag Overlay - shows the dragged task with time indicator */}
         <DragOverlay>
           {activeTask && (
-            <div className="relative">
-              {/* Time indicator box - positioned above dragged card */}
-              {dropPreview && (
-                <div className="absolute -top-12 left-1/2 -translate-x-1/2 text-sm font-semibold text-primary whitespace-nowrap bg-background px-3 py-2 rounded-lg shadow-lg border-2 border-primary z-50">
-                  {new Date(dropPreview.time).toLocaleTimeString([], {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  })}
-                </div>
-              )}
-              {/* Dragged task card */}
-              <div className="p-3 bg-card border-2 border-primary rounded-lg shadow-2xl max-w-[280px]">
-                <div className="flex items-start gap-2">
-                  <div className="flex-1 min-w-0">
-                    <h4 className="font-medium text-sm leading-tight">
-                      {activeTask.title}
-                    </h4>
-                    {activeTask.description && (
-                      <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                        {activeTask.description}
-                      </p>
-                    )}
-                    <div className="flex items-center gap-2 mt-2">
-                      <Badge
-                        variant="outline"
-                        className="text-xs"
-                        style={{
-                          borderColor: activeTask.color,
-                          color: activeTask.color,
-                        }}
-                      >
-                        <Clock className="h-3 w-3 mr-1" />
-                        {formatDuration(activeTask.planned_duration_minutes)}
-                      </Badge>
-                    </div>
+            <div className="p-3 bg-card border-2 border-primary rounded-lg shadow-2xl max-w-[320px]">
+              <div className="flex items-center gap-3">
+                {/* Time indicator - left side, large and bold */}
+                {dropPreview && (
+                  <div className="text-2xl font-bold text-primary whitespace-nowrap">
+                    {new Date(dropPreview.time).toLocaleTimeString([], {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
+                  </div>
+                )}
+                {/* Task content - right side */}
+                <div className="flex-1 min-w-0">
+                  <h4 className="font-medium text-sm leading-tight">
+                    {activeTask.title}
+                  </h4>
+                  {activeTask.description && (
+                    <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                      {activeTask.description}
+                    </p>
+                  )}
+                  <div className="flex items-center gap-2 mt-2">
+                    <Badge
+                      variant="outline"
+                      className="text-xs"
+                      style={{
+                        borderColor: activeTask.color,
+                        color: activeTask.color,
+                      }}
+                    >
+                      <Clock className="h-3 w-3 mr-1" />
+                      {formatDuration(activeTask.planned_duration_minutes)}
+                    </Badge>
                   </div>
                 </div>
               </div>
