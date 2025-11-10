@@ -20,7 +20,7 @@ import { Badge } from '@/components/ui/badge';
 import { Clock, Loader2 } from 'lucide-react';
 import { calculateRecurringDates, alignStartDateToPattern } from '@/lib/recurrence';
 import { useToast } from '@/hooks/use-toast';
-import { NOW_LINE_POSITION, VIEW_MODE_CONFIG, TimelineViewMode } from '@/lib/timelineConstants';
+import { NOW_LINE_POSITION, VIEW_MODE_CONFIG, TimelineViewMode, TIMELINE_HEADER_HEIGHT } from '@/lib/timelineConstants';
 
 interface TimelineWithDndProps {
   refetchItems: () => Promise<void>;
@@ -80,10 +80,30 @@ export function TimelineWithDnd({ refetchItems, refetchTasks }: TimelineWithDndP
 
     // Calculate which layer based on Y position
     const relativeY = y - rect.top;
+
+    // Account for timeline header (time markers at top)
+    const layerY = relativeY - TIMELINE_HEADER_HEIGHT;
+
     const visibleLayers = layers.filter(l => l.is_visible); // Filter visible layers FIRST
-    const layerHeight = rect.height / visibleLayers.length; // Use filtered count
-    const layerIndex = Math.floor(relativeY / layerHeight);
+    const layerHeight = (rect.height - TIMELINE_HEADER_HEIGHT) / visibleLayers.length; // Subtract header from total height
+    const layerIndex = Math.floor(layerY / layerHeight);
     const targetLayer = visibleLayers[Math.max(0, Math.min(layerIndex, visibleLayers.length - 1))];
+
+    // Debug logging
+    console.log('Layer Detection Debug:', {
+      y,
+      rectTop: rect.top,
+      rectHeight: rect.height,
+      relativeY,
+      headerHeight: TIMELINE_HEADER_HEIGHT,
+      layerY,
+      visibleLayersCount: visibleLayers.length,
+      layerHeight,
+      calculatedIndex: layerIndex,
+      clampedIndex: Math.max(0, Math.min(layerIndex, visibleLayers.length - 1)),
+      targetLayerTitle: targetLayer?.title,
+      visibleLayerTitles: visibleLayers.map(l => l.title),
+    });
 
     if (!targetLayer) return null;
 
@@ -211,8 +231,7 @@ export function TimelineWithDnd({ refetchItems, refetchTasks }: TimelineWithDndP
 
           // Refetch tasks to update dropdown (remove if one-off, keep if template)
           await refetchTasks();
-          // Ensure timeline refetches to show new items immediately
-          await refetchItems();
+          // NOTE: No need to call refetchItems() here - addItem() already updates local state for each occurrence
 
           toast({
             title: 'Recurring task scheduled',
@@ -256,8 +275,7 @@ export function TimelineWithDnd({ refetchItems, refetchTasks }: TimelineWithDndP
 
           // Refetch tasks to update dropdown (remove if one-off, keep if template)
           await refetchTasks();
-          // Ensure timeline refetches to show new item immediately
-          await refetchItems();
+          // NOTE: No need to call refetchItems() here - addItem() already updates local state
           console.log('Task scheduled successfully');
         }
       }
