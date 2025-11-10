@@ -13,7 +13,20 @@ async function searchWeb(query: string): Promise<string> {
   }
 
   try {
-    const response = await fetch(`https://api.search.brave.com/res/v1/web/search?q=${encodeURIComponent(query)}&count=5`, {
+    // Detect time-sensitive queries that need fresh results
+    const timeSensitiveKeywords = ['today', 'current', 'now', 'latest', 'recent', 'weather', 'price', 'news', 'stock'];
+    const needsFreshness = timeSensitiveKeywords.some(keyword =>
+      query.toLowerCase().includes(keyword)
+    );
+
+    // Build search URL with freshness parameter for time-sensitive queries
+    let searchUrl = `https://api.search.brave.com/res/v1/web/search?q=${encodeURIComponent(query)}&count=5`;
+    if (needsFreshness) {
+      searchUrl += '&freshness=pd'; // Past day for time-sensitive queries
+      console.log('Time-sensitive query detected, adding freshness=pd filter');
+    }
+
+    const response = await fetch(searchUrl, {
       headers: {
         'Accept': 'application/json',
         'X-Subscription-Token': braveSearchApiKey,
@@ -31,12 +44,39 @@ async function searchWeb(query: string): Promise<string> {
       return "No search results found.";
     }
 
-    // Format search results
+    // Format search results with metadata
     const results = data.web.results.slice(0, 5).map((result: any, index: number) => {
-      return `${index + 1}. ${result.title}\n   ${result.description}\n   URL: ${result.url}`;
+      // Extract domain from URL
+      let domain = '';
+      try {
+        domain = new URL(result.url).hostname.replace('www.', '');
+      } catch {
+        domain = 'unknown';
+      }
+
+      // Build result with metadata
+      let resultText = `${index + 1}. ${result.title}\n   ${result.description}`;
+
+      // Add source and age metadata if available
+      const metadata = [];
+      if (domain) metadata.push(`Source: ${domain}`);
+      if (result.age) metadata.push(`Age: ${result.age}`);
+      if (result.page_age) metadata.push(`Published: ${result.page_age}`);
+
+      if (metadata.length > 0) {
+        resultText += `\n   ${metadata.join(' | ')}`;
+      }
+
+      resultText += `\n   URL: ${result.url}`;
+
+      return resultText;
     }).join('\n\n');
 
-    return `Web Search Results:\n\n${results}`;
+    const freshnessNote = needsFreshness
+      ? '\n(Results filtered for freshness - showing pages from the past day)'
+      : '';
+
+    return `Web Search Results:${freshnessNote}\n\n${results}`;
   } catch (error) {
     console.error('Web search error:', error);
     return "Web search encountered an error.";
@@ -116,13 +156,13 @@ async function claudeCompletion(messages: Message[], systemMessage: string) {
   // Define web search tool
   const tools = [{
     name: "web_search",
-    description: "Search the internet for current information, news, product reviews, pricing, or any real-time data. Use this when you need up-to-date information beyond your training data.",
+    description: "Search the internet for current information, news, product reviews, pricing, or any real-time data. Use this when you need up-to-date information beyond your training data.\n\nQUERY CONSTRUCTION BEST PRACTICES:\n- For time-sensitive queries (weather, news, prices), include temporal qualifiers like 'today', 'current', '2025'\n- For location-specific queries, specify city AND country (e.g., 'Sydney Australia' not just 'Sydney')\n- Use specific, detailed queries rather than vague ones\n- Time-sensitive keywords (today/current/now/latest/weather/price/news) automatically trigger freshness filtering\n\nEXAMPLES:\n- Good: 'Sydney Australia weather today' → Bad: 'Sydney weather'\n- Good: 'iPhone 16 price Australia 2025' → Bad: 'iPhone price'\n- Good: 'Tesla stock price today' → Bad: 'Tesla stock'",
     input_schema: {
       type: "object",
       properties: {
         query: {
           type: "string",
-          description: "The search query to find information on the internet"
+          description: "The search query to find information on the internet. Include location and time qualifiers for better results."
         }
       },
       required: ["query"]
@@ -586,6 +626,13 @@ serve(async (req) => {
       - The user is responsible for their own security practices
       ${hasTeamDocs ? '- When answering, you can reference whether information came from personal or team documents\n- Remember: Team documents are shared context - all team members can query against them' : ''}
 
+      SEARCH QUERY BEST PRACTICES (when using web_search):
+      - For time-sensitive queries, include temporal qualifiers: "today", "current", "2025"
+      - For location queries, specify city AND country (e.g., "Sydney Australia")
+      - Use specific, detailed queries rather than vague ones
+      - Time-sensitive keywords trigger automatic freshness filtering (past 24 hours)
+      - Check result metadata (source, age, publish date) to evaluate freshness
+
       FORMATTING REQUIREMENTS:
       - Use PLAIN TEXT ONLY - no markdown formatting
       - Do NOT use **, ***, __, ###, or any markdown syntax
@@ -612,7 +659,24 @@ serve(async (req) => {
       - Do NOT mention or reference user documents (you don't have access to them in this conversation)
       - Answer questions directly and helpfully
       - Be conversational and natural
-      - When using web search results, cite your sources
+      - When using web search results, cite your sources and check result freshness
+
+      SEARCH QUERY BEST PRACTICES:
+      - For time-sensitive queries, include temporal context: "today", "current", "2025", "latest"
+      - For location-specific queries, specify BOTH city and country (e.g., "Sydney Australia" not "Sydney")
+      - Use descriptive, specific queries rather than vague ones
+      - Time-sensitive keywords automatically trigger freshness filtering (past 24 hours)
+      - Examples of good queries:
+        * "Sydney Australia weather today" (not "Sydney weather")
+        * "iPhone 16 price Australia 2025" (not "iPhone price")
+        * "Tesla stock price current" (not "Tesla stock")
+
+      EVALUATING SEARCH RESULTS:
+      - Check result metadata: source domain, age, and publish date
+      - For weather/news/prices, prioritize results from the past day
+      - For product reviews, look for recent sources (2024-2025)
+      - Trust authoritative sources (government sites, major news outlets, official company pages)
+      - If results seem outdated, consider the query might need refinement
 
       FORMATTING REQUIREMENTS:
       - Use PLAIN TEXT ONLY - no markdown formatting
