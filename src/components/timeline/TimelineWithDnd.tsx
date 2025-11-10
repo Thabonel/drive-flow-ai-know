@@ -42,22 +42,7 @@ export function TimelineWithDnd({ refetchItems, refetchTasks }: TimelineWithDndP
   const { layers } = useLayers();
   const { toast } = useToast();
 
-  // Loading guard - ensure all required data is loaded before rendering DndContext
-  if (layers.length === 0 || !nowTime || !settings) {
-    return (
-      <div className="flex items-center justify-center p-8">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
-  // Calculate pixelsPerHour from settings (same as TimelineManager)
-  const viewMode = (settings?.view_mode as TimelineViewMode) || 'day';
-  const viewModeConfig = VIEW_MODE_CONFIG[viewMode];
-  const basePixelsPerHour = viewModeConfig.pixelsPerHour;
-  const pixelsPerHour = ((settings?.zoom_horizontal || 100) / 100) * basePixelsPerHour;
-
-  // Configure sensors for drag and drop
+  // Configure sensors for drag and drop (MUST be before early return - Rules of Hooks)
   const mouseSensor = useSensor(MouseSensor, {
     activationConstraint: {
       distance: 10,
@@ -72,6 +57,12 @@ export function TimelineWithDnd({ refetchItems, refetchTasks }: TimelineWithDndP
   });
 
   const sensors = useSensors(mouseSensor, touchSensor);
+
+  // Calculate pixelsPerHour from settings (same as TimelineManager)
+  const viewMode = (settings?.view_mode as TimelineViewMode) || 'day';
+  const viewModeConfig = VIEW_MODE_CONFIG[viewMode];
+  const basePixelsPerHour = viewModeConfig.pixelsPerHour;
+  const pixelsPerHour = ((settings?.zoom_horizontal || 100) / 100) * basePixelsPerHour;
 
   // Calculate drop position (time and layer) from mouse coordinates
   const calculateDropPosition = useCallback((event: DragMoveEvent | DragEndEvent) => {
@@ -285,6 +276,15 @@ export function TimelineWithDnd({ refetchItems, refetchTasks }: TimelineWithDndP
     const mins = minutes % 60;
     return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
   };
+
+  // Loading guard - AFTER all hooks are called (Rules of Hooks)
+  if (layers.length === 0 || !nowTime || !settings) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <DndContext
