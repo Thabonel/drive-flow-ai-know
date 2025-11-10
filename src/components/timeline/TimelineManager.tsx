@@ -471,7 +471,7 @@ export function TimelineManager() {
               variant="outline"
               size="sm"
               className="ml-4"
-              onClick={() => setShowParked(true)}
+              onClick={() => setShowParkedItems(true)}
             >
               View Parked Items
             </Button>
