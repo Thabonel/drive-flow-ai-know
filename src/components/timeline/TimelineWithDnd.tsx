@@ -310,7 +310,7 @@ export function TimelineWithDnd({ refetchItems, refetchTasks }: TimelineWithDndP
                 height: '40px',
               }}
             >
-              <div className="absolute -top-6 left-1/2 -translate-x-1/2 text-xs font-medium text-primary whitespace-nowrap bg-background px-2 py-1 rounded shadow-sm">
+              <div className="absolute top-0 right-full mr-2 -translate-y-1/2 text-xs font-medium text-primary whitespace-nowrap bg-background px-2 py-1 rounded shadow-sm">
                 {new Date(dropPreview.time).toLocaleTimeString([], {
                   hour: '2-digit',
                   minute: '2-digit',
