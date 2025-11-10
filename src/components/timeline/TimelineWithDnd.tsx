@@ -80,9 +80,9 @@ export function TimelineWithDnd({ refetchItems, refetchTasks }: TimelineWithDndP
 
     // Calculate which layer based on Y position
     const relativeY = y - rect.top;
-    const layerHeight = rect.height / layers.filter(l => l.is_visible).length;
+    const visibleLayers = layers.filter(l => l.is_visible); // Filter visible layers FIRST
+    const layerHeight = rect.height / visibleLayers.length; // Use filtered count
     const layerIndex = Math.floor(relativeY / layerHeight);
-    const visibleLayers = layers.filter(l => l.is_visible);
     const targetLayer = visibleLayers[Math.max(0, Math.min(layerIndex, visibleLayers.length - 1))];
 
     if (!targetLayer) return null;
@@ -299,7 +299,7 @@ export function TimelineWithDnd({ refetchItems, refetchTasks }: TimelineWithDndP
         <div ref={timelineRef} className="relative">
           <TimelineManager />
 
-          {/* Drop preview indicator */}
+          {/* Drop preview indicator - vertical line only */}
           {activeTask && dropPreview && (
             <div
               className="absolute pointer-events-none z-50 border-2 border-dashed border-primary bg-primary/10 rounded"
@@ -309,43 +309,48 @@ export function TimelineWithDnd({ refetchItems, refetchTasks }: TimelineWithDndP
                 width: '4px',
                 height: '40px',
               }}
-            >
-              <div className="absolute top-0 right-full mr-2 -translate-y-1/2 text-xs font-medium text-primary whitespace-nowrap bg-background px-2 py-1 rounded shadow-sm">
-                {new Date(dropPreview.time).toLocaleTimeString([], {
-                  hour: '2-digit',
-                  minute: '2-digit',
-                })}
-              </div>
-            </div>
+            />
           )}
         </div>
 
-        {/* Drag Overlay - shows the dragged task */}
+        {/* Drag Overlay - shows the dragged task with time indicator */}
         <DragOverlay>
           {activeTask && (
-            <div className="p-3 bg-card border-2 border-primary rounded-lg shadow-2xl max-w-[280px]">
-              <div className="flex items-start gap-2">
-                <div className="flex-1 min-w-0">
-                  <h4 className="font-medium text-sm leading-tight">
-                    {activeTask.title}
-                  </h4>
-                  {activeTask.description && (
-                    <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                      {activeTask.description}
-                    </p>
-                  )}
-                  <div className="flex items-center gap-2 mt-2">
-                    <Badge
-                      variant="outline"
-                      className="text-xs"
-                      style={{
-                        borderColor: activeTask.color,
-                        color: activeTask.color,
-                      }}
-                    >
-                      <Clock className="h-3 w-3 mr-1" />
-                      {formatDuration(activeTask.planned_duration_minutes)}
-                    </Badge>
+            <div className="relative">
+              {/* Time indicator box - positioned above dragged card */}
+              {dropPreview && (
+                <div className="absolute -top-12 left-1/2 -translate-x-1/2 text-sm font-semibold text-primary whitespace-nowrap bg-background px-3 py-2 rounded-lg shadow-lg border-2 border-primary z-50">
+                  {new Date(dropPreview.time).toLocaleTimeString([], {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })}
+                </div>
+              )}
+              {/* Dragged task card */}
+              <div className="p-3 bg-card border-2 border-primary rounded-lg shadow-2xl max-w-[280px]">
+                <div className="flex items-start gap-2">
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-medium text-sm leading-tight">
+                      {activeTask.title}
+                    </h4>
+                    {activeTask.description && (
+                      <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                        {activeTask.description}
+                      </p>
+                    )}
+                    <div className="flex items-center gap-2 mt-2">
+                      <Badge
+                        variant="outline"
+                        className="text-xs"
+                        style={{
+                          borderColor: activeTask.color,
+                          color: activeTask.color,
+                        }}
+                      >
+                        <Clock className="h-3 w-3 mr-1" />
+                        {formatDuration(activeTask.planned_duration_minutes)}
+                      </Badge>
+                    </div>
                   </div>
                 </div>
               </div>
