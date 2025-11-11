@@ -30,11 +30,12 @@ import {
   DEFAULT_LAYER_HEIGHT,
   MIN_ZOOM,
   MAX_ZOOM,
+  ZOOM_STEP,
   TimelineViewMode,
   VIEW_MODE_CONFIG,
 } from '@/lib/timelineConstants';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, Clock, Settings, Layers, Lock, Unlock, Archive, LayoutTemplate, Sparkles, RefreshCw, Calendar as CalIcon, Brain, Sunrise, Moon, Link as LinkIcon, MoreHorizontal } from 'lucide-react';
+import { Loader2, Clock, Settings, Layers, Lock, Unlock, Archive, LayoutTemplate, Sparkles, RefreshCw, Calendar as CalIcon, Brain, Sunrise, Moon, Link as LinkIcon, MoreHorizontal, ZoomIn, ZoomOut } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuLabel } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
@@ -204,6 +205,18 @@ export function TimelineManager({ onCanvasReady }: TimelineManagerProps = {}) {
     await updateSettings({ zoom_vertical: clamped });
   };
 
+  // Quick zoom in/out for horizontal zoom
+  const handleQuickZoomIn = async () => {
+    const currentZoom = settings?.zoom_horizontal ?? 100;
+    const newZoom = Math.min(currentZoom + ZOOM_STEP, MAX_ZOOM);
+    await handleZoomHorizontalChange(newZoom);
+  };
+
+  const handleQuickZoomOut = async () => {
+    const currentZoom = settings?.zoom_horizontal ?? 100;
+    const newZoom = Math.max(currentZoom - ZOOM_STEP, MIN_ZOOM);
+    await handleZoomHorizontalChange(newZoom);
+  };
 
   // Handle fit all layers
   const handleFitAllLayers = async () => {
@@ -351,6 +364,33 @@ export function TimelineManager({ onCanvasReady }: TimelineManagerProps = {}) {
               </>
             )}
           </Button>
+
+          {/* Quick Zoom Controls */}
+          <div className="flex items-center gap-1">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleQuickZoomOut}
+              disabled={settings?.zoom_horizontal && settings.zoom_horizontal <= MIN_ZOOM}
+              title="Zoom Out (Ctrl + -)"
+              className="h-9 w-9 p-0"
+            >
+              <ZoomOut className="h-4 w-4" />
+            </Button>
+            <span className="text-xs text-muted-foreground px-1 min-w-[3rem] text-center">
+              {settings?.zoom_horizontal ?? 100}%
+            </span>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleQuickZoomIn}
+              disabled={settings?.zoom_horizontal && settings.zoom_horizontal >= MAX_ZOOM}
+              title="Zoom In (Ctrl + +)"
+              className="h-9 w-9 p-0"
+            >
+              <ZoomIn className="h-4 w-4" />
+            </Button>
+          </div>
 
           {/* More Actions Dropdown */}
           <DropdownMenu>
