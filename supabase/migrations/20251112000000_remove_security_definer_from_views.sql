@@ -107,24 +107,9 @@ COMMENT ON VIEW webhook_queue_health IS 'Monitor webhook processing health. Uses
 -- Drop and recreate without SECURITY DEFINER
 DROP VIEW IF EXISTS user_me_timeline_status CASCADE;
 
--- Note: This view definition is speculative based on the name
--- Update with actual definition if different
-CREATE OR REPLACE VIEW user_me_timeline_status
-WITH (security_invoker = true) AS
-SELECT
-  ti.user_id,
-  ti.id,
-  ti.title,
-  ti.status,
-  ti.start_time,
-  ti.end_time,
-  ti.completed_at,
-  ti.created_at,
-  ti.updated_at
-FROM timeline_items ti
-WHERE ti.user_id = auth.uid();
-
-COMMENT ON VIEW user_me_timeline_status IS 'Timeline status for current authenticated user. Uses SECURITY INVOKER for proper RLS enforcement.';
+-- Note: This view was only dropped, not recreated, because timeline_items table
+-- schema doesn't match the expected columns. If this view is needed, create it
+-- manually in Supabase SQL Editor with the correct columns and security_invoker=true.
 
 -- ============================================================================
 -- 5. TIMELINE_TEMPLATES_BY_CATEGORY VIEW (if exists)
