@@ -37,6 +37,7 @@ export function TimelineWithDnd({ refetchItems, refetchTasks }: TimelineWithDndP
   } | null>(null);
 
   const timelineRef = useRef<HTMLDivElement>(null);
+  const canvasSvgRef = useRef<SVGSVGElement | null>(null);
   const { deleteTask } = useTasks();
   const { addItem, settings, scrollOffset, nowTime } = useTimeline();
   const { layers } = useLayers();
@@ -64,11 +65,18 @@ export function TimelineWithDnd({ refetchItems, refetchTasks }: TimelineWithDndP
   const basePixelsPerHour = viewModeConfig.pixelsPerHour;
   const pixelsPerHour = ((settings?.zoom_horizontal || 100) / 100) * basePixelsPerHour;
 
-  // Calculate drop position (time and layer) from mouse coordinates
-  const calculateDropPosition = useCallback((event: DragMoveEvent | DragEndEvent) => {
-    if (!timelineRef.current || layers.length === 0 || !nowTime) return null;
+  // Handle canvas ready callback to get SVG element
+  const handleCanvasReady = useCallback((svg: SVGSVGElement) => {
+    canvasSvgRef.current = svg;
+  }, []);
 
-    const rect = timelineRef.current.getBoundingClientRect();
+  // Calculate drop position (time and layer) from mouse coordinates
+  // Uses the same approach as TimelineCanvas double-click (TimelineCanvas.tsx lines 122-150)
+  const calculateDropPosition = useCallback((event: DragMoveEvent | DragEndEvent) => {
+    if (!canvasSvgRef.current || layers.length === 0 || !nowTime) return null;
+
+    // Get bounds directly from SVG element (same pattern as working double-click)
+    const rect = canvasSvgRef.current.getBoundingClientRect();
 
     // Use final drop position: activatorEvent + delta
     const activatorX = event.activatorEvent ? (event.activatorEvent as MouseEvent).clientX : 0;
@@ -317,7 +325,7 @@ export function TimelineWithDnd({ refetchItems, refetchTasks }: TimelineWithDndP
       <div className="relative">
         {/* Main Timeline - with drop zone */}
         <div ref={timelineRef} className="relative">
-          <TimelineManager />
+          <TimelineManager onCanvasReady={handleCanvasReady} />
 
           {/* Drop preview indicator - vertical line only */}
           {activeTask && dropPreview && (

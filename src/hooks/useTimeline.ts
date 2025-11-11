@@ -26,18 +26,10 @@ export function useTimeline() {
 
   const animationFrameRef = useRef<number>();
   const lastTickRef = useRef<number>(Date.now());
-  const skipNextRefetchRef = useRef<boolean>(false);
 
   // Fetch timeline items
   const fetchItems = async () => {
     if (!user) return;
-
-    // Skip refetch if we just made an optimistic update
-    if (skipNextRefetchRef.current) {
-      console.log('Skipping refetch - optimistic update in progress');
-      skipNextRefetchRef.current = false;
-      return;
-    }
 
     try {
       const { data, error } = await supabase
@@ -139,13 +131,6 @@ export function useTimeline() {
     }
   ) => {
     if (!user) return;
-
-    // Set skip flag to prevent real-time subscription from overwriting optimistic update
-    skipNextRefetchRef.current = true;
-    // Reset flag after 500ms to allow later changes to sync
-    setTimeout(() => {
-      skipNextRefetchRef.current = false;
-    }, 500);
 
     try {
       console.log('Adding timeline item:', {

@@ -41,7 +41,11 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { PageHelp } from '@/components/PageHelp';
 
-export function TimelineManager() {
+interface TimelineManagerProps {
+  onCanvasReady?: (svg: SVGSVGElement) => void;
+}
+
+export function TimelineManager({ onCanvasReady }: TimelineManagerProps = {}) {
   const {
     items,
     settings,
@@ -509,6 +513,7 @@ export function TimelineManager() {
             onItemDrop={handleItemDrop}
             onItemResize={handleItemResize}
             onDoubleClick={handleTimelineDoubleClick}
+            onCanvasReady={onCanvasReady}
           />
         )}
       </div>
