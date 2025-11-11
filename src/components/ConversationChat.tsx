@@ -52,8 +52,7 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
   // React to prop changes when user selects a different conversation
   useEffect(() => {
     // Only update if the prop is defined and different from current state
-    // Don't reset when initialConversationId becomes defined from undefined (new conversation creation)
-    if (initialConversationId && initialConversationId !== conversationId && conversationId !== null) {
+    if (initialConversationId && initialConversationId !== conversationId) {
       console.log('Switching conversation from', conversationId, 'to', initialConversationId);
       // Reset state for the new conversation
       setConversationId(initialConversationId);
