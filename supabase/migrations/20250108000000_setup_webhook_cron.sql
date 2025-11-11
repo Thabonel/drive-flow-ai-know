@@ -32,36 +32,23 @@ $$;
 
 -- Schedule the webhook processor to run every 2 minutes
 -- This processes queued Stripe webhook events
-SELECT cron.schedule(
-  'process-stripe-webhooks',  -- job name
-  '*/2 * * * *',              -- every 2 minutes
-  $$SELECT process_stripe_webhooks()$$
-);
+-- Note: To enable cron scheduling, manually run in Supabase SQL Editor:
+--
+-- DO $$
+-- BEGIN
+--   PERFORM cron.schedule(
+--     'process-stripe-webhooks',
+--     '*/2 * * * *',
+--     $$SELECT process_stripe_webhooks()$$
+--   );
+-- EXCEPTION
+--   WHEN OTHERS THEN
+--     RAISE NOTICE 'Could not schedule cron job: %', SQLERRM;
+-- END;
+-- $$;
 
--- Alternative: If using pg_net extension directly
--- Uncomment this and comment out the function above:
-/*
-SELECT cron.schedule(
-  'process-stripe-webhooks',
-  '*/2 * * * *',
-  $$
-  SELECT net.http_post(
-    url := 'https://fskwutnoxbbflzqrphro.supabase.co/functions/v1/process-stripe-webhooks',
-    headers := jsonb_build_object(
-      'Authorization', 'Bearer ' || current_setting('app.settings.service_role_key', true),
-      'Content-Type', 'application/json'
-    ),
-    body := '{}'::jsonb
-  ) AS request_id;
-  $$
-);
-*/
-
--- View scheduled jobs
--- SELECT * FROM cron.job;
-
--- To unschedule (if needed):
--- SELECT cron.unschedule('process-stripe-webhooks');
+-- View scheduled jobs: SELECT * FROM cron.job;
+-- To unschedule: SELECT cron.unschedule('process-stripe-webhooks');
 
 -- Monitor webhook queue health
 CREATE OR REPLACE VIEW webhook_queue_health AS
