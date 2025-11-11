@@ -112,68 +112,17 @@ DROP VIEW IF EXISTS user_me_timeline_status CASCADE;
 -- manually in Supabase SQL Editor with the correct columns and security_invoker=true.
 
 -- ============================================================================
--- 5. TIMELINE_TEMPLATES_BY_CATEGORY VIEW (if exists)
+-- 5-7. OTHER VIEWS (if they exist)
 -- ============================================================================
--- Drop and recreate without SECURITY DEFINER
+-- Drop these views if they exist, but don't recreate them since we don't
+-- know if the underlying tables exist or what their schemas are
 DROP VIEW IF EXISTS timeline_templates_by_category CASCADE;
-
--- Note: This view definition is speculative based on the name
--- Update with actual definition if different
-CREATE OR REPLACE VIEW timeline_templates_by_category
-WITH (security_invoker = true) AS
-SELECT
-  category,
-  COUNT(*) as template_count,
-  array_agg(id ORDER BY created_at DESC) as template_ids,
-  array_agg(name ORDER BY created_at DESC) as template_names
-FROM timeline_templates
-GROUP BY category;
-
-COMMENT ON VIEW timeline_templates_by_category IS 'Timeline templates grouped by category. Uses SECURITY INVOKER for proper RLS enforcement.';
-
--- ============================================================================
--- 6. TEMPLATE_USAGE_STATS VIEW (if exists)
--- ============================================================================
--- Drop and recreate without SECURITY DEFINER
 DROP VIEW IF EXISTS template_usage_stats CASCADE;
-
--- Note: This view definition is speculative based on the name
--- Update with actual definition if different
-CREATE OR REPLACE VIEW template_usage_stats
-WITH (security_invoker = true) AS
-SELECT
-  template_id,
-  COUNT(*) as usage_count,
-  COUNT(DISTINCT user_id) as unique_users,
-  MAX(used_at) as last_used_at,
-  MIN(used_at) as first_used_at
-FROM timeline_template_usage
-GROUP BY template_id;
-
-COMMENT ON VIEW template_usage_stats IS 'Template usage statistics. Uses SECURITY INVOKER for proper RLS enforcement.';
-
--- ============================================================================
--- 7. ASSISTANT_ACTIVITY_SUMMARY VIEW (if exists)
--- ============================================================================
--- Drop and recreate without SECURITY DEFINER
 DROP VIEW IF EXISTS assistant_activity_summary CASCADE;
 
--- Note: This view definition is speculative based on the name
--- Update with actual definition if different
-CREATE OR REPLACE VIEW assistant_activity_summary
-WITH (security_invoker = true) AS
-SELECT
-  user_id,
-  DATE(created_at) as activity_date,
-  COUNT(*) as total_interactions,
-  COUNT(*) FILTER (WHERE query_type = 'document') as document_queries,
-  COUNT(*) FILTER (WHERE query_type = 'knowledge_base') as kb_queries,
-  COUNT(*) FILTER (WHERE query_type = 'general') as general_queries,
-  AVG(CHAR_LENGTH(response)) as avg_response_length
-FROM ai_query_history
-GROUP BY user_id, DATE(created_at);
-
-COMMENT ON VIEW assistant_activity_summary IS 'Daily summary of AI assistant activity by user. Uses SECURITY INVOKER for proper RLS enforcement.';
+-- Note: These views were only dropped, not recreated. If you need them,
+-- create them manually in Supabase SQL Editor with the correct table schemas
+-- and security_invoker=true option.
 
 -- ============================================================================
 -- VERIFICATION QUERIES
