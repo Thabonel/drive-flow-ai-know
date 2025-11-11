@@ -231,7 +231,8 @@ export function TimelineWithDnd({ refetchItems, refetchTasks }: TimelineWithDndP
 
           // Refetch tasks to update dropdown (remove if one-off, keep if template)
           await refetchTasks();
-          // NOTE: No need to call refetchItems() here - addItem() already updates local state for each occurrence
+          // Refetch timeline items to show new items immediately
+          await refetchItems();
 
           toast({
             title: 'Recurring task scheduled',
@@ -275,7 +276,8 @@ export function TimelineWithDnd({ refetchItems, refetchTasks }: TimelineWithDndP
 
           // Refetch tasks to update dropdown (remove if one-off, keep if template)
           await refetchTasks();
-          // NOTE: No need to call refetchItems() here - addItem() already updates local state
+          // Refetch timeline items to show new item immediately
+          await refetchItems();
           console.log('Task scheduled successfully');
         }
       }
