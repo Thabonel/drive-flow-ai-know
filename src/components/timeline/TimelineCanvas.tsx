@@ -35,6 +35,7 @@ interface TimelineCanvasProps {
   onItemDrop?: (item: TimelineItemType, newStartTime: string, newLayerId: string) => void;
   onItemResize?: (item: TimelineItemType, newDurationMinutes: number) => void;
   onDoubleClick?: (startTime: string, layerId: string) => void;
+  onCanvasReady?: (svg: SVGSVGElement) => void;
 }
 
 export function TimelineCanvas({
@@ -54,6 +55,7 @@ export function TimelineCanvas({
   onItemDrop,
   onItemResize,
   onDoubleClick,
+  onCanvasReady,
 }: TimelineCanvasProps) {
   const svgRef = useRef<SVGSVGElement>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -72,6 +74,13 @@ export function TimelineCanvas({
     window.addEventListener('resize', updateWidth);
     return () => window.removeEventListener('resize', updateWidth);
   }, []);
+
+  // Expose SVG element to parent for drag-drop calculations
+  useEffect(() => {
+    if (svgRef.current && onCanvasReady) {
+      onCanvasReady(svgRef.current);
+    }
+  }, [onCanvasReady]);
 
   // Handle mouse down for dragging
   const handleMouseDown = (e: React.MouseEvent) => {
