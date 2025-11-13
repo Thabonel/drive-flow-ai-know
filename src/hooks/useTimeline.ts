@@ -26,6 +26,7 @@ export function useTimeline() {
 
   const animationFrameRef = useRef<number>();
   const lastTickRef = useRef<number>(Date.now());
+  const autoParkingInProgressRef = useRef<Set<string>>(new Set());
 
   // Fetch timeline items
   const fetchItems = async () => {
@@ -255,6 +256,18 @@ export function useTimeline() {
     const item = items.find(i => i.id === itemId);
     if (!item) return;
 
+    // Prevent double-parking if auto-park is already processing this item
+    if (autoParkingInProgressRef.current.has(itemId)) {
+      toast({
+        title: 'Already parking',
+        description: 'This item is already being parked',
+      });
+      return;
+    }
+
+    // Mark as being processed
+    autoParkingInProgressRef.current.add(itemId);
+
     try {
       // Add to parked items
       const { error: parkError } = await supabase
@@ -267,18 +280,31 @@ export function useTimeline() {
           color: item.color,
         });
 
-      if (parkError) throw parkError;
+      if (parkError) {
+        console.error('Error inserting parked item:', parkError);
+        throw parkError;
+      }
 
       // Delete from timeline items
-      const { error: deleteError } = await supabase
+      const { data, error: deleteError } = await supabase
         .from('timeline_items')
         .delete()
-        .eq('id', itemId);
+        .eq('id', itemId)
+        .eq('user_id', user.id)
+        .select();
 
-      if (deleteError) throw deleteError;
+      if (deleteError) {
+        console.error('Error deleting timeline item:', deleteError);
+        throw deleteError;
+      }
 
-      // Use functional form to avoid stale closure issues
-      setItems(prevItems => prevItems.filter(i => i.id !== itemId));
+      // Verify deletion succeeded
+      if (!data || data.length === 0) {
+        throw new Error('Item not found or you do not have permission to delete it');
+      }
+
+      // Refetch to ensure UI is in sync
+      await fetchItems();
       await fetchParkedItems();
 
       toast({
@@ -287,11 +313,19 @@ export function useTimeline() {
       });
     } catch (error) {
       console.error('Error parking item:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to park item';
       toast({
         title: 'Error',
-        description: 'Failed to park item',
+        description: errorMessage,
         variant: 'destructive',
       });
+
+      // Refetch to ensure UI is in sync
+      await fetchItems();
+      await fetchParkedItems();
+    } finally {
+      // Always remove from tracking set
+      autoParkingInProgressRef.current.delete(itemId);
     }
   };
 
@@ -548,7 +582,8 @@ export function useTimeline() {
 
       prevItems.forEach(item => {
         // Check if item should be auto-parked (8+ hours overdue)
-        if (shouldBeAutoPark(item, currentTime)) {
+        // Skip if already being processed to prevent duplicates
+        if (shouldBeAutoPark(item, currentTime) && !autoParkingInProgressRef.current.has(item.id)) {
           itemsToAutoPark.push(item);
           return; // Don't add to updatedItems - will be removed
         }
@@ -559,7 +594,8 @@ export function useTimeline() {
           supabase
             .from('timeline_items')
             .update({ status: 'logjam' })
-            .eq('id', item.id);
+            .eq('id', item.id)
+            .eq('user_id', user?.id || '');
 
           updatedItems.push({ ...item, status: 'logjam' as const });
         } else {
@@ -569,39 +605,68 @@ export function useTimeline() {
 
       // Auto-park items that are 8+ hours overdue
       if (itemsToAutoPark.length > 0 && user) {
-        itemsToAutoPark.forEach(async (item) => {
-          try {
-            // Add to parked items
-            await supabase
-              .from('timeline_parked_items')
-              .insert({
-                user_id: user.id,
-                title: item.title,
-                duration_minutes: item.duration_minutes,
-                original_layer_id: item.layer_id,
-                color: item.color,
-              });
+        // Process auto-parking asynchronously with proper tracking
+        (async () => {
+          let successCount = 0;
 
-            // Delete from timeline items
-            await supabase
-              .from('timeline_items')
-              .delete()
-              .eq('id', item.id);
+          for (const item of itemsToAutoPark) {
+            // Mark as being processed
+            autoParkingInProgressRef.current.add(item.id);
 
-            console.log(`Auto-parked item: ${item.title} (${item.id})`);
-          } catch (error) {
-            console.error('Error auto-parking item:', error);
+            try {
+              // Add to parked items
+              const { error: insertError } = await supabase
+                .from('timeline_parked_items')
+                .insert({
+                  user_id: user.id,
+                  title: item.title,
+                  duration_minutes: item.duration_minutes,
+                  original_layer_id: item.layer_id,
+                  color: item.color,
+                });
+
+              if (insertError) {
+                console.error('Error inserting parked item:', insertError);
+                throw insertError;
+              }
+
+              // Delete from timeline items
+              const { data, error: deleteError } = await supabase
+                .from('timeline_items')
+                .delete()
+                .eq('id', item.id)
+                .eq('user_id', user.id)
+                .select();
+
+              if (deleteError) {
+                console.error('Error deleting timeline item:', deleteError);
+                throw deleteError;
+              }
+
+              if (data && data.length > 0) {
+                successCount++;
+                console.log(`Auto-parked item: ${item.title} (${item.id})`);
+              }
+            } catch (error) {
+              console.error('Error auto-parking item:', error);
+            } finally {
+              // Always remove from tracking set
+              autoParkingInProgressRef.current.delete(item.id);
+            }
           }
-        });
 
-        // Show toast notification
-        toast({
-          title: 'Items auto-parked',
-          description: `${itemsToAutoPark.length} item${itemsToAutoPark.length > 1 ? 's' : ''} moved to Parked Items (8+ hours overdue)`,
-        });
+          // Only show toast and refetch if items were actually parked
+          if (successCount > 0) {
+            toast({
+              title: 'Items auto-parked',
+              description: `${successCount} item${successCount > 1 ? 's' : ''} moved to Parked Items (8+ hours overdue)`,
+            });
 
-        // Refetch parked items after auto-parking
-        fetchParkedItems();
+            // Refetch items and parked items to ensure UI is in sync
+            fetchItems();
+            fetchParkedItems();
+          }
+        })();
       }
 
       return updatedItems;
