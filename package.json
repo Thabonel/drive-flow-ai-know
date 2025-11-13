@@ -8,7 +8,8 @@
     "build": "tsc && vite build",
     "build:dev": "vite build --mode development",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "types:generate": "npx supabase gen types typescript --project-id fskwutnoxbbflzqrphro > src/integrations/supabase/types.ts"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

@@ -436,13 +436,6 @@ export type Database = {
             referencedRelation: "timeline_items"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "bookings_timeline_item_id_fkey"
-            columns: ["timeline_item_id"]
-            isOneToOne: false
-            referencedRelation: "user_me_timeline_status"
-            referencedColumns: ["id"]
-          },
         ]
       }
       calendar_sync_log: {
@@ -1356,13 +1349,6 @@ export type Database = {
             referencedRelation: "timeline_items"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "email_tasks_timeline_item_id_fkey"
-            columns: ["timeline_item_id"]
-            isOneToOne: false
-            referencedRelation: "user_me_timeline_status"
-            referencedColumns: ["id"]
-          },
         ]
       }
       executive_daily_briefs: {
@@ -1657,13 +1643,6 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "magnetic_timeline_items_template_id_fkey"
-            columns: ["template_id"]
-            isOneToOne: false
-            referencedRelation: "template_usage_stats"
-            referencedColumns: ["template_id"]
-          },
           {
             foreignKeyName: "magnetic_timeline_items_template_id_fkey"
             columns: ["template_id"]
@@ -2305,6 +2284,7 @@ export type Database = {
           description: string | null
           id: string
           is_recurring: boolean | null
+          is_template: boolean
           parent_task_id: string | null
           planned_duration_minutes: number | null
           priority: number | null
@@ -2321,6 +2301,7 @@ export type Database = {
           description?: string | null
           id?: string
           is_recurring?: boolean | null
+          is_template?: boolean
           parent_task_id?: string | null
           planned_duration_minutes?: number | null
           priority?: number | null
@@ -2337,6 +2318,7 @@ export type Database = {
           description?: string | null
           id?: string
           is_recurring?: boolean | null
+          is_template?: boolean
           parent_task_id?: string | null
           planned_duration_minutes?: number | null
           priority?: number | null
@@ -2587,13 +2569,6 @@ export type Database = {
             referencedRelation: "timeline_items"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "time_tracking_task_id_fkey"
-            columns: ["task_id"]
-            isOneToOne: false
-            referencedRelation: "user_me_timeline_status"
-            referencedColumns: ["id"]
-          },
         ]
       }
       timeline_ai_sessions: {
@@ -2741,13 +2716,6 @@ export type Database = {
             referencedRelation: "timeline_items"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "timeline_goal_items_item_id_fkey"
-            columns: ["item_id"]
-            isOneToOne: false
-            referencedRelation: "user_me_timeline_status"
-            referencedColumns: ["id"]
-          },
         ]
       }
       timeline_goals: {
@@ -2808,25 +2776,27 @@ export type Database = {
           google_calendar_id: string | null
           google_event_id: string | null
           id: string
-          is_flexible: boolean | null
+          is_flexible: boolean
           is_locked_time: boolean | null
           is_meeting: boolean
           last_synced_at: string | null
           layer_id: string
+          occurrence_index: number | null
           original_duration: number | null
           parent_item_id: string | null
           planned_duration_minutes: number | null
+          recurring_series_id: string | null
           routine_id: string | null
           start_time: string
           status: string
-          sync_source: string | null
-          sync_status: string | null
+          sync_source: string
+          sync_status: string
           team_id: string | null
           template_id: string | null
           title: string
           updated_at: string | null
           user_id: string
-          visibility: string | null
+          visibility: string
         }
         Insert: {
           actual_duration_minutes?: number | null
@@ -2840,25 +2810,27 @@ export type Database = {
           google_calendar_id?: string | null
           google_event_id?: string | null
           id?: string
-          is_flexible?: boolean | null
+          is_flexible?: boolean
           is_locked_time?: boolean | null
           is_meeting?: boolean
           last_synced_at?: string | null
           layer_id: string
+          occurrence_index?: number | null
           original_duration?: number | null
           parent_item_id?: string | null
           planned_duration_minutes?: number | null
+          recurring_series_id?: string | null
           routine_id?: string | null
           start_time: string
           status?: string
-          sync_source?: string | null
-          sync_status?: string | null
+          sync_source?: string
+          sync_status?: string
           team_id?: string | null
           template_id?: string | null
           title: string
           updated_at?: string | null
           user_id: string
-          visibility?: string | null
+          visibility?: string
         }
         Update: {
           actual_duration_minutes?: number | null
@@ -2872,25 +2844,27 @@ export type Database = {
           google_calendar_id?: string | null
           google_event_id?: string | null
           id?: string
-          is_flexible?: boolean | null
+          is_flexible?: boolean
           is_locked_time?: boolean | null
           is_meeting?: boolean
           last_synced_at?: string | null
           layer_id?: string
+          occurrence_index?: number | null
           original_duration?: number | null
           parent_item_id?: string | null
           planned_duration_minutes?: number | null
+          recurring_series_id?: string | null
           routine_id?: string | null
           start_time?: string
           status?: string
-          sync_source?: string | null
-          sync_status?: string | null
+          sync_source?: string
+          sync_status?: string
           team_id?: string | null
           template_id?: string | null
           title?: string
           updated_at?: string | null
           user_id?: string
-          visibility?: string | null
+          visibility?: string
         }
         Relationships: [
           {
@@ -2908,13 +2882,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "timeline_items_parent_item_id_fkey"
-            columns: ["parent_item_id"]
-            isOneToOne: false
-            referencedRelation: "user_me_timeline_status"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "timeline_items_routine_id_fkey"
             columns: ["routine_id"]
             isOneToOne: false
@@ -2927,13 +2894,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "teams"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "timeline_items_template_id_fkey"
-            columns: ["template_id"]
-            isOneToOne: false
-            referencedRelation: "template_usage_stats"
-            referencedColumns: ["template_id"]
           },
           {
             foreignKeyName: "timeline_items_template_id_fkey"
@@ -3517,35 +3477,12 @@ export type Database = {
       }
     }
     Views: {
-      assistant_activity_summary: {
-        Row: {
-          action: Database["public"]["Enums"]["audit_action_type"] | null
-          action_count: number | null
-          assistant_id: string | null
-          executive_id: string | null
-          first_action_at: string | null
-          last_action_at: string | null
-          resource_type: string | null
-        }
-        Relationships: []
-      }
       planning_streaks: {
         Row: {
           current_streak: number | null
           longest_streak: number | null
           total_streaks: number | null
           user_id: string | null
-        }
-        Relationships: []
-      }
-      template_usage_stats: {
-        Row: {
-          avg_duration: number | null
-          category: string | null
-          last_used: string | null
-          template_id: string | null
-          template_name: string | null
-          usage_count: number | null
         }
         Relationships: []
       }
@@ -3562,36 +3499,15 @@ export type Database = {
         }
         Relationships: []
       }
-      timeline_templates_by_category: {
+      webhook_queue_health: {
         Row: {
-          category: string | null
-          template_count: number | null
-          templates: Json | null
+          avg_processing_time_seconds: number | null
+          failed_events: number | null
+          oldest_pending_event: string | null
+          pending_events: number | null
+          processed_last_hour: number | null
         }
         Relationships: []
-      }
-      user_me_timeline_status: {
-        Row: {
-          color: string | null
-          duration_minutes: number | null
-          id: string | null
-          is_mine: boolean | null
-          layer_id: string | null
-          layer_name: string | null
-          start_time: string | null
-          status: string | null
-          title: string | null
-          user_id: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "timeline_items_layer_id_fkey"
-            columns: ["layer_id"]
-            isOneToOne: false
-            referencedRelation: "timeline_layers"
-            referencedColumns: ["id"]
-          },
-        ]
       }
     }
     Functions: {
@@ -3619,7 +3535,6 @@ export type Database = {
         }
         Returns: boolean
       }
-      check_query_limit: { Args: { p_user_id: string }; Returns: Json }
       cleanup_expired_google_data: { Args: never; Returns: undefined }
       cleanup_expired_google_tokens: { Args: never; Returns: undefined }
       cleanup_old_qa_sessions:
@@ -3956,6 +3871,8 @@ export type Database = {
           }
         | { Args: never; Returns: undefined }
       planning_needed_today: { Args: { p_user_id: string }; Returns: boolean }
+      process_stripe_webhooks: { Args: never; Returns: undefined }
+      require_admin: { Args: { p_user_id?: string }; Returns: undefined }
       store_encrypted_google_tokens: {
         Args: {
           p_access_token: string
