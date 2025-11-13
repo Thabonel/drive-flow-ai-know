@@ -339,26 +339,41 @@ export function useTimeline() {
   // Delete an item
   const deleteItem = async (itemId: string) => {
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('timeline_items')
         .delete()
-        .eq('id', itemId);
+        .eq('id', itemId)
+        .eq('user_id', user?.id || '')
+        .select();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Delete error:', error);
+        throw error;
+      }
 
-      // Use functional form to avoid stale closure issues
-      setItems(prevItems => prevItems.filter(i => i.id !== itemId));
+      // Check if any rows were actually deleted
+      if (!data || data.length === 0) {
+        throw new Error('Item not found or you do not have permission to delete it');
+      }
+
+      // Refetch items to ensure consistency
+      await fetchItems();
+
       toast({
         title: 'Item deleted',
         description: 'Timeline item has been removed',
       });
     } catch (error) {
       console.error('Error deleting item:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to delete item';
       toast({
         title: 'Error',
-        description: 'Failed to delete item',
+        description: errorMessage,
         variant: 'destructive',
       });
+
+      // Refetch to ensure UI is in sync with database
+      await fetchItems();
     }
   };
 
@@ -371,33 +386,42 @@ export function useTimeline() {
     }
 
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('timeline_items')
         .delete()
         .eq('recurring_series_id', item.recurring_series_id)
-        .gte('occurrence_index', item.occurrence_index);
+        .eq('user_id', user?.id || '')
+        .gte('occurrence_index', item.occurrence_index)
+        .select();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Delete error:', error);
+        throw error;
+      }
 
-      // Use functional form to avoid stale closure issues
-      setItems(prevItems =>
-        prevItems.filter(i =>
-          !(i.recurring_series_id === item.recurring_series_id &&
-            (i.occurrence_index ?? 0) >= (item.occurrence_index ?? 0))
-        )
-      );
+      // Check if any rows were actually deleted
+      if (!data || data.length === 0) {
+        throw new Error('Items not found or you do not have permission to delete them');
+      }
+
+      // Refetch items to ensure consistency
+      await fetchItems();
 
       toast({
         title: 'Recurring items deleted',
-        description: 'This and all following occurrences have been removed',
+        description: `${data.length} occurrence${data.length > 1 ? 's' : ''} removed`,
       });
     } catch (error) {
       console.error('Error deleting recurring items:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to delete recurring items';
       toast({
         title: 'Error',
-        description: 'Failed to delete recurring items',
+        description: errorMessage,
         variant: 'destructive',
       });
+
+      // Refetch to ensure UI is in sync with database
+      await fetchItems();
     }
   };
 
@@ -446,26 +470,41 @@ export function useTimeline() {
   // Delete a parked item
   const deleteParkedItem = async (parkedItemId: string) => {
     try {
-      const { error } = await supabase
+      const { data, error, count } = await supabase
         .from('timeline_parked_items')
         .delete()
-        .eq('id', parkedItemId);
+        .eq('id', parkedItemId)
+        .eq('user_id', user?.id || '')
+        .select();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Delete error:', error);
+        throw error;
+      }
 
-      // Use functional form to avoid stale closure issues
-      setParkedItems(prevParkedItems => prevParkedItems.filter(p => p.id !== parkedItemId));
+      // Check if any rows were actually deleted
+      if (!data || data.length === 0) {
+        throw new Error('Item not found or you do not have permission to delete it');
+      }
+
+      // Refetch parked items to ensure consistency
+      await fetchParkedItems();
+
       toast({
         title: 'Parked item deleted',
         description: 'Parked item has been removed',
       });
     } catch (error) {
       console.error('Error deleting parked item:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to delete parked item';
       toast({
         title: 'Error',
-        description: 'Failed to delete parked item',
+        description: errorMessage,
         variant: 'destructive',
       });
+
+      // Refetch to ensure UI is in sync with database
+      await fetchParkedItems();
     }
   };
 
