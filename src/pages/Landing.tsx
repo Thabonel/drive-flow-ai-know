@@ -109,6 +109,12 @@ const features = [
     benefit: 'Fast answers',
   },
   {
+    icon: Brain,
+    title: 'Future-Proof AI Intelligence',
+    description: 'Never worry about outdated AI. We automatically use the latest frontier models, ensuring you always get state-of-the-art answers without lifting a finger.',
+    benefit: 'No manual upgrades needed',
+  },
+  {
     icon: Clock,
     title: 'Timeline Manager',
     description: 'Visual timeline that flows in real-time. Schedule tasks, see what\'s logjammed, park items for later. Switch between day, week, and month views.',
@@ -534,17 +540,14 @@ export default function Landing() {
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
               <div className="p-6 rounded-xl bg-primary/5 border border-primary/20">
-                <CheckCircle2 className="w-8 h-8 text-primary mx-auto mb-3" />
                 <h3 className="font-bold text-primary mb-2">Priority Support</h3>
                 <p className="text-sm text-muted-foreground">Direct line to our team for any issues or questions</p>
               </div>
               <div className="p-6 rounded-xl bg-success/5 border border-success/20">
-                <Sparkles className="w-8 h-8 text-success mx-auto mb-3" />
                 <h3 className="font-bold text-success mb-2">Exclusive Features</h3>
                 <p className="text-sm text-muted-foreground">Get first access to new AI capabilities as we release them</p>
               </div>
               <div className="p-6 rounded-xl bg-accent/5 border border-accent/20">
-                <TrendingUp className="w-8 h-8 text-accent mx-auto mb-3" />
                 <h3 className="font-bold text-accent mb-2">Special Pricing</h3>
                 <p className="text-sm text-muted-foreground">Lock in early adopter rates before we raise prices</p>
               </div>
