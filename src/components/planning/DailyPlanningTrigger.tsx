@@ -25,6 +25,7 @@ export function DailyPlanningTrigger() {
   const [showQuickPlanning, setShowQuickPlanning] = useState(false);
   const [showShutdown, setShowShutdown] = useState(false);
   const [promptDismissed, setPromptDismissed] = useState(false);
+  const [shutdownDismissed, setShutdownDismissed] = useState(false);
 
   // Check if planning is needed on mount and at intervals
   useEffect(() => {
@@ -78,6 +79,10 @@ export function DailyPlanningTrigger() {
     setPromptDismissed(true);
   };
 
+  const handleDismissShutdown = () => {
+    setShutdownDismissed(true);
+  };
+
   const handleStartPlanning = () => {
     setShowPrompt(false);
     setShowPlanning(true);
@@ -95,7 +100,7 @@ export function DailyPlanningTrigger() {
   return (
     <>
       {/* Combined Planning & Shutdown Prompt */}
-      {(showPrompt && !todaySession?.completed_at) || (shutdownNeeded && settings?.enable_shutdown_ritual) ? (
+      {(showPrompt && !todaySession?.completed_at) || (shutdownNeeded && settings?.enable_shutdown_ritual && !shutdownDismissed) ? (
         <div className="fixed bottom-4 right-4 z-50 w-full max-w-2xl px-4">
           <Alert className="border-2 border-blue-500 shadow-lg bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-950/50 dark:to-purple-950/50">
             <div className="flex items-start gap-4">
@@ -155,7 +160,7 @@ export function DailyPlanningTrigger() {
                 variant="ghost"
                 size="icon"
                 className="flex-shrink-0"
-                onClick={showPrompt ? handleDismiss : () => {}}
+                onClick={showPrompt ? handleDismiss : handleDismissShutdown}
               >
                 <X className="h-4 w-4" />
               </Button>
