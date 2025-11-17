@@ -72,7 +72,7 @@ export function ItemActionMenu({
 
   const handleEdit = () => {
     // Check if this is a recurring item
-    if (item.recurring_series_id && item.occurrence_index !== undefined && onUpdateRecurringThisAndFollowing) {
+    if (item.recurring_series_id && typeof item.occurrence_index === 'number' && onUpdateRecurringThisAndFollowing) {
       // Show recurring dialog for edit
       setRecurringActionType('edit');
       setShowRecurringDialog(true);
@@ -101,7 +101,7 @@ export function ItemActionMenu({
 
   const handleDelete = () => {
     // Check if this is a recurring item
-    if (item.recurring_series_id && item.occurrence_index !== undefined && onDeleteRecurringThisAndFollowing) {
+    if (item.recurring_series_id && typeof item.occurrence_index === 'number' && onDeleteRecurringThisAndFollowing) {
       // Show recurring dialog
       setRecurringActionType('delete');
       setShowRecurringDialog(true);
