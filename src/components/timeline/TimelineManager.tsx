@@ -76,6 +76,7 @@ export function TimelineManager({ onCanvasReady }: TimelineManagerProps = {}) {
     addLayer,
     updateLayer,
     deleteLayer,
+    reorderLayers,
     toggleLayerVisibility,
     refetch: refetchLayers,
   } = useLayers();
@@ -438,6 +439,7 @@ export function TimelineManager({ onCanvasReady }: TimelineManagerProps = {}) {
                       onUpdateLayer={updateLayer}
                       onDeleteLayer={deleteLayer}
                       onToggleVisibility={toggleLayerVisibility}
+                      onReorderLayers={reorderLayers}
                     />
                   </PopoverContent>
                 </Popover>

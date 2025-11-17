@@ -21,6 +21,7 @@ interface TimelineLayerManagerProps {
   onUpdateLayer: (layerId: string, updates: Partial<TimelineLayer>) => Promise<void>;
   onDeleteLayer: (layerId: string) => Promise<void>;
   onToggleVisibility: (layerId: string) => Promise<void>;
+  onReorderLayers: (newOrder: TimelineLayer[]) => Promise<void>;
 }
 
 export function TimelineLayerManager({
@@ -29,10 +30,12 @@ export function TimelineLayerManager({
   onUpdateLayer,
   onDeleteLayer,
   onToggleVisibility,
+  onReorderLayers,
 }: TimelineLayerManagerProps) {
   const [newLayerName, setNewLayerName] = useState('');
   const [editingLayerId, setEditingLayerId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState('');
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
 
   const handleAddLayer = async () => {
     if (!newLayerName.trim()) return;
@@ -59,6 +62,34 @@ export function TimelineLayerManager({
     setEditingName('');
   };
 
+  const handleDragStart = (index: number) => {
+    setDraggedIndex(index);
+  };
+
+  const handleDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+  };
+
+  const handleDrop = async (e: React.DragEvent, dropIndex: number) => {
+    e.preventDefault();
+
+    if (draggedIndex === null || draggedIndex === dropIndex) {
+      setDraggedIndex(null);
+      return;
+    }
+
+    const newLayers = [...layers];
+    const [draggedLayer] = newLayers.splice(draggedIndex, 1);
+    newLayers.splice(dropIndex, 0, draggedLayer);
+
+    await onReorderLayers(newLayers);
+    setDraggedIndex(null);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedIndex(null);
+  };
+
   return (
     <div className="space-y-4 p-1">
         {/* Add new layer */}
@@ -81,10 +112,17 @@ export function TimelineLayerManager({
               No layers yet. Create one to get started!
             </p>
           ) : (
-            layers.map((layer) => (
+            layers.map((layer, index) => (
               <div
                 key={layer.id}
-                className="flex items-center gap-2 p-2 border border-border rounded-lg bg-card text-card-foreground"
+                draggable
+                onDragStart={() => handleDragStart(index)}
+                onDragOver={(e) => handleDragOver(e, index)}
+                onDrop={(e) => handleDrop(e, index)}
+                onDragEnd={handleDragEnd}
+                className={`flex items-center gap-2 p-2 border border-border rounded-lg bg-card text-card-foreground transition-opacity ${
+                  draggedIndex === index ? 'opacity-50' : 'opacity-100'
+                }`}
               >
                 {/* Drag handle */}
                 <GripVertical className="h-4 w-4 text-gray-400 cursor-move" />
