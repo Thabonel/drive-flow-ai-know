@@ -9,6 +9,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Loader2, Send, Archive, Trash2, Edit2, Check, X, FileText, MessageCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
+import { DictationButton } from '@/components/DictationButton';
 
 interface Message {
   id: string;
@@ -628,9 +629,14 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
                 }
               }}
             />
-            <Button type="submit" disabled={isLoading || !input.trim()}>
-              <Send className="h-4 w-4" />
-            </Button>
+            <div className="flex flex-col gap-2">
+              <DictationButton
+                onTranscription={(text) => setInput(prev => prev ? prev + ' ' + text : text)}
+              />
+              <Button type="submit" disabled={isLoading || !input.trim()}>
+                <Send className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
         </form>
       </Card>

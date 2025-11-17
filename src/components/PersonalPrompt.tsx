@@ -14,6 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { DictationButton } from "@/components/DictationButton";
 
 const PROMPT_TEMPLATES = {
   concise: `I prefer concise, technical responses. Get straight to the point with minimal explanation. Use code examples and technical terminology freely.`,
@@ -170,7 +171,19 @@ export function PersonalPrompt() {
 
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label htmlFor="personal-prompt">Your Personal Prompt</Label>
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="personal-prompt">Your Personal Prompt</Label>
+                  <DictationButton
+                    onTranscription={(text) => {
+                      const newValue = prompt ? prompt + ' ' + text : text;
+                      if (newValue.length <= MAX_LENGTH) {
+                        setPrompt(newValue);
+                        setSelectedTemplate("custom");
+                      }
+                    }}
+                    size="sm"
+                  />
+                </div>
                 <span className={`text-xs ${charCountColor}`}>
                   {charCount} / {MAX_LENGTH} characters
                   {charCount > 0 && charCount < MIN_LENGTH && ` (min ${MIN_LENGTH})`}

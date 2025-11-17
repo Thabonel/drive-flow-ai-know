@@ -11,6 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
+import { DictationButton } from '@/components/DictationButton';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -363,13 +364,18 @@ export const AIQueryInput = ({ selectedKnowledgeBase, onClearSelection }: AIQuer
             }}
             maxLength={1000}
           />
-          <Button type="submit" disabled={isLoading || !query.trim() || query.length < 3} className="h-auto px-6">
-            {isLoading ? (
-              <Loader2 className="h-5 w-5 animate-spin" />
-            ) : (
-              <Send className="h-5 w-5" />
-            )}
-          </Button>
+          <div className="flex flex-col space-y-2">
+            <DictationButton
+              onTranscription={(text) => setQuery(prev => prev ? prev + ' ' + text : text)}
+            />
+            <Button type="submit" disabled={isLoading || !query.trim() || query.length < 3} className="h-auto px-6">
+              {isLoading ? (
+                <Loader2 className="h-5 w-5 animate-spin" />
+              ) : (
+                <Send className="h-5 w-5" />
+              )}
+            </Button>
+          </div>
         </form>
 
         <div className="flex justify-between items-center text-xs text-muted-foreground">
