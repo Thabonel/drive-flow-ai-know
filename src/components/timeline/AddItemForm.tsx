@@ -476,8 +476,11 @@ export function AddItemForm({
                 htmlFor="is-meeting"
                 className="text-sm font-normal cursor-pointer"
               >
-                This is a meeting (synced from calendar)
+                This is a meeting
               </Label>
+              <p className="text-xs text-muted-foreground ml-6">
+                Enables meeting prep features and calendar sync (if connected)
+              </p>
             </div>
             <div className="flex items-center space-x-2">
               <Checkbox
