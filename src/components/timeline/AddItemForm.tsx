@@ -95,6 +95,7 @@ export function AddItemForm({
   const [color, setColor] = useState(getRandomItemColor());
   const [showRecurringDialog, setShowRecurringDialog] = useState(false);
   const [pendingUpdates, setPendingUpdates] = useState<Partial<TimelineItem> | null>(null);
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
   // Team-related state
   const [visibility, setVisibility] = useState<'personal' | 'team' | 'assigned'>('personal');
@@ -131,6 +132,11 @@ export function AddItemForm({
       setIsMeeting(editingItem.is_meeting || false);
       setIsFlexible(editingItem.is_flexible !== undefined ? editingItem.is_flexible : true);
 
+      // Enable advanced mode if duration and planned duration differ
+      const hasDifferentDurations = editingItem.planned_duration_minutes &&
+        editingItem.planned_duration_minutes !== editingItem.duration_minutes;
+      setShowAdvanced(!!hasDifferentDurations);
+
       // Calculate hours from now
       const now = new Date();
       const startTime = new Date(editingItem.start_time);
@@ -141,9 +147,10 @@ export function AddItemForm({
       setTitle('');
       setHoursFromNow(1);
       setDuration(60);
-      setPlannedDuration(30);
+      setPlannedDuration(60); // Match duration by default
       setIsMeeting(false);
       setIsFlexible(true);
+      setShowAdvanced(false);
       setColor(getRandomItemColor());
       setNewLayerName('');
       setIsCreatingLayer(false);
@@ -239,9 +246,10 @@ export function AddItemForm({
     setTitle('');
     setHoursFromNow(1);
     setDuration(60);
-    setPlannedDuration(30);
+    setPlannedDuration(60);
     setIsMeeting(false);
     setIsFlexible(true);
+    setShowAdvanced(false);
     setColor(getRandomItemColor());
     setNewLayerName('');
     setIsCreatingLayer(false);
@@ -262,9 +270,10 @@ export function AddItemForm({
     setTitle('');
     setHoursFromNow(1);
     setDuration(60);
-    setPlannedDuration(30);
+    setPlannedDuration(60);
     setIsMeeting(false);
     setIsFlexible(true);
+    setShowAdvanced(false);
     setColor(getRandomItemColor());
     setNewLayerName('');
     setIsCreatingLayer(false);
@@ -285,9 +294,10 @@ export function AddItemForm({
     setTitle('');
     setHoursFromNow(1);
     setDuration(60);
-    setPlannedDuration(30);
+    setPlannedDuration(60);
     setIsMeeting(false);
     setIsFlexible(true);
+    setShowAdvanced(false);
     setColor(getRandomItemColor());
     setNewLayerName('');
     setIsCreatingLayer(false);
@@ -298,6 +308,10 @@ export function AddItemForm({
 
   const handleQuickDuration = (minutes: number) => {
     setDuration(minutes);
+    // When not in advanced mode, keep both values in sync
+    if (!showAdvanced) {
+      setPlannedDuration(minutes);
+    }
   };
 
   const handleApplyAIEstimate = () => {
@@ -358,7 +372,20 @@ export function AddItemForm({
 
           {/* Duration (actual timeline block size) */}
           <div className="space-y-2">
-            <Label htmlFor="duration">Timeline Block Duration *</Label>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="duration">
+                {showAdvanced ? 'Calendar Time to Reserve *' : 'Duration *'}
+              </Label>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowAdvanced(!showAdvanced)}
+                className="text-xs h-7"
+              >
+                {showAdvanced ? 'Simple' : 'Advanced'}
+              </Button>
+            </div>
             <div className="flex gap-2 flex-wrap">
               {QUICK_ADD_DURATIONS.map((minutes) => (
                 <Button
@@ -373,16 +400,25 @@ export function AddItemForm({
               ))}
             </div>
             <p className="text-xs text-muted-foreground">
-              How much time to block on the timeline
+              {showAdvanced
+                ? 'How much calendar time to block on your timeline'
+                : 'How long this task/event will take'}
             </p>
           </div>
 
-          {/* Time Estimate */}
-          <TimeEstimateInput
-            value={plannedDuration}
-            onChange={setPlannedDuration}
-            label="Time Estimate"
-          />
+          {/* Time Estimate - Only show in advanced mode */}
+          {showAdvanced && (
+            <div className="space-y-2 border-l-2 border-primary/20 pl-4">
+              <TimeEstimateInput
+                value={plannedDuration}
+                onChange={setPlannedDuration}
+                label="Actual Work Time"
+              />
+              <p className="text-xs text-muted-foreground">
+                Estimate of actual work time (for tracking productivity)
+              </p>
+            </div>
+          )}
 
           {/* AI Estimate Display */}
           {aiEstimate && !isEditMode && (
