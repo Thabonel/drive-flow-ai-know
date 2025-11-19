@@ -71,13 +71,24 @@ export function ItemActionMenu({
   if (!item) return null;
 
   const handleEdit = () => {
+    // Debug logging for recurring item check
+    console.log('handleEdit - Checking recurring item:', {
+      item_id: item.id,
+      recurring_series_id: item.recurring_series_id,
+      occurrence_index: item.occurrence_index,
+      occurrence_index_type: typeof item.occurrence_index,
+      has_callback: !!onUpdateRecurringThisAndFollowing,
+    });
+
     // Check if this is a recurring item
     if (item.recurring_series_id && typeof item.occurrence_index === 'number' && onUpdateRecurringThisAndFollowing) {
       // Show recurring dialog for edit
+      console.log('Showing recurring dialog for EDIT');
       setRecurringActionType('edit');
       setShowRecurringDialog(true);
     } else {
       // Non-recurring item - edit normally
+      console.log('Editing non-recurring item or missing callback');
       onEdit(item.id);
       onClose();
     }
@@ -100,13 +111,24 @@ export function ItemActionMenu({
   };
 
   const handleDelete = () => {
+    // Debug logging for recurring item check
+    console.log('handleDelete - Checking recurring item:', {
+      item_id: item.id,
+      recurring_series_id: item.recurring_series_id,
+      occurrence_index: item.occurrence_index,
+      occurrence_index_type: typeof item.occurrence_index,
+      has_callback: !!onDeleteRecurringThisAndFollowing,
+    });
+
     // Check if this is a recurring item
     if (item.recurring_series_id && typeof item.occurrence_index === 'number' && onDeleteRecurringThisAndFollowing) {
       // Show recurring dialog
+      console.log('Showing recurring dialog for DELETE');
       setRecurringActionType('delete');
       setShowRecurringDialog(true);
     } else {
       // Non-recurring item - simple confirm
+      console.log('Deleting non-recurring item or missing callback');
       if (confirm('Are you sure you want to delete this item?')) {
         onDelete(item.id);
         onClose();
