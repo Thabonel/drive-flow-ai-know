@@ -30,6 +30,7 @@ import {
 import { TimelineLayer, getRandomItemColor, TimelineItem } from '@/lib/timelineUtils';
 import { QUICK_ADD_DURATIONS } from '@/lib/timelineConstants';
 import { TimeEstimateInput } from './TimeEstimateInput';
+import { StartTimeSelector } from './StartTimeSelector';
 import { useAITimeIntelligence } from '@/hooks/useAITimeIntelligence';
 import { useTeam } from '@/hooks/useTeam';
 import { useTeamMembers } from '@/hooks/useTeamMembers';
@@ -351,24 +352,10 @@ export function AddItemForm({
           </div>
 
           {/* Start Time */}
-          <div className="space-y-2">
-            <Label htmlFor="hoursFromNow">Start Time</Label>
-            <div className="flex items-center gap-2">
-              <Input
-                id="hoursFromNow"
-                type="number"
-                value={hoursFromNow}
-                onChange={(e) => setHoursFromNow(Number(e.target.value))}
-                step="0.25"
-              />
-              <span className="text-sm text-gray-600 dark:text-gray-400">
-                hours from now
-              </span>
-            </div>
-            <p className="text-xs text-gray-500">
-              Use negative values for past items
-            </p>
-          </div>
+          <StartTimeSelector
+            hoursFromNow={hoursFromNow}
+            onHoursFromNowChange={setHoursFromNow}
+          />
 
           {/* Duration (actual timeline block size) */}
           <div className="space-y-2">
