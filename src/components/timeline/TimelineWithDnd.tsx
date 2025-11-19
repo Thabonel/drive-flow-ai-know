@@ -239,13 +239,15 @@ export function TimelineWithDnd({ refetchItems, refetchTasks }: TimelineWithDndP
 
           // Refetch tasks to update dropdown (remove if one-off, keep if template)
           await refetchTasks();
-          // NOTE: No manual refetch needed - addItem() updates local state optimistically
-          // and real-time subscription will sync any other changes
 
           toast({
             title: 'Recurring task scheduled',
             description: `Created ${createdItems.length} recurring instances`,
           });
+
+          // Explicitly refetch timeline items to ensure they appear immediately
+          // This prevents race condition between optimistic state updates and real-time subscription
+          await refetchItems();
 
           console.log(`Successfully scheduled ${createdItems.length} recurring instances`);
         } else {
@@ -284,8 +286,11 @@ export function TimelineWithDnd({ refetchItems, refetchTasks }: TimelineWithDndP
 
           // Refetch tasks to update dropdown (remove if one-off, keep if template)
           await refetchTasks();
-          // NOTE: No manual refetch needed - addItem() updates local state optimistically
-          // and real-time subscription will sync any other changes
+
+          // Explicitly refetch timeline items to ensure they appear immediately
+          // This prevents race condition between optimistic state updates and real-time subscription
+          await refetchItems();
+
           console.log('Task scheduled successfully');
         }
       }
