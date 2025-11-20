@@ -23,16 +23,24 @@ export function DictationButton({
   const handleClick = async () => {
     if (isRecording) {
       // Stop recording and get transcription
+      console.log('🎙️ DictationButton: Stopping recording...')
       const transcription = await stopRecording()
+      console.log('🎙️ DictationButton: Received transcription result:', transcription ? `"${transcription.substring(0, 100)}..."` : '(null or empty)')
       setIsActive(false)
 
       if (transcription) {
+        console.log('✅ DictationButton: Calling onTranscription callback with text')
         onTranscription(transcription)
+        console.log('✅ DictationButton: Callback executed successfully')
+      } else {
+        console.warn('⚠️ DictationButton: Transcription is null/empty, callback not executed')
       }
     } else {
       // Start recording
+      console.log('🎙️ DictationButton: Starting recording...')
       await startRecording()
       setIsActive(true)
+      console.log('🎙️ DictationButton: Recording started')
     }
   }
 
