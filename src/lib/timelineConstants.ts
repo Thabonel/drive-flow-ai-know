@@ -65,7 +65,7 @@ export const AUTO_PARK_HOURS = 8;
 export const QUICK_ADD_DURATIONS = [15, 30, 60, 120];
 
 // Timeline visible range (hours before and after NOW)
-export const DEFAULT_PAST_HOURS = 12;
+export const DEFAULT_PAST_HOURS = 2;
 export const DEFAULT_FUTURE_HOURS = 24;
 
 // Reschedule options
@@ -96,21 +96,21 @@ export const VIEW_MODE_CONFIG = {
   day: {
     label: 'Day',
     pixelsPerHour: 200,  // 200px per hour = very detailed
-    pastHours: 6,        // Show 6 hours in the past
+    pastHours: 2,        // Show 2 hours in the past
     futureHours: 18,     // Show 18 hours in the future (total 24h)
     subdivisionMinutes: 15, // 15-minute intervals for high detail
   },
   week: {
     label: 'Week',
     pixelsPerHour: 30,   // 30px per hour = ~720px per day
-    pastHours: 24,       // Show 1 day in the past
+    pastHours: 2,        // Show 2 hours in the past
     futureHours: 144,    // Show 6 days in the future (total 7 days)
     subdivisionMinutes: 60, // Hourly intervals
   },
   month: {
     label: 'Month',
     pixelsPerHour: 10,   // 10px per hour = ~240px per day = ~7200px per month
-    pastHours: 168,      // Show 1 week in the past
+    pastHours: 2,        // Show 2 hours in the past
     futureHours: 552,    // Show ~3 weeks in the future (total ~30 days)
     subdivisionMinutes: 360, // 6-hour intervals
   },
