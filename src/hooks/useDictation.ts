@@ -88,8 +88,12 @@ export function useDictation(): UseDictationReturn {
           formData.append('audio', audioFile)
           formData.append('language', 'en') // Could be made configurable
 
+          const fetchUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/transcribe-audio`
+          console.log('🎤 Starting transcription fetch to:', fetchUrl)
+          console.log('Audio file size:', audioFile.size, 'bytes')
+
           const response = await fetch(
-            `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/transcribe-audio`,
+            fetchUrl,
             {
               method: 'POST',
               headers: {
@@ -99,23 +103,34 @@ export function useDictation(): UseDictationReturn {
             }
           )
 
+          console.log('📡 Transcription response received. Status:', response.status, response.statusText)
+
           if (!response.ok) {
             const errorData = await response.json()
+            console.error('❌ Transcription API error:', errorData, 'Status:', response.status)
             throw new Error(errorData.error || 'Transcription failed')
           }
 
           const data = await response.json()
+          console.log('✅ Transcription response data:', data)
+          console.log('📝 Extracted text:', data?.text)
+          console.log('Text length:', data?.text?.length || 0, 'characters')
 
           toast.success('Transcription complete')
           setIsTranscribing(false)
+
+          console.log('🔄 Resolving promise with text:', data.text ? `"${data.text.substring(0, 50)}..."` : '(empty or undefined)')
           resolve(data.text)
         } catch (err) {
           const errorMessage = err instanceof Error ? err.message : 'Transcription failed'
+          console.error('💥 Transcription error caught:', err)
+          console.error('Error message:', errorMessage)
           setError(errorMessage)
           toast.error('Transcription failed', {
             description: errorMessage,
           })
           setIsTranscribing(false)
+          console.log('🔄 Resolving promise with null (error case)')
           resolve(null)
         }
       }

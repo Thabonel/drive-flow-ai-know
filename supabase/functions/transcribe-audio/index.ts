@@ -82,12 +82,18 @@ serve(async (req) => {
     const transcription = await whisperResponse.json()
 
     console.log('Transcription successful')
+    console.log('Transcription text length:', transcription.text?.length || 0, 'characters')
+    console.log('Transcription text preview:', transcription.text?.substring(0, 100) || '(empty)')
+
+    const responseData = {
+      text: transcription.text,
+      language: transcription.language || language,
+    }
+
+    console.log('Returning response:', JSON.stringify(responseData))
 
     return new Response(
-      JSON.stringify({
-        text: transcription.text,
-        language: transcription.language || language,
-      }),
+      JSON.stringify(responseData),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       }
