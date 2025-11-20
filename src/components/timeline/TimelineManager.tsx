@@ -31,6 +31,7 @@ import {
   MIN_ZOOM,
   MAX_ZOOM,
   ZOOM_STEP,
+  NOW_LINE_POSITION,
   TimelineViewMode,
   VIEW_MODE_CONFIG,
 } from '@/lib/timelineConstants';
@@ -115,6 +116,7 @@ export function TimelineManager({ onCanvasReady }: TimelineManagerProps = {}) {
 
   const animationFrameRef = useRef<number>();
   const lastTickRef = useRef<number>(Date.now());
+  const initializedScrollRef = useRef<boolean>(false);
 
   // Calculate zoom-adjusted values based on view mode
   const viewModeConfig = VIEW_MODE_CONFIG[viewMode];
@@ -154,6 +156,56 @@ export function TimelineManager({ onCanvasReady }: TimelineManagerProps = {}) {
       }
     };
   }, [settings?.is_locked, pixelsPerHour]);
+
+  // Set initial scroll offset to show pastHours before NOW
+  useEffect(() => {
+    // Wait for settings to load
+    if (!settings) return;
+
+    // Estimate viewport width (typical desktop width)
+    const estimatedViewportWidth = 1200;
+
+    // Calculate scroll offset to show exactly pastHours before NOW
+    // Formula: scrollOffset = pastHours * pixelsPerHour - NOW_LINE_POSITION * viewportWidth
+    const pastHours = viewModeConfig.pastHours;
+    const targetScrollOffset = pastHours * pixelsPerHour - NOW_LINE_POSITION * estimatedViewportWidth;
+
+    // Only set if this is initial load or view mode changed
+    if (!initializedScrollRef.current) {
+      setScrollOffset(targetScrollOffset);
+      initializedScrollRef.current = true;
+
+      console.log('Timeline: Set initial scroll offset', {
+        pastHours,
+        pixelsPerHour,
+        nowLinePosition: NOW_LINE_POSITION,
+        estimatedViewportWidth,
+        targetScrollOffset,
+      });
+    }
+  }, [settings, viewModeConfig.pastHours, pixelsPerHour]);
+
+  // Recalculate scroll offset when view mode changes
+  useEffect(() => {
+    // Skip initial mount
+    if (!initializedScrollRef.current) return;
+
+    // Estimate viewport width (typical desktop width)
+    const estimatedViewportWidth = 1200;
+
+    // Calculate new scroll offset for the new view mode
+    const pastHours = viewModeConfig.pastHours;
+    const newScrollOffset = pastHours * pixelsPerHour - NOW_LINE_POSITION * estimatedViewportWidth;
+
+    setScrollOffset(newScrollOffset);
+
+    console.log('Timeline: View mode changed, recalculating scroll offset', {
+      viewMode,
+      pastHours,
+      pixelsPerHour,
+      newScrollOffset,
+    });
+  }, [viewMode, viewModeConfig.pastHours, pixelsPerHour]);
 
   // Handle item click
   const handleItemClick = (item: TimelineItem) => {
