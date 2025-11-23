@@ -297,15 +297,13 @@ export default function Landing() {
               Get Instant Answers From Your Documents
             </h1>
 
-            <div className="text-base md:text-lg text-muted-foreground max-w-3xl mx-auto leading-relaxed space-y-0">
-              <p>
-                <strong className="text-primary">Upload documents once, they stay forever.</strong> Every conversation has access to your entire library.
-                No more re-uploading the same files over and over.
-              </p>
-              <p className="text-sm md:text-base">
+            <p className="text-base md:text-lg text-muted-foreground max-w-3xl mx-auto leading-relaxed">
+              <strong className="text-primary">Upload documents once, they stay forever.</strong> Every conversation has access to your entire library.
+              No more re-uploading the same files over and over.
+              <span className="text-sm md:text-base block">
                 Always running the latest AI, without you ever switching services.
-              </p>
-            </div>
+              </span>
+            </p>
 
             {/* CTA Above Fold */}
             <div className="flex flex-wrap gap-4 justify-center items-center pt-2">
