@@ -289,35 +289,36 @@ export default function Landing() {
       </header>
 
       {/* Hero Section */}
-      <section className="relative pt-8 pb-20 px-6 bg-white">
+      <section className="relative pt-6 pb-12 px-6 bg-white">
         <div className="max-w-7xl mx-auto">
           {/* Headline - Outcome-Based */}
-          <div className="text-center space-y-6 mb-8 animate-fade-in">
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight leading-tight text-primary max-w-4xl mx-auto">
+          <div className="text-center space-y-3 mb-4 animate-fade-in">
+            <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight leading-tight text-primary max-w-4xl mx-auto">
               Get Instant Answers From Your Documents
             </h1>
 
-            <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-              <strong className="text-primary">Upload documents once, they stay forever.</strong> Every conversation has access to your entire library.
-              No more re-uploading the same files over and over.
-            </p>
-
-            <p className="text-base md:text-lg text-muted-foreground max-w-3xl mx-auto">
-              Always running the latest AI, without you ever switching services.
-            </p>
+            <div className="text-base md:text-lg text-muted-foreground max-w-3xl mx-auto leading-relaxed space-y-0">
+              <p>
+                <strong className="text-primary">Upload documents once, they stay forever.</strong> Every conversation has access to your entire library.
+                No more re-uploading the same files over and over.
+              </p>
+              <p className="text-sm md:text-base">
+                Always running the latest AI, without you ever switching services.
+              </p>
+            </div>
 
             {/* CTA Above Fold */}
-            <div className="flex flex-wrap gap-4 justify-center items-center pt-4">
-              <Button asChild size="lg" className="text-lg px-8 py-6 bg-accent hover:bg-accent/90 shadow-lg hover:shadow-xl transition-all hover:scale-105 border-0 text-white">
+            <div className="flex flex-wrap gap-4 justify-center items-center pt-2">
+              <Button asChild size="lg" className="text-base px-6 py-4 bg-accent hover:bg-accent/90 shadow-lg hover:shadow-xl transition-all hover:scale-105 border-0 text-white">
                 <Link to="/auth">
                   Start Free 14-Day Trial
-                  <ArrowRight className="ml-2 w-5 h-5" />
+                  <ArrowRight className="ml-2 w-4 h-4" />
                 </Link>
               </Button>
             </div>
 
             {/* Trust Indicators */}
-            <div className="flex flex-wrap gap-6 justify-center items-center pt-4 text-sm">
+            <div className="flex flex-wrap gap-3 justify-center items-center pt-2 text-xs">
               <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/30 backdrop-blur-sm">
                 <Shield className="w-4 h-4 text-primary" />
                 <span className="font-medium text-primary">Your data stays private</span>
@@ -338,7 +339,7 @@ export default function Landing() {
           </div>
 
           {/* Hero Illustration */}
-          <div className="flex justify-center mt-12">
+          <div className="flex justify-center mt-6">
             <img
               src="https://fskwutnoxbbflzqrphro.supabase.co/storage/v1/object/public/assets/AI%20Qyeryhubhero.jpg"
               alt="AI Query Hub - AI Knowledge Assistant"
