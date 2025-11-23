@@ -303,7 +303,7 @@ export default function Landing() {
             </p>
 
             <p className="text-base md:text-lg text-muted-foreground max-w-3xl mx-auto">
-              Powered by Claude, OpenRouter, and more—always the latest AI without switching services.
+              Always running the latest AI, without you ever switching services.
             </p>
 
             {/* CTA Above Fold */}
