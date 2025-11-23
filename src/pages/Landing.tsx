@@ -159,7 +159,7 @@ const features = [
   {
     icon: TrendingUp,
     title: 'Meaningfully Upshift Bottom Line',
-    description: 'Teams waste hours searching for information. Context fluency eliminates duplicate work and accelerates decision-making.',
+    description: 'Teams waste hours every week searching for information. AI Query Hub turns that into billable hours, faster projects, and more closed deals—real ROI, not just "AI experiments." Give your team instant answers so they can ship faster, close more deals, and make you more money.',
     benefit: 'ROI you can measure',
   },
 ];
