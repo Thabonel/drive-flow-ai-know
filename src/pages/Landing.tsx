@@ -111,7 +111,7 @@ const features = [
   {
     icon: Brain,
     title: 'Future-Proof AI Intelligence',
-    description: 'Multi-provider architecture with Claude, OpenRouter, and local models. We automatically route to the best available AI and update to the latest frontier models. No switching services, no new accounts, no manual upgrades.',
+    description: 'Multi-provider architecture with leading AI models. We automatically route to the best available AI and update to the latest frontier models. No switching services, no new accounts, no manual upgrades.',
     benefit: 'Always latest AI',
   },
   {
@@ -516,21 +516,21 @@ export default function Landing() {
             <div className="p-6 rounded-2xl bg-white/10 backdrop-blur-xl border border-white/20">
               <h3 className="text-xl font-bold text-white mb-4">Multi-Provider Architecture</h3>
               <p className="text-white/80 mb-4">
-                We integrate with multiple AI providers including Claude Sonnet 4.5, OpenRouter, and local models.
+                We integrate with multiple leading AI providers and cutting-edge models.
                 You get the best of all worlds without managing multiple subscriptions.
               </p>
               <ul className="space-y-2 text-white/70">
                 <li className="flex items-start gap-2">
                   <CheckCircle2 className="w-5 h-5 mt-0.5 flex-shrink-0" />
-                  <span>Claude Sonnet 4.5 for advanced reasoning</span>
+                  <span>Advanced reasoning capabilities</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <CheckCircle2 className="w-5 h-5 mt-0.5 flex-shrink-0" />
-                  <span>OpenRouter for model diversity</span>
+                  <span>Access to diverse model capabilities</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <CheckCircle2 className="w-5 h-5 mt-0.5 flex-shrink-0" />
-                  <span>Local Ollama support for privacy</span>
+                  <span>Local model support for maximum privacy</span>
                 </li>
               </ul>
             </div>
