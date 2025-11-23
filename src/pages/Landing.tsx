@@ -528,10 +528,6 @@ export default function Landing() {
                   <CheckCircle2 className="w-5 h-5 mt-0.5 flex-shrink-0" />
                   <span>Access to diverse model capabilities</span>
                 </li>
-                <li className="flex items-start gap-2">
-                  <CheckCircle2 className="w-5 h-5 mt-0.5 flex-shrink-0" />
-                  <span>Local model support for maximum privacy</span>
-                </li>
               </ul>
             </div>
 
