@@ -111,8 +111,8 @@ const features = [
   {
     icon: Brain,
     title: 'Future-Proof AI Intelligence',
-    description: 'Never worry about outdated AI. We automatically use the latest frontier models, ensuring you always get state-of-the-art answers without lifting a finger.',
-    benefit: 'No manual upgrades needed',
+    description: 'Multi-provider architecture with Claude, OpenRouter, and local models. We automatically route to the best available AI and update to the latest frontier models. No switching services, no new accounts, no manual upgrades.',
+    benefit: 'Always latest AI',
   },
   {
     icon: Clock,
@@ -302,6 +302,10 @@ export default function Landing() {
               No more re-uploading the same files over and over.
             </p>
 
+            <p className="text-base md:text-lg text-muted-foreground max-w-3xl mx-auto">
+              Powered by Claude, OpenRouter, and more—always the latest AI without switching services.
+            </p>
+
             {/* CTA Above Fold */}
             <div className="flex flex-wrap gap-4 justify-center items-center pt-4">
               <Button asChild size="lg" className="text-lg px-8 py-6 bg-accent hover:bg-accent/90 shadow-lg hover:shadow-xl transition-all hover:scale-105 border-0 text-white">
@@ -325,6 +329,10 @@ export default function Landing() {
               <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-accent/10 border border-accent/30 backdrop-blur-sm">
                 <CheckCircle2 className="w-4 h-4 text-accent" />
                 <span className="font-medium text-accent">No credit card required</span>
+              </div>
+              <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/30 backdrop-blur-sm">
+                <CheckCircle2 className="w-4 h-4 text-primary" />
+                <span className="font-medium text-primary">Always latest AI models</span>
               </div>
             </div>
           </div>
@@ -487,6 +495,74 @@ export default function Landing() {
             <p className="text-lg text-white/90 leading-relaxed">
               <strong className="text-white">Upload once, use forever.</strong> Every document you add becomes part of your permanent knowledge base.
               The AI can reference any file you've ever uploaded, in any conversation, at any time. No more re-uploading the same documents.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* AI Model Leadership Section */}
+      <section className="relative py-16 px-6 bg-primary">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-12">
+            <h2 className="text-4xl md:text-5xl font-bold mb-4 text-white">
+              Powered by the Best AI, Automatically
+            </h2>
+            <p className="text-lg md:text-xl text-white/80 max-w-3xl mx-auto leading-relaxed">
+              We constantly update to the latest frontier models so you never have to switch providers,
+              create new accounts, or worry about falling behind.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl mx-auto">
+            <div className="p-6 rounded-2xl bg-white/10 backdrop-blur-xl border border-white/20">
+              <h3 className="text-xl font-bold text-white mb-4">Multi-Provider Architecture</h3>
+              <p className="text-white/80 mb-4">
+                We integrate with multiple AI providers including Claude Sonnet 4.5, OpenRouter, and local models.
+                You get the best of all worlds without managing multiple subscriptions.
+              </p>
+              <ul className="space-y-2 text-white/70">
+                <li className="flex items-start gap-2">
+                  <CheckCircle2 className="w-5 h-5 mt-0.5 flex-shrink-0" />
+                  <span>Claude Sonnet 4.5 for advanced reasoning</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <CheckCircle2 className="w-5 h-5 mt-0.5 flex-shrink-0" />
+                  <span>OpenRouter for model diversity</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <CheckCircle2 className="w-5 h-5 mt-0.5 flex-shrink-0" />
+                  <span>Local Ollama support for privacy</span>
+                </li>
+              </ul>
+            </div>
+
+            <div className="p-6 rounded-2xl bg-white/10 backdrop-blur-xl border border-white/20">
+              <h3 className="text-xl font-bold text-white mb-4">Always Up-to-Date</h3>
+              <p className="text-white/80 mb-4">
+                When new frontier models are released, we update automatically. No action needed on your part.
+                You always get state-of-the-art AI performance.
+              </p>
+              <ul className="space-y-2 text-white/70">
+                <li className="flex items-start gap-2">
+                  <CheckCircle2 className="w-5 h-5 mt-0.5 flex-shrink-0" />
+                  <span>Automatic model updates</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <CheckCircle2 className="w-5 h-5 mt-0.5 flex-shrink-0" />
+                  <span>Intelligent fallback routing</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <CheckCircle2 className="w-5 h-5 mt-0.5 flex-shrink-0" />
+                  <span>No vendor lock-in</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          <div className="mt-12 p-6 rounded-2xl bg-white/10 backdrop-blur-xl border border-white/20 max-w-4xl mx-auto">
+            <p className="text-lg text-white/90 text-center leading-relaxed">
+              <strong className="text-white">One platform, zero maintenance.</strong> While others force you to chase the latest models across different services,
+              we handle everything behind the scenes. Your workflow stays the same, your AI gets better. We ship new features as quickly as we can imagine them.
             </p>
           </div>
         </div>
