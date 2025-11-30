@@ -1,6 +1,7 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { CLAUDE_MODELS, OPENAI_MODELS, OPENROUTER_MODELS, LOCAL_MODELS } from '../_shared/models.ts';
 
 const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
 const openRouterApiKey = Deno.env.get('OPENROUTER_API_KEY');
@@ -15,7 +16,7 @@ async function anthropicCompletion(prompt: string, context: string) {
       'anthropic-version': '2023-06-01',
     },
     body: JSON.stringify({
-      model: 'claude-sonnet-4-5-20250514',
+      model: CLAUDE_MODELS.PRIMARY,
       max_tokens: 4000,
       messages: [
         {
@@ -37,7 +38,7 @@ async function openAICompletion(prompt: string, context: string) {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'gpt-5-mini',
+      model: OPENAI_MODELS.FAST,
       messages: [
         { role: 'system', content: context },
         { role: 'user', content: prompt },
@@ -57,7 +58,7 @@ async function openRouterCompletion(prompt: string, context: string) {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'openai/gpt-5-mini',
+      model: OPENROUTER_MODELS.FAST,
       messages: [
         { role: 'system', content: context },
         { role: 'user', content: prompt },
@@ -76,7 +77,7 @@ async function localCompletion(prompt: string, context: string) {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'llama3',
+      model: LOCAL_MODELS.PRIMARY,
       prompt: `${context}\n${prompt}`,
       stream: false,
     }),
