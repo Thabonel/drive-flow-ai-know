@@ -1,6 +1,7 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.21.0';
+import { CLAUDE_MODELS, OPENROUTER_MODELS } from '../_shared/models.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -24,7 +25,7 @@ async function claudeCompletion(systemPrompt: string, userPrompt: string) {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'claude-haiku-4-5-20251001',
+      model: CLAUDE_MODELS.CHEAP,
       max_tokens: 4096,
       system: systemPrompt,
       messages: [
@@ -55,7 +56,7 @@ async function openRouterCompletion(systemPrompt: string, userPrompt: string) {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'openai/gpt-5',
+      model: OPENROUTER_MODELS.PRIMARY,
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt },

@@ -1,6 +1,7 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { CLAUDE_MODELS } from '../_shared/models.ts';
 
 const anthropicApiKey = Deno.env.get('ANTHROPIC_API_KEY');
 
@@ -30,7 +31,7 @@ Respond in this exact JSON format:
           'anthropic-version': '2023-06-01',
         },
         body: JSON.stringify({
-          model: 'claude-sonnet-4-5-20250929',
+          model: CLAUDE_MODELS.FAST,
           max_tokens: 150,
           messages: [
             {

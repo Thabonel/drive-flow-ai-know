@@ -1,6 +1,7 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { CLAUDE_MODELS, OPENROUTER_MODELS } from '../_shared/models.ts';
 
 const openRouterApiKey = Deno.env.get('OPENROUTER_API_KEY');
 const anthropicApiKey = Deno.env.get('ANTHROPIC_API_KEY');
@@ -177,7 +178,7 @@ async function claudeCompletion(messages: Message[], systemMessage: string) {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'claude-sonnet-4-5-20250929',
+      model: CLAUDE_MODELS.PRIMARY,
       max_tokens: 4096,
       system: systemMessage,
       messages: userMessages,
@@ -230,7 +231,7 @@ async function claudeCompletion(messages: Message[], systemMessage: string) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'claude-sonnet-4-5-20250929',
+          model: CLAUDE_MODELS.PRIMARY,
           max_tokens: 4096,
           system: systemMessage,
           messages: followUpMessages,
@@ -277,7 +278,7 @@ async function openRouterCompletion(messages: Message[], systemMessage: string) 
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'openai/gpt-5',
+      model: OPENROUTER_MODELS.PRIMARY,
       messages: allMessages,
     }),
   });

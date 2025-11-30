@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-AI Query Hub (formerly Knowledge Base App) is a React/TypeScript application that enables users to sync documents from Google Drive, create knowledge bases, and query them using AI. The app supports multiple AI providers (Claude Sonnet 4.5 primary, OpenRouter fallback, local Ollama) and includes an optional research-agent component for deep research capabilities.
+AI Query Hub (formerly Knowledge Base App) is a React/TypeScript application that enables users to sync documents from Google Drive, create knowledge bases, and query them using AI. The app supports multiple AI providers (Claude Opus 4.5 primary, OpenRouter fallback, local Ollama) with centralized model configuration for easy updates. Includes an optional research-agent component for deep research capabilities.
 
 Built with Vite, React, shadcn-ui, Tailwind CSS, and Supabase backend.
 
@@ -201,47 +201,73 @@ MCP_SERVER_URL=https://your-ngrok-url.ngrok-free.app/sse
 
 ## AI Model Reference
 
-### Claude Models (Anthropic API)
+### Centralized Model Configuration
 
-**Current Models (as of November 2025):**
+All AI model IDs are centralized in `supabase/functions/_shared/models.ts`. This provides:
+- **Single source of truth** for all model configurations
+- **Automatic latest models** via Anthropic aliases (e.g., `claude-opus-4-5` always points to latest)
+- **Environment variable overrides** for pinning specific versions
+- **Model tiers** (PRIMARY/FAST/CHEAP) to abstract away specific model IDs
 
-- **Claude Sonnet 4.5** - Flagship model for complex agents and coding
-  - API ID: `claude-sonnet-4-5-20250929` or alias `claude-sonnet-4-5`
-  - Best for: Advanced reasoning, computer use, coding, multi-step actions
-  - Currently used in: `ai-query` Edge Function
+### Changing Models
 
-- **Claude Haiku 4.5** - Fastest model with near-frontier performance
-  - API ID: `claude-haiku-4-5-20251001` or alias `claude-haiku-4-5`
-  - Best for: Rapid responses, customer service, cost-sensitive applications
+**Option 1: Automatic Latest (Recommended)**
+The default configuration uses Anthropic aliases which automatically point to the latest model versions:
+- `claude-opus-4-5` → Latest Opus 4.5 (currently the PRIMARY model)
+- `claude-sonnet-4-5` → Latest Sonnet 4.5 (FAST model)
+- `claude-haiku-4-5` → Latest Haiku 4.5 (CHEAP model)
 
-- **Claude Opus 4.1** - Most powerful model
-  - API ID: `claude-opus-4-1-20250805`
-  - Best for: Most complex reasoning tasks
+No action needed - models update automatically when Anthropic releases new versions.
 
-- **Claude Opus 4**
-  - API ID: `claude-opus-4-20250320`
+**Option 2: Override via Environment Variables**
+Set these in Supabase dashboard to override defaults without code changes:
+```
+CLAUDE_PRIMARY_MODEL=claude-opus-4-5     # Main model for complex tasks
+CLAUDE_FAST_MODEL=claude-sonnet-4-5      # Balanced speed/capability
+CLAUDE_CHEAP_MODEL=claude-haiku-4-5      # Cost-effective for simple tasks
+OPENROUTER_MODEL=openai/gpt-4o           # OpenRouter fallback
+```
 
-- **Claude Sonnet 4**
-  - API ID: `claude-sonnet-4-20250320`
+**Option 3: Pin Specific Versions**
+To pin to a specific model version (e.g., for reproducibility):
+```
+CLAUDE_PRIMARY_MODEL=claude-opus-4-5-20251101
+```
 
-**Note:** Model names and availability may change. Always verify current models at [Anthropic's API documentation](https://docs.anthropic.com/en/api/messages).
+### Model Tiers
 
-### OpenAI Models (via OpenRouter)
+Edge functions use semantic model tiers instead of hardcoded IDs:
+- **PRIMARY**: Most capable model (Opus 4.5) - used for complex analysis, document processing
+- **FAST**: Balanced model (Sonnet 4.5) - used for general queries, metadata generation
+- **CHEAP**: Cost-effective model (Haiku 4.5) - used for summarization, simple tasks
 
-**GPT Family:**
-- `gpt-5` - Flagship GPT model
-- `gpt-5-mini` - Cheaper/faster GPT variant
-- `gpt-5-pro` - Higher-compute GPT-5 snapshot
-- `gpt-4.1` - Stable GPT-4 family option
-- `gpt-4o` - Omni multimodal model
-- `gpt-4o-mini` - Small/fast omni model
+Usage in edge functions:
+```typescript
+import { CLAUDE_MODELS } from '../_shared/models.ts';
 
-**Reasoning-Optimized (o-series):**
-- `o3` - Top reasoning model
-- `o4-mini` - Fast, cost-efficient reasoning
-- `o3-mini` - Smaller reasoning model
+// Use the primary (most capable) model
+model: CLAUDE_MODELS.PRIMARY
 
-**OpenRouter Model Format:** When using via OpenRouter, prefix with provider: `openai/gpt-5`
+// Use the fast model for quicker responses
+model: CLAUDE_MODELS.FAST
+
+// Use the cheap model for cost-sensitive operations
+model: CLAUDE_MODELS.CHEAP
+```
+
+### Current Model Configuration
+
+**Claude Models (Anthropic API):**
+- **PRIMARY**: `claude-opus-4-5` (alias) - Most powerful, used for document analysis and complex queries
+- **FAST**: `claude-sonnet-4-5` (alias) - Good balance of speed and capability
+- **CHEAP**: `claude-haiku-4-5` (alias) - Fastest, most cost-effective
+
+**OpenRouter Models (Fallback):**
+- **PRIMARY**: `openai/gpt-4o` - Used when Claude is unavailable
+- **FAST**: `openai/gpt-4o-mini` - Quick fallback option
+
+**Local Models (Ollama):**
+- **PRIMARY**: `llama3` - For offline development
 
 ### Model Selection Strategy
 
@@ -285,12 +311,14 @@ Override via environment variables:
 5. Add environment variables to Supabase dashboard
 
 ### Working with AI Providers
-- Primary: Claude Sonnet 4.5 (default provider via Anthropic API)
-- Fallback: OpenRouter (if Claude fails)
+- All model IDs centralized in `supabase/functions/_shared/models.ts`
+- Primary: Claude Opus 4.5 (via Anthropic API, using alias for auto-updates)
+- Fallback: OpenRouter GPT-4o (if Claude fails)
 - Provider selection via `getLLMResponse()` in `ai-query/index.ts`
 - User preference stored in `user_settings.model_preference`
 - Local development uses Ollama when offline mode enabled
-- See "AI Model Reference" section above for current model names
+- To change models: Update `_shared/models.ts` or set environment variables
+- See "AI Model Reference" section above for detailed configuration options
 
 ### Document Processing
 - Parse documents using `parse-document` Edge Function

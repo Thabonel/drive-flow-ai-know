@@ -23,6 +23,7 @@ const Documents = () => {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [documentToDelete, setDocumentToDelete] = useState<any>(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [generatingDocId, setGeneratingDocId] = useState<string | null>(null);
   const documentsPerPage = 12;
 
   const { user } = useAuth();
@@ -109,6 +110,7 @@ const Documents = () => {
       return data;
     },
     onSuccess: () => {
+      setGeneratingDocId(null);
       queryClient.invalidateQueries({ queryKey: ['documents', user?.id] });
       toast({
         title: 'AI Insights Generated',
@@ -116,6 +118,7 @@ const Documents = () => {
       });
     },
     onError: (error) => {
+      setGeneratingDocId(null);
       toast({
         title: 'Error',
         description: error instanceof Error ? error.message : 'An error occurred',
@@ -139,6 +142,7 @@ const Documents = () => {
   };
 
   const handleGenerateInsights = (docId: string) => {
+    setGeneratingDocId(docId);
     generateInsights.mutate(docId);
   };
 
@@ -264,7 +268,7 @@ const Documents = () => {
           onEditDocument={handleEditDocument}
           onDeleteDocument={handleDeleteDocument}
           onGenerateInsights={handleGenerateInsights}
-          isGeneratingInsights={generateInsights.isPending}
+          generatingDocId={generatingDocId}
           getCategoryColor={getCategoryColor}
         />
       </div>
