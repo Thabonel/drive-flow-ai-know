@@ -7,7 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { FileText, Edit, Copy, Save, X, Tag } from 'lucide-react';
+import { FileText, Edit, Copy, Save, X, Tag, Sparkles, Lightbulb } from 'lucide-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -226,6 +226,59 @@ export const DocumentViewerModal = ({ document, isOpen, onClose }: DocumentViewe
               </div>
             )}
           </div>
+
+          {/* AI Summary Section */}
+          {document.ai_summary && !isEditing && (
+            <div className="space-y-2">
+              <Label className="flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-accent" />
+                AI Summary
+              </Label>
+              <div className="p-4 border rounded-md bg-accent/5 border-accent/20">
+                <p className="text-sm text-foreground">{document.ai_summary}</p>
+              </div>
+            </div>
+          )}
+
+          {/* AI Insights Section */}
+          {document.ai_insights && !isEditing && (
+            <div className="space-y-2">
+              <Label className="flex items-center gap-2">
+                <Lightbulb className="h-4 w-4 text-accent" />
+                AI Insights
+              </Label>
+              <div className="p-4 border rounded-md bg-accent/5 border-accent/20 space-y-3">
+                {document.ai_insights.insights && document.ai_insights.insights.length > 0 && (
+                  <div>
+                    <p className="text-xs font-medium text-muted-foreground mb-1">Key Insights</p>
+                    <ul className="list-disc list-inside text-sm space-y-1">
+                      {document.ai_insights.insights.map((insight: string, index: number) => (
+                        <li key={index}>{insight}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {document.ai_insights.key_concepts && document.ai_insights.key_concepts.length > 0 && (
+                  <div>
+                    <p className="text-xs font-medium text-muted-foreground mb-1">Key Concepts</p>
+                    <div className="flex flex-wrap gap-1">
+                      {document.ai_insights.key_concepts.map((concept: string, index: number) => (
+                        <Badge key={index} variant="outline" className="text-xs">
+                          {concept}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {document.ai_insights.content_type && (
+                  <div>
+                    <p className="text-xs font-medium text-muted-foreground mb-1">Content Type</p>
+                    <Badge variant="secondary">{document.ai_insights.content_type}</Badge>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
