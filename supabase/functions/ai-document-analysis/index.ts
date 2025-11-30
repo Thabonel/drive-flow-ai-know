@@ -89,18 +89,23 @@ async function localCompletion(prompt: string, context: string) {
 export async function getLLMResponse(prompt: string, context: string, providerOverride?: string) {
   const providerEnv = providerOverride || Deno.env.get('MODEL_PROVIDER');
   const useOpenRouter = Deno.env.get('USE_OPENROUTER') === 'true';
-  const useLocalLLM = Deno.env.get('USE_LOCAL_LLM') === 'true';
 
-  const provider = providerEnv || (useOpenRouter ? 'openrouter' : useLocalLLM ? 'ollama' : 'anthropic');
+  // Don't allow local LLM in cloud edge functions - localhost doesn't exist there
+  // Ignore 'ollama' and 'local' provider overrides, fall back to anthropic
+  let provider = providerEnv || (useOpenRouter ? 'openrouter' : 'anthropic');
+
+  if (provider === 'ollama' || provider === 'local') {
+    console.log('Local LLM not available in cloud, falling back to anthropic');
+    provider = 'anthropic';
+  }
+
+  console.log('Using LLM provider:', provider);
 
   switch (provider) {
     case 'anthropic':
       return await anthropicCompletion(prompt, context);
     case 'openrouter':
       return await openRouterCompletion(prompt, context);
-    case 'ollama':
-    case 'local':
-      return await localCompletion(prompt, context);
     case 'openai':
       return await openAICompletion(prompt, context);
     default:
@@ -182,7 +187,15 @@ serve(async (req) => {
     const userPrompt = `Title: ${document.title}\n\nContent: ${document.content}`;
 
     const aiResponseText = await getLLMResponse(userPrompt, systemMessage, providerOverride);
-    const analysis = JSON.parse(aiResponseText);
+
+    // Extract JSON from markdown code blocks if present
+    let jsonString = aiResponseText.trim();
+    const jsonMatch = jsonString.match(/```(?:json)?\s*([\s\S]*?)```/);
+    if (jsonMatch) {
+      jsonString = jsonMatch[1].trim();
+    }
+
+    const analysis = JSON.parse(jsonString);
 
     // Update document with AI analysis
     const { error: updateError } = await supabaseClient

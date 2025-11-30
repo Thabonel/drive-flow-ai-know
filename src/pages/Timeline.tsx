@@ -1,4 +1,5 @@
 // Timeline page component
+// Wrapped with TimelineProvider to ensure all child components share the same state
 
 import React, { useState, useEffect } from 'react';
 import { TimelineWithDnd } from '@/components/timeline/TimelineWithDnd';
@@ -11,8 +12,19 @@ import { EndOfDayShutdown } from '@/components/planning/EndOfDayShutdown';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { X, Moon, Clock } from 'lucide-react';
+import { TimelineProvider } from '@/contexts/TimelineContext';
 
+// Wrapper component that provides the TimelineContext
 export default function Timeline() {
+  return (
+    <TimelineProvider>
+      <TimelineContent />
+    </TimelineProvider>
+  );
+}
+
+// Inner component that uses the shared timeline state
+function TimelineContent() {
   const { user } = useAuth();
   const { refetchItems } = useTimeline();
   const { refetch: refetchTasks } = useTasks();
