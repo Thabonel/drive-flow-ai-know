@@ -6,7 +6,7 @@
  * AI only schedules (assigns times to fixed-duration blocks).
  */
 
-import { v4 as uuidv4 } from 'uuid';
+// Use native crypto.randomUUID() instead of uuid package
 
 // ============================================================================
 // TYPES
@@ -294,7 +294,7 @@ function finalizeTask(
   colors: string[]
 ): PlanTask {
   return {
-    id: uuidv4(),
+    id: crypto.randomUUID(),
     index,
     title: partial.title || 'Untitled Task',
     description: partial.description || null,
