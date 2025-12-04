@@ -237,14 +237,24 @@ export function TimelineProvider({ children }: { children: React.ReactNode }) {
   // Update an item
   const updateItem = useCallback(async (itemId: string, updates: Partial<TimelineItem>) => {
     try {
-      const { error } = await supabase
+      // Include user_id for RLS and use .select() to verify update succeeded
+      const { data, error } = await supabase
         .from('timeline_items')
         .update(updates)
-        .eq('id', itemId);
+        .eq('id', itemId)
+        .eq('user_id', user?.id || '')
+        .select()
+        .single();
 
       if (error) throw error;
 
-      setItems(prevItems => prevItems.map(item => item.id === itemId ? { ...item, ...updates } : item));
+      // Verify update actually happened
+      if (!data) {
+        throw new Error('Update failed - item not found or no permission');
+      }
+
+      // Use returned data to ensure consistency
+      setItems(prevItems => prevItems.map(item => item.id === itemId ? { ...item, ...data } : item));
     } catch (error) {
       console.error('Error updating item:', error);
       toast({
@@ -252,8 +262,10 @@ export function TimelineProvider({ children }: { children: React.ReactNode }) {
         description: 'Failed to update timeline item',
         variant: 'destructive',
       });
+      // Refetch to ensure UI is in sync
+      await fetchItems();
     }
-  }, [toast]);
+  }, [user, toast, fetchItems]);
 
   // Mark item as completed
   const completeItem = useCallback(async (itemId: string) => {
