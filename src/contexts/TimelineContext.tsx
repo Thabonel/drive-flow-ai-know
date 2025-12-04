@@ -238,19 +238,26 @@ export function TimelineProvider({ children }: { children: React.ReactNode }) {
   const updateItem = useCallback(async (itemId: string, updates: Partial<TimelineItem>) => {
     try {
       // Include user_id for RLS and use .select() to verify update succeeded
+      // Use maybeSingle() so null result doesn't throw (item may have been auto-parked)
       const { data, error } = await supabase
         .from('timeline_items')
         .update(updates)
         .eq('id', itemId)
         .eq('user_id', user?.id || '')
         .select()
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
 
-      // Verify update actually happened
+      // Item was auto-parked or deleted while user had the menu open
       if (!data) {
-        throw new Error('Update failed - item not found or no permission');
+        setItems(prevItems => prevItems.filter(item => item.id !== itemId));
+        toast({
+          title: 'Item no longer available',
+          description: 'This item was moved to Parked Items',
+        });
+        await fetchParkedItems();
+        return;
       }
 
       // Use returned data to ensure consistency
@@ -265,7 +272,7 @@ export function TimelineProvider({ children }: { children: React.ReactNode }) {
       // Refetch to ensure UI is in sync
       await fetchItems();
     }
-  }, [user, toast, fetchItems]);
+  }, [user, toast, fetchItems, fetchParkedItems]);
 
   // Mark item as completed
   const completeItem = useCallback(async (itemId: string) => {
