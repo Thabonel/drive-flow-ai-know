@@ -12,6 +12,7 @@ import { CalendarSyncButton } from './CalendarSyncButton';
 import { WorkloadIndicator } from './WorkloadIndicator';
 import { TaskHeaderPanel } from './TaskHeaderPanel';
 import { AddTaskOverlay } from './AddTaskOverlay';
+import { PlanDropdown } from '@/components/plans/PlanDropdown';
 import { TemplateLibrary } from '@/components/templates/TemplateLibrary';
 import { TemplateBuilder } from '@/components/templates/TemplateBuilder';
 import { AIDailyPlanningModal } from '@/components/ai/AIDailyPlanningModal';
@@ -398,6 +399,9 @@ export function TimelineManager({ onCanvasReady }: TimelineManagerProps = {}) {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+
+          {/* Plans Dropdown - Schedule project plans to timeline */}
+          <PlanDropdown />
 
           {/* Lock/Unlock Toggle Button */}
           <Button
