@@ -234,8 +234,8 @@ export function TimelineProvider({ children }: { children: React.ReactNode }) {
     }
   }, [user, toast]);
 
-  // Update an item
-  const updateItem = useCallback(async (itemId: string, updates: Partial<TimelineItem>) => {
+  // Update an item - returns true if successful, false otherwise
+  const updateItem = useCallback(async (itemId: string, updates: Partial<TimelineItem>): Promise<boolean> => {
     try {
       // Include user_id for RLS and use .select() to verify update succeeded
       // Use maybeSingle() so null result doesn't throw (item may have been auto-parked)
@@ -257,11 +257,12 @@ export function TimelineProvider({ children }: { children: React.ReactNode }) {
           description: 'This item was moved to Parked Items',
         });
         await fetchParkedItems();
-        return;
+        return false; // Indicate update didn't happen (item was gone)
       }
 
       // Use returned data to ensure consistency
       setItems(prevItems => prevItems.map(item => item.id === itemId ? { ...item, ...data } : item));
+      return true; // Success
     } catch (error) {
       console.error('Error updating item:', error);
       toast({
@@ -271,20 +272,24 @@ export function TimelineProvider({ children }: { children: React.ReactNode }) {
       });
       // Refetch to ensure UI is in sync
       await fetchItems();
+      return false; // Failed
     }
   }, [user, toast, fetchItems, fetchParkedItems]);
 
   // Mark item as completed
   const completeItem = useCallback(async (itemId: string) => {
-    await updateItem(itemId, {
+    const success = await updateItem(itemId, {
       status: 'completed',
       completed_at: new Date().toISOString(),
     });
 
-    toast({
-      title: 'Item completed',
-      description: 'Item marked as done',
-    });
+    // Only show success toast if update actually happened
+    if (success) {
+      toast({
+        title: 'Item completed',
+        description: 'Item marked as done',
+      });
+    }
   }, [updateItem, toast]);
 
   // Reschedule an item
@@ -298,12 +303,14 @@ export function TimelineProvider({ children }: { children: React.ReactNode }) {
       updates.layer_id = newLayerId;
     }
 
-    await updateItem(itemId, updates);
+    const success = await updateItem(itemId, updates);
 
-    toast({
-      title: 'Item rescheduled',
-      description: newLayerId ? 'Item has been moved to a new time and layer' : 'Item has been moved to a new time',
-    });
+    if (success) {
+      toast({
+        title: 'Item rescheduled',
+        description: newLayerId ? 'Item has been moved to a new time and layer' : 'Item has been moved to a new time',
+      });
+    }
   }, [updateItem, toast]);
 
   // Park an item
