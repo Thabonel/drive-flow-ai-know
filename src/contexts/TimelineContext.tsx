@@ -247,7 +247,27 @@ export function TimelineProvider({ children }: { children: React.ReactNode }) {
         .select()
         .maybeSingle();
 
-      if (error) throw error;
+      // Handle "no rows found" errors (404, PGRST116) - item was auto-parked
+      if (error) {
+        const isNotFoundError = error.code === 'PGRST116' ||
+                                error.code === '404' ||
+                                (error as any).status === 404 ||
+                                error.message?.includes('not found');
+
+        if (isNotFoundError) {
+          // Item was auto-parked or deleted - handle gracefully
+          setItems(prevItems => prevItems.filter(item => item.id !== itemId));
+          toast({
+            title: 'Item no longer available',
+            description: 'This item was moved to Parked Items',
+          });
+          await fetchParkedItems();
+          return false;
+        }
+
+        // Real error - throw it
+        throw error;
+      }
 
       // Item was auto-parked or deleted while user had the menu open
       if (!data) {
