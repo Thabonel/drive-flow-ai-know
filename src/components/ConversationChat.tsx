@@ -6,11 +6,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Loader2, Send, Archive, Trash2, Edit2, Check, X, FileText, MessageCircle } from 'lucide-react';
+import { Loader2, Send, Archive, Trash2, Edit2, Check, X, FileText, MessageCircle, Calendar } from 'lucide-react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { DictationButton } from '@/components/DictationButton';
 import { AIProgressIndicator } from '@/components/ai/AIProgressIndicator';
+import { ExtractToTimelineDialog } from '@/components/ai/ExtractToTimelineDialog';
 
 interface Message {
   id: string;
@@ -41,6 +42,8 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [editedTitle, setEditedTitle] = useState('');
   const [useDocuments, setUseDocuments] = useState(true); // Toggle for document access
+  const [showTimelineDialog, setShowTimelineDialog] = useState(false);
+  const [timelineContent, setTimelineContent] = useState('');
   const scrollRef = useRef<HTMLDivElement>(null);
   const isSubmittingRef = useRef(false);
 
@@ -493,6 +496,15 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
     setEditedTitle('');
   };
 
+  const handleAddToTimeline = () => {
+    // Get the last AI response
+    const lastAssistantMessage = [...messages].reverse().find(m => m.role === 'assistant');
+    if (lastAssistantMessage) {
+      setTimelineContent(lastAssistantMessage.content);
+      setShowTimelineDialog(true);
+    }
+  };
+
   return (
     <div className="flex flex-col h-full overflow-hidden">
       <div className="flex justify-between items-center mb-1 flex-shrink-0">
@@ -542,6 +554,16 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
             <div className="text-sm text-muted-foreground bg-yellow-50 dark:bg-yellow-900/20 px-3 py-1.5 rounded-md border border-yellow-200 dark:border-yellow-800">
               Temporary Chat (not saved)
             </div>
+          )}
+          {messages.length > 0 && messages.some(m => m.role === 'assistant') && (
+            <Button
+              onClick={handleAddToTimeline}
+              size="sm"
+              variant="outline"
+            >
+              <Calendar className="mr-2 h-4 w-4" />
+              Add to Timeline
+            </Button>
           )}
           {!isTemporary && conversationId && messages.length > 0 && (
             <>
@@ -637,6 +659,14 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
           </div>
         </form>
       </Card>
+
+      {/* Extract to Timeline Dialog */}
+      <ExtractToTimelineDialog
+        open={showTimelineDialog}
+        onClose={() => setShowTimelineDialog(false)}
+        content={timelineContent}
+        sourceType="ai-response"
+      />
     </div>
   );
 }

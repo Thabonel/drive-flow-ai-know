@@ -6,13 +6,14 @@ import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Brain, Send, Sparkles, Loader2, Save, FileText, PlusCircle } from 'lucide-react';
+import { Brain, Send, Sparkles, Loader2, Save, FileText, PlusCircle, Calendar } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { DictationButton } from '@/components/DictationButton';
 import { AIProgressIndicator } from '@/components/ai/AIProgressIndicator';
+import { ExtractToTimelineDialog } from '@/components/ai/ExtractToTimelineDialog';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -31,6 +32,8 @@ export const AIQueryInput = ({ selectedKnowledgeBase, onClearSelection }: AIQuer
   const [messages, setMessages] = useState<Message[]>([]);
   const [documentType, setDocumentType] = useState<string>('report');
   const [isSaving, setIsSaving] = useState(false);
+  const [showTimelineDialog, setShowTimelineDialog] = useState(false);
+  const [timelineContent, setTimelineContent] = useState('');
   const { toast } = useToast();
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -239,6 +242,15 @@ export const AIQueryInput = ({ selectedKnowledgeBase, onClearSelection }: AIQuer
     setQuery('');
   };
 
+  const handleAddToTimeline = () => {
+    // Get the last AI response
+    const lastAssistantMessage = [...messages].reverse().find(m => m.role === 'assistant');
+    if (lastAssistantMessage) {
+      setTimelineContent(lastAssistantMessage.content);
+      setShowTimelineDialog(true);
+    }
+  };
+
   return (
     <Card className="w-full shadow-lg">
       <CardHeader className="pb-4">
@@ -387,23 +399,42 @@ export const AIQueryInput = ({ selectedKnowledgeBase, onClearSelection }: AIQuer
           </span>
 
           {messages.length > 0 && (
-            <Button
-              onClick={handleSaveAsDocument}
-              disabled={isSaving}
-              variant="default"
-              size="sm"
-              className="flex items-center space-x-2"
-            >
-              {isSaving ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Save className="h-4 w-4" />
-              )}
-              <span>{isSaving ? 'Saving...' : 'Save as Document'}</span>
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                onClick={handleAddToTimeline}
+                variant="outline"
+                size="sm"
+                className="flex items-center space-x-2"
+              >
+                <Calendar className="h-4 w-4" />
+                <span>Add to Timeline</span>
+              </Button>
+              <Button
+                onClick={handleSaveAsDocument}
+                disabled={isSaving}
+                variant="default"
+                size="sm"
+                className="flex items-center space-x-2"
+              >
+                {isSaving ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Save className="h-4 w-4" />
+                )}
+                <span>{isSaving ? 'Saving...' : 'Save as Document'}</span>
+              </Button>
+            </div>
           )}
         </div>
       </CardContent>
+
+      {/* Extract to Timeline Dialog */}
+      <ExtractToTimelineDialog
+        open={showTimelineDialog}
+        onClose={() => setShowTimelineDialog(false)}
+        content={timelineContent}
+        sourceType="ai-response"
+      />
     </Card>
   );
 };

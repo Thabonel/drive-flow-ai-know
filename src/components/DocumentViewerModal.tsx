@@ -7,11 +7,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { FileText, Edit, Copy, Save, X, Tag, Sparkles, Lightbulb } from 'lucide-react';
+import { FileText, Edit, Copy, Save, X, Tag, Sparkles, Lightbulb, Calendar } from 'lucide-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
+import { ExtractToTimelineDialog } from '@/components/ai/ExtractToTimelineDialog';
 
 interface DocumentViewerModalProps {
   document: any;
@@ -28,7 +29,8 @@ export const DocumentViewerModal = ({ document, isOpen, onClose }: DocumentViewe
     tags: document?.tags || []
   });
   const [newTag, setNewTag] = useState('');
-  
+  const [showTimelineDialog, setShowTimelineDialog] = useState(false);
+
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -188,7 +190,22 @@ export const DocumentViewerModal = ({ document, isOpen, onClose }: DocumentViewe
             {isEditing ? 'Edit your document content and details' : 'View and copy your document content'}
           </DialogDescription>
         </DialogHeader>
-        
+
+        {/* Add to Timeline Button - Prominent placement */}
+        {!isEditing && (
+          <div className="flex justify-end pb-2 border-b">
+            <Button
+              variant="default"
+              size="sm"
+              onClick={() => setShowTimelineDialog(true)}
+              className="bg-primary hover:bg-primary/90"
+            >
+              <Calendar className="h-4 w-4 mr-2" />
+              Add to Timeline
+            </Button>
+          </div>
+        )}
+
         <div className="space-y-6">
           <div className="space-y-2">
             <Label htmlFor="title">Title</Label>
@@ -352,6 +369,15 @@ export const DocumentViewerModal = ({ document, isOpen, onClose }: DocumentViewe
           </div>
         </div>
       </DialogContent>
+
+      {/* Extract to Timeline Dialog */}
+      <ExtractToTimelineDialog
+        open={showTimelineDialog}
+        onClose={() => setShowTimelineDialog(false)}
+        content={formData.content}
+        sourceType="document"
+        sourceTitle={formData.title}
+      />
     </Dialog>
   );
 };
