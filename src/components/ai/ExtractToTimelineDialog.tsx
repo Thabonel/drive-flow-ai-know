@@ -305,7 +305,7 @@ export function ExtractToTimelineDialog({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh]">
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Calendar className="h-5 w-5" />
@@ -318,6 +318,7 @@ export function ExtractToTimelineDialog({
           </DialogDescription>
         </DialogHeader>
 
+        <div className="flex-1 overflow-y-auto min-h-0">
         {isExtracting ? (
           <div className="flex flex-col items-center justify-center py-12 space-y-4">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -445,7 +446,7 @@ export function ExtractToTimelineDialog({
             </div>
 
             {/* Items List */}
-            <ScrollArea className="h-[300px] pr-4">
+            <ScrollArea className="max-h-[250px] pr-4">
               <div className="space-y-2">
                 {extractedItems.map((item, index) => (
                   <div
@@ -527,8 +528,9 @@ export function ExtractToTimelineDialog({
             </ScrollArea>
           </div>
         ) : null}
+        </div>
 
-        <DialogFooter>
+        <DialogFooter className="flex-shrink-0 border-t pt-4">
           <Button type="button" variant="outline" onClick={onClose}>
             Cancel
           </Button>
