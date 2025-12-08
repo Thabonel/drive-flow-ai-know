@@ -19,12 +19,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Calendar, Loader2, Plus, Clock, Edit2, Check, X } from 'lucide-react';
+import { Calendar, Loader2, Plus, Clock, Edit2, Check, X, ListTodo } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useLayers } from '@/hooks/useLayers';
 import { useAuth } from '@/hooks/useAuth';
+import { useTasks } from '@/hooks/useTasks';
 import { getRandomItemColor } from '@/lib/timelineUtils';
+import { Switch } from '@/components/ui/switch';
 
 interface ExtractedItem {
   title: string;
@@ -63,6 +65,7 @@ export function ExtractToTimelineDialog({
   const { toast } = useToast();
   const { layers, addLayer, refetch: refetchLayers } = useLayers();
   const { user } = useAuth();
+  const { addTask } = useTasks();
 
   // Add item directly to Supabase (instead of using TimelineContext which requires provider)
   const addTimelineItem = async (
@@ -103,6 +106,8 @@ export function ExtractToTimelineDialog({
     new Date().toISOString().split('T')[0]
   );
   const [message, setMessage] = useState<string>('');
+  // Add mode: 'schedule' = add to timeline now, 'tasks' = add as unscheduled tasks
+  const [addMode, setAddMode] = useState<'schedule' | 'tasks'>('schedule');
 
   // New layer creation state
   const [isCreatingLayer, setIsCreatingLayer] = useState(false);
@@ -228,7 +233,7 @@ export function ExtractToTimelineDialog({
     return date.toISOString().split('T')[0];
   };
 
-  const handleAddToTimeline = async () => {
+  const handleAddItems = async () => {
     const selectedItems = extractedItems.filter(item => item.selected);
 
     if (selectedItems.length === 0) {
@@ -240,59 +245,78 @@ export function ExtractToTimelineDialog({
       return;
     }
 
-    // If creating a new layer, create it first
-    let layerId = selectedLayerId;
-    if (isCreatingLayer || !layerId) {
-      if (!newLayerName.trim()) {
-        toast({
-          title: 'Layer Required',
-          description: 'Please create a layer or select an existing one.',
-          variant: 'destructive',
-        });
-        return;
-      }
-      const newLayer = await addLayer(newLayerName.trim(), newLayerColor);
-      if (!newLayer) {
-        return;
-      }
-      layerId = newLayer.id;
-    }
-
     setIsAdding(true);
 
     try {
-      const color = getRandomItemColor();
       let successCount = 0;
 
-      for (let i = 0; i < selectedItems.length; i++) {
-        const item = selectedItems[i];
-        const itemDate = calculateItemDate(item, i);
+      if (addMode === 'tasks') {
+        // Add as unscheduled tasks
+        for (const item of selectedItems) {
+          await addTask(item.title, item.duration_minutes, {
+            description: item.description || undefined,
+          });
+          successCount++;
+        }
 
-        // Create start time at 9 AM on the item's date
-        const startTime = new Date(itemDate);
-        startTime.setHours(9, 0, 0, 0);
+        toast({
+          title: 'Tasks Created',
+          description: `Successfully created ${successCount} unscheduled task${successCount > 1 ? 's' : ''}. Drag them to your timeline when ready.`,
+        });
+      } else {
+        // Add to timeline immediately (existing behavior)
+        // If creating a new layer, create it first
+        let layerId = selectedLayerId;
+        if (isCreatingLayer || !layerId) {
+          if (!newLayerName.trim()) {
+            toast({
+              title: 'Layer Required',
+              description: 'Please create a layer or select an existing one.',
+              variant: 'destructive',
+            });
+            setIsAdding(false);
+            return;
+          }
+          const newLayer = await addLayer(newLayerName.trim(), newLayerColor);
+          if (!newLayer) {
+            setIsAdding(false);
+            return;
+          }
+          layerId = newLayer.id;
+        }
 
-        await addTimelineItem(
-          layerId,
-          item.title,
-          startTime.toISOString(),
-          item.duration_minutes,
-          color
-        );
-        successCount++;
+        const color = getRandomItemColor();
+
+        for (let i = 0; i < selectedItems.length; i++) {
+          const item = selectedItems[i];
+          const itemDate = calculateItemDate(item, i);
+
+          // Create start time at 9 AM on the item's date
+          const startTime = new Date(itemDate);
+          startTime.setHours(9, 0, 0, 0);
+
+          await addTimelineItem(
+            layerId,
+            item.title,
+            startTime.toISOString(),
+            item.duration_minutes,
+            color
+          );
+          successCount++;
+        }
+
+        toast({
+          title: 'Items Scheduled',
+          description: `Successfully added ${successCount} item${successCount > 1 ? 's' : ''} to the timeline.`,
+        });
       }
-
-      toast({
-        title: 'Items Added',
-        description: `Successfully added ${successCount} item${successCount > 1 ? 's' : ''} to the timeline.`,
-      });
 
       onClose();
     } catch (error) {
       console.error('Error adding items:', error);
       toast({
         title: 'Error',
-        description: 'Failed to add some items to the timeline.',
+        description: `Failed to add some items. Please try again.`,
         variant: 'destructive',
       });
     } finally {
@@ -330,7 +354,32 @@ export function ExtractToTimelineDialog({
           </div>
         ) : extractedItems.length > 0 ? (
           <div className="space-y-4">
-            {/* Layer Selection */}
+            {/* Add Mode Toggle */}
+            <div className="flex items-center justify-between p-3 border rounded-lg bg-muted/30">
+              <div className="flex items-center gap-3">
+                <div className={`p-2 rounded-md ${addMode === 'schedule' ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>
+                  <Calendar className="h-4 w-4" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium">
+                    {addMode === 'schedule' ? 'Schedule Now' : 'Save as Tasks'}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {addMode === 'schedule'
+                      ? 'Add directly to timeline with start dates'
+                      : 'Create unscheduled tasks to drag later'}
+                  </p>
+                </div>
+              </div>
+              <Switch
+                checked={addMode === 'tasks'}
+                onCheckedChange={(checked) => setAddMode(checked ? 'tasks' : 'schedule')}
+              />
+            </div>
+
+            {/* Layer Selection & Start Date - only show in schedule mode */}
+            {addMode === 'schedule' && (
+            <>
             <div className="space-y-2">
               <Label>Timeline Layer</Label>
               {hasNoLayers || isCreatingLayer ? (
@@ -419,6 +468,8 @@ export function ExtractToTimelineDialog({
                 Items without specific dates will be spaced weekly starting from this date.
               </p>
             </div>
+            </>
+            )}
 
             {/* Selection Controls */}
             <div className="flex items-center justify-between">
@@ -535,7 +586,7 @@ export function ExtractToTimelineDialog({
             Cancel
           </Button>
           <Button
-            onClick={handleAddToTimeline}
+            onClick={handleAddItems}
             disabled={isExtracting || isAdding || selectedCount === 0}
           >
             {isAdding ? (
@@ -543,11 +594,17 @@ export function ExtractToTimelineDialog({
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                 Adding...
               </>
+            ) : addMode === 'tasks' ? (
+              <>
+                <ListTodo className="h-4 w-4 mr-2" />
+                {`Create ${selectedCount} Task${selectedCount !== 1 ? 's' : ''}`}
+              </>
             ) : (
               <>
+                <Calendar className="h-4 w-4 mr-2" />
                 {hasNoLayers || isCreatingLayer
                   ? `Create Layer & Add ${selectedCount} Item${selectedCount !== 1 ? 's' : ''}`
-                  : `Add ${selectedCount} Item${selectedCount !== 1 ? 's' : ''} to Timeline`}
+                  : `Schedule ${selectedCount} Item${selectedCount !== 1 ? 's' : ''}`}
               </>
             )}
           </Button>
