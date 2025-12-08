@@ -2,9 +2,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { FileText, Calendar, Tag, Brain, Edit, Trash2, Sparkles, BarChart3, FileSpreadsheet } from 'lucide-react';
+import { FileText, Calendar as CalendarIcon, Tag, Brain, Edit, Trash2, Sparkles, BarChart3, FileSpreadsheet, Clock } from 'lucide-react';
 import { DocumentVisualizationPanel } from './DocumentVisualizationPanel';
 import { SpreadsheetViewer } from './SpreadsheetViewer';
+import { ExtractToTimelineDialog } from './ai/ExtractToTimelineDialog';
 import { useState } from 'react';
 
 interface DocumentCardProps {
@@ -47,6 +48,7 @@ export const DocumentCard = ({
 }: DocumentCardProps) => {
   const [showVisualization, setShowVisualization] = useState(false);
   const [showSpreadsheet, setShowSpreadsheet] = useState(false);
+  const [showTimelineDialog, setShowTimelineDialog] = useState(false);
 
   const hasSpreadsheetData = doc.metadata?.spreadsheetData || 
                            doc.file_type?.includes('spreadsheet') || 
@@ -177,8 +179,8 @@ export const DocumentCard = ({
             </Button>
             
             {onClaudeProcess && (doc.file_type === 'pdf' || doc.file_type?.includes('sheet') || doc.file_type?.includes('document')) && (
-              <Button 
-                variant="secondary" 
+              <Button
+                variant="secondary"
                 size="sm"
                 onClick={() => onClaudeProcess(doc.id)}
                 className="flex-1 min-w-[120px]"
@@ -188,6 +190,19 @@ export const DocumentCard = ({
               </Button>
             )}
           </div>
+
+          {/* Add to Timeline */}
+          {(doc.content || doc.ai_summary) && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowTimelineDialog(true)}
+              className="w-full"
+            >
+              <Clock className="h-4 w-4 mr-2" />
+              Add to Timeline
+            </Button>
+          )}
         </div>
       </CardContent>
     </Card>
@@ -215,14 +230,14 @@ export const DocumentCard = ({
             <DialogTitle>Spreadsheet Viewer - {doc.title}</DialogTitle>
           </DialogHeader>
           <SpreadsheetViewer
-            data={doc.metadata?.spreadsheetData || { 
-              sheets: [], 
-              metadata: { 
-                totalSheets: 0, 
-                hasFormulas: false, 
-                hasCharts: false, 
-                dataTypes: [] 
-              } 
+            data={doc.metadata?.spreadsheetData || {
+              sheets: [],
+              metadata: {
+                totalSheets: 0,
+                hasFormulas: false,
+                hasCharts: false,
+                dataTypes: []
+              }
             }}
             title={doc.title}
             onGenerateCharts={(data) => {
@@ -233,6 +248,15 @@ export const DocumentCard = ({
         </DialogContent>
       </Dialog>
     )}
+
+    {/* Extract to Timeline Dialog */}
+    <ExtractToTimelineDialog
+      open={showTimelineDialog}
+      onClose={() => setShowTimelineDialog(false)}
+      content={doc.content || doc.ai_summary || ''}
+      sourceType="document"
+      sourceTitle={doc.title}
+    />
     </>
   );
 };
