@@ -151,8 +151,11 @@ export default function Conversations() {
                     tips={[
                       "All conversations are automatically saved and appear in your history",
                       "Use the document toggle to control whether AI has access to your documents",
+                      "Use 'Add to Timeline' to extract tasks from AI responses",
+                      "Choose to schedule items immediately or save as unscheduled tasks",
                       "Delete unwanted conversations anytime using the trash icon",
-                      "Archive completed conversations to keep your active list organized"
+                      "Archive completed conversations to keep your active list organized",
+                      "Search through conversations using keywords or tags"
                     ]}
                   />
                 )}

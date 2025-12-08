@@ -375,8 +375,14 @@ export function TimelineManager({ onCanvasReady }: TimelineManagerProps = {}) {
                 "Drag the right edge to resize duration (like Google Calendar)",
                 "Click items to mark done, reschedule, park, or delete",
                 "Double-click empty space to create a new item at that time",
+                "Use 'Jump to' button to quickly navigate to any date",
                 "Use layers to organize different types of tasks",
-                "Lock/unlock to enable auto-scrolling with real time"
+                "Lock/unlock to enable auto-scrolling with real time",
+                "Use 'Plan Day' for AI planning, templates, and routines",
+                "Schedule project plans directly from the 'Plans' dropdown",
+                "Sync with Google Calendar using the Calendar button",
+                "Use unscheduled tasks panel to save items for later scheduling",
+                "Switch view modes (Day/Week/Month) for different perspectives"
               ]}
             />
           </h1>

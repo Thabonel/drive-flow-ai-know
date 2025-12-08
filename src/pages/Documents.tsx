@@ -222,7 +222,11 @@ const Documents = () => {
               "Filter by category to narrow down results",
               "Sort by date, title, or modification time",
               "Click a document to view, edit, or delete it",
-              "Create new documents with the '+ New Document' button"
+              "Use 'Add to Timeline' to extract tasks from document content",
+              "Generate AI Insights to get key concepts and summaries",
+              "Use 'Claude MVP' for advanced document processing",
+              "View spreadsheets and charts directly from document cards",
+              "Create new documents with the '+ Create Document' button"
             ]}
           />
         </div>
