@@ -37,7 +37,7 @@ import {
   VIEW_MODE_CONFIG,
 } from '@/lib/timelineConstants';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, Clock, Settings, Layers, Lock, Unlock, Archive, LayoutTemplate, Sparkles, RefreshCw, Calendar as CalIcon, Brain, Sunrise, Moon, Link as LinkIcon, MoreHorizontal, ZoomIn, ZoomOut } from 'lucide-react';
+import { Loader2, Clock, Settings, Layers, Lock, Unlock, Archive, LayoutTemplate, Sparkles, RefreshCw, Calendar as CalIcon, Brain, Sunrise, Moon, Link as LinkIcon, MoreHorizontal, ZoomIn, ZoomOut, Navigation } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuLabel } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
@@ -112,6 +112,7 @@ export function TimelineManager({ onCanvasReady }: TimelineManagerProps = {}) {
   const [showAddTask, setShowAddTask] = useState(false);
   const [viewMode, setViewMode] = useState<TimelineViewMode>('week');
   const [initialFormValues, setInitialFormValues] = useState<{ startTime?: string; layerId?: string } | null>(null);
+  const [jumpToDate, setJumpToDate] = useState<string>('');
 
   const { populateRoutinesForDay } = useRoutines();
 
@@ -320,6 +321,34 @@ export function TimelineManager({ onCanvasReady }: TimelineManagerProps = {}) {
     setPopulatingRoutines(false);
   };
 
+  // Handle jump to specific date
+  const handleJumpToDate = (dateString: string) => {
+    if (!dateString) return;
+
+    const targetDate = new Date(dateString);
+    const now = new Date();
+
+    // Calculate hours difference from now to target
+    const hoursDiff = (targetDate.getTime() - now.getTime()) / (1000 * 60 * 60);
+
+    // Calculate scroll offset to center the target date
+    // Positive hoursDiff = future (scroll right/negative offset)
+    // Negative hoursDiff = past (scroll left/positive offset)
+    const estimatedViewportWidth = 1200;
+    const targetScrollOffset = -hoursDiff * pixelsPerHour + NOW_LINE_POSITION * estimatedViewportWidth;
+
+    setScrollOffset(targetScrollOffset);
+    setJumpToDate('');
+  };
+
+  // Jump to today (reset scroll)
+  const handleJumpToToday = () => {
+    const estimatedViewportWidth = 1200;
+    const pastHours = viewModeConfig.pastHours;
+    const targetScrollOffset = pastHours * pixelsPerHour - NOW_LINE_POSITION * estimatedViewportWidth;
+    setScrollOffset(targetScrollOffset);
+  };
+
   if (timelineLoading || layersLoading) {
     return (
       <div className="flex items-center justify-center h-96">
@@ -449,6 +478,50 @@ export function TimelineManager({ onCanvasReady }: TimelineManagerProps = {}) {
             </Button>
           </div>
 
+          {/* Jump to Date */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" className="gap-2">
+                <Navigation className="h-4 w-4" />
+                <span className="hidden sm:inline">Jump to</span>
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-64" align="start">
+              <div className="space-y-3">
+                <h3 className="font-semibold text-sm">Jump to Date</h3>
+                <p className="text-xs text-muted-foreground">
+                  Navigate to a specific date on your timeline
+                </p>
+                <input
+                  type="date"
+                  value={jumpToDate}
+                  onChange={(e) => setJumpToDate(e.target.value)}
+                  className="w-full px-3 py-2 border rounded-md text-sm"
+                />
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    onClick={() => handleJumpToDate(jumpToDate)}
+                    disabled={!jumpToDate}
+                    className="flex-1"
+                  >
+                    Go
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={handleJumpToToday}
+                  >
+                    Today
+                  </Button>
+                </div>
+              </div>
+            </PopoverContent>
+          </Popover>
+
+          {/* Calendar Sync - moved outside dropdown for proper popover behavior */}
+          <CalendarSyncButton />
+
           {/* More Actions Dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -523,13 +596,7 @@ export function TimelineManager({ onCanvasReady }: TimelineManagerProps = {}) {
                   </PopoverContent>
                 </Popover>
               </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem asChild>
-                <div className="w-full">
-                  <CalendarSyncButton />
-                </div>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
+              </DropdownMenuContent>
           </DropdownMenu>
 
           {/* View Mode Switcher */}
