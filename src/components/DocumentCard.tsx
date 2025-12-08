@@ -75,12 +75,12 @@ export const DocumentCard = ({
       <CardContent className="space-y-5 flex-1 flex flex-col">
         <div className="flex items-center justify-between text-sm text-muted-foreground">
           <div className="flex items-center">
-            <Calendar className="h-4 w-4 mr-1.5" />
+            <CalendarIcon className="h-4 w-4 mr-1.5" />
             {doc.created_at ? new Date(doc.created_at).toLocaleDateString() : 'Unknown'}
           </div>
           {doc.drive_modified_at && (
             <div className="flex items-center">
-              <Calendar className="h-4 w-4 mr-1.5" />
+              <CalendarIcon className="h-4 w-4 mr-1.5" />
               {new Date(doc.drive_modified_at).toLocaleDateString()}
             </div>
           )}
