@@ -139,7 +139,7 @@ export const CreateKnowledgeDocumentModal = ({ trigger }: CreateKnowledgeDocumen
     }
   };
 
-  const handleNewCategoryKeyPress = (e: React.KeyboardEvent) => {
+  const handleNewCategoryKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       e.preventDefault();
       handleNewCategorySubmit();
@@ -380,11 +380,9 @@ export const CreateKnowledgeDocumentModal = ({ trigger }: CreateKnowledgeDocumen
                   <SelectItem value="strategy">Strategy</SelectItem>
                   <SelectItem value="notes">Notes</SelectItem>
                   <SelectItem value="reference">Reference</SelectItem>
-                  <SelectItem value="create-new">
-                    <div className="flex items-center">
-                      <Plus className="h-4 w-4 mr-2" />
-                      Create New Category
-                    </div>
+                  <SelectItem value="create-new" className="flex items-center">
+                    <Plus className="h-4 w-4 mr-2 inline" />
+                    Create New Category
                   </SelectItem>
                 </SelectContent>
               </Select>
@@ -394,7 +392,7 @@ export const CreateKnowledgeDocumentModal = ({ trigger }: CreateKnowledgeDocumen
                   value={newCategory}
                   onChange={(e) => setNewCategory(e.target.value)}
                   placeholder="Enter new category name..."
-                  onKeyPress={handleNewCategoryKeyPress}
+                  onKeyDown={handleNewCategoryKeyDown}
                   autoFocus
                 />
                 <Button
