@@ -10,6 +10,7 @@ import { Loader2, Send, Archive, Trash2, Edit2, Check, X, FileText, MessageCircl
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { DictationButton } from '@/components/DictationButton';
+import { AIProgressIndicator } from '@/components/ai/AIProgressIndicator';
 
 interface Message {
   id: string;
@@ -603,11 +604,7 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
                 </div>
               ))}
               {isLoading && (
-                <div className="flex justify-start">
-                  <div className="bg-muted rounded-lg p-3">
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  </div>
-                </div>
+                <AIProgressIndicator useDocuments={false} />
               )}
             </div>
           )}

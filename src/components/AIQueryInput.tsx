@@ -12,6 +12,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { DictationButton } from '@/components/DictationButton';
+import { AIProgressIndicator } from '@/components/ai/AIProgressIndicator';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -317,11 +318,7 @@ export const AIQueryInput = ({ selectedKnowledgeBase, onClearSelection }: AIQuer
                 </div>
               ))}
               {isLoading && (
-                <div className="flex justify-start">
-                  <div className="bg-muted border border-border rounded-lg p-4">
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  </div>
-                </div>
+                <AIProgressIndicator useDocuments={true} />
               )}
             </div>
           </ScrollArea>
