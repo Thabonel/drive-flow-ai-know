@@ -170,97 +170,105 @@ async function claudeCompletion(messages: Message[], systemMessage: string) {
     }
   }];
 
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'x-api-key': anthropicApiKey,
-      'anthropic-version': '2023-06-01',
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: CLAUDE_MODELS.PRIMARY,
-      max_tokens: 4096,
-      system: systemMessage,
-      messages: userMessages,
-      tools: tools,
-    }),
-  });
+  // Helper function to process tool uses recursively (with depth limit)
+  async function processWithTools(currentMessages: any[], depth: number = 0): Promise<string> {
+    const MAX_TOOL_DEPTH = 3; // Prevent infinite loops
 
-  if (!response.ok) {
-    console.error('Claude API error:', response.status, response.statusText);
-    const errorData = await response.text();
-    console.error('Claude error details:', errorData);
-    throw new Error(`Claude API error: ${response.status}`);
-  }
+    if (depth >= MAX_TOOL_DEPTH) {
+      console.log('Max tool depth reached, returning last text response');
+      return "I've searched multiple times but couldn't find a complete answer. Please try a more specific question.";
+    }
 
-  const data = await response.json();
-  console.log('Claude response structure:', Object.keys(data));
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'x-api-key': anthropicApiKey!,
+        'anthropic-version': '2023-06-01',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: CLAUDE_MODELS.PRIMARY,
+        max_tokens: 4096,
+        system: systemMessage,
+        messages: currentMessages,
+        tools: tools,
+      }),
+    });
 
-  // Handle tool use
-  if (data.stop_reason === 'tool_use') {
-    const toolUse = data.content.find((block: any) => block.type === 'tool_use');
+    if (!response.ok) {
+      console.error('Claude API error:', response.status, response.statusText);
+      const errorData = await response.text();
+      console.error('Claude error details:', errorData);
+      throw new Error(`Claude API error: ${response.status} - ${errorData}`);
+    }
 
-    if (toolUse && toolUse.name === 'web_search') {
-      console.log('Claude requested web search:', toolUse.input.query);
+    const data = await response.json();
+    console.log('Claude response stop_reason:', data.stop_reason, 'depth:', depth);
 
-      // Perform the search
-      const searchResults = await searchWeb(toolUse.input.query);
+    // Handle tool use - process ALL tool_use blocks
+    if (data.stop_reason === 'tool_use') {
+      const toolUseBlocks = data.content.filter((block: any) => block.type === 'tool_use');
+      console.log('Tool use blocks found:', toolUseBlocks.length);
 
-      // Continue conversation with search results
+      if (toolUseBlocks.length === 0) {
+        // Unexpected: stop_reason is tool_use but no tool_use blocks
+        console.error('No tool_use blocks despite stop_reason=tool_use');
+        const textBlock = data.content?.find((block: any) => block.type === 'text');
+        return textBlock?.text || "I encountered an unexpected issue. Please try again.";
+      }
+
+      // Process all tool uses and collect results
+      const toolResults = [];
+      for (const toolUse of toolUseBlocks) {
+        if (toolUse.name === 'web_search') {
+          console.log('Processing web search:', toolUse.input.query);
+          const searchResults = await searchWeb(toolUse.input.query);
+          toolResults.push({
+            type: 'tool_result',
+            tool_use_id: toolUse.id,
+            content: searchResults
+          });
+        } else {
+          // Unknown tool - return empty result
+          console.log('Unknown tool requested:', toolUse.name);
+          toolResults.push({
+            type: 'tool_result',
+            tool_use_id: toolUse.id,
+            content: 'Tool not available'
+          });
+        }
+      }
+
+      // Build follow-up messages with ALL tool results
       const followUpMessages = [
-        ...userMessages,
+        ...currentMessages,
         {
           role: 'assistant',
           content: data.content
         },
         {
           role: 'user',
-          content: [{
-            type: 'tool_result',
-            tool_use_id: toolUse.id,
-            content: searchResults
-          }]
+          content: toolResults
         }
       ];
 
-      const followUpResponse = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-          'x-api-key': anthropicApiKey,
-          'anthropic-version': '2023-06-01',
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: CLAUDE_MODELS.PRIMARY,
-          max_tokens: 4096,
-          system: systemMessage,
-          messages: followUpMessages,
-          tools: tools,
-        }),
-      });
-
-      if (!followUpResponse.ok) {
-        console.error('Follow-up API error:', followUpResponse.status, followUpResponse.statusText);
-        const errorText = await followUpResponse.text();
-        console.error('Follow-up error details:', errorText);
-        throw new Error(`Follow-up Claude API error: ${followUpResponse.status}`);
-      }
-
-      const followUpData = await followUpResponse.json();
-      console.log('Follow-up response stop_reason:', followUpData.stop_reason);
-      console.log('Follow-up content blocks:', followUpData.content?.map((b: any) => ({ type: b.type, hasText: !!b.text })));
-
-      const textBlock = followUpData.content?.find((block: any) => block.type === 'text');
-      if (!textBlock || !textBlock.text) {
-        console.error('No text block in follow-up response. Full content:', JSON.stringify(followUpData.content));
-        return "I found search results but had trouble generating a response. Please try rephrasing your question.";
-      }
-      console.log('Extracted text length:', textBlock.text.length);
-      return textBlock.text;
+      // Recursively process (in case Claude wants to use more tools)
+      return processWithTools(followUpMessages, depth + 1);
     }
+
+    // No tool use - extract text response
+    const textBlock = data.content?.find((block: any) => block.type === 'text');
+    if (!textBlock || !textBlock.text) {
+      console.error('No text block in response. Content:', JSON.stringify(data.content));
+      return "I processed your request but couldn't generate a text response. Please try rephrasing your question.";
+    }
+
+    console.log('Final text response length:', textBlock.text.length);
+    return textBlock.text;
   }
 
-  return data.content?.find((block: any) => block.type === 'text')?.text ?? data.content?.[0]?.text ?? '';
+  // Start processing with initial messages
+  return processWithTools(userMessages, 0);
 }
 
 
@@ -288,8 +296,14 @@ async function openRouterCompletion(messages: Message[], systemMessage: string) 
 
 
 export async function getLLMResponse(messages: Message[], systemMessage: string, providerOverride?: string) {
-  const providerEnv = providerOverride || Deno.env.get('MODEL_PROVIDER');
+  let providerEnv = providerOverride || Deno.env.get('MODEL_PROVIDER');
   const useOpenRouter = Deno.env.get('USE_OPENROUTER') === 'true';
+
+  // Ignore discontinued providers (ollama, local) - fall back to claude
+  if (providerEnv === 'ollama' || providerEnv === 'local') {
+    console.log(`Provider '${providerEnv}' is discontinued, falling back to claude`);
+    providerEnv = 'claude';
+  }
 
   // Define fallback order - Claude first, then OpenRouter
   const providers = [];
@@ -702,6 +716,32 @@ serve(async (req) => {
     if (conversationContext && Array.isArray(conversationContext) && conversationContext.length > 0) {
       console.log('Processing conversation context with', conversationContext.length, 'messages');
 
+      // Sanitize conversation context to remove tool_use blocks without tool_result
+      // Claude API requires each tool_use to have a corresponding tool_result in the next message
+      const sanitizedContext = conversationContext.filter((msg: any) => {
+        // Keep simple string content messages
+        if (typeof msg.content === 'string') return true;
+
+        // For messages with complex content (arrays), filter out tool_use blocks
+        if (Array.isArray(msg.content)) {
+          // Check if this is an assistant message with tool_use
+          const hasToolUse = msg.content.some((block: any) => block.type === 'tool_use');
+          if (hasToolUse) {
+            console.log('Filtering out message with tool_use blocks to avoid API errors');
+            return false;
+          }
+          // Also filter out tool_result messages since they're orphaned now
+          const hasToolResult = msg.content.some((block: any) => block.type === 'tool_result');
+          if (hasToolResult) {
+            console.log('Filtering out orphaned tool_result message');
+            return false;
+          }
+        }
+        return true;
+      });
+
+      console.log('Sanitized conversation from', conversationContext.length, 'to', sanitizedContext.length, 'messages');
+
       // Determine provider token limit
       const providerName = providerOverride || 'claude';
       const maxTokens = getProviderTokenLimit(providerName);
@@ -716,16 +756,16 @@ serve(async (req) => {
       console.log('Token budget - System:', systemTokens, 'Query:', queryTokens, 'Conversation budget:', conversationBudget);
 
       // Chunk conversation if needed
-      const conversationTokens = calculateConversationTokens(conversationContext);
+      const conversationTokens = calculateConversationTokens(sanitizedContext);
       console.log('Conversation tokens:', conversationTokens);
 
       if (conversationTokens > conversationBudget) {
         console.log('Chunking conversation context - exceeds budget');
-        const chunkedContext = chunkConversationContext(conversationContext, conversationBudget);
+        const chunkedContext = chunkConversationContext(sanitizedContext, conversationBudget);
         console.log('Chunked to', chunkedContext.length, 'messages');
         messages.push(...chunkedContext);
       } else {
-        messages.push(...conversationContext);
+        messages.push(...sanitizedContext);
       }
     }
 
