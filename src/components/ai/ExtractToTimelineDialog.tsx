@@ -23,7 +23,7 @@ import { Calendar, Loader2, Plus, Clock, Edit2, Check, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useLayers } from '@/hooks/useLayers';
-import { useTimelineContext } from '@/contexts/TimelineContext';
+import { useAuth } from '@/hooks/useAuth';
 import { getRandomItemColor } from '@/lib/timelineUtils';
 
 interface ExtractedItem {
@@ -62,7 +62,38 @@ export function ExtractToTimelineDialog({
 }: ExtractToTimelineDialogProps) {
   const { toast } = useToast();
   const { layers, addLayer, refetch: refetchLayers } = useLayers();
-  const { addItem } = useTimelineContext();
+  const { user } = useAuth();
+
+  // Add item directly to Supabase (instead of using TimelineContext which requires provider)
+  const addTimelineItem = async (
+    layerId: string,
+    title: string,
+    startTime: string,
+    durationMinutes: number,
+    color: string
+  ) => {
+    if (!user) return null;
+
+    const { data, error } = await supabase
+      .from('timeline_items')
+      .insert({
+        user_id: user.id,
+        layer_id: layerId,
+        title,
+        start_time: startTime,
+        duration_minutes: durationMinutes,
+        color,
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error adding timeline item:', error);
+      throw error;
+    }
+
+    return data;
+  };
 
   const [isExtracting, setIsExtracting] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
@@ -241,7 +272,7 @@ export function ExtractToTimelineDialog({
         const startTime = new Date(itemDate);
         startTime.setHours(9, 0, 0, 0);
 
-        await addItem(
+        await addTimelineItem(
           layerId,
           item.title,
           startTime.toISOString(),
