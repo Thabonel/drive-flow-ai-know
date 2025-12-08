@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Plus, FileText, Brain, Tag, X } from 'lucide-react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
@@ -18,6 +18,19 @@ interface CreateKnowledgeDocumentModalProps {
 
 const MAX_CONTENT_SIZE = 10 * 1024 * 1024; // 10MB
 const MAX_TITLE_LENGTH = 500;
+
+// Default categories that are always available
+const DEFAULT_CATEGORIES = [
+  'prompts',
+  'marketing',
+  'specs',
+  'general',
+  'research',
+  'planning',
+  'strategy',
+  'notes',
+  'reference'
+];
 
 export const CreateKnowledgeDocumentModal = ({ trigger }: CreateKnowledgeDocumentModalProps) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -34,6 +47,34 @@ export const CreateKnowledgeDocumentModal = ({ trigger }: CreateKnowledgeDocumen
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // Fetch unique categories from user's existing documents
+  const { data: customCategories = [] } = useQuery({
+    queryKey: ['document-categories', user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('knowledge_documents')
+        .select('category')
+        .eq('user_id', user!.id)
+        .not('category', 'is', null);
+
+      if (error) throw error;
+
+      // Get unique categories that aren't in the default list
+      const uniqueCategories = [...new Set(data.map(d => d.category))]
+        .filter((cat): cat is string =>
+          cat !== null &&
+          cat.trim() !== '' &&
+          !DEFAULT_CATEGORIES.includes(cat.toLowerCase())
+        );
+
+      return uniqueCategories;
+    },
+    enabled: !!user,
+  });
+
+  // Combine default and custom categories
+  const allCategories = [...DEFAULT_CATEGORIES, ...customCategories];
 
   const createDocument = useMutation({
     mutationFn: async (data: typeof formData) => {
@@ -72,6 +113,7 @@ export const CreateKnowledgeDocumentModal = ({ trigger }: CreateKnowledgeDocumen
 
       queryClient.invalidateQueries({ queryKey: ['recent-documents', user?.id] });
       queryClient.invalidateQueries({ queryKey: ['documents', user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['document-categories', user?.id] }); // Refresh categories list
       setIsOpen(false);
       resetForm();
       toast({
@@ -371,18 +413,28 @@ export const CreateKnowledgeDocumentModal = ({ trigger }: CreateKnowledgeDocumen
                   <SelectValue placeholder="Select a category (optional)" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="prompts">Prompts</SelectItem>
-                  <SelectItem value="marketing">Marketing</SelectItem>
-                  <SelectItem value="specs">Specs</SelectItem>
-                  <SelectItem value="general">General</SelectItem>
-                  <SelectItem value="research">Research</SelectItem>
-                  <SelectItem value="planning">Planning</SelectItem>
-                  <SelectItem value="strategy">Strategy</SelectItem>
-                  <SelectItem value="notes">Notes</SelectItem>
-                  <SelectItem value="reference">Reference</SelectItem>
-                  <SelectItem value="create-new" className="flex items-center">
-                    <Plus className="h-4 w-4 mr-2 inline" />
-                    Create New Category
+                  {/* Default categories */}
+                  {DEFAULT_CATEGORIES.map((cat) => (
+                    <SelectItem key={cat} value={cat}>
+                      {cat.charAt(0).toUpperCase() + cat.slice(1)}
+                    </SelectItem>
+                  ))}
+                  {/* Custom categories from user's documents */}
+                  {customCategories.length > 0 && (
+                    <>
+                      <SelectItem value="---custom-separator---" disabled className="text-xs text-muted-foreground">
+                        ── Your Categories ──
+                      </SelectItem>
+                      {customCategories.map((cat) => (
+                        <SelectItem key={cat} value={cat}>
+                          {cat}
+                        </SelectItem>
+                      ))}
+                    </>
+                  )}
+                  {/* Create new option */}
+                  <SelectItem value="create-new" className="text-primary font-medium">
+                    + Create New Category
                   </SelectItem>
                 </SelectContent>
               </Select>
