@@ -67,8 +67,11 @@ const Index = () => {
               description="Your dashboard provides a quick overview of your knowledge base and allows you to query your documents using AI. Use the AI query box to ask questions across all your documents or select a specific knowledge base."
               tips={[
                 "Use the AI query box to search across all your documents",
+                "Use 'Add to Timeline' to extract tasks from AI responses",
+                "Save AI responses as documents for future reference",
                 "View stats showing total documents, knowledge bases, and folders",
                 "Access recent documents and knowledge bases quickly",
+                "Use Daily Focus to see your most important tasks",
                 "Create new documents using the '+ New Document' button"
               ]}
             />
