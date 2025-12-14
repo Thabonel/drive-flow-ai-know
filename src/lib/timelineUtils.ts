@@ -204,8 +204,8 @@ export function calculateNowLineX(
  * @param viewportWidth - Width of the viewport in pixels
  * @param pixelsPerHour - Zoom level (pixels per hour)
  * @param scrollOffset - Current scroll offset in pixels
- * @param hoursBeforeNow - How many hours before NOW to show
- * @param hoursAfterNow - How many hours after NOW to show
+ * @param hoursBeforeNow - How many hours before NOW to show (used for buffer)
+ * @param hoursAfterNow - How many hours after NOW to show (used for buffer)
  * @param subdivisionMinutes - Interval in minutes for subdivision markers (default 360 = 6 hours)
  * @returns Array of time marker objects with isMajor flag (midnight markers are major, subdivisions are minor)
  */
@@ -221,38 +221,51 @@ export function generateTimeMarkers(
   const markers: Array<{ x: number; time: Date; isPast: boolean; isMajor: boolean }> = [];
   const nowLineX = viewportWidth * NOW_LINE_POSITION;
 
-  // Find today's midnight (start of current day)
-  const todayMidnight = new Date(nowTime);
-  todayMidnight.setHours(0, 0, 0, 0);
+  // Calculate the visible time range based on scroll position
+  // hoursAtLeftEdge: how many hours from NOW is at the left edge of viewport
+  const hoursAtLeftEdge = -scrollOffset / pixelsPerHour - (nowLineX / pixelsPerHour);
+  const hoursAtRightEdge = hoursAtLeftEdge + (viewportWidth / pixelsPerHour);
 
-  // Calculate how many days to show before and after NOW
-  const daysBeforeNow = Math.ceil(hoursBeforeNow / 24) + 1; // Extra day for safety
-  const daysAfterNow = Math.ceil(hoursAfterNow / 24) + 1;
+  // Add buffer (1 day on each side for smooth scrolling)
+  const bufferHours = 24;
+  const visibleStartHours = hoursAtLeftEdge - bufferHours;
+  const visibleEndHours = hoursAtRightEdge + bufferHours;
 
-  // Generate markers at each midnight (day boundary) - MAJOR markers
-  for (let dayOffset = -daysBeforeNow; dayOffset <= daysAfterNow; dayOffset++) {
-    // Calculate the FIXED midnight timestamp for this day
-    const markerTime = new Date(todayMidnight.getTime() + dayOffset * 24 * 60 * 60 * 1000);
+  // Calculate the actual timestamps for the visible range
+  const visibleStartTime = new Date(nowTime.getTime() + visibleStartHours * 60 * 60 * 1000);
+  const visibleEndTime = new Date(nowTime.getTime() + visibleEndHours * 60 * 60 * 1000);
 
-    // Calculate hours from NOW to this marker (this changes as time flows, but markerTime doesn't)
-    const hoursFromNow = (markerTime.getTime() - nowTime.getTime()) / (1000 * 60 * 60);
+  // Find the first midnight at or before the visible start
+  const firstMidnight = new Date(visibleStartTime);
+  firstMidnight.setHours(0, 0, 0, 0);
 
-    // Calculate X position based on how far this marker is from NOW
+  // Generate markers from first midnight to beyond visible end
+  let currentMidnight = new Date(firstMidnight);
+
+  while (currentMidnight <= visibleEndTime) {
+    // Calculate hours from NOW for this midnight
+    const hoursFromNow = (currentMidnight.getTime() - nowTime.getTime()) / (1000 * 60 * 60);
+
+    // Calculate X position
     const x = nowLineX + (hoursFromNow * pixelsPerHour) + scrollOffset;
 
     markers.push({
       x,
-      time: markerTime, // This is a FIXED timestamp (e.g., "Oct 27, 12:00 AM")
-      isPast: markerTime < nowTime,
+      time: new Date(currentMidnight),
+      isPast: currentMidnight < nowTime,
       isMajor: true,
     });
 
-    // Generate subdivision markers (MINOR markers) within this day
-    if (subdivisionMinutes < 24 * 60) { // Only if subdivisions are smaller than a day
+    // Generate subdivision markers within this day
+    if (subdivisionMinutes < 24 * 60) {
       const subdivisionsPerDay = Math.floor((24 * 60) / subdivisionMinutes);
 
       for (let subIndex = 1; subIndex < subdivisionsPerDay; subIndex++) {
-        const subMarkerTime = new Date(markerTime.getTime() + subIndex * subdivisionMinutes * 60 * 1000);
+        const subMarkerTime = new Date(currentMidnight.getTime() + subIndex * subdivisionMinutes * 60 * 1000);
+
+        // Skip if beyond visible range
+        if (subMarkerTime > visibleEndTime) break;
+
         const subHoursFromNow = (subMarkerTime.getTime() - nowTime.getTime()) / (1000 * 60 * 60);
         const subX = nowLineX + (subHoursFromNow * pixelsPerHour) + scrollOffset;
 
@@ -260,10 +273,13 @@ export function generateTimeMarkers(
           x: subX,
           time: subMarkerTime,
           isPast: subMarkerTime < nowTime,
-          isMajor: false, // Minor marker
+          isMajor: false,
         });
       }
     }
+
+    // Move to next day
+    currentMidnight.setDate(currentMidnight.getDate() + 1);
   }
 
   // Sort markers by time to ensure proper rendering order
