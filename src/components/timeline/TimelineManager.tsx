@@ -37,7 +37,7 @@ import {
   VIEW_MODE_CONFIG,
 } from '@/lib/timelineConstants';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, Clock, Settings, Layers, Lock, Unlock, Archive, LayoutTemplate, Sparkles, RefreshCw, Calendar as CalIcon, Brain, Sunrise, Moon, Link as LinkIcon, MoreHorizontal, ZoomIn, ZoomOut, Navigation } from 'lucide-react';
+import { Loader2, Clock, Settings, Layers, Lock, Unlock, Archive, LayoutTemplate, Sparkles, RefreshCw, Calendar as CalIcon, Brain, Sunrise, Moon, Link as LinkIcon, MoreHorizontal, ZoomIn, ZoomOut, Navigation, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuLabel } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
@@ -349,6 +349,48 @@ export function TimelineManager({ onCanvasReady }: TimelineManagerProps = {}) {
     setScrollOffset(targetScrollOffset);
   };
 
+  // Get jump increment in hours based on view mode
+  const getJumpIncrement = (): number => {
+    switch (viewMode) {
+      case 'day':
+        return 24; // 1 day
+      case 'week':
+        return 24 * 7; // 1 week
+      case 'month':
+        return 24 * 30; // ~1 month
+      default:
+        return 24 * 7; // default to 1 week
+    }
+  };
+
+  // Get label for navigation buttons based on view mode
+  const getJumpLabel = (): string => {
+    switch (viewMode) {
+      case 'day':
+        return 'Day';
+      case 'week':
+        return 'Week';
+      case 'month':
+        return 'Month';
+      default:
+        return 'Week';
+    }
+  };
+
+  // Jump forward by view mode increment
+  const handleJumpForward = () => {
+    const incrementHours = getJumpIncrement();
+    const incrementPixels = incrementHours * pixelsPerHour;
+    setScrollOffset(prev => prev - incrementPixels); // Negative because scrolling right shows future
+  };
+
+  // Jump backward by view mode increment
+  const handleJumpBackward = () => {
+    const incrementHours = getJumpIncrement();
+    const incrementPixels = incrementHours * pixelsPerHour;
+    setScrollOffset(prev => prev + incrementPixels); // Positive because scrolling left shows past
+  };
+
   if (timelineLoading || layersLoading) {
     return (
       <div className="flex items-center justify-center h-96">
@@ -375,7 +417,7 @@ export function TimelineManager({ onCanvasReady }: TimelineManagerProps = {}) {
                 "Drag the right edge to resize duration (like Google Calendar)",
                 "Click items to mark done, reschedule, park, or delete",
                 "Double-click empty space to create a new item at that time",
-                "Use 'Jump to' button to quickly navigate to any date",
+                "Use arrow buttons to jump forward/backward by day, week, or month",
                 "Use layers to organize different types of tasks",
                 "Lock/unlock to enable auto-scrolling with real time",
                 "Use 'Plan Day' for AI planning, templates, and routines",
@@ -484,46 +526,71 @@ export function TimelineManager({ onCanvasReady }: TimelineManagerProps = {}) {
             </Button>
           </div>
 
-          {/* Jump to Date */}
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button variant="outline" className="gap-2">
-                <Navigation className="h-4 w-4" />
-                <span className="hidden sm:inline">Jump to</span>
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-64" align="start">
-              <div className="space-y-3">
-                <h3 className="font-semibold text-sm">Jump to Date</h3>
-                <p className="text-xs text-muted-foreground">
-                  Navigate to a specific date on your timeline
-                </p>
-                <input
-                  type="date"
-                  value={jumpToDate}
-                  onChange={(e) => setJumpToDate(e.target.value)}
-                  className="w-full px-3 py-2 border rounded-md text-sm"
-                />
-                <div className="flex gap-2">
-                  <Button
-                    size="sm"
-                    onClick={() => handleJumpToDate(jumpToDate)}
-                    disabled={!jumpToDate}
-                    className="flex-1"
-                  >
-                    Go
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={handleJumpToToday}
-                  >
-                    Today
-                  </Button>
+          {/* Timeline Navigation */}
+          <div className="flex items-center gap-1">
+            {/* Previous increment */}
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleJumpBackward}
+              title={`Previous ${getJumpLabel()}`}
+              className="h-9 w-9 p-0"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+
+            {/* Jump to Date Popover */}
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className="gap-2 px-3">
+                  <Navigation className="h-4 w-4" />
+                  <span className="hidden sm:inline">{getJumpLabel()}</span>
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-64" align="start">
+                <div className="space-y-3">
+                  <h3 className="font-semibold text-sm">Jump to Date</h3>
+                  <p className="text-xs text-muted-foreground">
+                    Navigate to a specific date, or use arrows to jump by {getJumpLabel().toLowerCase()}
+                  </p>
+                  <input
+                    type="date"
+                    value={jumpToDate}
+                    onChange={(e) => setJumpToDate(e.target.value)}
+                    className="w-full px-3 py-2 border rounded-md text-sm"
+                  />
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      onClick={() => handleJumpToDate(jumpToDate)}
+                      disabled={!jumpToDate}
+                      className="flex-1"
+                    >
+                      Go
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={handleJumpToToday}
+                    >
+                      Today
+                    </Button>
+                  </div>
                 </div>
-              </div>
-            </PopoverContent>
-          </Popover>
+              </PopoverContent>
+            </Popover>
+
+            {/* Next increment */}
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleJumpForward}
+              title={`Next ${getJumpLabel()}`}
+              className="h-9 w-9 p-0"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
 
           {/* Calendar Sync - moved outside dropdown for proper popover behavior */}
           <CalendarSyncButton />
