@@ -195,21 +195,81 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
     return data;
   };
 
+  // Auto-save long content as a document and return the doc ID
+  const autoSaveAsDocument = async (content: string): Promise<string | null> => {
+    if (!user) return null;
+
+    try {
+      // Generate a title from the first line or first 50 chars
+      const firstLine = content.split('\n')[0].trim();
+      const title = firstLine.length > 50
+        ? firstLine.substring(0, 50) + '...'
+        : firstLine || 'Auto-saved content';
+
+      const { data, error } = await supabase
+        .from('knowledge_documents')
+        .insert({
+          user_id: user.id,
+          title: `[Auto] ${title}`,
+          content: content,
+          file_type: 'text',
+          category: 'general',
+        })
+        .select('id')
+        .single();
+
+      if (error) {
+        console.error('Failed to auto-save document:', error);
+        return null;
+      }
+
+      console.log('Auto-saved long content as document:', data.id);
+      return data.id;
+    } catch (err) {
+      console.error('Error auto-saving document:', err);
+      return null;
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim() || isLoading) return;
 
-    const userMessage = input.trim();
+    // Store original message for display before any modifications
+    const originalMessage = input.trim();
+    let userMessage = originalMessage;
+    let autoSavedDocId: string | null = null;
 
-    // CRITICAL: Clear input IMMEDIATELY before any async operations
-    // This makes the UI feel instant, just like Claude
+    // CRITICAL: Clear input IMMEDIATELY for instant UI feedback
     setInput('');
 
+    // If message is very long (>10KB), auto-save as document and reference it
+    const LONG_MESSAGE_THRESHOLD = 10000;
+    if (userMessage.length > LONG_MESSAGE_THRESHOLD) {
+      console.log('Long message detected, auto-saving as document...');
+      autoSavedDocId = await autoSaveAsDocument(userMessage);
+
+      if (autoSavedDocId) {
+        // Replace the long content with a reference to analyze it
+        userMessage = `Please analyze the content I just shared (it has been saved as a document). Summarize the key points and insights.`;
+        // Ensure documents are enabled for this query
+        if (!useDocuments) {
+          setUseDocuments(true);
+        }
+      }
+      // If auto-save failed, continue with original message and let server handle it
+    }
+
     // Create temporary message for optimistic UI update
+    // Show truncated preview for very long messages
+    const displayContent = originalMessage.length > 500
+      ? originalMessage.substring(0, 500) + `\n\n[... ${Math.round(originalMessage.length / 1000)}KB of content ...]`
+      : originalMessage;
+
     const tempUserMessage: Message = {
       id: `temp-user-${Date.now()}`,
       role: 'user',
-      content: userMessage,
+      content: displayContent,
       sequence_number: messages.length,
       timestamp: new Date().toISOString(),
     };
@@ -240,8 +300,8 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
           console.log('Using existing conversation:', currentConvId);
         }
 
-        // Save user message to database - pass explicit conversation ID
-        const savedUserMsg = await saveMessage('user', userMessage, updatedMessages, currentConvId);
+        // Save user message to database - use displayContent for long messages (full content saved as doc)
+        const savedUserMsg = await saveMessage('user', displayContent, updatedMessages, currentConvId);
 
         // Prepare messages array with the saved message
         // FIX: Build from updatedMessages, not stale messages closure
