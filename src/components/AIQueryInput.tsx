@@ -115,22 +115,93 @@ export const AIQueryInput = ({ selectedKnowledgeBase, onClearSelection }: AIQuer
 
   const quickPrompts = getTemplatesForType(documentType);
 
+  // Auto-save long content as a document and return the doc ID
+  const autoSaveAsDocument = async (content: string): Promise<string | null> => {
+    if (!user) return null;
+
+    try {
+      const firstLine = content.split('\n')[0].trim();
+      const title = firstLine.length > 50
+        ? firstLine.substring(0, 50) + '...'
+        : firstLine || 'Auto-saved content';
+
+      const { data, error } = await supabase
+        .from('knowledge_documents')
+        .insert({
+          user_id: user.id,
+          title: `[Auto] ${title}`,
+          content: content,
+          file_type: 'text',
+          category: 'general',
+        })
+        .select('id')
+        .single();
+
+      if (error) {
+        console.error('Auto-save failed:', error);
+        toast({
+          title: 'Auto-save Failed',
+          description: 'Could not save long content as document',
+          variant: 'destructive',
+        });
+        return null;
+      }
+
+      toast({
+        title: 'Content Saved',
+        description: 'Long content saved as document for analysis',
+      });
+      return data.id;
+    } catch (err) {
+      console.error('Auto-save exception:', err);
+      return null;
+    }
+  };
+
+  const LONG_MESSAGE_THRESHOLD = 10000;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!query.trim() || !user) return;
 
-    const userMessage = query.trim();
+    let userMessage = query.trim();
+    const originalMessage = userMessage;
+    let forceUseDocuments = false;
+
+    // Handle long messages by auto-saving as document
+    if (userMessage.length > LONG_MESSAGE_THRESHOLD) {
+      setIsLoading(true);
+      const docId = await autoSaveAsDocument(userMessage);
+
+      if (docId) {
+        userMessage = `Please analyze the document I just shared. It contains ${Math.round(originalMessage.length / 1000)}KB of content. Provide a comprehensive summary of the key points, main themes, and any actionable insights.`;
+        forceUseDocuments = true;
+        queryClient.invalidateQueries({ queryKey: ['knowledge-documents'] });
+      } else {
+        setIsLoading(false);
+        toast({
+          title: 'Error',
+          description: 'Could not save your content. Try copying it to a new document manually.',
+          variant: 'destructive',
+        });
+        return;
+      }
+    }
+
     savePrompt.mutate(userMessage);
 
-    // Add user message to conversation
+    // Add user message to conversation (show truncated if auto-saved)
+    const displayMessage = forceUseDocuments
+      ? `[Saved ${Math.round(originalMessage.length / 1000)}KB document for analysis]\n\n${originalMessage.substring(0, 500)}...`
+      : userMessage;
     const newUserMessage: Message = {
       role: 'user',
-      content: userMessage,
+      content: displayMessage,
       timestamp: new Date().toISOString()
     };
     setMessages(prev => [...prev, newUserMessage]);
     setQuery('');
-    setIsLoading(true);
+    if (!isLoading) setIsLoading(true);
 
     try {
       console.log('Invoking AI query function with:', { query: userMessage.substring(0, 50) + '...', knowledge_base_id: selectedKnowledgeBase?.id });
@@ -145,7 +216,7 @@ export const AIQueryInput = ({ selectedKnowledgeBase, onClearSelection }: AIQuer
         body: {
           query: userMessage,
           knowledge_base_id: selectedKnowledgeBase?.id,
-          use_documents: true,
+          use_documents: true || forceUseDocuments,
           conversationContext
         }
       });
@@ -371,7 +442,6 @@ export const AIQueryInput = ({ selectedKnowledgeBase, onClearSelection }: AIQuer
                 handleSubmit(e);
               }
             }}
-            maxLength={1000}
           />
           <div className="flex flex-col space-y-2">
             <DictationButton
@@ -390,8 +460,9 @@ export const AIQueryInput = ({ selectedKnowledgeBase, onClearSelection }: AIQuer
         <div className="flex justify-between items-center text-xs text-muted-foreground">
           <span>
             {query.length > 0 ? (
-              <span className={query.length > 900 ? 'text-orange-500' : ''}>
-                {query.length}/1000 characters
+              <span className={query.length > 10000 ? 'text-orange-500' : ''}>
+                {query.length.toLocaleString()} characters
+                {query.length > 10000 && ' (will auto-save as document)'}
               </span>
             ) : (
               <span>Tip: Press Ctrl/Cmd + Enter to submit</span>

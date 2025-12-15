@@ -197,7 +197,12 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
 
   // Auto-save long content as a document and return the doc ID
   const autoSaveAsDocument = async (content: string): Promise<string | null> => {
-    if (!user) return null;
+    if (!user) {
+      console.error('Auto-save failed: No user logged in');
+      return null;
+    }
+
+    console.log(`Auto-save: Starting save of ${content.length} characters for user ${user.id}`);
 
     try {
       // Generate a title from the first line or first 50 chars
@@ -205,6 +210,8 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
       const title = firstLine.length > 50
         ? firstLine.substring(0, 50) + '...'
         : firstLine || 'Auto-saved content';
+
+      console.log(`Auto-save: Generated title "${title}"`);
 
       const { data, error } = await supabase
         .from('knowledge_documents')
@@ -219,14 +226,16 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
         .single();
 
       if (error) {
-        console.error('Failed to auto-save document:', error);
+        console.error('Auto-save: Database error:', error.message, error.details, error.hint);
+        toast.error(`Failed to save content: ${error.message}`);
         return null;
       }
 
-      console.log('Auto-saved long content as document:', data.id);
+      console.log('Auto-save: SUCCESS - Document ID:', data.id);
+      toast.success('Long content saved as document for analysis');
       return data.id;
     } catch (err) {
-      console.error('Error auto-saving document:', err);
+      console.error('Auto-save: Exception:', err);
       return null;
     }
   };
