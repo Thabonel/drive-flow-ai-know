@@ -239,6 +239,7 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
     const originalMessage = input.trim();
     let userMessage = originalMessage;
     let autoSavedDocId: string | null = null;
+    let forceUseDocuments = useDocuments;
 
     // CRITICAL: Clear input IMMEDIATELY for instant UI feedback
     setInput('');
@@ -246,18 +247,31 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
     // If message is very long (>10KB), auto-save as document and reference it
     const LONG_MESSAGE_THRESHOLD = 10000;
     if (userMessage.length > LONG_MESSAGE_THRESHOLD) {
-      console.log('Long message detected, auto-saving as document...');
+      console.log(`Long message detected (${userMessage.length} chars), auto-saving as document...`);
+
+      // Show loading state while saving document
+      setIsLoading(true);
+
       autoSavedDocId = await autoSaveAsDocument(userMessage);
 
       if (autoSavedDocId) {
+        console.log('Document saved successfully:', autoSavedDocId);
         // Replace the long content with a reference to analyze it
-        userMessage = `Please analyze the content I just shared (it has been saved as a document). Summarize the key points and insights.`;
-        // Ensure documents are enabled for this query
+        userMessage = `Please analyze the document I just shared. It contains ${Math.round(originalMessage.length / 1000)}KB of content. Provide a comprehensive summary of the key points, main themes, and any actionable insights.`;
+        // Force documents to be enabled for this query
+        forceUseDocuments = true;
         if (!useDocuments) {
           setUseDocuments(true);
         }
+      } else {
+        // Auto-save failed - show error and stop
+        console.error('Failed to auto-save document');
+        setIsLoading(false);
+        toast.error('Could not save your content. Please try copying it to a new document manually.');
+        // Restore the input so user doesn't lose their content
+        setInput(originalMessage);
+        return;
       }
-      // If auto-save failed, continue with original message and let server handle it
     }
 
     // Create temporary message for optimistic UI update
@@ -325,7 +339,7 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
         body: {
           query: userMessage,
           conversationContext,
-          use_documents: useDocuments,
+          use_documents: forceUseDocuments,
         },
       });
 
