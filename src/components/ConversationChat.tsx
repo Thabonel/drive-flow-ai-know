@@ -201,15 +201,6 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
 
     const userMessage = input.trim();
 
-    // Client-side validation for message length
-    // Supabase edge functions have a ~1MB request body limit
-    // With conversation context, we need to be conservative
-    const MAX_MESSAGE_LENGTH = 50000; // ~50KB for single message
-    if (userMessage.length > MAX_MESSAGE_LENGTH) {
-      toast.error(`Your message is too long (${Math.round(userMessage.length / 1000)}KB). Maximum is ${MAX_MESSAGE_LENGTH / 1000}KB. Please shorten it.`);
-      return;
-    }
-
     // CRITICAL: Clear input IMMEDIATELY before any async operations
     // This makes the UI feel instant, just like Claude
     setInput('');
@@ -312,7 +303,7 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
           (error as any)?.status === 503;
 
         if (is413Error) {
-          toast.error('Your message is too long. Please shorten it and try again, or start a new conversation.');
+          toast.error('Message too large. Try saving long content as a document first, then ask questions about it.');
           return;
         } else if (is429Error) {
           toast.error(data?.response || 'Rate limit exceeded. Please wait a moment before trying again.');
