@@ -2,6 +2,27 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Claude Code Rules
+
+### Defaults
+- Prefer implementing changes over suggesting them.
+- Use tools only when clearly helpful.
+- Avoid over-engineering. Change only what is necessary.
+- Keep the repository clean. Remove temporary files.
+- Write general-purpose solutions. Do not hard-code for tests.
+
+### Code Safety
+- Always open and read relevant files before editing.
+- Never speculate about code you have not inspected.
+- Follow existing style and abstractions.
+
+### Execution
+- Use parallel tool calls when tasks are independent.
+- Run tools sequentially only when outputs are required.
+
+### UI Work
+- Avoid generic UI. Use intentional color, typography, and restrained animation.
+
 ## Project Overview
 
 AI Query Hub (formerly Knowledge Base App) is a React/TypeScript application that enables users to sync documents from Google Drive, create knowledge bases, and query them using AI. The app supports multiple AI providers (Claude Opus 4.5 primary, OpenRouter fallback, local Ollama) with centralized model configuration for easy updates. Includes an optional research-agent component for deep research capabilities.
