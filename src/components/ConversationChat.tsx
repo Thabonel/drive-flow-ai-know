@@ -201,6 +201,15 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
 
     const userMessage = input.trim();
 
+    // Client-side validation for message length
+    // Supabase edge functions have a ~1MB request body limit
+    // With conversation context, we need to be conservative
+    const MAX_MESSAGE_LENGTH = 50000; // ~50KB for single message
+    if (userMessage.length > MAX_MESSAGE_LENGTH) {
+      toast.error(`Your message is too long (${Math.round(userMessage.length / 1000)}KB). Maximum is ${MAX_MESSAGE_LENGTH / 1000}KB. Please shorten it.`);
+      return;
+    }
+
     // CRITICAL: Clear input IMMEDIATELY before any async operations
     // This makes the UI feel instant, just like Claude
     setInput('');
@@ -273,18 +282,42 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
       if (error) {
         console.error('AI query error:', error);
 
-        // Check for specific error types based on status code
+        // Check for specific error types
         const errorMessage = error.message || '';
-        const statusMatch = errorMessage.match(/FunctionsHttpError:\s*(\d+)/);
-        const statusCode = statusMatch ? parseInt(statusMatch[1]) : null;
+        const errorName = error.name || '';
 
-        if (statusCode === 413 || errorMessage.includes('too large') || data?.error === 'Query too long' || data?.error === 'Context too large') {
-          toast.error(data?.response || 'Your message or conversation is too long. Try starting a new conversation or shortening your message.');
+        // Check for 413 Payload Too Large - can come from Supabase gateway or edge function
+        // The error object may have a context with status, or error message might indicate payload issues
+        const is413Error =
+          errorMessage.includes('413') ||
+          errorMessage.includes('too large') ||
+          errorMessage.includes('Payload Too Large') ||
+          errorMessage.includes('Request Entity Too Large') ||
+          data?.error === 'Query too long' ||
+          data?.error === 'Context too large' ||
+          (error as any)?.status === 413 ||
+          (error as any)?.context?.status === 413;
+
+        const is429Error =
+          errorMessage.includes('429') ||
+          errorMessage.includes('rate limit') ||
+          data?.error === 'Rate limit exceeded' ||
+          data?.error === 'Provider rate limit' ||
+          (error as any)?.status === 429;
+
+        const is503Error =
+          errorMessage.includes('503') ||
+          errorMessage.includes('unavailable') ||
+          data?.error === 'Authentication error' ||
+          (error as any)?.status === 503;
+
+        if (is413Error) {
+          toast.error('Your message is too long. Please shorten it and try again, or start a new conversation.');
           return;
-        } else if (statusCode === 429 || errorMessage.includes('rate limit') || data?.error === 'Rate limit exceeded' || data?.error === 'Provider rate limit') {
+        } else if (is429Error) {
           toast.error(data?.response || 'Rate limit exceeded. Please wait a moment before trying again.');
           return;
-        } else if (statusCode === 503 || errorMessage.includes('unavailable') || data?.error === 'Authentication error') {
+        } else if (is503Error) {
           toast.error(data?.response || 'The AI service is temporarily unavailable. Please try again later.');
           return;
         }
