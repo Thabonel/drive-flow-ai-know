@@ -221,6 +221,7 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
           content: content,
           file_type: 'text',
           category: 'general',
+          google_file_id: `auto-${Date.now()}-${Math.random().toString(36).substring(7)}`,
         })
         .select('id')
         .single();
