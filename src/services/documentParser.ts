@@ -20,10 +20,10 @@ export class DocumentParserService {
     'application/xml': true,
     'text/xml': true,
     'text/csv': true,
-    
+
     // PDF
     'application/pdf': true,
-    
+
     // Microsoft Office
     'application/vnd.openxmlformats-officedocument.wordprocessingml.document': true, // .docx
     'application/msword': true, // .doc
@@ -31,19 +31,22 @@ export class DocumentParserService {
     'application/vnd.ms-excel': true, // .xls
     'application/vnd.openxmlformats-officedocument.presentationml.presentation': true, // .pptx
     'application/vnd.ms-powerpoint': true, // .ppt
-    
+
     // Other document formats
     'application/rtf': true,
     'application/vnd.oasis.opendocument.text': true, // .odt
     'application/vnd.oasis.opendocument.spreadsheet': true, // .ods
     'application/vnd.oasis.opendocument.presentation': true, // .odp
-    
+
+    // Screenwriting formats
+    'application/x-final-draft': true, // .fdx (Final Draft)
+
     // Audio formats (for transcription)
     'audio/mpeg': true, // .mp3
     'audio/wav': true,
     'audio/m4a': true,
     'audio/ogg': true,
-    
+
     // Images (for OCR)
     'image/jpeg': true,
     'image/png': true,
@@ -61,6 +64,7 @@ export class DocumentParserService {
       '.pdf',
       '.docx', '.doc', '.xlsx', '.xls', '.pptx', '.ppt',
       '.rtf', '.odt', '.ods', '.odp',
+      '.fdx', // Final Draft screenwriting
       '.mp3', '.wav', '.m4a', '.ogg',
       '.jpg', '.jpeg', '.png', '.webp', '.tiff'
     ];
@@ -68,6 +72,11 @@ export class DocumentParserService {
 
   static async parseDocument(file: File): Promise<ParsedDocument> {
     try {
+      // Handle Final Draft FDX files (XML-based screenwriting format) via edge function
+      if (file.name.toLowerCase().endsWith('.fdx')) {
+        return this.parseBinaryDocument(file);
+      }
+
       // Handle text files directly
       if (file.type.startsWith('text/') || file.name.endsWith('.md') || file.name.endsWith('.txt')) {
         return this.parseTextFile(file);
@@ -194,6 +203,7 @@ export class DocumentParserService {
       'application/vnd.openxmlformats-officedocument.presentationml.presentation': 'pptx',
       'application/vnd.ms-powerpoint': 'ppt',
       'application/rtf': 'rtf',
+      'application/x-final-draft': 'fdx',
       'audio/mpeg': 'mp3',
       'audio/wav': 'wav',
       'image/jpeg': 'jpg',
