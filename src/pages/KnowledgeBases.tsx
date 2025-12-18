@@ -307,13 +307,15 @@ const KnowledgeBases = () => {
             </div>
             <PageHelp
               title="Knowledge Bases Help"
-              description="Knowledge Bases are AI-generated collections of synthesized information from your documents. The AI analyzes your documents and creates comprehensive, searchable knowledge bases organized by topic or purpose."
+              description="Knowledge Bases are AI-generated collections of synthesized information from your documents. The AI analyzes your source documents and creates comprehensive, searchable knowledge organized by topic or purpose."
               tips={[
-                "Create knowledge bases to organize documents by topic",
-                "AI automatically synthesizes and summarizes content",
-                "Use different types: General, Prompts, Marketing, Specs",
-                "Query specific knowledge bases for more focused results",
-                "View analytics to see usage and performance metrics"
+                "Create knowledge bases to group related documents together",
+                "Choose types: General, Prompts, Marketing, or Specifications",
+                "Click 'Regenerate' to update AI-generated content from source documents",
+                "View details to see source document count and AI-generated content",
+                "Use the AI Assistant to query specific knowledge bases",
+                "Load demo data to see how knowledge bases work",
+                "Edit title, description, and type from the details view"
               ]}
             />
           </div>

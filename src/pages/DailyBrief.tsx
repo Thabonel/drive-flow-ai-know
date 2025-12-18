@@ -13,13 +13,13 @@ export default function DailyBrief() {
         </div>
         <PageHelp
           title="Daily Brief Help"
-          description="Your AI-powered daily brief summarizes your schedule, priorities, and important information to help you start your day informed and prepared."
+          description="Your AI-powered daily brief summarizes your schedule, priorities, and key information to help you start each day prepared and focused."
           tips={[
-            "Automatically generated each morning based on your timeline and tasks",
-            "Reviews your calendar events and scheduled items",
-            "Highlights top priorities and upcoming deadlines",
-            "Suggests time allocation and focus areas",
-            "Enable email delivery to receive briefs in your inbox"
+            "Auto-generates based on your timeline items and scheduled tasks",
+            "Reviews upcoming calendar events and deadlines",
+            "Highlights your top priorities for the day",
+            "Provides time allocation suggestions and focus areas",
+            "Regenerate anytime to get updated information"
           ]}
         />
       </div>
