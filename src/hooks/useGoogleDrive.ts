@@ -184,64 +184,22 @@ export const useGoogleDrive = () => {
         description: 'You will be redirected to sign in with Google...',
       });
 
-      // If user is already logged in, use linkIdentity to add Google provider
-      // Otherwise use signInWithOAuth
-      const { data: { session } } = await supabase.auth.getSession();
-
-      if (session?.user) {
-        console.log('User already logged in, using linkIdentity');
-        const { error } = await supabase.auth.linkIdentity({
-          provider: 'google',
-          options: {
-            scopes: 'https://www.googleapis.com/auth/drive.readonly',
-            queryParams: {
-              access_type: 'offline',
-              prompt: 'consent',
-            },
-            redirectTo: `${window.location.origin}/settings`,
+      // Use signInWithOAuth - works for both new and existing users
+      console.log('Starting Google OAuth flow...');
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          scopes: 'https://www.googleapis.com/auth/drive.readonly',
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
           },
-        });
+          redirectTo: `${window.location.origin}/settings`,
+        },
+      });
 
-        if (error) {
-          console.error('Link identity error:', error);
-          // If linking fails (e.g., identity already linked), try signInWithOAuth
-          if (error.message.includes('already linked') || error.message.includes('Identity is already linked')) {
-            console.log('Identity already linked, trying signInWithOAuth');
-            const { error: oauthError } = await supabase.auth.signInWithOAuth({
-              provider: 'google',
-              options: {
-                scopes: 'https://www.googleapis.com/auth/drive.readonly',
-                queryParams: {
-                  access_type: 'offline',
-                  prompt: 'consent',
-                },
-                redirectTo: `${window.location.origin}/settings`,
-              },
-            });
-            if (oauthError) {
-              throw oauthError;
-            }
-          } else {
-            throw error;
-          }
-        }
-      } else {
-        console.log('No existing session, using signInWithOAuth');
-        const { error } = await supabase.auth.signInWithOAuth({
-          provider: 'google',
-          options: {
-            scopes: 'https://www.googleapis.com/auth/drive.readonly',
-            queryParams: {
-              access_type: 'offline',
-              prompt: 'consent',
-            },
-            redirectTo: `${window.location.origin}/settings`,
-          },
-        });
-
-        if (error) {
-          throw error;
-        }
+      if (error) {
+        throw error;
       }
       // Note: OAuth redirects, so isSigningIn will reset on page load
     } catch (error) {
