@@ -236,6 +236,13 @@ const DragDropUpload = ({ onFilesAdded }: DragDropUploadProps) => {
         const content = data?.content || '';
         const fileType = fileName.split('.').pop() || 'binary';
 
+        // Check for parsing errors hidden in metadata
+        const actualError = data?.metadata?.parseError;
+        if (actualError) {
+          console.error('Document parsing error:', actualError);
+          throw new Error(`Document parsing failed: ${actualError}`);
+        }
+
         // Save to database with extracted content
         await saveDocument(file.name, content, fileType, uploadingFile.id, mimeType);
 
