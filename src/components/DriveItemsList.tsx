@@ -53,24 +53,24 @@ const DriveItemsList = ({ items, isLoading, onConfirmSelection }: DriveItemsList
   return (
     <div className="space-y-4">
       <div className="flex gap-2">
-        <Button 
-          variant="outline" 
-          size="sm" 
+        <Button
+          variant="outline"
+          size="sm"
           onClick={handleSelectAll}
           disabled={items.length === 0}
         >
           Select All
         </Button>
-        <Button 
-          variant="outline" 
-          size="sm" 
+        <Button
+          variant="outline"
+          size="sm"
           onClick={handleDeselectAll}
           disabled={selectedItems.size === 0}
         >
           Deselect All
         </Button>
       </div>
-      
+
       <ScrollArea className="h-96 w-full border rounded-md p-4">
         <div className="space-y-2">
           {items.map((item) => (
@@ -81,7 +81,7 @@ const DriveItemsList = ({ items, isLoading, onConfirmSelection }: DriveItemsList
             >
               <Checkbox
                 checked={selectedItems.has(item.id)}
-                onChange={() => toggleItemSelection(item.id)}
+                onCheckedChange={() => toggleItemSelection(item.id)}
               />
               {isFolderType(item.mimeType) ? (
                 <FolderOpen className="h-4 w-4 text-primary" />
@@ -96,7 +96,7 @@ const DriveItemsList = ({ items, isLoading, onConfirmSelection }: DriveItemsList
           ))}
         </div>
       </ScrollArea>
-      
+
       {selectedItems.size > 0 && (
         <div className="flex justify-between items-center pt-4 border-t">
           <span className="text-sm text-muted-foreground">

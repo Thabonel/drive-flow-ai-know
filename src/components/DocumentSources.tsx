@@ -1,17 +1,12 @@
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { 
-  Cloud, 
-  FolderOpen, 
-  Upload, 
-  HardDrive, 
+import {
+  Cloud,
+  Upload,
+  HardDrive,
   Wifi,
-  Apple,
-  Database,
-  FileText,
   Plus,
   ChevronRight
 } from 'lucide-react';
@@ -77,8 +72,8 @@ const DocumentSources = ({ onDocumentsAdded }: DocumentSourcesProps) => {
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-4">
             {sources.map((source) => (
-              <TabsTrigger 
-                key={source.id} 
+              <TabsTrigger
+                key={source.id}
                 value={source.id}
                 className="flex flex-col gap-1 p-3 h-auto"
               >
@@ -117,7 +112,7 @@ const DocumentSources = ({ onDocumentsAdded }: DocumentSourcesProps) => {
 
           <TabsContent value="google" className="space-y-4">
             <div className="space-y-4">
-              <GoogleDrivePicker 
+              <GoogleDrivePicker
                 onItemsSelected={(items) => {
                   // Convert Google Drive items to documents format
                   const documents = items.map(item => ({
@@ -127,7 +122,7 @@ const DocumentSources = ({ onDocumentsAdded }: DocumentSourcesProps) => {
                     type: 'folder'
                   }));
                   onDocumentsAdded(documents);
-                }} 
+                }}
               />
               <div className="p-4 bg-muted/50 rounded-lg">
                 <div className="flex items-start gap-3">
@@ -135,7 +130,7 @@ const DocumentSources = ({ onDocumentsAdded }: DocumentSourcesProps) => {
                   <div className="text-sm">
                     <p className="font-medium mb-1">Google Drive Integration</p>
                     <p className="text-muted-foreground">
-                      Automatically syncs changes from your Google Drive folders. 
+                      Automatically syncs changes from your Google Drive folders.
                       Supports Google Docs, Sheets, PDFs, and text files.
                     </p>
                   </div>

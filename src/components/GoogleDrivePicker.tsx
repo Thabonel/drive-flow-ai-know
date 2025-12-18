@@ -13,7 +13,7 @@ interface GoogleDrivePickerProps {
 
 const GoogleDrivePicker = ({ onItemsSelected }: GoogleDrivePickerProps) => {
   const [isOpen, setIsOpen] = useState(false);
-  const { isAuthenticated, driveItems, isLoading, isSigningIn, initializeGoogleDrive, signIn } = useGoogleDrive();
+  const { isAuthenticated, driveItems, isLoading, initializeGoogleDrive, signIn, loadDriveItems } = useGoogleDrive();
 
   const handleConfirmSelection = (selectedItems: DriveItem[]) => {
     const formattedItems: SelectedDriveItem[] = selectedItems.map(item => ({
@@ -21,22 +21,26 @@ const GoogleDrivePicker = ({ onItemsSelected }: GoogleDrivePickerProps) => {
       folder_name: item.name,
       folder_path: null
     }));
-    
+
     onItemsSelected(formattedItems);
     setIsOpen(false);
+  };
+
+  const handleOpen = async () => {
+    setIsOpen(true);
+    if (!isAuthenticated) {
+      await initializeGoogleDrive();
+    } else {
+      await loadDriveItems();
+    }
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button 
-          variant="outline" 
-          onClick={() => {
-            setIsOpen(true);
-            if (!isAuthenticated) {
-              initializeGoogleDrive();
-            }
-          }}
+        <Button
+          variant="outline"
+          onClick={handleOpen}
         >
           <Cloud className="h-4 w-4 mr-2" />
           Browse Google Drive
@@ -49,9 +53,9 @@ const GoogleDrivePicker = ({ onItemsSelected }: GoogleDrivePickerProps) => {
             Choose files and folders from your Google Drive to sync
           </DialogDescription>
         </DialogHeader>
-        
+
         {!isAuthenticated ? (
-          <GoogleAuthCard onSignIn={signIn} isLoading={isSigningIn} />
+          <GoogleAuthCard onSignIn={signIn} />
         ) : (
           <DriveItemsList
             items={driveItems}

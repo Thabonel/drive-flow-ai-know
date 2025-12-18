@@ -2,27 +2,22 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import { 
-  FolderOpen, 
-  FileText, 
-  AlertCircle, 
+import {
+  FolderOpen,
+  FileText,
+  AlertCircle,
   Check,
   HardDrive,
-  Info,
-  FileImage,
-  FileAudio,
-  Presentation,
-  Sheet
+  Info
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { DocumentParserService } from '@/services/documentParser';
 
 interface LocalFilesPickerProps {
   onFilesAdded: (files: File[]) => void;
 }
 
 const LocalFilesPicker = ({ onFilesAdded }: LocalFilesPickerProps) => {
-  const [isSupported, setIsSupported] = useState(
+  const [isSupported] = useState(
     'showDirectoryPicker' in window || 'webkitdirectory' in document.createElement('input')
   );
   const [isLoading, setIsLoading] = useState(false);
@@ -45,36 +40,29 @@ const LocalFilesPicker = ({ onFilesAdded }: LocalFilesPickerProps) => {
         const dirHandle = await (window as any).showDirectoryPicker({
           mode: 'read'
         });
-        
+
         const files = await getAllFilesFromDirectory(dirHandle);
-        const fileList = await Promise.all(files.map(async (fileHandle) => {
+        const fileList = await Promise.all(files.map(async (fileHandle: any) => {
           return await fileHandle.getFile();
         }));
-        
-        const textFiles = fileList.filter(file => 
-          DocumentParserService.isSupported(file.type) ||
-          file.type.startsWith('text/') || 
+
+        const textFiles = fileList.filter((file: File) =>
+          file.type.startsWith('text/') ||
           file.name.endsWith('.md') ||
           file.name.endsWith('.txt') ||
           file.name.endsWith('.pdf') ||
-          file.name.endsWith('.docx') ||
-          file.name.endsWith('.xlsx') ||
-          file.name.endsWith('.pptx') ||
-          file.name.endsWith('.mp3') ||
-          file.name.endsWith('.wav') ||
-          file.name.endsWith('.jpg') ||
-          file.name.endsWith('.png')
+          file.name.endsWith('.docx')
         );
-        
+
         if (textFiles.length === 0) {
           toast({
             title: 'No Compatible Files',
-            description: 'No supported files found in the selected folder. Supported formats: PDF, Word, Excel, PowerPoint, audio, images, and text files.',
+            description: 'No text files, PDFs, or documents found in the selected folder.',
             variant: 'destructive',
           });
           return;
         }
-        
+
         onFilesAdded(textFiles);
         toast({
           title: 'Folder Added',
@@ -100,41 +88,34 @@ const LocalFilesPicker = ({ onFilesAdded }: LocalFilesPickerProps) => {
   const triggerLegacyFolderPicker = () => {
     const input = document.createElement('input');
     input.type = 'file';
-    input.webkitdirectory = true;
+    (input as any).webkitdirectory = true;
     input.multiple = true;
-    
+
     input.onchange = (e) => {
       const files = Array.from((e.target as HTMLInputElement).files || []);
-      const supportedFiles = files.filter(file => 
-        DocumentParserService.isSupported(file.type) ||
-        file.type.startsWith('text/') || 
+      const textFiles = files.filter(file =>
+        file.type.startsWith('text/') ||
         file.name.endsWith('.md') ||
         file.name.endsWith('.txt') ||
         file.name.endsWith('.pdf') ||
-        file.name.endsWith('.docx') ||
-        file.name.endsWith('.xlsx') ||
-        file.name.endsWith('.pptx') ||
-        file.name.endsWith('.mp3') ||
-        file.name.endsWith('.wav') ||
-        file.name.endsWith('.jpg') ||
-        file.name.endsWith('.png')
+        file.name.endsWith('.docx')
       );
-      
-      if (supportedFiles.length > 0) {
-        onFilesAdded(supportedFiles);
+
+      if (textFiles.length > 0) {
+        onFilesAdded(textFiles);
         toast({
           title: 'Folder Added',
-          description: `${supportedFiles.length} compatible file(s) found and added.`,
+          description: `${textFiles.length} compatible file(s) found and added.`,
         });
       } else {
         toast({
           title: 'No Compatible Files',
-          description: 'No supported files found in the selected folder. Supported formats: PDF, Word, Excel, PowerPoint, audio, images, and text files.',
+          description: 'No text files, PDFs, or documents found in the selected folder.',
           variant: 'destructive',
         });
       }
     };
-    
+
     input.click();
   };
 
@@ -142,8 +123,8 @@ const LocalFilesPicker = ({ onFilesAdded }: LocalFilesPickerProps) => {
     const input = document.createElement('input');
     input.type = 'file';
     input.multiple = true;
-    input.accept = DocumentParserService.getSupportedExtensions().join(',');
-    
+    input.accept = '.txt,.md,.pdf,.docx,.doc,.rtf,text/*';
+
     input.onchange = (e) => {
       const files = Array.from((e.target as HTMLInputElement).files || []);
       if (files.length > 0) {
@@ -154,7 +135,7 @@ const LocalFilesPicker = ({ onFilesAdded }: LocalFilesPickerProps) => {
         });
       }
     };
-    
+
     input.click();
   };
 
@@ -181,7 +162,7 @@ const LocalFilesPicker = ({ onFilesAdded }: LocalFilesPickerProps) => {
             Your browser doesn't support advanced folder access. You can still upload individual files.
           </AlertDescription>
         </Alert>
-        
+
         <Button onClick={handleSingleFiles} className="w-full">
           <FileText className="h-4 w-4 mr-2" />
           Select Individual Files
@@ -195,13 +176,13 @@ const LocalFilesPicker = ({ onFilesAdded }: LocalFilesPickerProps) => {
       <Alert>
         <Info className="h-4 w-4" />
         <AlertDescription>
-          Access folders directly from your computer. Works with PDFs, Word documents, Excel spreadsheets, PowerPoint presentations, audio files, images, and text files.
+          Access folders directly from your computer. Works with documents, text files, PDFs, and more.
         </AlertDescription>
       </Alert>
-      
+
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <Button 
-          onClick={handleFolderPicker} 
+        <Button
+          onClick={handleFolderPicker}
           disabled={isLoading}
           variant="outline"
           className="h-auto p-4 flex flex-col items-start gap-2"
@@ -220,8 +201,8 @@ const LocalFilesPicker = ({ onFilesAdded }: LocalFilesPickerProps) => {
             </Badge>
           )}
         </Button>
-        
-        <Button 
+
+        <Button
           onClick={handleSingleFiles}
           variant="outline"
           className="h-auto p-4 flex flex-col items-start gap-2"
@@ -239,9 +220,9 @@ const LocalFilesPicker = ({ onFilesAdded }: LocalFilesPickerProps) => {
           </Badge>
         </Button>
       </div>
-      
+
       <div className="text-xs text-muted-foreground space-y-1">
-        <p><strong>Supported formats:</strong> PDF, Word (DOCX/DOC), Excel (XLSX/XLS), PowerPoint (PPTX/PPT), Audio (MP3/WAV), Images (JPG/PNG), Text (TXT/MD), RTF</p>
+        <p><strong>Supported formats:</strong> TXT, MD, PDF, DOCX, DOC, RTF</p>
         <p><strong>Note:</strong> Files remain on your device until you choose to upload them</p>
       </div>
     </div>

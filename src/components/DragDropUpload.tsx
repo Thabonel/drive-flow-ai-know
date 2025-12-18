@@ -2,22 +2,17 @@ import { useState, useRef, DragEvent } from 'react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { 
-  Upload, 
-  FileText, 
-  X, 
+import {
+  Upload,
+  FileText,
+  X,
   Check,
   AlertCircle,
-  File,
-  FileImage,
-  FileAudio,
-  Presentation,
-  Sheet
+  File
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { DocumentParserService } from '@/services/documentParser';
 
 interface DragDropUploadProps {
   onFilesAdded: (files: File[]) => void;
@@ -37,18 +32,11 @@ const DragDropUpload = ({ onFilesAdded }: DragDropUploadProps) => {
   const { toast } = useToast();
   const { user } = useAuth();
 
-  const acceptedTypes = DocumentParserService.getSupportedExtensions().concat([
-    'text/*', 
-    'application/pdf', 
-    'application/msword',
-    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    'application/vnd.ms-excel',
-    'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-    'application/vnd.ms-powerpoint',
-    'audio/*',
-    'image/*'
-  ]);
+  const acceptedTypes = [
+    '.txt', '.md', '.pdf', '.docx', '.doc', '.rtf',
+    'text/*', 'application/pdf', 'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+  ];
 
   const handleDragOver = (e: DragEvent) => {
     e.preventDefault();
@@ -63,7 +51,7 @@ const DragDropUpload = ({ onFilesAdded }: DragDropUploadProps) => {
   const handleDrop = (e: DragEvent) => {
     e.preventDefault();
     setIsDragOver(false);
-    
+
     const files = Array.from(e.dataTransfer.files);
     handleFiles(files);
   };
@@ -88,24 +76,23 @@ const DragDropUpload = ({ onFilesAdded }: DragDropUploadProps) => {
     }
 
     const validFiles = files.filter(file => {
-      const isValidType = DocumentParserService.isSupported(file.type) || 
-        acceptedTypes.some(type => {
-          if (type.startsWith('.')) {
-            return file.name.toLowerCase().endsWith(type);
-          }
-          return file.type.startsWith(type.split('/*')[0]);
-        });
-      
+      const isValidType = acceptedTypes.some(type => {
+        if (type.startsWith('.')) {
+          return file.name.toLowerCase().endsWith(type);
+        }
+        return file.type.startsWith(type.split('/*')[0]);
+      });
+
       const isValidSize = file.size <= 20 * 1024 * 1024; // 20MB limit
-      
+
       if (!isValidType) {
         toast({
           title: 'Invalid File Type',
-          description: `${file.name} is not supported. Supported formats: PDF, Word, Excel, PowerPoint, audio, images, and text files.`,
+          description: `${file.name} is not a supported file type.`,
           variant: 'destructive',
         });
       }
-      
+
       if (!isValidSize) {
         toast({
           title: 'File Too Large',
@@ -113,31 +100,31 @@ const DragDropUpload = ({ onFilesAdded }: DragDropUploadProps) => {
           variant: 'destructive',
         });
       }
-      
+
       return isValidType && isValidSize;
     });
 
     if (validFiles.length === 0) return;
 
     // Initialize uploading files
-    const uploadingFiles: UploadingFile[] = validFiles.map(file => ({
+    const newUploadingFiles: UploadingFile[] = validFiles.map(file => ({
       file,
       progress: 0,
       status: 'uploading',
       id: Math.random().toString(36).substr(2, 9)
     }));
 
-    setUploadingFiles(uploadingFiles);
+    setUploadingFiles(newUploadingFiles);
 
     // Process files
-    for (const uploadingFile of uploadingFiles) {
+    for (const uploadingFile of newUploadingFiles) {
       try {
         await processFile(uploadingFile);
       } catch (error) {
         console.error('File processing error:', error);
-        setUploadingFiles(prev => 
-          prev.map(f => 
-            f.id === uploadingFile.id 
+        setUploadingFiles(prev =>
+          prev.map(f =>
+            f.id === uploadingFile.id
               ? { ...f, status: 'error', progress: 0 }
               : f
           )
@@ -150,52 +137,49 @@ const DragDropUpload = ({ onFilesAdded }: DragDropUploadProps) => {
 
   const processFile = async (uploadingFile: UploadingFile) => {
     const { file } = uploadingFile;
-    
-    try {
-      // Update progress to show parsing started
-      setUploadingFiles(prev => 
-        prev.map(f => 
-          f.id === uploadingFile.id 
-            ? { ...f, progress: 10 }
-            : f
-        )
-      );
 
-      // Parse document using comprehensive parser
-      const parsedDocument = await DocumentParserService.parseDocument(file);
-      
-      // Update progress to show parsing completed
-      setUploadingFiles(prev => 
-        prev.map(f => 
-          f.id === uploadingFile.id 
-            ? { ...f, progress: 80 }
-            : f
-        )
-      );
+    // Simulate upload progress for text files (direct processing)
+    if (file.type.startsWith('text/') || file.name.endsWith('.md') || file.name.endsWith('.txt')) {
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        const content = e.target?.result as string;
 
-      // Save to database with parsed content and metadata
-      await saveDocument(
-        parsedDocument.metadata.title || file.name, 
-        parsedDocument.content, 
-        parsedDocument.metadata.fileType,
-        uploadingFile.id,
-        parsedDocument.metadata
-      );
+        // Update progress
+        setUploadingFiles(prev =>
+          prev.map(f =>
+            f.id === uploadingFile.id
+              ? { ...f, progress: 50 }
+              : f
+          )
+        );
 
-    } catch (error) {
-      console.error('Document processing error:', error);
-      
-      // Fallback: save basic file info
-      await saveDocument(
-        file.name, 
-        `File processing failed: ${error instanceof Error ? error.message : 'Unknown error'}`, 
-        'error',
-        uploadingFile.id
-      );
+        // Save to database
+        await saveDocument(file.name, content, 'text', uploadingFile.id);
+      };
+      reader.readAsText(file);
+    } else {
+      // For binary files, we'd typically upload to storage first
+      // For now, we'll simulate processing
+      const formData = new FormData();
+      formData.append('file', file);
+
+      // Simulate progress
+      for (let progress = 0; progress <= 100; progress += 20) {
+        setUploadingFiles(prev =>
+          prev.map(f =>
+            f.id === uploadingFile.id
+              ? { ...f, progress }
+              : f
+          )
+        );
+        await new Promise(resolve => setTimeout(resolve, 200));
+      }
+
+      await saveDocument(file.name, '', 'binary', uploadingFile.id);
     }
   };
 
-  const saveDocument = async (title: string, content: string, type: string, uploadId: string, metadata?: any) => {
+  const saveDocument = async (title: string, content: string, type: string, uploadId: string) => {
     try {
       const { data, error } = await supabase
         .from('knowledge_documents')
@@ -204,25 +188,19 @@ const DragDropUpload = ({ onFilesAdded }: DragDropUploadProps) => {
           content,
           user_id: user!.id,
           google_file_id: `upload_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, // Generate unique ID for uploads
-          category: metadata?.type || 'general',
+          category: 'general',
           file_type: type,
           file_size: content.length,
-          mime_type: metadata?.mimeType || (type === 'text' ? 'text/plain' : 'application/octet-stream'),
-          ai_insights: metadata ? { 
-            pageCount: metadata.pageCount,
-            hasImages: metadata.hasImages,
-            extractedImages: metadata.extractedImages,
-            parsedMetadata: metadata
-          } : null
+          mime_type: type === 'text' ? 'text/plain' : 'application/octet-stream'
         })
         .select()
         .single();
 
       if (error) throw error;
 
-      setUploadingFiles(prev => 
-        prev.map(f => 
-          f.id === uploadId 
+      setUploadingFiles(prev =>
+        prev.map(f =>
+          f.id === uploadId
             ? { ...f, status: 'success', progress: 100 }
             : f
         )
@@ -242,9 +220,9 @@ const DragDropUpload = ({ onFilesAdded }: DragDropUploadProps) => {
 
     } catch (error) {
       console.error('Save document error:', error);
-      setUploadingFiles(prev => 
-        prev.map(f => 
-          f.id === uploadId 
+      setUploadingFiles(prev =>
+        prev.map(f =>
+          f.id === uploadId
             ? { ...f, status: 'error', progress: 0 }
             : f
         )
@@ -260,24 +238,6 @@ const DragDropUpload = ({ onFilesAdded }: DragDropUploadProps) => {
     if (file.type.startsWith('text/') || file.name.endsWith('.md') || file.name.endsWith('.txt')) {
       return FileText;
     }
-    if (file.type === 'application/pdf' || file.name.endsWith('.pdf')) {
-      return FileText;
-    }
-    if (file.type.includes('word') || file.name.endsWith('.docx') || file.name.endsWith('.doc')) {
-      return FileText;
-    }
-    if (file.type.includes('sheet') || file.type.includes('excel') || file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
-      return Sheet;
-    }
-    if (file.type.includes('presentation') || file.type.includes('powerpoint') || file.name.endsWith('.pptx') || file.name.endsWith('.ppt')) {
-      return Presentation;
-    }
-    if (file.type.startsWith('audio/')) {
-      return FileAudio;
-    }
-    if (file.type.startsWith('image/')) {
-      return FileImage;
-    }
     return File;
   };
 
@@ -286,8 +246,8 @@ const DragDropUpload = ({ onFilesAdded }: DragDropUploadProps) => {
       <div
         className={`
           border-2 border-dashed rounded-lg p-8 text-center transition-colors cursor-pointer
-          ${isDragOver 
-            ? 'border-primary bg-primary/5' 
+          ${isDragOver
+            ? 'border-primary bg-primary/5'
             : 'border-muted-foreground/25 hover:border-primary/50'
           }
         `}
@@ -307,15 +267,15 @@ const DragDropUpload = ({ onFilesAdded }: DragDropUploadProps) => {
           <Upload className="h-4 w-4 mr-2" />
           Choose Files
         </Button>
-        
+
         <div className="mt-4 flex flex-wrap justify-center gap-2">
-          {['PDF', 'DOCX', 'XLSX', 'PPTX', 'TXT', 'MD', 'MP3', 'PNG'].map((type) => (
+          {acceptedTypes.slice(0, 6).map((type) => (
             <Badge key={type} variant="secondary" className="text-xs">
-              {type}
+              {type.startsWith('.') ? type.toUpperCase() : type.split('/')[1]?.toUpperCase()}
             </Badge>
           ))}
         </div>
-        
+
         <p className="text-xs text-muted-foreground mt-2">
           Maximum file size: 20MB per file
         </p>
