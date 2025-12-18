@@ -1,4 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
+import { arrayBufferToBase64 } from '@/lib/base64Utils';
 
 export interface ParsedDocument {
   content: string;
@@ -152,9 +153,9 @@ export class DocumentParserService {
     // Create a temporary blob URL for the file
     const arrayBuffer = await file.arrayBuffer();
     const uint8Array = new Uint8Array(arrayBuffer);
-    
+
     // Convert to base64 for API call
-    const base64 = btoa(String.fromCharCode(...uint8Array));
+    const base64 = arrayBufferToBase64(uint8Array);
     
     try {
       // Use the document parsing edge function

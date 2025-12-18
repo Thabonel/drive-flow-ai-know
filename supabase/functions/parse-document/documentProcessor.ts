@@ -1,3 +1,5 @@
+import { arrayBufferToBase64 } from '../_shared/base64Utils.ts';
+
 interface ParseResult {
   content: string;
   title?: string;
@@ -303,7 +305,7 @@ async function parsePDF(filePath: string, fileName: string): Promise<ParseResult
     const fileBytes = await Deno.readFile(filePath);
 
     // Convert to base64
-    const base64 = btoa(String.fromCharCode(...fileBytes));
+    const base64 = arrayBufferToBase64(fileBytes);
 
     const apiKey = Deno.env.get('ANTHROPIC_API_KEY');
     if (!apiKey) {
@@ -376,7 +378,7 @@ async function parseWord(filePath: string, fileName: string): Promise<ParseResul
     // For DOCX files, we can use Claude Vision as well
     console.log('Parsing Word document using Claude Vision...');
     const fileBytes = await Deno.readFile(filePath);
-    const base64 = btoa(String.fromCharCode(...fileBytes));
+    const base64 = arrayBufferToBase64(fileBytes);
 
     const apiKey = Deno.env.get('ANTHROPIC_API_KEY');
     if (!apiKey) {
