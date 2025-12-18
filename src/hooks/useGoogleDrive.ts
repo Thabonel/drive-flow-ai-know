@@ -174,7 +174,7 @@ export const useGoogleDrive = () => {
     return null;
   }, [user]);
 
-  // Sign in with Google using Supabase OAuth (proven approach)
+  // Sign in with Google using Supabase OAuth
   const signIn = useCallback(async () => {
     setIsSigningIn(true);
 
@@ -184,22 +184,56 @@ export const useGoogleDrive = () => {
         description: 'You will be redirected to sign in with Google...',
       });
 
-      // Use signInWithOAuth - works for both new and existing users
-      console.log('Starting Google OAuth flow...');
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          scopes: 'https://www.googleapis.com/auth/drive.readonly',
-          queryParams: {
-            access_type: 'offline',
-            prompt: 'consent',
-          },
-          redirectTo: `${window.location.origin}/settings`,
-        },
-      });
+      // Check if user is already logged in
+      const { data: { session: currentSession } } = await supabase.auth.getSession();
 
-      if (error) {
-        throw error;
+      if (currentSession?.user) {
+        // User is logged in - try to link Google identity (preserves session)
+        console.log('User logged in, attempting to link Google identity...');
+        const { error: linkError } = await supabase.auth.linkIdentity({
+          provider: 'google',
+          options: {
+            scopes: 'https://www.googleapis.com/auth/drive.readonly',
+            queryParams: {
+              access_type: 'offline',
+              prompt: 'consent',
+            },
+            redirectTo: `${window.location.origin}/settings`,
+          },
+        });
+
+        if (linkError) {
+          // If linking is disabled or fails, inform user
+          if (linkError.message.includes('Manual linking is disabled')) {
+            console.log('Manual linking disabled, need to enable in Supabase dashboard');
+            toast({
+              title: 'Configuration Required',
+              description: 'Please enable "Manual linking" in Supabase Authentication settings, then try again.',
+              variant: 'destructive',
+            });
+            setIsSigningIn(false);
+            return;
+          }
+          throw linkError;
+        }
+      } else {
+        // No user logged in - use signInWithOAuth
+        console.log('No user session, using signInWithOAuth...');
+        const { error } = await supabase.auth.signInWithOAuth({
+          provider: 'google',
+          options: {
+            scopes: 'https://www.googleapis.com/auth/drive.readonly',
+            queryParams: {
+              access_type: 'offline',
+              prompt: 'consent',
+            },
+            redirectTo: `${window.location.origin}/settings`,
+          },
+        });
+
+        if (error) {
+          throw error;
+        }
       }
       // Note: OAuth redirects, so isSigningIn will reset on page load
     } catch (error) {
