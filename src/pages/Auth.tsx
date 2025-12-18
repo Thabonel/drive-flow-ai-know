@@ -16,10 +16,13 @@ const Auth = () => {
   const [showSignInPassword, setShowSignInPassword] = useState(false);
   const [showSignUpPassword, setShowSignUpPassword] = useState(false);
   const [signUpPassword, setSignUpPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [validationErrors, setValidationErrors] = useState<{
     email?: string;
     password?: string[];
     fullName?: string;
+    confirmPassword?: string;
   }>({});
 
   const handleSignIn = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -60,6 +63,11 @@ const Auth = () => {
 
     if (!nameValidation.isValid) {
       errors.fullName = nameValidation.error;
+    }
+
+    // Check if passwords match
+    if (password !== confirmPassword) {
+      errors.confirmPassword = 'Passwords do not match';
     }
 
     // If there are validation errors, show them and don't submit
@@ -252,6 +260,41 @@ const Auth = () => {
                           </ul>
                         </AlertDescription>
                       </Alert>
+                    )}
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="signup-confirm-password">Confirm Password</Label>
+                    <div className="relative">
+                      <Input
+                        id="signup-confirm-password"
+                        name="confirmPassword"
+                        type={showConfirmPassword ? "text" : "password"}
+                        placeholder="Confirm your password"
+                        required
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        className={`pr-10 ${validationErrors.confirmPassword ? 'border-red-500' : ''}`}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        {showConfirmPassword ? (
+                          <EyeOff className="h-4 w-4" />
+                        ) : (
+                          <Eye className="h-4 w-4" />
+                        )}
+                      </button>
+                    </div>
+                    {validationErrors.confirmPassword && (
+                      <p className="text-sm text-red-500">{validationErrors.confirmPassword}</p>
+                    )}
+                    {/* Show match indicator when both fields have values */}
+                    {signUpPassword && confirmPassword && !validationErrors.confirmPassword && (
+                      <p className={`text-sm ${signUpPassword === confirmPassword ? 'text-green-600' : 'text-red-500'}`}>
+                        {signUpPassword === confirmPassword ? '✓ Passwords match' : '✗ Passwords do not match'}
+                      </p>
                     )}
                   </div>
                   <Button type="submit" className="w-full" disabled={isLoading}>
