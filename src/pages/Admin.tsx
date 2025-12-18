@@ -14,7 +14,8 @@ import {
   Shield, Send, MessageSquare, Clock, CheckCircle, Users, UserPlus,
   BarChart3, Activity, Database, FileText, Brain, Settings,
   TrendingUp, AlertTriangle, Eye, Globe, AlertCircle, Ticket, Trash2,
-  RefreshCw, Crown, UserCheck, UserX, Mail
+  RefreshCw, Crown, UserCheck, UserX, Mail, Megaphone, History,
+  Zap, Wrench, AlertOctagon, CheckCircle2
 } from 'lucide-react';
 import {
   Table,
@@ -114,6 +115,26 @@ export default function Admin() {
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [deletingUser, setDeletingUser] = useState<string | null>(null);
   const [updatingSubscription, setUpdatingSubscription] = useState<string | null>(null);
+
+  // Email management state
+  const [emailConfig, setEmailConfig] = useState<{
+    resendConfigured: boolean;
+    resendKeyPrefix: string;
+    emailProvider: string;
+    status: string;
+    note: string;
+  } | null>(null);
+  const [checkingEmailConfig, setCheckingEmailConfig] = useState(false);
+  const [emailSubject, setEmailSubject] = useState('');
+  const [emailMessage, setEmailMessage] = useState('');
+  const [emailTemplate, setEmailTemplate] = useState<'update' | 'announcement' | 'maintenance' | 'custom'>('custom');
+  const [emailRecipientType, setEmailRecipientType] = useState<'individual' | 'tier' | 'selected' | 'all'>('individual');
+  const [emailIndividualTo, setEmailIndividualTo] = useState('');
+  const [emailTier, setEmailTier] = useState('free');
+  const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
+  const [sendingEmail, setSendingEmail] = useState(false);
+  const [emailHistory, setEmailHistory] = useState<any[]>([]);
+  const [loadingEmailHistory, setLoadingEmailHistory] = useState(false);
 
   useEffect(() => {
     checkAdminAccess();
@@ -432,6 +453,155 @@ export default function Admin() {
     });
   };
 
+  // Email management functions
+  const checkEmailConfig = async () => {
+    setCheckingEmailConfig(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('admin-email', {
+        body: { method: 'CHECK_CONFIG' }
+      });
+
+      if (error) throw error;
+      setEmailConfig(data?.config || null);
+    } catch (error) {
+      console.error('Error checking email config:', error);
+      toast.error('Failed to check email configuration');
+    } finally {
+      setCheckingEmailConfig(false);
+    }
+  };
+
+  const fetchEmailHistory = async () => {
+    setLoadingEmailHistory(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('admin-email', {
+        body: { method: 'GET_HISTORY' }
+      });
+
+      if (error) throw error;
+      setEmailHistory(data?.history || []);
+    } catch (error) {
+      console.error('Error fetching email history:', error);
+    } finally {
+      setLoadingEmailHistory(false);
+    }
+  };
+
+  const sendEmail = async () => {
+    if (!emailSubject.trim() || !emailMessage.trim()) {
+      toast.error('Subject and message are required');
+      return;
+    }
+
+    setSendingEmail(true);
+    try {
+      let method: string;
+      let body: any = {
+        subject: emailSubject,
+        message: emailMessage,
+        templateType: emailTemplate
+      };
+
+      switch (emailRecipientType) {
+        case 'individual':
+          if (!emailIndividualTo.trim() || !emailIndividualTo.includes('@')) {
+            toast.error('Valid email address is required');
+            setSendingEmail(false);
+            return;
+          }
+          method = 'SEND_INDIVIDUAL';
+          body.to = emailIndividualTo;
+          break;
+        case 'tier':
+          method = 'SEND_BY_TIER';
+          body.tier = emailTier;
+          break;
+        case 'selected':
+          if (selectedUserIds.length === 0) {
+            toast.error('Please select at least one user');
+            setSendingEmail(false);
+            return;
+          }
+          method = 'SEND_BULK';
+          body.userIds = selectedUserIds;
+          break;
+        case 'all':
+          method = 'SEND_TO_ALL';
+          break;
+        default:
+          throw new Error('Invalid recipient type');
+      }
+
+      body.method = method;
+
+      const { data, error } = await supabase.functions.invoke('admin-email', {
+        body
+      });
+
+      if (error) throw error;
+
+      toast.success(data?.message || 'Email sent successfully');
+
+      // Clear form
+      setEmailSubject('');
+      setEmailMessage('');
+      setEmailIndividualTo('');
+      setSelectedUserIds([]);
+
+      // Refresh history
+      fetchEmailHistory();
+    } catch (error) {
+      console.error('Error sending email:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to send email');
+    } finally {
+      setSendingEmail(false);
+    }
+  };
+
+  const toggleUserSelection = (userId: string) => {
+    setSelectedUserIds(prev =>
+      prev.includes(userId)
+        ? prev.filter(id => id !== userId)
+        : [...prev, userId]
+    );
+  };
+
+  const selectAllUsers = () => {
+    if (selectedUserIds.length === adminUsers.length) {
+      setSelectedUserIds([]);
+    } else {
+      setSelectedUserIds(adminUsers.map(u => u.id));
+    }
+  };
+
+  const getTemplateDefaults = (template: typeof emailTemplate) => {
+    const templates = {
+      update: {
+        subject: 'AI Query Hub - New Update Available',
+        message: 'We\'re excited to announce new features and improvements to AI Query Hub!\n\nWhat\'s new:\n• [Feature 1]\n• [Feature 2]\n• [Bug fixes and improvements]\n\nLog in to your account to explore these updates.'
+      },
+      announcement: {
+        subject: 'AI Query Hub - Important Announcement',
+        message: 'We have an important announcement to share with you.\n\n[Your announcement here]\n\nThank you for being a valued member of our community.'
+      },
+      maintenance: {
+        subject: 'AI Query Hub - Scheduled Maintenance Notice',
+        message: 'We will be performing scheduled maintenance on [DATE] from [START TIME] to [END TIME] (UTC).\n\nDuring this time, the service may be temporarily unavailable.\n\nWe apologize for any inconvenience and appreciate your patience.'
+      },
+      custom: { subject: '', message: '' }
+    };
+    return templates[template];
+  };
+
+  const handleTemplateChange = (template: typeof emailTemplate) => {
+    setEmailTemplate(template);
+    if (template !== 'custom') {
+      const defaults = getTemplateDefaults(template);
+      setEmailSubject(defaults.subject);
+      setEmailMessage(defaults.message);
+    }
+  };
+
   if (loading) {
     return (
       <div className="container mx-auto px-4 py-8">
@@ -472,7 +642,7 @@ export default function Admin() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="overview" className="flex items-center gap-2">
             <BarChart3 className="h-4 w-4" />
             Overview
@@ -484,6 +654,10 @@ export default function Admin() {
           <TabsTrigger value="management" className="flex items-center gap-2">
             <Users className="h-4 w-4" />
             Management
+          </TabsTrigger>
+          <TabsTrigger value="email" className="flex items-center gap-2" onClick={() => { checkEmailConfig(); fetchEmailHistory(); if (adminUsers.length === 0) fetchUsers(); }}>
+            <Mail className="h-4 w-4" />
+            Email
           </TabsTrigger>
           <TabsTrigger value="settings" className="flex items-center gap-2">
             <Settings className="h-4 w-4" />
@@ -958,6 +1132,342 @@ export default function Admin() {
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="email" className="space-y-6">
+          {/* Email Configuration Status */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <Mail className="h-5 w-5" />
+                    Email System Status
+                  </CardTitle>
+                  <CardDescription>
+                    Check your email service configuration
+                  </CardDescription>
+                </div>
+                <Button
+                  onClick={checkEmailConfig}
+                  disabled={checkingEmailConfig}
+                  variant="outline"
+                  size="sm"
+                >
+                  <RefreshCw className={`h-4 w-4 mr-2 ${checkingEmailConfig ? 'animate-spin' : ''}`} />
+                  Check Status
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {emailConfig ? (
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3">
+                    {emailConfig.status === 'ready' ? (
+                      <CheckCircle2 className="h-5 w-5 text-green-500" />
+                    ) : (
+                      <AlertOctagon className="h-5 w-5 text-yellow-500" />
+                    )}
+                    <div>
+                      <p className="font-medium">
+                        {emailConfig.status === 'ready' ? 'Email System Ready' : 'Email Not Configured'}
+                      </p>
+                      <p className="text-sm text-muted-foreground">{emailConfig.note}</p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4 pt-3 border-t">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Provider</p>
+                      <p className="font-medium">{emailConfig.emailProvider}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">API Key</p>
+                      <p className="font-medium font-mono text-sm">{emailConfig.resendKeyPrefix}</p>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-muted-foreground text-center py-4">
+                  Click "Check Status" to verify email configuration
+                </p>
+              )}
+            </CardContent>
+          </Card>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Compose Email */}
+            <Card className="lg:col-span-1">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Send className="h-5 w-5" />
+                  Compose Email
+                </CardTitle>
+                <CardDescription>
+                  Send emails to users for updates, announcements, or notifications
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* Template Selection */}
+                <div className="space-y-2">
+                  <Label>Email Template</Label>
+                  <Select
+                    value={emailTemplate}
+                    onValueChange={(value: any) => handleTemplateChange(value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select template..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="custom">
+                        <div className="flex items-center gap-2">
+                          <FileText className="h-4 w-4" />
+                          Custom Email
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="update">
+                        <div className="flex items-center gap-2">
+                          <Zap className="h-4 w-4 text-blue-500" />
+                          Software Update
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="announcement">
+                        <div className="flex items-center gap-2">
+                          <Megaphone className="h-4 w-4 text-purple-500" />
+                          Announcement
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="maintenance">
+                        <div className="flex items-center gap-2">
+                          <Wrench className="h-4 w-4 text-yellow-500" />
+                          Maintenance Notice
+                        </div>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Subject */}
+                <div className="space-y-2">
+                  <Label htmlFor="email-subject">Subject</Label>
+                  <Input
+                    id="email-subject"
+                    placeholder="Enter email subject..."
+                    value={emailSubject}
+                    onChange={(e) => setEmailSubject(e.target.value)}
+                  />
+                </div>
+
+                {/* Message */}
+                <div className="space-y-2">
+                  <Label htmlFor="email-message">Message</Label>
+                  <Textarea
+                    id="email-message"
+                    placeholder="Enter your message..."
+                    value={emailMessage}
+                    onChange={(e) => setEmailMessage(e.target.value)}
+                    rows={6}
+                  />
+                </div>
+
+                {/* Recipient Type */}
+                <div className="space-y-2">
+                  <Label>Send To</Label>
+                  <Select
+                    value={emailRecipientType}
+                    onValueChange={(value: any) => setEmailRecipientType(value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="individual">Individual Email Address</SelectItem>
+                      <SelectItem value="tier">Users by Subscription Tier</SelectItem>
+                      <SelectItem value="selected">Selected Users</SelectItem>
+                      <SelectItem value="all">All Users (Confirmed Emails)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Recipient Details based on type */}
+                {emailRecipientType === 'individual' && (
+                  <div className="space-y-2">
+                    <Label htmlFor="email-to">Email Address</Label>
+                    <Input
+                      id="email-to"
+                      type="email"
+                      placeholder="user@example.com"
+                      value={emailIndividualTo}
+                      onChange={(e) => setEmailIndividualTo(e.target.value)}
+                    />
+                  </div>
+                )}
+
+                {emailRecipientType === 'tier' && (
+                  <div className="space-y-2">
+                    <Label>Subscription Tier</Label>
+                    <Select value={emailTier} onValueChange={setEmailTier}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="free">Free Users</SelectItem>
+                        <SelectItem value="ai_starter">AI Starter Users</SelectItem>
+                        <SelectItem value="professional">Professional Users</SelectItem>
+                        <SelectItem value="executive">Executive Users</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
+                {emailRecipientType === 'selected' && (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label>Select Users ({selectedUserIds.length} selected)</Label>
+                      <Button variant="ghost" size="sm" onClick={selectAllUsers}>
+                        {selectedUserIds.length === adminUsers.length ? 'Deselect All' : 'Select All'}
+                      </Button>
+                    </div>
+                    {adminUsers.length === 0 ? (
+                      <Button variant="outline" size="sm" onClick={fetchUsers} disabled={loadingUsers}>
+                        Load Users
+                      </Button>
+                    ) : (
+                      <div className="max-h-40 overflow-y-auto border rounded-md p-2 space-y-1">
+                        {adminUsers.map((adminUser) => (
+                          <div
+                            key={adminUser.id}
+                            className={`flex items-center gap-2 p-2 rounded cursor-pointer hover:bg-muted ${
+                              selectedUserIds.includes(adminUser.id) ? 'bg-primary/10' : ''
+                            }`}
+                            onClick={() => toggleUserSelection(adminUser.id)}
+                          >
+                            <div className={`w-4 h-4 rounded border ${
+                              selectedUserIds.includes(adminUser.id)
+                                ? 'bg-primary border-primary'
+                                : 'border-muted-foreground'
+                            } flex items-center justify-center`}>
+                              {selectedUserIds.includes(adminUser.id) && (
+                                <CheckCircle className="h-3 w-3 text-primary-foreground" />
+                              )}
+                            </div>
+                            <span className="text-sm truncate">{adminUser.email}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {emailRecipientType === 'all' && (
+                  <div className="p-3 bg-yellow-50 dark:bg-yellow-950 border border-yellow-200 dark:border-yellow-800 rounded-md">
+                    <p className="text-sm text-yellow-800 dark:text-yellow-200 flex items-center gap-2">
+                      <AlertTriangle className="h-4 w-4" />
+                      This will send to all users with confirmed email addresses.
+                    </p>
+                  </div>
+                )}
+
+                {/* Send Button */}
+                <Button
+                  onClick={sendEmail}
+                  disabled={sendingEmail || !emailSubject.trim() || !emailMessage.trim() || (emailConfig?.status !== 'ready')}
+                  className="w-full"
+                >
+                  {sendingEmail ? (
+                    <>
+                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                      Sending...
+                    </>
+                  ) : (
+                    <>
+                      <Send className="h-4 w-4 mr-2" />
+                      Send Email
+                    </>
+                  )}
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* Email History */}
+            <Card className="lg:col-span-1">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="flex items-center gap-2">
+                      <History className="h-5 w-5" />
+                      Email History
+                    </CardTitle>
+                    <CardDescription>
+                      Recent email sends from admin panel
+                    </CardDescription>
+                  </div>
+                  <Button
+                    onClick={fetchEmailHistory}
+                    disabled={loadingEmailHistory}
+                    variant="outline"
+                    size="sm"
+                  >
+                    <RefreshCw className={`h-4 w-4 ${loadingEmailHistory ? 'animate-spin' : ''}`} />
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {emailHistory.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <History className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <p>No email history yet</p>
+                    <p className="text-sm">Sent emails will appear here</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3 max-h-[500px] overflow-y-auto">
+                    {emailHistory.map((entry) => (
+                      <div key={entry.id} className="border rounded-lg p-3 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <Badge variant={
+                            entry.action === 'admin_email_all' ? 'destructive' :
+                            entry.action === 'admin_email_tier' ? 'default' :
+                            entry.action === 'admin_email_bulk' ? 'secondary' : 'outline'
+                          }>
+                            {entry.action === 'admin_email_individual' && 'Individual'}
+                            {entry.action === 'admin_email_bulk' && 'Bulk'}
+                            {entry.action === 'admin_email_tier' && 'By Tier'}
+                            {entry.action === 'admin_email_all' && 'All Users'}
+                          </Badge>
+                          <span className="text-xs text-muted-foreground">
+                            {new Date(entry.created_at).toLocaleString()}
+                          </span>
+                        </div>
+                        <p className="font-medium text-sm truncate">
+                          {entry.metadata?.subject || 'No subject'}
+                        </p>
+                        <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                          {entry.metadata?.to && (
+                            <span>To: {entry.metadata.to}</span>
+                          )}
+                          {entry.metadata?.tier && (
+                            <span>Tier: {entry.metadata.tier}</span>
+                          )}
+                          {entry.metadata?.recipients_count && (
+                            <span>Recipients: {entry.metadata.recipients_count}</span>
+                          )}
+                          {entry.metadata?.successful !== undefined && (
+                            <span className="text-green-600">
+                              Sent: {entry.metadata.successful}
+                            </span>
+                          )}
+                          {entry.metadata?.failed > 0 && (
+                            <span className="text-red-600">
+                              Failed: {entry.metadata.failed}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
 
         <TabsContent value="settings" className="space-y-6">
