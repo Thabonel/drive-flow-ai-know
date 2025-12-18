@@ -174,70 +174,89 @@ export const useGoogleDrive = () => {
     return null;
   }, [user]);
 
-  // Sign in with Google using Supabase OAuth
+  // Connect Google Drive using Google Identity Services (popup, no session change)
   const signIn = useCallback(async () => {
+    if (!user) {
+      toast({
+        title: 'Not Logged In',
+        description: 'Please log in first before connecting Google Drive.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setIsSigningIn(true);
 
     try {
-      toast({
-        title: 'Connecting to Google',
-        description: 'You will be redirected to sign in with Google...',
-      });
+      // Use Google Identity Services for token-only flow (doesn't affect Supabase session)
+      const clientId = '1050361175911-2caa9uiuf4tmi5pvqlt0arl1h592hurm.apps.googleusercontent.com';
 
-      // Check if user is already logged in
-      const { data: { session: currentSession } } = await supabase.auth.getSession();
-
-      if (currentSession?.user) {
-        // User is logged in - try to link Google identity (preserves session)
-        console.log('User logged in, attempting to link Google identity...');
-        const { error: linkError } = await supabase.auth.linkIdentity({
-          provider: 'google',
-          options: {
-            scopes: 'https://www.googleapis.com/auth/drive.readonly',
-            queryParams: {
-              access_type: 'offline',
-              prompt: 'consent',
-            },
-            redirectTo: `${window.location.origin}/settings`,
-          },
+      // Load Google Identity Services script if not loaded
+      if (!window.google?.accounts?.oauth2) {
+        await new Promise<void>((resolve, reject) => {
+          const script = document.createElement('script');
+          script.src = 'https://accounts.google.com/gsi/client';
+          script.onload = () => resolve();
+          script.onerror = () => reject(new Error('Failed to load Google Identity Services'));
+          document.head.appendChild(script);
         });
+      }
 
-        if (linkError) {
-          // If linking is disabled or fails, inform user
-          if (linkError.message.includes('Manual linking is disabled')) {
-            console.log('Manual linking disabled, need to enable in Supabase dashboard');
+      // Request access token via popup (doesn't change Supabase session)
+      const tokenClient = window.google.accounts.oauth2.initTokenClient({
+        client_id: clientId,
+        scope: 'https://www.googleapis.com/auth/drive.readonly',
+        callback: async (response: any) => {
+          if (response.error) {
+            console.error('Google OAuth error:', response);
             toast({
-              title: 'Configuration Required',
-              description: 'Please enable "Manual linking" in Supabase Authentication settings, then try again.',
+              title: 'Connection Failed',
+              description: response.error_description || 'Failed to connect to Google',
               variant: 'destructive',
             });
             setIsSigningIn(false);
             return;
           }
-          throw linkError;
-        }
-      } else {
-        // No user logged in - use signInWithOAuth
-        console.log('No user session, using signInWithOAuth...');
-        const { error } = await supabase.auth.signInWithOAuth({
-          provider: 'google',
-          options: {
-            scopes: 'https://www.googleapis.com/auth/drive.readonly',
-            queryParams: {
-              access_type: 'offline',
-              prompt: 'consent',
-            },
-            redirectTo: `${window.location.origin}/settings`,
-          },
-        });
 
-        if (error) {
-          throw error;
-        }
-      }
-      // Note: OAuth redirects, so isSigningIn will reset on page load
+          // Got access token - store it via edge function
+          console.log('Got Google access token, storing...');
+          try {
+            const { error } = await supabase.functions.invoke('store-google-tokens', {
+              body: {
+                access_token: response.access_token,
+                refresh_token: null, // Token client doesn't provide refresh tokens
+                token_type: 'Bearer',
+                expires_in: response.expires_in || 3600,
+                scope: 'https://www.googleapis.com/auth/drive.readonly',
+              }
+            });
+
+            if (error) {
+              throw error;
+            }
+
+            setIsAuthenticated(true);
+            toast({
+              title: 'Connected Successfully!',
+              description: 'Google Drive is now connected.',
+            });
+          } catch (storeError) {
+            console.error('Error storing token:', storeError);
+            toast({
+              title: 'Storage Error',
+              description: 'Connected to Google but failed to save token.',
+              variant: 'destructive',
+            });
+          }
+          setIsSigningIn(false);
+        },
+      });
+
+      // Request the token (opens popup)
+      tokenClient.requestAccessToken({ prompt: 'consent' });
+
     } catch (error) {
-      console.error('Error signing in:', error);
+      console.error('Error connecting to Google:', error);
       toast({
         title: 'Connection Error',
         description: error instanceof Error ? error.message : 'Failed to connect to Google Drive',
@@ -245,7 +264,7 @@ export const useGoogleDrive = () => {
       });
       setIsSigningIn(false);
     }
-  }, [toast]);
+  }, [user, toast]);
 
   // Load Drive items using the access token
   const loadDriveItems = useCallback(async () => {
