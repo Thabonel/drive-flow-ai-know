@@ -13,6 +13,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { arrayBufferToBase64 } from '@/lib/base64Utils';
 
 interface DragDropUploadProps {
   onFilesAdded: (files: File[]) => void;
@@ -188,7 +189,7 @@ const DragDropUpload = ({ onFilesAdded }: DragDropUploadProps) => {
         // Read file as base64
         const arrayBuffer = await file.arrayBuffer();
         const uint8Array = new Uint8Array(arrayBuffer);
-        const base64 = btoa(String.fromCharCode(...uint8Array));
+        const base64 = arrayBufferToBase64(uint8Array);
 
         // Update progress - sending to parser
         setUploadingFiles(prev =>
