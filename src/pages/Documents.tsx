@@ -13,6 +13,7 @@ import { ConfirmationDialog } from '@/components/ConfirmationDialog';
 import { PaginationControls } from '@/components/PaginationControls';
 import { PageHelp } from '@/components/PageHelp';
 import { AIQueryInput } from '@/components/AIQueryInput';
+import DocumentSources from '@/components/DocumentSources';
 
 const Documents = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -179,6 +180,14 @@ const Documents = () => {
 
   const categories = ['prompts', 'marketing', 'specs', 'general', 'research', 'planning', 'strategy', 'notes', 'reference'];
 
+  const handleDocumentsAdded = (documents: any[]) => {
+    queryClient.invalidateQueries({ queryKey: ['documents', user?.id] });
+    toast({
+      title: 'Documents Added',
+      description: `${documents.length} document(s) have been added successfully.`,
+    });
+  };
+
   const filteredDocuments = (documents || []).filter(doc => {
     const matchesSearch = doc.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          doc.ai_summary?.toLowerCase().includes(searchTerm.toLowerCase());
@@ -239,6 +248,9 @@ const Documents = () => {
           }
         />
       </div>
+
+      {/* Document Upload Sources */}
+      <DocumentSources onDocumentsAdded={handleDocumentsAdded} />
 
       {/* AI Assistant for querying documents */}
       <AIQueryInput />

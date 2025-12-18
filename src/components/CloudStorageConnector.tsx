@@ -3,9 +3,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { 
-  Apple, 
-  Cloud, 
+import {
+  Apple,
+  Cloud,
   HardDrive,
   Link,
   ExternalLink,
@@ -86,7 +86,7 @@ const CloudStorageConnector = ({ onConnectionEstablished }: CloudStorageConnecto
         title: 'Redirecting to Dropbox',
         description: 'You will be redirected to authorize access to your Dropbox.',
       });
-      
+
       // In a real implementation, this would redirect to Dropbox OAuth
       setTimeout(() => {
         const newConnection = {
@@ -96,16 +96,16 @@ const CloudStorageConnector = ({ onConnectionEstablished }: CloudStorageConnecto
           status: 'connected',
           connectedAt: new Date().toISOString()
         };
-        
+
         setConnections(prev => [...prev, newConnection]);
         onConnectionEstablished(newConnection);
-        
+
         toast({
           title: 'Connected Successfully',
           description: `${service.name} has been connected to your account.`,
         });
       }, 2000);
-      
+
       return;
     }
 
@@ -142,7 +142,7 @@ const CloudStorageConnector = ({ onConnectionEstablished }: CloudStorageConnecto
       <Alert>
         <Info className="h-4 w-4" />
         <AlertDescription>
-          Connect your cloud storage accounts to automatically sync documents. 
+          Connect your cloud storage accounts to automatically sync documents.
           Some integrations are still in development.
         </AlertDescription>
       </Alert>
@@ -151,7 +151,7 @@ const CloudStorageConnector = ({ onConnectionEstablished }: CloudStorageConnecto
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {cloudServices.map((service) => {
           const isConnected = connections.some(c => c.service === service.id);
-          
+
           return (
             <Card key={service.id} className={`${isConnected ? 'border-green-200 bg-green-50/50' : ''}`}>
               <CardHeader className="pb-3">
@@ -172,7 +172,7 @@ const CloudStorageConnector = ({ onConnectionEstablished }: CloudStorageConnecto
                 <p className="text-sm text-muted-foreground">
                   {service.instructions}
                 </p>
-                
+
                 <div className="flex items-center justify-between">
                   <Button
                     variant={isConnected ? "outline" : "default"}
@@ -193,15 +193,15 @@ const CloudStorageConnector = ({ onConnectionEstablished }: CloudStorageConnecto
                       </>
                     )}
                   </Button>
-                  
+
                   <Button
                     variant="ghost"
                     size="sm"
                     asChild
                   >
-                    <a 
-                      href={service.helpUrl} 
-                      target="_blank" 
+                    <a
+                      href={service.helpUrl}
+                      target="_blank"
                       rel="noopener noreferrer"
                       className="flex items-center gap-2"
                     >
@@ -263,7 +263,7 @@ const CloudStorageConnector = ({ onConnectionEstablished }: CloudStorageConnecto
               </ul>
             </AlertDescription>
           </Alert>
-          
+
           <div className="mt-4 flex gap-2">
             <Button variant="outline" disabled>
               <Settings className="h-4 w-4 mr-2" />
