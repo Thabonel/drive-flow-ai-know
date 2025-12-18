@@ -233,10 +233,22 @@ export const useGoogleDrive = () => {
 
             console.log('Store tokens response:', { data, error });
 
-            // Check for function-level error (network, auth)
+            // Check for function-level error (network, auth, or 500)
             if (error) {
               console.error('Function invoke error:', error);
-              throw new Error(error.message || 'Function call failed');
+              // Try to get the actual error message from the response body
+              let errorMessage = error.message || 'Function call failed';
+              try {
+                // FunctionsHttpError has context with the response
+                if (error.context) {
+                  const errorBody = await error.context.json();
+                  console.error('Error body from function:', errorBody);
+                  errorMessage = errorBody.error || errorMessage;
+                }
+              } catch (e) {
+                console.error('Could not parse error body:', e);
+              }
+              throw new Error(errorMessage);
             }
 
             // Check for application-level error in response body
@@ -297,11 +309,13 @@ export const useGoogleDrive = () => {
 
     setIsLoading(true);
     try {
+      // Query for folders and common document types
       const response = await fetch(
         'https://www.googleapis.com/drive/v3/files?' + new URLSearchParams({
-          q: "mimeType='application/vnd.google-apps.folder' or mimeType contains 'document'",
+          q: "trashed=false",
           fields: 'files(id,name,mimeType,parents)',
-          pageSize: '100'
+          pageSize: '100',
+          orderBy: 'folder,name'
         }),
         {
           headers: {
