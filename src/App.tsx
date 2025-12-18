@@ -26,6 +26,7 @@ import Admin from "./pages/Admin";
 import DocumentList from "./components/DocumentList";
 import Conversations from "./pages/Conversations";
 import MicrosoftCallback from "./pages/MicrosoftCallback";
+import DropboxCallback from "./pages/auth/DropboxCallback";
 import Terms from "./pages/Terms";
 import Privacy from "./pages/Privacy";
 import Disclaimer from "./pages/Disclaimer";
@@ -125,6 +126,7 @@ const App = () => (
             } />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/auth/microsoft/callback" element={<MicrosoftCallback />} />
+            <Route path="/auth/dropbox/callback" element={<DropboxCallback />} />
             <Route path="/" element={
               <PublicRoute>
                 <Landing />
