@@ -221,7 +221,7 @@ export const useGoogleDrive = () => {
           // Got access token - store it via edge function
           console.log('Got Google access token, storing...');
           try {
-            const { error } = await supabase.functions.invoke('store-google-tokens', {
+            const { data, error } = await supabase.functions.invoke('store-google-tokens', {
               body: {
                 access_token: response.access_token,
                 refresh_token: null, // Token client doesn't provide refresh tokens
@@ -231,8 +231,23 @@ export const useGoogleDrive = () => {
               }
             });
 
+            console.log('Store tokens response:', { data, error });
+
+            // Check for function-level error (network, auth)
             if (error) {
-              throw error;
+              console.error('Function invoke error:', error);
+              throw new Error(error.message || 'Function call failed');
+            }
+
+            // Check for application-level error in response body
+            if (data?.error) {
+              console.error('Application error from function:', data.error);
+              throw new Error(data.error);
+            }
+
+            if (!data?.success) {
+              console.error('Unexpected response:', data);
+              throw new Error('Unexpected response from server');
             }
 
             setIsAuthenticated(true);
@@ -240,11 +255,12 @@ export const useGoogleDrive = () => {
               title: 'Connected Successfully!',
               description: 'Google Drive is now connected.',
             });
-          } catch (storeError) {
+          } catch (storeError: any) {
             console.error('Error storing token:', storeError);
+            const errorMessage = storeError?.message || 'Unknown error';
             toast({
               title: 'Storage Error',
-              description: 'Connected to Google but failed to save token.',
+              description: `Failed to save token: ${errorMessage}`,
               variant: 'destructive',
             });
           }
