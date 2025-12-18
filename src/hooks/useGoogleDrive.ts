@@ -309,10 +309,10 @@ export const useGoogleDrive = () => {
 
     setIsLoading(true);
     try {
-      // Query for folders and common document types
+      // Query for root-level items only (in "My Drive", not nested in photo backups)
       const response = await fetch(
         'https://www.googleapis.com/drive/v3/files?' + new URLSearchParams({
-          q: "trashed=false",
+          q: "'root' in parents and trashed=false",
           fields: 'files(id,name,mimeType,parents)',
           pageSize: '100',
           orderBy: 'folder,name'
