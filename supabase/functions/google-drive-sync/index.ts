@@ -47,24 +47,18 @@ serve(async (req) => {
       throw new Error(`Folder not found: ${folderError.message}`);
     }
 
-    // Get client IP and user agent for enhanced security logging
-    const clientIP = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'unknown';
-    const userAgent = req.headers.get('user-agent') || 'unknown';
+    // Get user's stored OAuth token directly from table
+    const { data: tokenRecord, error: tokenError } = await supabaseClient
+      .from('user_google_tokens')
+      .select('access_token, expires_at')
+      .eq('user_id', user_id)
+      .maybeSingle();
 
-    // Get user's stored OAuth token using enhanced security function
-    const { data: tokenData, error: tokenError } = await supabaseClient.rpc('get_decrypted_google_token_enhanced', {
-      p_user_id: user_id,
-      p_ip_address: clientIP,
-      p_user_agent: userAgent
-    });
-
-    if (tokenError || !tokenData || tokenData.length === 0) {
+    if (tokenError || !tokenRecord || !tokenRecord.access_token) {
       throw new Error('No Google Drive access token found. Please reconnect your Google Drive account.');
     }
 
-    const tokenRecord = tokenData[0];
-
-    // Check if token is expired (additional check beyond the function's internal validation)
+    // Check if token is expired
     const now = new Date();
     const expiresAt = new Date(tokenRecord.expires_at);
     if (now >= expiresAt) {
