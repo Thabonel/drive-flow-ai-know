@@ -18,11 +18,14 @@ import GoogleDrivePicker from '@/components/GoogleDrivePicker';
 import GoogleAuthStatus from '@/components/GoogleAuthStatus';
 import MicrosoftDrivePicker from '@/components/MicrosoftDrivePicker';
 import MicrosoftAuthStatus from '@/components/MicrosoftAuthStatus';
+import DropboxPicker from '@/components/DropboxPicker';
+import DropboxAuthStatus from '@/components/DropboxAuthStatus';
 import DragDropUpload from '@/components/DragDropUpload';
 import LocalFilesPicker from '@/components/LocalFilesPicker';
 import { S3Setup } from '@/components/S3Setup';
 import { PageHelp } from '@/components/PageHelp';
 import { AIQueryInput } from '@/components/AIQueryInput';
+import { useDropboxFolders } from '@/hooks/useDropboxFolders';
 
 export default function AddDocuments() {
   const navigate = useNavigate();
@@ -33,6 +36,13 @@ export default function AddDocuments() {
   const [newFolderUrls, setNewFolderUrls] = useState('');
   const [isAdding, setIsAdding] = useState(false);
   const { folders, addFolder, removeFolder, syncFolder } = useDriveFolders();
+  const {
+    folders: dropboxFolders,
+    addFolder: addDropboxFolder,
+    removeFolder: removeDropboxFolder,
+    syncFolder: syncDropboxFolder,
+    syncAllFolders: syncAllDropboxFolders
+  } = useDropboxFolders();
 
   const { data: syncJobs } = useQuery({
     queryKey: ['sync-jobs', user?.id],
@@ -133,6 +143,66 @@ export default function AddDocuments() {
     }
 
     setIsAdding(false);
+  };
+
+  const handleDropboxItemsFromPicker = async (items: { folder_id: string; folder_name: string; folder_path: string | null }[]) => {
+    setIsAdding(true);
+    let successCount = 0;
+    let errorCount = 0;
+
+    for (const item of items) {
+      try {
+        await addDropboxFolder.mutateAsync(item);
+        successCount++;
+      } catch (error) {
+        errorCount++;
+      }
+    }
+
+    if (successCount > 0) {
+      hookToast({
+        title: 'Dropbox Items Added',
+        description: `${successCount} item(s) connected successfully.${errorCount > 0 ? ` ${errorCount} failed.` : ''}`,
+      });
+    }
+
+    if (errorCount > 0 && successCount === 0) {
+      hookToast({
+        title: 'Error',
+        description: 'Failed to add Dropbox items. Please try again.',
+        variant: 'destructive',
+      });
+    }
+
+    setIsAdding(false);
+  };
+
+  const handleRemoveDropboxFolder = async (folderId: string) => {
+    await removeDropboxFolder.mutateAsync(folderId);
+    hookToast({
+      title: 'Folder Removed',
+      description: 'Dropbox folder has been disconnected.',
+    });
+  };
+
+  const handleSyncDropboxFolder = async (folderId: string) => {
+    hookToast({
+      title: 'Sync Started',
+      description: 'Syncing Dropbox folder contents...',
+    });
+    try {
+      const result = await syncDropboxFolder.mutateAsync(folderId);
+      hookToast({
+        title: 'Sync Complete',
+        description: `${result.files_processed} files processed`,
+      });
+    } catch (err) {
+      hookToast({
+        title: 'Sync Error',
+        description: (err as Error).message,
+        variant: 'destructive',
+      });
+    }
   };
 
   const handleAddFolders = async () => {
@@ -244,7 +314,7 @@ export default function AddDocuments() {
       <AIQueryInput />
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="upload" className="flex items-center gap-2">
             <Upload className="h-4 w-4" />
             Upload Files
@@ -256,6 +326,10 @@ export default function AddDocuments() {
           <TabsTrigger value="google" className="flex items-center gap-2">
             <Cloud className="h-4 w-4" />
             Google Drive
+          </TabsTrigger>
+          <TabsTrigger value="dropbox" className="flex items-center gap-2">
+            <Cloud className="h-4 w-4" />
+            Dropbox
           </TabsTrigger>
           <TabsTrigger value="microsoft" className="flex items-center gap-2">
             <Cloud className="h-4 w-4" />
@@ -421,6 +495,126 @@ export default function AddDocuments() {
                             variant="outline"
                             size="sm"
                             onClick={() => handleRemoveFolder(folder.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="dropbox" className="space-y-4 mt-6">
+          <DropboxAuthStatus />
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Add Files & Folders</CardTitle>
+              <CardDescription>
+                Connect files and folders from your Dropbox to start syncing
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-4">
+                <div>
+                  <DropboxPicker onItemsSelected={handleDropboxItemsFromPicker} />
+                  <p className="text-sm text-muted-foreground mt-2">
+                    Browse and select files/folders directly from your Dropbox
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Connected Folders & Sync Status</CardTitle>
+                  <CardDescription>
+                    Manage your connected Dropbox folders and sync status
+                  </CardDescription>
+                </div>
+                {dropboxFolders.data && dropboxFolders.data.length > 0 && (
+                  <Button
+                    onClick={() => syncAllDropboxFolders.mutate()}
+                    disabled={syncAllDropboxFolders.isPending}
+                    variant="default"
+                  >
+                    <RefreshCw className={`h-4 w-4 mr-2 ${syncAllDropboxFolders.isPending ? 'animate-spin' : ''}`} />
+                    {syncAllDropboxFolders.isPending ? 'Syncing All...' : 'Sync All Folders'}
+                  </Button>
+                )}
+              </div>
+            </CardHeader>
+            <CardContent>
+              {dropboxFolders.isLoading ? (
+                <div className="text-center py-8">Loading...</div>
+              ) : (!dropboxFolders.data || dropboxFolders.data.length === 0) ? (
+                <div className="text-center py-8">
+                  <FolderOpen className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                  <h3 className="text-lg font-medium text-foreground mb-2">No folders connected</h3>
+                  <p className="text-muted-foreground">Add your first Dropbox folder to get started</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {dropboxFolders.data?.map((folder) => {
+                    const isSyncing = syncDropboxFolder.isPending;
+
+                    return (
+                      <div key={folder.id} className="flex items-center justify-between p-4 border rounded-lg">
+                        <div className="flex items-center space-x-4">
+                          <FolderOpen className="h-8 w-8 text-blue-500" />
+                          <div>
+                            <h4 className="font-medium text-foreground">{folder.folder_name}</h4>
+                            <p className="text-sm text-muted-foreground">{folder.folder_path}</p>
+                            <div className="flex items-center space-x-2 mt-1">
+                              <Badge variant={isSyncing ? 'default' : folder.is_active ? 'default' : 'secondary'}>
+                                {isSyncing ? (
+                                  <>Syncing</>
+                                ) : folder.is_active ? (
+                                  <>
+                                    <CheckCircle className="h-3 w-3 mr-1" />
+                                    Active
+                                  </>
+                                ) : (
+                                  <>
+                                    <XCircle className="h-3 w-3 mr-1" />
+                                    Inactive
+                                  </>
+                                )}
+                              </Badge>
+                              {folder.last_synced_at && (
+                                <span className="text-xs text-muted-foreground">
+                                  Last sync: {new Date(folder.last_synced_at).toLocaleString()}
+                                </span>
+                              )}
+                              {folder.files_count !== null && (
+                                <span className="text-xs text-muted-foreground">
+                                  {folder.files_count} files
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleSyncDropboxFolder(folder.id)}
+                            disabled={isSyncing}
+                          >
+                            <RefreshCw className={`h-4 w-4 mr-2 ${isSyncing ? 'animate-spin' : ''}`} />
+                            Sync
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleRemoveDropboxFolder(folder.id)}
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
