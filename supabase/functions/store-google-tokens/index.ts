@@ -13,27 +13,51 @@ serve(async (req) => {
   }
 
   try {
+    // Validate environment variables first
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+
+    console.log('Environment check:', {
+      hasSupabaseUrl: !!supabaseUrl,
+      hasServiceRoleKey: !!serviceRoleKey,
+      urlLength: supabaseUrl?.length || 0,
+      keyLength: serviceRoleKey?.length || 0
+    });
+
+    if (!supabaseUrl || !serviceRoleKey) {
+      throw new Error(`Missing environment variables: ${!supabaseUrl ? 'SUPABASE_URL' : ''} ${!serviceRoleKey ? 'SUPABASE_SERVICE_ROLE_KEY' : ''}`.trim());
+    }
+
     // Get authorization header and validate JWT
     const authHeader = req.headers.get('authorization');
     if (!authHeader) {
       throw new Error('Authorization header is required');
     }
 
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    );
+    const supabaseClient = createClient(supabaseUrl, serviceRoleKey);
 
     // Extract user from JWT token
     const token = authHeader.replace('Bearer ', '');
     const { data: { user }, error: userError } = await supabaseClient.auth.getUser(token);
 
     if (userError || !user) {
+      console.error('Auth error:', userError);
       throw new Error(`User not authenticated: ${userError?.message || 'No user found'}`);
     }
 
+    console.log('User authenticated:', user.id);
+
     const user_id = user.id;
-    const { access_token, refresh_token, token_type = 'Bearer', expires_in = 3600, scope } = await req.json();
+    const body = await req.json();
+    const { access_token, refresh_token, token_type = 'Bearer', expires_in = 3600, scope } = body;
+
+    console.log('Request body received:', {
+      hasAccessToken: !!access_token,
+      hasRefreshToken: !!refresh_token,
+      tokenType: token_type,
+      expiresIn: expires_in,
+      scope: scope
+    });
 
     if (!access_token) {
       throw new Error('Access token is required');
@@ -44,7 +68,9 @@ serve(async (req) => {
 
     // Store tokens directly using service role (bypasses RLS)
     // Tokens are protected by RLS when read - users can only see their own
-    const { error: upsertError } = await supabaseClient
+    console.log('Attempting to upsert tokens for user:', user_id);
+
+    const { data: upsertData, error: upsertError } = await supabaseClient
       .from('user_google_tokens')
       .upsert({
         user_id: user_id,
@@ -56,12 +82,20 @@ serve(async (req) => {
         updated_at: new Date().toISOString()
       }, {
         onConflict: 'user_id'
-      });
+      })
+      .select();
 
     if (upsertError) {
-      console.error('Error storing tokens:', upsertError);
-      throw new Error(`Failed to store tokens: ${upsertError.message}`);
+      console.error('Upsert error details:', {
+        message: upsertError.message,
+        code: upsertError.code,
+        details: upsertError.details,
+        hint: upsertError.hint
+      });
+      throw new Error(`Failed to store tokens: ${upsertError.message} (code: ${upsertError.code})`);
     }
+
+    console.log('Upsert successful:', upsertData);
 
     console.log(`Successfully stored Google tokens for user ${user_id}`);
 
