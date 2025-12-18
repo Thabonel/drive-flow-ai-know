@@ -64,15 +64,15 @@ const Index = () => {
           <div className="flex items-center gap-3">
             <PageHelp
               title="Dashboard Help"
-              description="Your dashboard provides a quick overview of your knowledge base and allows you to query your documents using AI. Use the AI query box to ask questions across all your documents or select a specific knowledge base."
+              description="Your dashboard provides quick access to AI queries and key information. Ask questions across all your documents or select a specific knowledge base for focused results."
               tips={[
-                "Use the AI query box to search across all your documents",
-                "Use 'Add to Timeline' to extract tasks from AI responses",
-                "Save AI responses as documents for future reference",
-                "View stats showing total documents, knowledge bases, and folders",
-                "Access recent documents and knowledge bases quickly",
-                "Use Daily Focus to see your most important tasks",
-                "Create new documents using the '+ New Document' button"
+                "Use the AI query box to ask questions about your documents",
+                "Select a specific knowledge base for more focused AI answers",
+                "Daily Focus shows your priorities and upcoming tasks",
+                "Recent Documents provides quick access to recently added files",
+                "Click 'Show More' to view stats, knowledge bases, and quick actions",
+                "Create new documents with the '+ New Document' button",
+                "Quick Actions let you sync Google Drive, view collections, or see all documents"
               ]}
             />
           </div>

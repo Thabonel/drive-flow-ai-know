@@ -138,13 +138,14 @@ const Settings = () => {
               </div>
               <PageHelp
                 title="Settings Help"
-                description="Customize your AI Query Hub experience. Configure AI providers, manage your profile, adjust notifications, and control data preferences."
+                description="Customize your AI Query Hub experience across five settings tabs. Configure your profile, billing, AI behavior, security, and enterprise connections."
                 tips={[
-                  "General: Update your profile information and personal preferences",
-                  "Billing: View subscription status and manage payments",
-                  "AI & Data: Choose your preferred AI model and customize behavior",
-                  "Security: Configure offline mode and privacy settings",
-                  "Enterprise: Connect to enterprise servers (for teams)"
+                  "General: Edit profile (name, bio), choose theme, view account status",
+                  "Billing: View subscription plan and manage payments",
+                  "AI & Data: Set your personal AI prompt to customize AI responses",
+                  "Security: Enable offline mode, view connected services, export/import data",
+                  "Enterprise: Connect to enterprise servers for team access",
+                  "Use the AI Assistant to ask questions about your settings"
                 ]}
               />
             </div>

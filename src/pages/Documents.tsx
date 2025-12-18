@@ -225,17 +225,17 @@ const Documents = () => {
           </div>
           <PageHelp
             title="Find Documents Help"
-            description="Search and browse all documents you've added to your knowledge base. You can filter by category, search by keywords, and sort by different criteria. Click any document to view or edit its content."
+            description="Search and browse all documents in your knowledge base. Filter by category, search by title or summary, and sort by various criteria. Click any document card to view, edit, or manage it."
             tips={[
-              "Use the search bar to find documents by title or content",
-              "Filter by category to narrow down results",
-              "Sort by date, title, or modification time",
-              "Click a document to view, edit, or delete it",
-              "Use 'Add to Timeline' to extract tasks from document content",
-              "Generate AI Insights to get key concepts and summaries",
-              "Use 'Claude MVP' for advanced document processing",
-              "View spreadsheets and charts directly from document cards",
-              "Create new documents with the '+ Create Document' button"
+              "Search documents by title or AI-generated summary content",
+              "Filter by category: prompts, marketing, specs, research, planning, etc.",
+              "Sort by creation date, modification date, or title",
+              "Click a document card to open the viewer/editor modal",
+              "Generate AI Insights to extract key concepts and summaries",
+              "Add documents via Document Sources panel (Google Drive, upload, etc.)",
+              "Use the AI Assistant to query across all your documents",
+              "Pagination shows 12 documents per page",
+              "Create new documents manually with the 'Create Document' button"
             ]}
           />
         </div>

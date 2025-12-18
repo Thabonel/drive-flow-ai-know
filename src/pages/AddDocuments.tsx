@@ -227,13 +227,15 @@ export default function AddDocuments() {
         </div>
         <PageHelp
           title="Add Documents Help"
-          description="Add documents to your knowledge base from multiple sources: upload local files, sync from Google Drive or Microsoft 365, connect Amazon S3 buckets, or paste text directly."
+          description="Add documents to your knowledge base from multiple sources. After adding, documents appear in the Find Documents page."
           tips={[
-            "Upload: Drag & drop files or use the file picker (supports PDF, DOCX, TXT, MD, CSV, JSON)",
-            "Google Drive: Connect your account and select folders to sync automatically",
-            "Microsoft 365: Sync documents from OneDrive or SharePoint",
-            "Amazon S3: Connect S3 buckets for automatic document syncing",
-            "Manual: Paste or type content directly to create documents"
+            "Upload Files: Drag & drop or browse files (PDF, DOCX, TXT, MD, CSV, JSON)",
+            "Local Folders: Connect folders from your computer",
+            "Google Drive: Connect your account, select folders, and sync automatically",
+            "Microsoft 365: Sync from OneDrive or SharePoint",
+            "Amazon S3: Connect S3 buckets with credentials for automatic syncing",
+            "Sync All Folders button syncs all connected cloud folders at once",
+            "View sync status and last sync time for each connected folder"
           ]}
         />
       </div>
