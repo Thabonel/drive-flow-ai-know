@@ -13,8 +13,28 @@ import { supabase } from '@/integrations/supabase/client';
 import {
   Shield, Send, MessageSquare, Clock, CheckCircle, Users, UserPlus,
   BarChart3, Activity, Database, FileText, Brain, Settings,
-  TrendingUp, AlertTriangle, Eye, Globe, AlertCircle, Ticket
+  TrendingUp, AlertTriangle, Eye, Globe, AlertCircle, Ticket, Trash2,
+  RefreshCw, Crown, UserCheck, UserX, Mail
 } from 'lucide-react';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { useNavigate } from 'react-router-dom';
 
 interface AdminMessage {
@@ -49,6 +69,23 @@ interface AppSettings {
   aiProvider: string;
 }
 
+interface AdminUser {
+  id: string;
+  email: string;
+  full_name: string | null;
+  avatar_url: string | null;
+  roles: string[];
+  subscription: {
+    plan_tier: string;
+    status: string;
+    trial_ends_at: string | null;
+    current_period_end: string | null;
+  };
+  created_at: string;
+  last_sign_in: string | null;
+  email_confirmed: boolean;
+}
+
 export default function Admin() {
   const navigate = useNavigate();
   const [isAdmin, setIsAdmin] = useState(false);
@@ -73,6 +110,10 @@ export default function Admin() {
     aiProvider: 'claude'
   });
   const [activeTab, setActiveTab] = useState('overview');
+  const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
+  const [deletingUser, setDeletingUser] = useState<string | null>(null);
+  const [updatingSubscription, setUpdatingSubscription] = useState<string | null>(null);
 
   useEffect(() => {
     checkAdminAccess();
@@ -314,6 +355,81 @@ export default function Admin() {
       // Revert the local state change
       fetchSettings();
     }
+  };
+
+  const fetchUsers = async () => {
+    setLoadingUsers(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('admin-users', {
+        body: { method: 'LIST' }
+      });
+
+      if (error) throw error;
+
+      setAdminUsers(data?.users || []);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      toast.error('Failed to fetch users');
+    } finally {
+      setLoadingUsers(false);
+    }
+  };
+
+  const deleteUser = async (userId: string) => {
+    setDeletingUser(userId);
+    try {
+      const { data, error } = await supabase.functions.invoke('admin-users', {
+        body: { method: 'DELETE', userId }
+      });
+
+      if (error) throw error;
+
+      toast.success('User deleted successfully');
+      fetchUsers(); // Refresh the list
+      fetchAnalytics(); // Refresh analytics
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to delete user');
+    } finally {
+      setDeletingUser(null);
+    }
+  };
+
+  const updateUserSubscription = async (userId: string, planTier: string) => {
+    setUpdatingSubscription(userId);
+    try {
+      const { data, error } = await supabase.functions.invoke('admin-users', {
+        body: { method: 'UPDATE_SUBSCRIPTION', userId, planTier }
+      });
+
+      if (error) throw error;
+
+      toast.success(`Subscription updated to ${planTier}`);
+      fetchUsers(); // Refresh the list
+    } catch (error) {
+      console.error('Error updating subscription:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to update subscription');
+    } finally {
+      setUpdatingSubscription(null);
+    }
+  };
+
+  const getPlanBadgeVariant = (tier: string) => {
+    switch (tier) {
+      case 'executive': return 'default';
+      case 'professional': return 'secondary';
+      case 'ai_starter': return 'outline';
+      default: return 'outline';
+    }
+  };
+
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return 'Never';
+    return new Date(dateString).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
+    });
   };
 
   if (loading) {
@@ -572,6 +688,177 @@ export default function Admin() {
               </CardContent>
             </Card>
           </div>
+
+          {/* All Users List */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <Users className="h-5 w-5" />
+                    All Users
+                  </CardTitle>
+                  <CardDescription>
+                    View and manage all registered users, their subscriptions, and roles
+                  </CardDescription>
+                </div>
+                <Button
+                  onClick={fetchUsers}
+                  disabled={loadingUsers}
+                  variant="outline"
+                  size="sm"
+                >
+                  <RefreshCw className={`h-4 w-4 mr-2 ${loadingUsers ? 'animate-spin' : ''}`} />
+                  Refresh
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {adminUsers.length === 0 && !loadingUsers ? (
+                <div className="text-center py-8">
+                  <Users className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                  <p className="text-muted-foreground mb-4">No users loaded yet</p>
+                  <Button onClick={fetchUsers} disabled={loadingUsers}>
+                    {loadingUsers ? 'Loading...' : 'Load Users'}
+                  </Button>
+                </div>
+              ) : (
+                <div className="rounded-md border overflow-hidden">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Email</TableHead>
+                        <TableHead>Name</TableHead>
+                        <TableHead>Plan</TableHead>
+                        <TableHead>Roles</TableHead>
+                        <TableHead>Joined</TableHead>
+                        <TableHead>Last Login</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {loadingUsers ? (
+                        <TableRow>
+                          <TableCell colSpan={7} className="text-center py-8">
+                            <RefreshCw className="h-6 w-6 animate-spin mx-auto text-muted-foreground" />
+                            <p className="text-sm text-muted-foreground mt-2">Loading users...</p>
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        adminUsers.map((adminUser) => (
+                          <TableRow key={adminUser.id}>
+                            <TableCell className="font-medium">
+                              <div className="flex items-center gap-2">
+                                <Mail className="h-4 w-4 text-muted-foreground" />
+                                <span>{adminUser.email}</span>
+                                {adminUser.email_confirmed && (
+                                  <UserCheck className="h-4 w-4 text-green-500" title="Email verified" />
+                                )}
+                              </div>
+                            </TableCell>
+                            <TableCell>{adminUser.full_name || '-'}</TableCell>
+                            <TableCell>
+                              <Select
+                                value={adminUser.subscription.plan_tier}
+                                onValueChange={(value) => updateUserSubscription(adminUser.id, value)}
+                                disabled={updatingSubscription === adminUser.id}
+                              >
+                                <SelectTrigger className="w-[130px]">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="free">
+                                    <span className="flex items-center gap-2">Free</span>
+                                  </SelectItem>
+                                  <SelectItem value="ai_starter">
+                                    <span className="flex items-center gap-2">AI Starter</span>
+                                  </SelectItem>
+                                  <SelectItem value="professional">
+                                    <span className="flex items-center gap-2">Professional</span>
+                                  </SelectItem>
+                                  <SelectItem value="executive">
+                                    <span className="flex items-center gap-2">
+                                      <Crown className="h-3 w-3" />
+                                      Executive
+                                    </span>
+                                  </SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex gap-1 flex-wrap">
+                                {adminUser.roles.length > 0 ? (
+                                  adminUser.roles.map((role) => (
+                                    <Badge
+                                      key={role}
+                                      variant={role === 'admin' ? 'default' : 'secondary'}
+                                      className="text-xs"
+                                    >
+                                      {role}
+                                    </Badge>
+                                  ))
+                                ) : (
+                                  <Badge variant="outline" className="text-xs">user</Badge>
+                                )}
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-sm text-muted-foreground">
+                              {formatDate(adminUser.created_at)}
+                            </TableCell>
+                            <TableCell className="text-sm text-muted-foreground">
+                              {formatDate(adminUser.last_sign_in)}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                    disabled={deletingUser === adminUser.id || adminUser.roles.includes('admin')}
+                                  >
+                                    {deletingUser === adminUser.id ? (
+                                      <RefreshCw className="h-4 w-4 animate-spin" />
+                                    ) : (
+                                      <Trash2 className="h-4 w-4" />
+                                    )}
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Delete User</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      Are you sure you want to delete <strong>{adminUser.email}</strong>?
+                                      This action cannot be undone. All user data, documents, and settings
+                                      will be permanently removed.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction
+                                      onClick={() => deleteUser(adminUser.id)}
+                                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                    >
+                                      Delete User
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+              {adminUsers.length > 0 && (
+                <div className="mt-4 text-sm text-muted-foreground">
+                  Showing {adminUsers.length} user{adminUsers.length !== 1 ? 's' : ''}
+                </div>
+              )}
+            </CardContent>
+          </Card>
 
           {/* AI Command Center */}
           <Card>
