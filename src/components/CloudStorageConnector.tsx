@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -13,9 +13,12 @@ import {
   Settings,
   CheckCircle,
   AlertTriangle,
-  Database
+  Database,
+  Loader2
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useDropbox } from '@/hooks/useDropbox';
+import { useMicrosoft } from '@/hooks/useMicrosoft';
 
 interface CloudStorageConnectorProps {
   onConnectionEstablished: (connection: any) => void;
@@ -24,6 +27,21 @@ interface CloudStorageConnectorProps {
 const CloudStorageConnector = ({ onConnectionEstablished }: CloudStorageConnectorProps) => {
   const [connections, setConnections] = useState<any[]>([]);
   const { toast } = useToast();
+
+  // Real integration hooks
+  const {
+    isAuthenticated: dropboxConnected,
+    signIn: dropboxSignIn,
+    disconnect: dropboxDisconnect,
+    isSigningIn: dropboxLoading
+  } = useDropbox();
+
+  const {
+    isAuthenticated: microsoftConnected,
+    signIn: microsoftSignIn,
+    disconnect: microsoftDisconnect,
+    isSigningIn: microsoftLoading
+  } = useMicrosoft();
 
   const cloudServices = [
     {
@@ -51,9 +69,9 @@ const CloudStorageConnector = ({ onConnectionEstablished }: CloudStorageConnecto
       name: 'OneDrive',
       description: 'Microsoft OneDrive integration',
       icon: HardDrive,
-      status: 'coming_soon',
+      status: 'available',
       color: 'text-blue-500',
-      instructions: 'Microsoft Graph API integration in development.',
+      instructions: 'Connect via Microsoft Graph API.',
       helpUrl: 'https://onedrive.live.com/'
     },
     {
@@ -61,12 +79,26 @@ const CloudStorageConnector = ({ onConnectionEstablished }: CloudStorageConnecto
       name: 'Box',
       description: 'Enterprise file sharing platform',
       icon: HardDrive,
-      status: 'available',
+      status: 'coming_soon',
       color: 'text-blue-700',
-      instructions: 'Connect via Box API for business users.',
+      instructions: 'Box API integration coming soon.',
       helpUrl: 'https://box.com/'
     }
   ];
+
+  // Helper to check if a service is connected
+  const isServiceConnected = (serviceId: string) => {
+    if (serviceId === 'dropbox') return dropboxConnected;
+    if (serviceId === 'onedrive') return microsoftConnected;
+    return false;
+  };
+
+  // Helper to check if a service is loading
+  const isServiceLoading = (serviceId: string) => {
+    if (serviceId === 'dropbox') return dropboxLoading;
+    if (serviceId === 'onedrive') return microsoftLoading;
+    return false;
+  };
 
   const handleConnect = async (serviceId: string) => {
     const service = cloudServices.find(s => s.id === serviceId);
@@ -81,47 +113,28 @@ const CloudStorageConnector = ({ onConnectionEstablished }: CloudStorageConnecto
     }
 
     if (serviceId === 'dropbox') {
-      // Simulate Dropbox connection flow
-      toast({
-        title: 'Redirecting to Dropbox',
-        description: 'You will be redirected to authorize access to your Dropbox.',
-      });
-
-      // In a real implementation, this would redirect to Dropbox OAuth
-      setTimeout(() => {
-        const newConnection = {
-          id: Date.now().toString(),
-          service: serviceId,
-          name: service.name,
-          status: 'connected',
-          connectedAt: new Date().toISOString()
-        };
-
-        setConnections(prev => [...prev, newConnection]);
-        onConnectionEstablished(newConnection);
-
-        toast({
-          title: 'Connected Successfully',
-          description: `${service.name} has been connected to your account.`,
-        });
-      }, 2000);
-
+      await dropboxSignIn();
       return;
     }
 
-    // Generic connection handler for other services
+    if (serviceId === 'onedrive') {
+      await microsoftSignIn();
+      return;
+    }
+
+    // Generic handler for other services
     toast({
       title: 'Integration Coming Soon',
       description: `${service.name} integration will be available in a future update.`,
     });
   };
 
-  const handleDisconnect = (connectionId: string) => {
-    setConnections(prev => prev.filter(c => c.id !== connectionId));
-    toast({
-      title: 'Disconnected',
-      description: 'Cloud storage connection has been removed.',
-    });
+  const handleDisconnect = async (serviceId: string) => {
+    if (serviceId === 'dropbox') {
+      await dropboxDisconnect();
+    } else if (serviceId === 'onedrive') {
+      await microsoftDisconnect();
+    }
   };
 
   const getStatusBadge = (status: string) => {
@@ -150,10 +163,11 @@ const CloudStorageConnector = ({ onConnectionEstablished }: CloudStorageConnecto
       {/* Available Services */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {cloudServices.map((service) => {
-          const isConnected = connections.some(c => c.service === service.id);
+          const isConnected = isServiceConnected(service.id);
+          const isLoading = isServiceLoading(service.id);
 
           return (
-            <Card key={service.id} className={`${isConnected ? 'border-green-200 bg-green-50/50' : ''}`}>
+            <Card key={service.id} className={`${isConnected ? 'border-green-200 bg-green-50/50 dark:border-green-800 dark:bg-green-950/50' : ''}`}>
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
@@ -165,7 +179,11 @@ const CloudStorageConnector = ({ onConnectionEstablished }: CloudStorageConnecto
                       </CardDescription>
                     </div>
                   </div>
-                  {getStatusBadge(service.status)}
+                  {isConnected ? (
+                    <Badge variant="default" className="bg-green-600">Connected</Badge>
+                  ) : (
+                    getStatusBadge(service.status)
+                  )}
                 </div>
               </CardHeader>
               <CardContent className="space-y-3">
@@ -178,10 +196,15 @@ const CloudStorageConnector = ({ onConnectionEstablished }: CloudStorageConnecto
                     variant={isConnected ? "outline" : "default"}
                     size="sm"
                     onClick={() => handleConnect(service.id)}
-                    disabled={isConnected}
+                    disabled={isConnected || isLoading || service.status === 'coming_soon'}
                     className="flex items-center gap-2"
                   >
-                    {isConnected ? (
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Connecting...
+                      </>
+                    ) : isConnected ? (
                       <>
                         <CheckCircle className="h-4 w-4" />
                         Connected
@@ -214,17 +237,14 @@ const CloudStorageConnector = ({ onConnectionEstablished }: CloudStorageConnecto
                 {isConnected && (
                   <div className="pt-2 border-t">
                     <div className="flex items-center justify-between">
-                      <span className="text-sm text-green-600 flex items-center gap-2">
+                      <span className="text-sm text-green-600 dark:text-green-400 flex items-center gap-2">
                         <CheckCircle className="h-4 w-4" />
                         Active Connection
                       </span>
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => {
-                          const connection = connections.find(c => c.service === service.id);
-                          if (connection) handleDisconnect(connection.id);
-                        }}
+                        onClick={() => handleDisconnect(service.id)}
                         className="text-red-600 hover:text-red-700"
                       >
                         Disconnect
