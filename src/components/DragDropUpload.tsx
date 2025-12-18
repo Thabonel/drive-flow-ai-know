@@ -33,9 +33,10 @@ const DragDropUpload = ({ onFilesAdded }: DragDropUploadProps) => {
   const { user } = useAuth();
 
   const acceptedTypes = [
-    '.txt', '.md', '.pdf', '.docx', '.doc', '.rtf',
+    '.txt', '.md', '.pdf', '.docx', '.doc', '.rtf', '.fdx',
     'text/*', 'application/pdf', 'application/msword',
-    'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'application/x-final-draft'
   ];
 
   const handleDragOver = (e: DragEvent) => {
@@ -137,9 +138,10 @@ const DragDropUpload = ({ onFilesAdded }: DragDropUploadProps) => {
 
   const processFile = async (uploadingFile: UploadingFile) => {
     const { file } = uploadingFile;
+    const fileName = file.name.toLowerCase();
 
-    // Simulate upload progress for text files (direct processing)
-    if (file.type.startsWith('text/') || file.name.endsWith('.md') || file.name.endsWith('.txt')) {
+    // Handle text files directly (fast path)
+    if (file.type.startsWith('text/') || fileName.endsWith('.md') || fileName.endsWith('.txt')) {
       const reader = new FileReader();
       reader.onload = async (e) => {
         const content = e.target?.result as string;
@@ -158,29 +160,96 @@ const DragDropUpload = ({ onFilesAdded }: DragDropUploadProps) => {
       };
       reader.readAsText(file);
     } else {
-      // For binary files, we'd typically upload to storage first
-      // For now, we'll simulate processing
-      const formData = new FormData();
-      formData.append('file', file);
-
-      // Simulate progress
-      for (let progress = 0; progress <= 100; progress += 20) {
+      // For binary files (PDF, RTF, DOCX, FDX), use the edge function to parse
+      try {
+        // Update progress - reading file
         setUploadingFiles(prev =>
           prev.map(f =>
             f.id === uploadingFile.id
-              ? { ...f, progress }
+              ? { ...f, progress: 20 }
               : f
           )
         );
-        await new Promise(resolve => setTimeout(resolve, 200));
-      }
 
-      await saveDocument(file.name, '', 'binary', uploadingFile.id);
+        // Read file as base64
+        const arrayBuffer = await file.arrayBuffer();
+        const uint8Array = new Uint8Array(arrayBuffer);
+        const base64 = btoa(String.fromCharCode(...uint8Array));
+
+        // Update progress - sending to parser
+        setUploadingFiles(prev =>
+          prev.map(f =>
+            f.id === uploadingFile.id
+              ? { ...f, progress: 40 }
+              : f
+          )
+        );
+
+        // Determine mime type (browser may not detect FDX files correctly)
+        let mimeType = file.type;
+        if (fileName.endsWith('.fdx')) {
+          mimeType = 'application/x-final-draft';
+        } else if (fileName.endsWith('.rtf') && !mimeType) {
+          mimeType = 'application/rtf';
+        } else if (fileName.endsWith('.pdf') && !mimeType) {
+          mimeType = 'application/pdf';
+        }
+
+        // Call the parse-document edge function
+        const { data, error } = await supabase.functions.invoke('parse-document', {
+          body: {
+            fileName: file.name,
+            mimeType: mimeType || 'application/octet-stream',
+            fileData: base64
+          }
+        });
+
+        // Update progress - parsing complete
+        setUploadingFiles(prev =>
+          prev.map(f =>
+            f.id === uploadingFile.id
+              ? { ...f, progress: 80 }
+              : f
+          )
+        );
+
+        if (error) {
+          console.error('Parse error:', error);
+          throw new Error(error.message || 'Failed to parse document');
+        }
+
+        const content = data?.content || '';
+        const fileType = fileName.split('.').pop() || 'binary';
+
+        // Save to database with extracted content
+        await saveDocument(file.name, content, fileType, uploadingFile.id, mimeType);
+
+      } catch (error) {
+        console.error('Binary file processing error:', error);
+        // Save without content as fallback
+        await saveDocument(file.name, `[Document parsing failed: ${error instanceof Error ? error.message : 'Unknown error'}]`, 'binary', uploadingFile.id);
+      }
     }
   };
 
-  const saveDocument = async (title: string, content: string, type: string, uploadId: string) => {
+  const saveDocument = async (title: string, content: string, type: string, uploadId: string, mimeType?: string) => {
     try {
+      // Determine mime type based on file extension if not provided
+      let finalMimeType = mimeType;
+      if (!finalMimeType) {
+        const ext = title.toLowerCase().split('.').pop();
+        const mimeMap: Record<string, string> = {
+          'txt': 'text/plain',
+          'md': 'text/markdown',
+          'pdf': 'application/pdf',
+          'rtf': 'application/rtf',
+          'fdx': 'application/x-final-draft',
+          'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+          'doc': 'application/msword'
+        };
+        finalMimeType = mimeMap[ext || ''] || 'application/octet-stream';
+      }
+
       const { data, error } = await supabase
         .from('knowledge_documents')
         .insert({
@@ -191,7 +260,7 @@ const DragDropUpload = ({ onFilesAdded }: DragDropUploadProps) => {
           category: 'general',
           file_type: type,
           file_size: content.length,
-          mime_type: type === 'text' ? 'text/plain' : 'application/octet-stream'
+          mime_type: finalMimeType
         })
         .select()
         .single();
