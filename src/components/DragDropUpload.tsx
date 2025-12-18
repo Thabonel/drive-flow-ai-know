@@ -77,19 +77,33 @@ const DragDropUpload = ({ onFilesAdded }: DragDropUploadProps) => {
     }
 
     const validFiles = files.filter(file => {
-      const isValidType = acceptedTypes.some(type => {
-        if (type.startsWith('.')) {
-          return file.name.toLowerCase().endsWith(type);
-        }
-        return file.type.startsWith(type.split('/*')[0]);
-      });
+      const fileName = file.name.toLowerCase();
+      const fileExt = '.' + (fileName.split('.').pop() || '');
 
+      // Check by file extension first (most reliable)
+      const validExtensions = ['.txt', '.md', '.pdf', '.docx', '.doc', '.rtf', '.fdx', '.json', '.xml', '.csv'];
+      const hasValidExtension = validExtensions.includes(fileExt);
+
+      // Also check MIME type as fallback
+      const validMimeTypes = [
+        'text/plain', 'text/markdown', 'text/csv', 'text/xml',
+        'application/pdf',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'application/rtf',
+        'application/json',
+        'application/xml',
+        'application/x-final-draft'
+      ];
+      const hasValidMimeType = validMimeTypes.includes(file.type) || file.type.startsWith('text/');
+
+      const isValidType = hasValidExtension || hasValidMimeType;
       const isValidSize = file.size <= 20 * 1024 * 1024; // 20MB limit
 
       if (!isValidType) {
         toast({
           title: 'Invalid File Type',
-          description: `${file.name} is not a supported file type.`,
+          description: `${file.name} is not a supported file type. Supported: PDF, DOCX, RTF, TXT, MD, FDX`,
           variant: 'destructive',
         });
       }
