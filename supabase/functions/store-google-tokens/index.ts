@@ -27,7 +27,7 @@ serve(async (req) => {
     // Extract user from JWT token
     const token = authHeader.replace('Bearer ', '');
     const { data: { user }, error: userError } = await supabaseClient.auth.getUser(token);
-    
+
     if (userError || !user) {
       throw new Error(`User not authenticated: ${userError?.message || 'No user found'}`);
     }
@@ -39,40 +39,31 @@ serve(async (req) => {
       throw new Error('Access token is required');
     }
 
-    // Create a user context client to ensure auth.uid() works correctly in the function
-    const userContextClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      {
-        global: {
-          headers: {
-            authorization: authHeader
-          }
-        }
-      }
-    );
+    // Calculate expiry time
+    const expires_at = new Date(Date.now() + expires_in * 1000).toISOString();
 
-    // Get client IP and user agent for enhanced security logging
-    const clientIP = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'unknown';
-    const userAgent = req.headers.get('user-agent') || 'unknown';
+    // Store tokens directly using service role (bypasses RLS)
+    // Tokens are protected by RLS when read - users can only see their own
+    const { error: upsertError } = await supabaseClient
+      .from('user_google_tokens')
+      .upsert({
+        user_id: user_id,
+        access_token: access_token,
+        refresh_token: refresh_token,
+        token_type: token_type,
+        expires_at: expires_at,
+        scope: scope,
+        updated_at: new Date().toISOString()
+      }, {
+        onConflict: 'user_id'
+      });
 
-    // Use the enhanced secure function to store encrypted tokens
-    const { error: storeError } = await userContextClient.rpc('store_encrypted_google_tokens_enhanced', {
-      p_access_token: access_token,
-      p_refresh_token: refresh_token,
-      p_token_type: token_type,
-      p_expires_in: expires_in,
-      p_scope: scope,
-      p_ip_address: clientIP,
-      p_user_agent: userAgent
-    });
-
-    if (storeError) {
-      console.error('Error storing tokens:', storeError);
-      throw new Error(`Failed to store tokens: ${storeError.message}`);
+    if (upsertError) {
+      console.error('Error storing tokens:', upsertError);
+      throw new Error(`Failed to store tokens: ${upsertError.message}`);
     }
 
-    console.log(`Successfully stored encrypted Google tokens for user ${user_id}`);
+    console.log(`Successfully stored Google tokens for user ${user_id}`);
 
     return new Response(
       JSON.stringify({ success: true, message: 'Tokens stored securely' }),

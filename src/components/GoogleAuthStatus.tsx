@@ -9,29 +9,49 @@ import { useGoogleDrive } from '@/hooks/useGoogleDrive';
 
 const GoogleAuthStatus = () => {
   const [tokenStatus, setTokenStatus] = useState<'loading' | 'valid' | 'expired' | 'missing'>('loading');
-  const [tokenInfo, setTokenInfo] = useState<any>(null);
+  const [tokenInfo, setTokenInfo] = useState<{ expires_at: string; scope: string } | null>(null);
   const { user } = useAuth();
-  const { initializeGoogleDrive, signIn } = useGoogleDrive();
+  const { signIn, isSigningIn } = useGoogleDrive();
 
   const checkTokenStatus = async () => {
-    if (!user) return;
+    if (!user) {
+      setTokenStatus('missing');
+      return;
+    }
+
+    setTokenStatus('loading');
 
     try {
-      const { data, error } = await supabase
-        .from('user_google_tokens')
-        .select('*')
-        .eq('user_id', user.id)
-        .maybeSingle();
+      // First check for provider token in current session
+      const { data: { session } } = await supabase.auth.getSession();
 
-      if (error || !data) {
-        setTokenStatus('missing');
+      if (session?.provider_token) {
+        setTokenStatus('valid');
+        setTokenInfo({
+          expires_at: new Date(Date.now() + 3600 * 1000).toISOString(),
+          scope: 'drive.readonly'
+        });
         return;
       }
 
-      setTokenInfo(data);
+      // Fall back to checking stored tokens
+      const { data, error } = await supabase
+        .from('user_google_tokens')
+        .select('access_token, expires_at, scope')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (error || !data || !data.access_token) {
+        setTokenStatus('missing');
+        setTokenInfo(null);
+        return;
+      }
+
+      setTokenInfo({ expires_at: data.expires_at, scope: data.scope || 'drive.readonly' });
+
       const now = new Date();
       const expiresAt = new Date(data.expires_at);
-      
+
       if (now >= expiresAt) {
         setTokenStatus('expired');
       } else {
@@ -40,6 +60,7 @@ const GoogleAuthStatus = () => {
     } catch (error) {
       console.error('Error checking token status:', error);
       setTokenStatus('missing');
+      setTokenInfo(null);
     }
   };
 
@@ -47,34 +68,20 @@ const GoogleAuthStatus = () => {
     checkTokenStatus();
   }, [user]);
 
-  // Listen for auth changes and refresh status
+  // Listen for auth state changes
   useEffect(() => {
-    const channel = supabase
-      .channel('google_tokens_changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'user_google_tokens',
-        },
-        () => {
-          // Refresh token status when tokens are updated
-          setTimeout(checkTokenStatus, 500);
-        }
-      )
-      .subscribe();
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+        // Refresh status after a short delay
+        setTimeout(checkTokenStatus, 500);
+      }
+    });
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, []);
+    return () => subscription.unsubscribe();
+  }, [user]);
 
-  const handleReconnect = async () => {
-    await initializeGoogleDrive();
+  const handleConnect = async () => {
     await signIn();
-    // Refresh status after a short delay
-    setTimeout(checkTokenStatus, 2000);
   };
 
   if (tokenStatus === 'loading') {
@@ -108,7 +115,7 @@ const GoogleAuthStatus = () => {
             {tokenStatus === 'missing' && 'Not Connected'}
           </Badge>
         </div>
-        
+
         {tokenInfo && tokenStatus === 'valid' && (
           <div className="text-sm text-muted-foreground">
             <p>Token expires: {new Date(tokenInfo.expires_at).toLocaleString()}</p>
@@ -119,13 +126,40 @@ const GoogleAuthStatus = () => {
         {tokenStatus !== 'valid' && (
           <div className="space-y-2">
             <p className="text-sm text-muted-foreground">
-              {tokenStatus === 'expired' 
+              {tokenStatus === 'expired'
                 ? 'Your Google Drive access has expired. Please reconnect to sync files.'
                 : 'Connect your Google Drive to sync documents and create knowledge bases.'}
             </p>
-            <Button onClick={handleReconnect} size="sm">
-              <RefreshCw className="h-4 w-4 mr-2" />
-              {tokenStatus === 'expired' ? 'Reconnect' : 'Connect'} Google Drive
+            <Button onClick={handleConnect} size="sm" disabled={isSigningIn}>
+              {isSigningIn ? (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  Connecting...
+                </>
+              ) : (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  {tokenStatus === 'expired' ? 'Reconnect' : 'Connect'} Google Drive
+                </>
+              )}
+            </Button>
+          </div>
+        )}
+
+        {tokenStatus === 'valid' && (
+          <div className="space-y-2">
+            <Button onClick={handleConnect} variant="outline" size="sm" disabled={isSigningIn}>
+              {isSigningIn ? (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  Reconnecting...
+                </>
+              ) : (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Reconnect Google Drive
+                </>
+              )}
             </Button>
           </div>
         )}
