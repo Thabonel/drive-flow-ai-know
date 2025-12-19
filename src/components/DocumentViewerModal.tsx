@@ -449,10 +449,17 @@ export const DocumentViewerModal = ({ document, isOpen, onClose }: DocumentViewe
                 className="resize-none font-sans"
               />
             ) : (
-              <div className="p-6 border rounded-md bg-background min-h-[300px] select-text prose prose-slate dark:prose-invert max-w-none break-words prose-headings:text-foreground prose-p:text-foreground prose-li:text-foreground prose-strong:text-foreground prose-a:text-primary prose-code:text-foreground">
-                <ReactMarkdown>
-                  {formData.content || 'No content available'}
-                </ReactMarkdown>
+              <div className="p-6 border rounded-md bg-background min-h-[300px] select-text prose prose-slate dark:prose-invert max-w-none break-words prose-headings:text-foreground prose-p:text-foreground prose-li:text-foreground prose-strong:text-foreground prose-a:text-primary prose-code:text-foreground prose-table:border-collapse prose-th:border prose-th:border-slate-300 prose-th:p-2 prose-td:border prose-td:border-slate-300 prose-td:p-2">
+                {/* Render HTML content directly if it's from a Word document */}
+                {document?.metadata?.contentFormat === 'html' ? (
+                  <div
+                    dangerouslySetInnerHTML={{ __html: formData.content || 'No content available' }}
+                  />
+                ) : (
+                  <ReactMarkdown>
+                    {formData.content || 'No content available'}
+                  </ReactMarkdown>
+                )}
               </div>
             )}
           </div>
