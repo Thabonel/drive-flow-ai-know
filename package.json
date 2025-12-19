@@ -58,6 +58,7 @@
     "embla-carousel-react": "^8.6.0",
     "fuse.js": "^7.1.0",
     "html2canvas": "^1.4.1",
+    "idb-keyval": "^6.2.2",
     "input-otp": "^1.4.2",
     "jspdf": "^3.0.4",
     "jszip": "^3.10.1",
@@ -96,11 +97,12 @@
     "eslint-plugin-react-refresh": "^0.4.3",
     "postcss": "^8.4.24",
     "puppeteer": "^24.25.0",
+    "rollup": "^4.21.0",
     "tailwindcss": "^3.3.0",
     "typescript": "^5.0.2",
     "vite": "^5.4.0"
   },
   "optionalDependencies": {
-    "@rollup/rollup-darwin-x64": "^4.53.5"
+    "@rollup/rollup-darwin-x64": "^4.21.0"
   }
 }

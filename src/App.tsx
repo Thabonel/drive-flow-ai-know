@@ -48,6 +48,7 @@ import TeamDocuments from "./pages/Team/Documents";
 import TeamTimeline from "./pages/Team/TeamTimeline";
 import CreateTeam from "./pages/Team/CreateTeam";
 import AcceptInvite from "./pages/Team/AcceptInvite";
+import PresentationAudience from "./pages/PresentationAudience";
 
 const queryClient = new QueryClient();
 
@@ -264,6 +265,7 @@ const App = () => (
               </ProtectedRoute>
             } />
             <Route path="/book/:slug" element={<BookingPage />} />
+            <Route path="/presentation-audience/:sessionId" element={<PresentationAudience />} />
             <Route path="/terms" element={<Terms />} />
             <Route path="/privacy" element={<Privacy />} />
             <Route path="/disclaimer" element={<Disclaimer />} />

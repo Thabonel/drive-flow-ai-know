@@ -10,12 +10,20 @@ import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Loader2, Presentation, Download, Eye, FileText, Layers, Share2, X, Archive } from 'lucide-react';
+import { Loader2, Presentation, Download, Eye, FileText, Layers, Share2, X, Archive, Monitor } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import jsPDF from 'jspdf';
 import pptxgen from 'pptxgenjs';
 import JSZip from 'jszip';
 import { PageHelp } from '@/components/PageHelp';
+import PresenterView from '@/components/PresenterView';
+import {
+  createPresentationSync,
+  generateSessionId,
+  type PresentationSync,
+  type PresentationMessage,
+} from '@/lib/presentationSync';
+import type { PitchDeck as PitchDeckType } from '@/lib/presentationStorage';
 
 interface Slide {
   slideNumber: number;
@@ -58,6 +66,11 @@ export default function PitchDeck() {
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [shareToken, setShareToken] = useState<string | null>(null);
   const [isGeneratingShareLink, setIsGeneratingShareLink] = useState(false);
+
+  // Presenter view state
+  const [presenterSessionId, setPresenterSessionId] = useState<string | null>(null);
+  const [audienceWindow, setAudienceWindow] = useState<Window | null>(null);
+  const [presentationSync, setPresentationSync] = useState<PresentationSync | null>(null);
 
   // Refs for presentation mode focus management and keyboard navigation
   const presentationRef = useRef<HTMLDivElement>(null);
@@ -214,23 +227,158 @@ export default function PitchDeck() {
   };
 
   const handleExitPresentation = () => {
+    // If in presenter view mode, clean up sync and close audience window
+    if (presenterSessionId && presentationSync) {
+      presentationSync.send({
+        type: 'EXIT_PRESENTATION',
+        sessionId: presenterSessionId,
+      });
+      presentationSync.destroy();
+      setPresentationSync(null);
+
+      if (audienceWindow && !audienceWindow.closed) {
+        audienceWindow.close();
+      }
+      setAudienceWindow(null);
+      setPresenterSessionId(null);
+    }
+
     setIsPresentationMode(false);
     setCurrentSlideIndex(0);
     setPresentationStartTime(null);
     setElapsedSeconds(0);
   };
 
+  const handleStartPresenterView = () => {
+    if (!pitchDeck) {
+      toast.error('Please generate a pitch deck first');
+      return;
+    }
+
+    try {
+      // Generate unique session ID
+      const sessionId = generateSessionId();
+      setPresenterSessionId(sessionId);
+
+      // Initialize presentation sync (presenter mode)
+      const sync = createPresentationSync(sessionId, true);
+      setPresentationSync(sync);
+
+      // Set up message handler to respond to READY message from audience
+      sync.onMessage((message: PresentationMessage) => {
+        if (message.type === 'READY' && message.sessionId === sessionId) {
+          console.log('[Presenter] Audience ready, sending deck data');
+
+          // Convert pitch deck to format expected by audience
+          const deckData: PitchDeckType = {
+            id: savedDeckId || sessionId,
+            title: pitchDeck.title,
+            subtitle: pitchDeck.subtitle,
+            slides: pitchDeck.slides.map((slide) => ({
+              slideNumber: slide.slideNumber,
+              title: slide.title,
+              content: slide.content,
+              imageUrl: slide.imageData
+                ? `data:image/png;base64,${slide.imageData}`
+                : undefined,
+              speakerNotes: slide.notes,
+            })),
+          };
+
+          // Send deck data to audience window
+          sync.send({
+            type: 'DECK_DATA',
+            pitchDeck: deckData,
+          });
+
+          toast.success('Audience view connected!', {
+            description: 'The presentation is now synced across both windows',
+          });
+        }
+      });
+
+      // Open audience window
+      const audienceUrl = `${window.location.origin}/presentation-audience/${sessionId}`;
+      const newWindow = window.open(
+        audienceUrl,
+        '_blank',
+        'width=1920,height=1080,left=1920,top=0'
+      );
+
+      if (!newWindow || newWindow.closed) {
+        toast.error('Failed to open audience window', {
+          description: 'Please allow popups for this site and try again',
+        });
+        sync.destroy();
+        setPresenterSessionId(null);
+        setPresentationSync(null);
+        return;
+      }
+
+      setAudienceWindow(newWindow);
+
+      // Start presenter view
+      setCurrentSlideIndex(0);
+      setIsPresentationMode(true);
+      setShowPresenterNotes(false);
+      setPresentationStartTime(Date.now());
+      setElapsedSeconds(0);
+
+      // Show instructions to user
+      toast.info('Presenter View Started', {
+        description:
+          'Drag the audience window to your projector/external monitor, then click "Connect" on that screen',
+        duration: 8000,
+      });
+
+      // Monitor if audience window is closed
+      const checkWindowInterval = setInterval(() => {
+        if (newWindow.closed) {
+          clearInterval(checkWindowInterval);
+          toast.warning('Audience window closed', {
+            description: 'You can reopen it by clicking "Start Presenter View" again',
+          });
+          // Don't exit presenter view, just clear the audience window reference
+          setAudienceWindow(null);
+        }
+      }, 1000);
+    } catch (error) {
+      console.error('[Presenter] Error starting presenter view:', error);
+      toast.error('Failed to start presenter view', {
+        description: 'Please try again or use regular presentation mode',
+      });
+    }
+  };
+
   const handleNextSlide = () => {
     // Use actual slides array length instead of totalSlides property
     // to handle cases where totalSlides is undefined/missing
     if (pitchDeck && pitchDeck.slides && currentSlideIndex < pitchDeck.slides.length) {
-      setCurrentSlideIndex(prev => prev + 1);
+      const newIndex = currentSlideIndex + 1;
+      setCurrentSlideIndex(newIndex);
+
+      // Broadcast slide change to audience window if in presenter view mode
+      if (presenterSessionId && presentationSync) {
+        presentationSync.send({
+          type: 'SLIDE_CHANGE',
+          index: newIndex,
+        });
+      }
     }
   };
 
   const handlePreviousSlide = () => {
     if (currentSlideIndex > 0) {
-      setCurrentSlideIndex(prev => prev - 1);
+      const newIndex = currentSlideIndex - 1;
+      setCurrentSlideIndex(newIndex);
+
+      // Broadcast slide change to audience window if in presenter view mode
+      if (presenterSessionId && presentationSync) {
+        presentationSync.send({
+          type: 'SLIDE_CHANGE',
+          index: newIndex,
+        });
+      }
     }
   };
 
@@ -1331,6 +1479,14 @@ Generated with AI Query Hub
                   Start Presentation
                 </Button>
                 <Button
+                  onClick={handleStartPresenterView}
+                  className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
+                  size="lg"
+                >
+                  <Monitor className="h-5 w-5 mr-2" />
+                  Start Presenter View
+                </Button>
+                <Button
                   onClick={handleSave}
                   className="w-full"
                   disabled={isSaving}
@@ -1553,7 +1709,41 @@ Generated with AI Query Hub
       </div>
 
       {/* Fullscreen Presentation Mode */}
-      {isPresentationMode && pitchDeck && (
+      {isPresentationMode && pitchDeck && presenterSessionId && (
+        // Presenter View Mode (dual-window)
+        <PresenterView
+          pitchDeck={{
+            id: savedDeckId || presenterSessionId,
+            title: pitchDeck.title,
+            subtitle: pitchDeck.subtitle,
+            slides: pitchDeck.slides.map((slide) => ({
+              slideNumber: slide.slideNumber,
+              title: slide.title,
+              content: slide.content,
+              imageUrl: slide.imageData
+                ? `data:image/png;base64,${slide.imageData}`
+                : undefined,
+              speakerNotes: slide.notes,
+            })),
+          }}
+          currentSlideIndex={currentSlideIndex}
+          onSlideChange={(index) => {
+            setCurrentSlideIndex(index);
+            // Broadcast slide change
+            if (presentationSync) {
+              presentationSync.send({
+                type: 'SLIDE_CHANGE',
+                index,
+              });
+            }
+          }}
+          onExit={handleExitPresentation}
+          presentationStartTime={presentationStartTime || Date.now()}
+        />
+      )}
+
+      {isPresentationMode && pitchDeck && !presenterSessionId && (
+        // Keep existing single-view fullscreen mode unchanged
         <div
           ref={presentationRef}
           className="fixed inset-0 bg-black z-50 flex flex-col"
