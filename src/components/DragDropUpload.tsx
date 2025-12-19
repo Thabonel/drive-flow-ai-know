@@ -240,7 +240,43 @@ const DragDropUpload = ({ onFilesAdded }: DragDropUploadProps) => {
         const actualError = data?.metadata?.parseError;
         if (actualError) {
           console.error('Document parsing error:', actualError);
-          throw new Error(`Document parsing failed: ${actualError}`);
+
+          // Show user-friendly error notification
+          toast({
+            title: 'Document Parsing Failed',
+            description: actualError.includes('ANTHROPIC_API_KEY')
+              ? 'PDF extraction requires API configuration. Please contact support.'
+              : `Failed to extract content from ${file.name}: ${actualError}`,
+            variant: 'destructive',
+          });
+
+          // Mark upload as failed
+          setUploadingFiles(prev =>
+            prev.map(f =>
+              f.id === uploadingFile.id
+                ? { ...f, status: 'error', progress: 0 }
+                : f
+            )
+          );
+          return; // Don't save broken document
+        }
+
+        // Verify we have actual content
+        if (!content || content.trim().length === 0) {
+          toast({
+            title: 'Empty Document',
+            description: `No content could be extracted from ${file.name}`,
+            variant: 'destructive',
+          });
+
+          setUploadingFiles(prev =>
+            prev.map(f =>
+              f.id === uploadingFile.id
+                ? { ...f, status: 'error', progress: 0 }
+                : f
+            )
+          );
+          return;
         }
 
         // Save to database with extracted content
@@ -248,8 +284,22 @@ const DragDropUpload = ({ onFilesAdded }: DragDropUploadProps) => {
 
       } catch (error) {
         console.error('Binary file processing error:', error);
-        // Save without content as fallback
-        await saveDocument(file.name, `[Document parsing failed: ${error instanceof Error ? error.message : 'Unknown error'}]`, 'binary', uploadingFile.id);
+
+        // Show error notification
+        toast({
+          title: 'Upload Failed',
+          description: error instanceof Error ? error.message : 'Unknown error occurred',
+          variant: 'destructive',
+        });
+
+        // Mark upload as failed
+        setUploadingFiles(prev =>
+          prev.map(f =>
+            f.id === uploadingFile.id
+              ? { ...f, status: 'error', progress: 0 }
+                : f
+          )
+        );
       }
     }
   };
