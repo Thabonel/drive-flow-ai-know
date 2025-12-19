@@ -7,7 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { FileText, Edit, Copy, Save, X, Tag, Sparkles, Lightbulb, Calendar } from 'lucide-react';
+import { FileText, Edit, Copy, Save, X, Tag, Sparkles, Lightbulb, Calendar, Printer, Download } from 'lucide-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -100,6 +100,102 @@ export const DocumentViewerModal = ({ document, isOpen, onClose }: DocumentViewe
     }
   };
 
+  const handlePrint = () => {
+    // Create a print-friendly version of the document
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      toast({
+        title: 'Error',
+        description: 'Please allow popups to print documents.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const printContent = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>${formData.title}</title>
+          <style>
+            body {
+              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+              line-height: 1.6;
+              max-width: 800px;
+              margin: 0 auto;
+              padding: 20px;
+            }
+            h1 {
+              font-size: 24px;
+              margin-bottom: 20px;
+              border-bottom: 2px solid #333;
+              padding-bottom: 10px;
+            }
+            .metadata {
+              color: #666;
+              font-size: 12px;
+              margin-bottom: 20px;
+            }
+            .content {
+              white-space: pre-wrap;
+              word-wrap: break-word;
+            }
+            @media print {
+              body { padding: 0; }
+            }
+          </style>
+        </head>
+        <body>
+          <h1>${formData.title}</h1>
+          <div class="metadata">
+            Category: ${formData.category || 'Uncategorized'}
+            ${formData.tags.length > 0 ? `| Tags: ${formData.tags.join(', ')}` : ''}
+          </div>
+          <div class="content">${formData.content.replace(/\n/g, '<br>')}</div>
+        </body>
+      </html>
+    `;
+
+    printWindow.document.write(printContent);
+    printWindow.document.close();
+    printWindow.onload = () => {
+      printWindow.print();
+    };
+
+    toast({
+      title: 'Print Dialog Opened',
+      description: 'Print preview is ready.',
+    });
+  };
+
+  const handleDownload = () => {
+    try {
+      // Create a text file with the document content
+      const content = `${formData.title}\n${'='.repeat(formData.title.length)}\n\nCategory: ${formData.category || 'Uncategorized'}\nTags: ${formData.tags.join(', ')}\n\n${formData.content}`;
+
+      const blob = new Blob([content], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${formData.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.txt`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      toast({
+        title: 'Downloaded',
+        description: 'Document downloaded successfully.',
+      });
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to download document.',
+        variant: 'destructive',
+      });
+    }
+  };
+
   const addTag = () => {
     if (newTag.trim() && !formData.tags.includes(newTag.trim())) {
       setFormData({
@@ -156,12 +252,20 @@ export const DocumentViewerModal = ({ document, isOpen, onClose }: DocumentViewe
               <FileText className="h-5 w-5 mr-2 flex-shrink-0" />
               <span className="truncate">{isEditing ? 'Edit Document' : 'View Document'}</span>
             </div>
-            <div className="flex items-center gap-2 flex-shrink-0">
+            <div className="flex items-center gap-2 flex-shrink-0 flex-wrap">
               {!isEditing && (
                 <>
+                  <Button variant="outline" size="sm" onClick={handlePrint}>
+                    <Printer className="h-4 w-4 mr-2" />
+                    Print
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={handleDownload}>
+                    <Download className="h-4 w-4 mr-2" />
+                    Download
+                  </Button>
                   <Button variant="outline" size="sm" onClick={handleCopyContent}>
                     <Copy className="h-4 w-4 mr-2" />
-                    Copy Content
+                    Copy
                   </Button>
                   <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
                     <Edit className="h-4 w-4 mr-2" />
