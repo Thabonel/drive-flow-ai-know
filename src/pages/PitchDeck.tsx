@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -10,8 +10,11 @@ import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Loader2, Presentation, Download, Eye } from 'lucide-react';
+import { Loader2, Presentation, Download, Eye, FileText, FileSlides, Share2, X, Archive } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
+import jsPDF from 'jspdf';
+import pptxgen from 'pptxgenjs';
+import JSZip from 'jszip';
 
 interface Slide {
   slideNumber: number;
@@ -44,6 +47,16 @@ export default function PitchDeck() {
   const [revisionRequest, setRevisionRequest] = useState('');
   const [isRevising, setIsRevising] = useState(false);
   const [documentSearch, setDocumentSearch] = useState('');
+  const [savedDeckId, setSavedDeckId] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [showSavedDecks, setShowSavedDecks] = useState(false);
+  const [isPresentationMode, setIsPresentationMode] = useState(false);
+  const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
+  const [showPresenterNotes, setShowPresenterNotes] = useState(false);
+  const [presentationStartTime, setPresentationStartTime] = useState<number | null>(null);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const [shareToken, setShareToken] = useState<string | null>(null);
+  const [isGeneratingShareLink, setIsGeneratingShareLink] = useState(false);
 
   // Fetch user's documents
   const { data: documents, isLoading: loadingDocs } = useQuery({
@@ -75,6 +88,118 @@ export default function PitchDeck() {
 
     return titleMatch || categoryMatch || summaryMatch;
   }) || [];
+
+  // Fetch saved pitch decks
+  const { data: savedDecks, refetch: refetchSavedDecks } = useQuery({
+    queryKey: ['saved-pitch-decks', user?.id],
+    queryFn: async () => {
+      if (!user) return null;
+
+      const { data, error } = await supabase
+        .from('pitch_decks')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('is_archived', false)
+        .order('updated_at', { ascending: false });
+
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user,
+  });
+
+  // Keyboard navigation for presentation mode
+  useEffect(() => {
+    if (!isPresentationMode || !pitchDeck) return;
+
+    const handleKeyPress = (e: KeyboardEvent) => {
+      switch (e.key) {
+        case 'ArrowRight':
+        case ' ':
+        case 'Enter':
+          // Next slide
+          if (currentSlideIndex < pitchDeck.totalSlides) {
+            setCurrentSlideIndex(prev => prev + 1);
+          }
+          break;
+        case 'ArrowLeft':
+          // Previous slide
+          if (currentSlideIndex > 0) {
+            setCurrentSlideIndex(prev => prev - 1);
+          }
+          break;
+        case 'Home':
+          // First slide
+          setCurrentSlideIndex(0);
+          break;
+        case 'End':
+          // Last slide
+          setCurrentSlideIndex(pitchDeck.totalSlides);
+          break;
+        case 'Escape':
+          // Exit presentation mode
+          handleExitPresentation();
+          break;
+        case 'n':
+        case 'N':
+          // Toggle presenter notes
+          setShowPresenterNotes(prev => !prev);
+          break;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [isPresentationMode, currentSlideIndex, pitchDeck]);
+
+  // Presentation timer
+  useEffect(() => {
+    if (!isPresentationMode || !presentationStartTime) return;
+
+    const interval = setInterval(() => {
+      const elapsed = Math.floor((Date.now() - presentationStartTime) / 1000);
+      setElapsedSeconds(elapsed);
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [isPresentationMode, presentationStartTime]);
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const handleStartPresentation = () => {
+    if (!pitchDeck) {
+      toast.error('Please generate a pitch deck first');
+      return;
+    }
+    setCurrentSlideIndex(0);
+    setIsPresentationMode(true);
+    setShowPresenterNotes(false);
+    setPresentationStartTime(Date.now());
+    setElapsedSeconds(0);
+  };
+
+  const handleExitPresentation = () => {
+    setIsPresentationMode(false);
+    setCurrentSlideIndex(0);
+    setPresentationStartTime(null);
+    setElapsedSeconds(0);
+  };
+
+  const handleNextSlide = () => {
+    if (pitchDeck && currentSlideIndex < pitchDeck.totalSlides) {
+      setCurrentSlideIndex(prev => prev + 1);
+    }
+  };
+
+  const handlePreviousSlide = () => {
+    if (currentSlideIndex > 0) {
+      setCurrentSlideIndex(prev => prev - 1);
+    }
+  };
 
   const handleGenerate = async () => {
     if (!user) {
@@ -260,6 +385,581 @@ export default function PitchDeck() {
     toast.success('Pitch deck downloaded! Open the HTML file in a browser to view.');
   };
 
+  const handleExportPDF = async () => {
+    if (!pitchDeck) return;
+
+    try {
+      // Create PDF with landscape orientation (16:9 presentation format)
+      // A4 landscape: 297mm x 210mm
+      const pdf = new jsPDF({
+        orientation: 'landscape',
+        unit: 'mm',
+        format: 'a4'
+      });
+
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const margin = 20;
+      const contentWidth = pageWidth - (margin * 2);
+
+      // Helper function to add text with word wrap
+      const addWrappedText = (text: string, x: number, y: number, maxWidth: number, lineHeight: number, fontSize: number) => {
+        pdf.setFontSize(fontSize);
+        const lines = pdf.splitTextToSize(text, maxWidth);
+        pdf.text(lines, x, y);
+        return y + (lines.length * lineHeight);
+      };
+
+      // Title slide
+      pdf.setFillColor(10, 35, 66); // Deep Navy
+      pdf.rect(0, 0, pageWidth, pageHeight, 'F');
+
+      pdf.setTextColor(255, 195, 0); // Gold
+      pdf.setFontSize(36);
+      pdf.setFont('helvetica', 'bold');
+      const titleLines = pdf.splitTextToSize(pitchDeck.title, contentWidth);
+      const titleY = pageHeight / 2 - 20;
+      pdf.text(titleLines, pageWidth / 2, titleY, { align: 'center' });
+
+      pdf.setTextColor(255, 255, 255); // White
+      pdf.setFontSize(20);
+      pdf.setFont('helvetica', 'normal');
+      const subtitleLines = pdf.splitTextToSize(pitchDeck.subtitle, contentWidth);
+      pdf.text(subtitleLines, pageWidth / 2, titleY + 30, { align: 'center' });
+
+      // Content slides
+      for (let i = 0; i < pitchDeck.slides.length; i++) {
+        const slide = pitchDeck.slides[i];
+        pdf.addPage();
+
+        // Background gradient effect (simulated with rectangles)
+        pdf.setFillColor(248, 248, 248);
+        pdf.rect(0, 0, pageWidth, pageHeight, 'F');
+
+        // Slide number indicator (top right)
+        pdf.setFontSize(10);
+        pdf.setTextColor(150, 150, 150);
+        pdf.text(`Slide ${slide.slideNumber} of ${pitchDeck.totalSlides}`, pageWidth - margin, margin);
+
+        // Title
+        pdf.setTextColor(10, 35, 66); // Navy
+        pdf.setFontSize(24);
+        pdf.setFont('helvetica', 'bold');
+        const titleLinesPDF = pdf.splitTextToSize(slide.title, contentWidth);
+        pdf.text(titleLinesPDF, margin, margin + 10);
+
+        let currentY = margin + 15 + (titleLinesPDF.length * 8);
+
+        // Image if available
+        if (slide.imageData) {
+          try {
+            const imgWidth = contentWidth * 0.7;
+            const imgHeight = imgWidth * 0.5625; // 16:9 aspect ratio
+            const imgX = (pageWidth - imgWidth) / 2;
+
+            pdf.addImage(
+              `data:image/png;base64,${slide.imageData}`,
+              'PNG',
+              imgX,
+              currentY,
+              imgWidth,
+              imgHeight
+            );
+
+            currentY += imgHeight + 10;
+          } catch (error) {
+            console.error('Error adding image to PDF:', error);
+          }
+        }
+
+        // Content
+        pdf.setTextColor(50, 50, 50);
+        pdf.setFontSize(12);
+        pdf.setFont('helvetica', 'normal');
+        const contentLines = pdf.splitTextToSize(slide.content, contentWidth);
+
+        // Check if content fits on page, otherwise reduce content or truncate
+        const remainingSpace = pageHeight - currentY - margin - 20; // Reserve space for notes
+        const maxContentLines = Math.floor(remainingSpace / 5);
+        const displayedContentLines = contentLines.slice(0, maxContentLines);
+
+        pdf.text(displayedContentLines, margin, currentY);
+        currentY += (displayedContentLines.length * 5) + 5;
+
+        // Speaker notes (at bottom if space available)
+        if (slide.notes && currentY < pageHeight - margin - 15) {
+          pdf.setFontSize(9);
+          pdf.setTextColor(100, 100, 100);
+          pdf.setFont('helvetica', 'italic');
+          const notesLines = pdf.splitTextToSize(`Speaker Notes: ${slide.notes}`, contentWidth);
+          const maxNotesLines = Math.floor((pageHeight - currentY - margin) / 4);
+          const displayedNotesLines = notesLines.slice(0, maxNotesLines);
+          pdf.text(displayedNotesLines, margin, pageHeight - margin - (displayedNotesLines.length * 4));
+        }
+      }
+
+      // Save PDF
+      const fileName = `${pitchDeck.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.pdf`;
+      pdf.save(fileName);
+
+      toast.success('PDF exported successfully!');
+    } catch (error) {
+      console.error('PDF export error:', error);
+      toast.error('Failed to export PDF. Please try again.');
+    }
+  };
+
+  const handleExportPowerPoint = async () => {
+    if (!pitchDeck) return;
+
+    try {
+      const pptx = new pptxgen();
+
+      // Set presentation properties
+      pptx.author = 'AI Query Hub';
+      pptx.company = 'AI Query Hub';
+      pptx.title = pitchDeck.title;
+      pptx.subject = pitchDeck.subtitle;
+
+      // Define theme colors (Deep Navy & Gold)
+      const navy = '0A2342';
+      const gold = 'FFC300';
+      const white = 'FFFFFF';
+      const lightGray = 'F8F8F8';
+
+      // Title slide
+      const titleSlide = pptx.addSlide();
+      titleSlide.background = { color: navy };
+
+      titleSlide.addText(pitchDeck.title, {
+        x: 0.5,
+        y: '40%',
+        w: '90%',
+        h: 1.5,
+        fontSize: 44,
+        bold: true,
+        color: gold,
+        align: 'center',
+        valign: 'middle'
+      });
+
+      titleSlide.addText(pitchDeck.subtitle, {
+        x: 0.5,
+        y: '55%',
+        w: '90%',
+        h: 1,
+        fontSize: 24,
+        color: white,
+        align: 'center',
+        valign: 'middle'
+      });
+
+      // Content slides
+      for (const slide of pitchDeck.slides) {
+        const contentSlide = pptx.addSlide();
+        contentSlide.background = { color: lightGray };
+
+        // Slide number (top right)
+        contentSlide.addText(`${slide.slideNumber}`, {
+          x: '90%',
+          y: 0.2,
+          w: '8%',
+          h: 0.3,
+          fontSize: 10,
+          color: '666666',
+          align: 'right'
+        });
+
+        // Title
+        contentSlide.addText(slide.title, {
+          x: 0.5,
+          y: 0.5,
+          w: '90%',
+          h: 0.8,
+          fontSize: 32,
+          bold: true,
+          color: navy,
+          align: 'left'
+        });
+
+        let currentY = 1.5;
+
+        // Image if available
+        if (slide.imageData) {
+          try {
+            contentSlide.addImage({
+              data: `data:image/png;base64,${slide.imageData}`,
+              x: 1.5,
+              y: currentY,
+              w: 7,
+              h: 3.9375, // 16:9 aspect ratio
+            });
+            currentY += 4.2;
+          } catch (error) {
+            console.error('Error adding image to PowerPoint:', error);
+          }
+        }
+
+        // Content
+        const contentLines = slide.content.split('\n').filter(line => line.trim());
+        const bulletPoints = contentLines.map(line => {
+          // Remove common bullet point characters
+          return { text: line.replace(/^[•\-\*]\s*/, ''), options: { bullet: true } };
+        });
+
+        if (bulletPoints.length > 0) {
+          contentSlide.addText(bulletPoints, {
+            x: 0.5,
+            y: currentY,
+            w: '90%',
+            h: slide.imageData ? 2 : 4,
+            fontSize: 16,
+            color: '333333',
+            valign: 'top'
+          });
+        }
+
+        // Speaker notes
+        if (slide.notes) {
+          contentSlide.addNotes(slide.notes);
+        }
+      }
+
+      // Save PowerPoint
+      const fileName = `${pitchDeck.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.pptx`;
+      await pptx.writeFile({ fileName });
+
+      toast.success('PowerPoint exported successfully!');
+    } catch (error) {
+      console.error('PowerPoint export error:', error);
+      toast.error('Failed to export PowerPoint. Please try again.');
+    }
+  };
+
+  const handleSave = async () => {
+    if (!user || !pitchDeck) {
+      toast.error('Please generate a pitch deck first');
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      const deckData = {
+        title: pitchDeck.title,
+        subtitle: pitchDeck.subtitle,
+        slides: pitchDeck.slides,
+        totalSlides: pitchDeck.totalSlides,
+      };
+
+      if (savedDeckId) {
+        // Update existing deck
+        const { error } = await supabase
+          .from('pitch_decks')
+          .update({
+            title: pitchDeck.title,
+            subtitle: pitchDeck.subtitle,
+            deck_data: deckData,
+            topic,
+            target_audience: targetAudience,
+            style,
+            number_of_slides: parseInt(numberOfSlides),
+            source_document_ids: selectedDocIds.length > 0 ? selectedDocIds : null,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', savedDeckId);
+
+        if (error) throw error;
+        toast.success('Pitch deck updated successfully!');
+      } else {
+        // Create new deck
+        const { data, error } = await supabase
+          .from('pitch_decks')
+          .insert({
+            user_id: user.id,
+            title: pitchDeck.title,
+            subtitle: pitchDeck.subtitle,
+            deck_data: deckData,
+            topic,
+            target_audience: targetAudience,
+            style,
+            number_of_slides: parseInt(numberOfSlides),
+            source_document_ids: selectedDocIds.length > 0 ? selectedDocIds : null,
+          })
+          .select()
+          .single();
+
+        if (error) throw error;
+        setSavedDeckId(data.id);
+        toast.success('Pitch deck saved successfully!');
+      }
+
+      // Refetch saved decks list
+      refetchSavedDecks();
+    } catch (error) {
+      console.error('Save error:', error);
+      toast.error('Failed to save pitch deck. Please try again.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleLoadDeck = async (deckId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('pitch_decks')
+        .select('*')
+        .eq('id', deckId)
+        .single();
+
+      if (error) throw error;
+
+      // Load the deck data
+      const loadedDeck = data.deck_data as PitchDeck;
+      setPitchDeck(loadedDeck);
+
+      // Load the configuration
+      setTopic(data.topic || '');
+      setTargetAudience(data.target_audience || 'general business audience');
+      setNumberOfSlides(data.number_of_slides?.toString() || '10');
+      setStyle(data.style || 'professional');
+      setSelectedDocIds(data.source_document_ids || []);
+      setSavedDeckId(data.id);
+      setShareToken(data.share_token || null);
+
+      // Update last viewed
+      await supabase
+        .from('pitch_decks')
+        .update({ last_viewed_at: new Date().toISOString() })
+        .eq('id', deckId);
+
+      toast.success(`Loaded: ${data.title}`);
+      setShowSavedDecks(false);
+    } catch (error) {
+      console.error('Load error:', error);
+      toast.error('Failed to load pitch deck.');
+    }
+  };
+
+  const handleGenerateShareLink = async () => {
+    if (!user || !savedDeckId) {
+      toast.error('Please save your pitch deck first');
+      return;
+    }
+
+    setIsGeneratingShareLink(true);
+    try {
+      // Generate share token using the database function
+      const { data: tokenData, error: tokenError } = await supabase
+        .rpc('generate_share_token');
+
+      if (tokenError) throw tokenError;
+
+      const newToken = tokenData;
+
+      // Update the pitch deck with share token and make it public
+      const { error: updateError } = await supabase
+        .from('pitch_decks')
+        .update({
+          is_public: true,
+          share_token: newToken,
+        })
+        .eq('id', savedDeckId);
+
+      if (updateError) throw updateError;
+
+      setShareToken(newToken);
+
+      // Copy share URL to clipboard
+      const shareUrl = `${window.location.origin}/pitch-deck/share/${newToken}`;
+      await navigator.clipboard.writeText(shareUrl);
+
+      toast.success('Share link copied to clipboard!');
+    } catch (error) {
+      console.error('Share link generation error:', error);
+      toast.error('Failed to generate share link. Please try again.');
+    } finally {
+      setIsGeneratingShareLink(false);
+    }
+  };
+
+  const handleRevokeShareLink = async () => {
+    if (!user || !savedDeckId) return;
+
+    try {
+      const { error } = await supabase
+        .from('pitch_decks')
+        .update({
+          is_public: false,
+          share_token: null,
+        })
+        .eq('id', savedDeckId);
+
+      if (error) throw error;
+
+      setShareToken(null);
+      toast.success('Share link revoked');
+    } catch (error) {
+      console.error('Revoke share link error:', error);
+      toast.error('Failed to revoke share link');
+    }
+  };
+
+  const handleDownloadAsZip = async () => {
+    if (!pitchDeck) return;
+
+    try {
+      const zip = new JSZip();
+
+      // Add deck data as JSON
+      const deckData = {
+        title: pitchDeck.title,
+        subtitle: pitchDeck.subtitle,
+        slides: pitchDeck.slides.map(slide => ({
+          ...slide,
+          imageData: slide.imageData ? `image_slide_${slide.slideNumber}.png` : null
+        })),
+        totalSlides: pitchDeck.totalSlides,
+      };
+      zip.file('deck_data.json', JSON.stringify(deckData, null, 2));
+
+      // Add images folder
+      const imagesFolder = zip.folder('images');
+      if (imagesFolder) {
+        for (const slide of pitchDeck.slides) {
+          if (slide.imageData) {
+            // Convert base64 to blob
+            const base64Data = slide.imageData;
+            imagesFolder.file(`slide_${slide.slideNumber}.png`, base64Data, { base64: true });
+          }
+        }
+      }
+
+      // Add HTML file
+      const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <title>${pitchDeck.title}</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #000;
+    }
+    .slide {
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      page-break-after: always;
+      padding: 60px;
+      box-sizing: border-box;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+    .slide.title-slide {
+      background: linear-gradient(135deg, #0A2342 0%, #FFC300 100%);
+    }
+    .slide h1 {
+      font-size: 4em;
+      margin: 0 0 20px 0;
+      text-align: center;
+    }
+    .slide h2 {
+      font-size: 3em;
+      margin: 0 0 40px 0;
+      text-align: center;
+    }
+    .slide .subtitle {
+      font-size: 2em;
+      opacity: 0.9;
+    }
+    .slide .content {
+      font-size: 1.5em;
+      max-width: 80%;
+      line-height: 1.8;
+      white-space: pre-wrap;
+    }
+    .slide img {
+      max-width: 80%;
+      max-height: 50vh;
+      margin: 20px 0;
+      border-radius: 10px;
+    }
+    .slide .notes {
+      position: fixed;
+      bottom: 20px;
+      left: 20px;
+      right: 20px;
+      font-size: 0.8em;
+      opacity: 0.6;
+      font-style: italic;
+    }
+    @media print {
+      .slide {
+        page-break-after: always;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="slide title-slide">
+    <h1>${pitchDeck.title}</h1>
+    <div class="subtitle">${pitchDeck.subtitle}</div>
+  </div>
+  ${pitchDeck.slides.map(slide => `
+    <div class="slide">
+      <h2>${slide.title}</h2>
+      ${slide.imageData ? `<img src="images/slide_${slide.slideNumber}.png" alt="${slide.visualPrompt || ''}" />` : ''}
+      <div class="content">${slide.content}</div>
+      ${slide.notes ? `<div class="notes">Speaker Notes: ${slide.notes}</div>` : ''}
+    </div>
+  `).join('')}
+</body>
+</html>
+      `;
+      zip.file('presentation.html', html);
+
+      // Add README
+      const readme = `# ${pitchDeck.title}
+
+${pitchDeck.subtitle}
+
+## Contents
+
+- presentation.html - Open this file in a web browser to view the pitch deck
+- deck_data.json - Structured data of the pitch deck (can be imported back)
+- images/ - All slide images in PNG format
+
+## How to Use
+
+1. Open presentation.html in any modern web browser
+2. Press F11 for fullscreen mode
+3. Use arrow keys or swipe to navigate slides
+
+Generated with AI Query Hub
+`;
+      zip.file('README.md', readme);
+
+      // Generate and download ZIP
+      const blob = await zip.generateAsync({ type: 'blob' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${pitchDeck.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.zip`;
+      link.click();
+      URL.revokeObjectURL(url);
+
+      toast.success('ZIP file downloaded successfully!');
+    } catch (error) {
+      console.error('ZIP download error:', error);
+      toast.error('Failed to download ZIP file. Please try again.');
+    }
+  };
+
   return (
     <div className="container mx-auto p-6 max-w-6xl">
       <div className="mb-8">
@@ -271,6 +971,60 @@ export default function PitchDeck() {
           Create professional pitch decks with AI-generated content and graphics
         </p>
       </div>
+
+      {/* Saved Decks Section */}
+      {savedDecks && savedDecks.length > 0 && (
+        <Card className="mb-6">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle>Saved Pitch Decks ({savedDecks.length})</CardTitle>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowSavedDecks(!showSavedDecks)}
+              >
+                {showSavedDecks ? 'Hide' : 'Show'}
+              </Button>
+            </div>
+          </CardHeader>
+          {showSavedDecks && (
+            <CardContent>
+              <div className="space-y-2 max-h-96 overflow-y-auto">
+                {savedDecks.map((deck) => (
+                  <div
+                    key={deck.id}
+                    className="flex items-center justify-between p-3 border rounded hover:bg-muted cursor-pointer"
+                    onClick={() => handleLoadDeck(deck.id)}
+                  >
+                    <div className="flex-1">
+                      <h3 className="font-medium">{deck.title}</h3>
+                      {deck.subtitle && (
+                        <p className="text-sm text-muted-foreground">{deck.subtitle}</p>
+                      )}
+                      <div className="flex gap-2 mt-1">
+                        <Badge variant="secondary" className="text-xs">
+                          {deck.number_of_slides} slides
+                        </Badge>
+                        {deck.style && (
+                          <Badge variant="outline" className="text-xs">
+                            {deck.style}
+                          </Badge>
+                        )}
+                        <span className="text-xs text-muted-foreground">
+                          Updated: {new Date(deck.updated_at).toLocaleDateString()}
+                        </span>
+                      </div>
+                    </div>
+                    {savedDeckId === deck.id && (
+                      <Badge className="ml-2">Current</Badge>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          )}
+        </Card>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Input Form */}
@@ -498,14 +1252,114 @@ export default function PitchDeck() {
             </Button>
 
             {pitchDeck && (
-              <Button
-                onClick={handleDownload}
-                variant="outline"
-                className="w-full"
-              >
-                <Download className="h-4 w-4 mr-2" />
-                Download as HTML
-              </Button>
+              <div className="space-y-2">
+                <Button
+                  onClick={handleStartPresentation}
+                  className="w-full bg-accent hover:bg-accent/90 text-accent-foreground"
+                  size="lg"
+                >
+                  <Presentation className="h-5 w-5 mr-2" />
+                  Start Presentation
+                </Button>
+                <Button
+                  onClick={handleSave}
+                  className="w-full"
+                  disabled={isSaving}
+                >
+                  {isSaving ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Saving...
+                    </>
+                  ) : savedDeckId ? (
+                    'Update Saved Deck'
+                  ) : (
+                    'Save Deck'
+                  )}
+                </Button>
+                <Button
+                  onClick={handleExportPDF}
+                  variant="default"
+                  className="w-full"
+                >
+                  <FileText className="h-4 w-4 mr-2" />
+                  Export as PDF
+                </Button>
+                <Button
+                  onClick={handleExportPowerPoint}
+                  variant="default"
+                  className="w-full"
+                >
+                  <FileSlides className="h-4 w-4 mr-2" />
+                  Export as PowerPoint
+                </Button>
+                <Button
+                  onClick={handleDownload}
+                  variant="outline"
+                  className="w-full"
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  Download as HTML
+                </Button>
+                <Button
+                  onClick={handleDownloadAsZip}
+                  variant="outline"
+                  className="w-full"
+                >
+                  <Archive className="h-4 w-4 mr-2" />
+                  Download as ZIP (All Assets)
+                </Button>
+
+                <div className="pt-2 border-t">
+                  {shareToken ? (
+                    <>
+                      <div className="mb-2 p-2 bg-muted rounded text-xs">
+                        <p className="text-muted-foreground mb-1">Share URL:</p>
+                        <p className="font-mono break-all">{`${window.location.origin}/pitch-deck/share/${shareToken}`}</p>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          onClick={handleGenerateShareLink}
+                          variant="outline"
+                          size="sm"
+                          className="flex-1"
+                        >
+                          <Share2 className="h-3 w-3 mr-2" />
+                          Copy Link
+                        </Button>
+                        <Button
+                          onClick={handleRevokeShareLink}
+                          variant="outline"
+                          size="sm"
+                          className="flex-1"
+                        >
+                          <X className="h-3 w-3 mr-2" />
+                          Revoke
+                        </Button>
+                      </div>
+                    </>
+                  ) : (
+                    <Button
+                      onClick={handleGenerateShareLink}
+                      variant="outline"
+                      className="w-full"
+                      disabled={isGeneratingShareLink || !savedDeckId}
+                    >
+                      {isGeneratingShareLink ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Generating...
+                        </>
+                      ) : (
+                        <>
+                          <Share2 className="h-4 w-4 mr-2" />
+                          Generate Share Link
+                        </>
+                      )}
+                    </Button>
+                  )}
+                </div>
+              </div>
             )}
           </CardContent>
         </Card>
@@ -628,6 +1482,109 @@ export default function PitchDeck() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Fullscreen Presentation Mode */}
+      {isPresentationMode && pitchDeck && (
+        <div className="fixed inset-0 bg-black z-50 flex flex-col">
+          {/* Presentation Content */}
+          <div className="flex-1 flex items-center justify-center p-8">
+            {currentSlideIndex === 0 ? (
+              // Title slide
+              <div className="text-center max-w-4xl">
+                <h1 className="text-6xl font-bold text-accent mb-6">{pitchDeck.title}</h1>
+                <p className="text-3xl text-white opacity-90">{pitchDeck.subtitle}</p>
+              </div>
+            ) : (
+              // Content slide
+              <div className="w-full max-w-6xl">
+                <h2 className="text-5xl font-bold text-white mb-8">
+                  {pitchDeck.slides[currentSlideIndex - 1].title}
+                </h2>
+
+                {pitchDeck.slides[currentSlideIndex - 1].imageData && (
+                  <img
+                    src={`data:image/png;base64,${pitchDeck.slides[currentSlideIndex - 1].imageData}`}
+                    alt={pitchDeck.slides[currentSlideIndex - 1].visualPrompt || ''}
+                    className="w-full max-h-96 object-contain rounded-lg mb-6"
+                  />
+                )}
+
+                <div className="text-2xl text-white whitespace-pre-wrap leading-relaxed">
+                  {pitchDeck.slides[currentSlideIndex - 1].content}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Presenter Notes Overlay */}
+          {showPresenterNotes && currentSlideIndex > 0 && pitchDeck.slides[currentSlideIndex - 1].notes && (
+            <div className="absolute bottom-24 left-0 right-0 bg-black/90 text-white p-6 border-t border-white/20">
+              <p className="text-sm font-semibold mb-2">Speaker Notes:</p>
+              <p className="text-base opacity-90">{pitchDeck.slides[currentSlideIndex - 1].notes}</p>
+            </div>
+          )}
+
+          {/* Navigation Controls */}
+          <div className="bg-black/80 border-t border-white/10 p-4 flex items-center justify-between">
+            <div className="flex gap-2">
+              <Button
+                onClick={handlePreviousSlide}
+                disabled={currentSlideIndex === 0}
+                variant="ghost"
+                size="sm"
+                className="text-white hover:bg-white/20"
+              >
+                ← Previous
+              </Button>
+              <Button
+                onClick={handleNextSlide}
+                disabled={currentSlideIndex === pitchDeck.totalSlides}
+                variant="ghost"
+                size="sm"
+                className="text-white hover:bg-white/20"
+              >
+                Next →
+              </Button>
+            </div>
+
+            <div className="flex items-center gap-4">
+              <span className="text-accent font-bold text-lg">
+                {formatTime(elapsedSeconds)}
+              </span>
+
+              <span className="text-white text-sm">
+                Slide {currentSlideIndex} of {pitchDeck.totalSlides}
+              </span>
+
+              <Button
+                onClick={() => setShowPresenterNotes(prev => !prev)}
+                variant="ghost"
+                size="sm"
+                className="text-white hover:bg-white/20"
+              >
+                {showPresenterNotes ? 'Hide Notes' : 'Show Notes'} (N)
+              </Button>
+
+              <Button
+                onClick={handleExitPresentation}
+                variant="ghost"
+                size="sm"
+                className="text-white hover:bg-white/20"
+              >
+                Exit (ESC)
+              </Button>
+            </div>
+          </div>
+
+          {/* Keyboard Shortcuts Helper */}
+          <div className="absolute top-4 right-4 bg-black/60 text-white text-xs p-3 rounded opacity-70">
+            <p className="font-semibold mb-1">Keyboard Shortcuts:</p>
+            <p>← / → : Navigate slides</p>
+            <p>N : Toggle notes</p>
+            <p>ESC : Exit presentation</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
