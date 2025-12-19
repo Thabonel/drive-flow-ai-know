@@ -1,6 +1,5 @@
 import { arrayBufferToBase64 } from '../_shared/base64Utils.ts';
 import { CLAUDE_MODELS } from '../_shared/models.ts';
-import { DOMParser } from "https://deno.land/x/deno_dom@v0.1.38/deno-dom-wasm.ts";
 
 interface ParseResult {
   content: string;
@@ -79,37 +78,31 @@ async function parseFDX(filePath: string, fileName: string): Promise<ParseResult
       text = new TextDecoder('utf-8', { fatal: false }).decode(fileBytes);
     }
 
-    // Parse XML using DOMParser (now statically imported)
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(text, 'text/xml');
-
-    if (!doc) {
-      throw new Error('Failed to parse FDX XML');
-    }
-
-    // Extract script title if available
+    // Parse FDX using regex (DOMParser doesn't support XML in Deno Deploy)
     let title = fileName.replace(/\.[^/.]+$/, '');
-    const titlePageElements = doc.querySelectorAll('TitlePage Content Paragraph Text');
-    if (titlePageElements && titlePageElements.length > 0) {
-      const possibleTitle = titlePageElements[0]?.textContent?.trim();
-      if (possibleTitle && possibleTitle.length > 0 && possibleTitle.length < 100) {
-        title = possibleTitle;
-      }
-    }
-
-    // Extract paragraphs maintaining screenplay structure
-    const paragraphs = doc.querySelectorAll('Content Paragraph');
     let content = '';
     let sceneCount = 0;
 
-    for (const p of paragraphs) {
-      const type = p.getAttribute('Type') || '';
-      const textNodes = p.querySelectorAll('Text');
-      let lineText = '';
+    // Extract title from TitlePage if available
+    const titleMatch = text.match(/<TitlePage>[\s\S]*?<Text>(.*?)<\/Text>/);
+    if (titleMatch && titleMatch[1].trim().length > 0 && titleMatch[1].trim().length < 100) {
+      title = titleMatch[1].trim();
+    }
 
-      // Combine all text nodes in the paragraph
-      for (const textNode of textNodes) {
-        lineText += textNode.textContent || '';
+    // Extract all paragraphs with their type and text content
+    const paragraphRegex = /<Paragraph[^>]*Type="([^"]*)"[^>]*>[\s\S]*?<\/Paragraph>/g;
+    const textRegex = /<Text>(.*?)<\/Text>/g;
+
+    let match;
+    while ((match = paragraphRegex.exec(text)) !== null) {
+      const type = match[1];
+      const paragraphContent = match[0];
+
+      // Extract all text nodes within this paragraph
+      let lineText = '';
+      let textMatch;
+      while ((textMatch = textRegex.exec(paragraphContent)) !== null) {
+        lineText += textMatch[1];
       }
 
       lineText = lineText.trim();
@@ -132,6 +125,7 @@ async function parseFDX(filePath: string, fileName: string): Promise<ParseResult
           break;
         case 'Action':
         case 'General':
+        case 'Shot':
           content += `${lineText}\n\n`;
           break;
         case 'Transition':
