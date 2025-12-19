@@ -7,7 +7,13 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { FileText, Edit, Copy, Save, X, Tag, Sparkles, Lightbulb, Calendar, Printer, Download } from 'lucide-react';
+import { FileText, Edit, Copy, Save, X, Tag, Sparkles, Lightbulb, Calendar, Printer, Download, ChevronDown } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -168,16 +174,100 @@ export const DocumentViewerModal = ({ document, isOpen, onClose }: DocumentViewe
     });
   };
 
-  const handleDownload = () => {
+  const handleDownload = (format: 'txt' | 'md' | 'html' | 'pdf' = 'txt') => {
     try {
-      // Create a text file with the document content
-      const content = `${formData.title}\n${'='.repeat(formData.title.length)}\n\nCategory: ${formData.category || 'Uncategorized'}\nTags: ${formData.tags.join(', ')}\n\n${formData.content}`;
+      const fileName = formData.title.replace(/[^a-z0-9]/gi, '_').toLowerCase();
 
-      const blob = new Blob([content], { type: 'text/plain' });
+      if (format === 'pdf') {
+        // Use print for PDF generation
+        handlePrint();
+        toast({
+          title: 'PDF Generation',
+          description: 'Use the print dialog to save as PDF.',
+        });
+        return;
+      }
+
+      let content = '';
+      let mimeType = 'text/plain';
+      let extension = 'txt';
+
+      switch (format) {
+        case 'txt':
+          content = `${formData.title}\n${'='.repeat(formData.title.length)}\n\nCategory: ${formData.category || 'Uncategorized'}\nTags: ${formData.tags.join(', ')}\n\n${formData.content}`;
+          mimeType = 'text/plain';
+          extension = 'txt';
+          break;
+
+        case 'md':
+          content = `# ${formData.title}\n\n`;
+          content += `**Category:** ${formData.category || 'Uncategorized'}  \n`;
+          content += `**Tags:** ${formData.tags.join(', ')}\n\n`;
+          content += `---\n\n${formData.content}`;
+          mimeType = 'text/markdown';
+          extension = 'md';
+          break;
+
+        case 'html':
+          content = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>${formData.title}</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      line-height: 1.6;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+      color: #333;
+    }
+    h1 {
+      color: #0A2342;
+      border-bottom: 3px solid #FFC300;
+      padding-bottom: 10px;
+    }
+    .metadata {
+      background: #f5f5f5;
+      padding: 15px;
+      border-radius: 8px;
+      margin: 20px 0;
+    }
+    .content {
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+    .tag {
+      display: inline-block;
+      background: #FFC300;
+      color: #0A2342;
+      padding: 4px 12px;
+      border-radius: 4px;
+      margin: 2px;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <h1>${formData.title}</h1>
+  <div class="metadata">
+    <p><strong>Category:</strong> ${formData.category || 'Uncategorized'}</p>
+    <p><strong>Tags:</strong> ${formData.tags.map(tag => `<span class="tag">${tag}</span>`).join(' ')}</p>
+  </div>
+  <div class="content">${formData.content.replace(/\n/g, '<br>')}</div>
+</body>
+</html>`;
+          mimeType = 'text/html';
+          extension = 'html';
+          break;
+      }
+
+      const blob = new Blob([content], { type: mimeType });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `${formData.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.txt`;
+      link.download = `${fileName}.${extension}`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -185,7 +275,7 @@ export const DocumentViewerModal = ({ document, isOpen, onClose }: DocumentViewe
 
       toast({
         title: 'Downloaded',
-        description: 'Document downloaded successfully.',
+        description: `Document downloaded as ${extension.toUpperCase()}.`,
       });
     } catch (error) {
       toast({
@@ -259,10 +349,29 @@ export const DocumentViewerModal = ({ document, isOpen, onClose }: DocumentViewe
                     <Printer className="h-4 w-4 mr-2" />
                     Print
                   </Button>
-                  <Button variant="outline" size="sm" onClick={handleDownload}>
-                    <Download className="h-4 w-4 mr-2" />
-                    Download
-                  </Button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" size="sm">
+                        <Download className="h-4 w-4 mr-2" />
+                        Download
+                        <ChevronDown className="h-3 w-3 ml-1" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => handleDownload('txt')}>
+                        Plain Text (.txt)
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleDownload('md')}>
+                        Markdown (.md)
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleDownload('html')}>
+                        HTML (.html)
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleDownload('pdf')}>
+                        PDF (via Print)
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                   <Button variant="outline" size="sm" onClick={handleCopyContent}>
                     <Copy className="h-4 w-4 mr-2" />
                     Copy

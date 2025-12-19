@@ -6,7 +6,13 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Loader2, Send, Archive, Trash2, Edit2, Check, X, FileText, MessageCircle, Calendar, Printer, Download } from 'lucide-react';
+import { Loader2, Send, Archive, Trash2, Edit2, Check, X, FileText, MessageCircle, Calendar, Printer, Download, ChevronDown } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { DictationButton } from '@/components/DictationButton';
@@ -720,7 +726,7 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
     toast.success('Print dialog opened');
   };
 
-  const handleDownload = () => {
+  const handleDownload = (format: 'txt' | 'md' | 'html' | 'pdf' = 'txt') => {
     if (messages.length === 0) {
       toast.error('No messages to download');
       return;
@@ -731,28 +737,128 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
         return new Date(timestamp).toLocaleString();
       };
 
-      let content = `${conversationTitle}\n${'='.repeat(conversationTitle.length)}\n\n`;
+      const fileName = conversationTitle.replace(/[^a-z0-9]/gi, '_').toLowerCase();
 
-      messages.forEach((msg, index) => {
-        content += `[${msg.role === 'user' ? 'You' : 'AI Assistant'}] - ${formatDate(msg.timestamp)}\n`;
-        content += `${msg.content}\n\n`;
-        if (index < messages.length - 1) {
-          content += '---\n\n';
-        }
-      });
+      if (format === 'pdf') {
+        handlePrint();
+        toast.success('Use the print dialog to save as PDF');
+        return;
+      }
 
-      const blob = new Blob([content], { type: 'text/plain' });
+      let content = '';
+      let mimeType = 'text/plain';
+      let extension = 'txt';
+
+      switch (format) {
+        case 'txt':
+          content = `${conversationTitle}\n${'='.repeat(conversationTitle.length)}\n\n`;
+          messages.forEach((msg, index) => {
+            content += `[${msg.role === 'user' ? 'You' : 'AI Assistant'}] - ${formatDate(msg.timestamp)}\n`;
+            content += `${msg.content}\n\n`;
+            if (index < messages.length - 1) {
+              content += '---\n\n';
+            }
+          });
+          mimeType = 'text/plain';
+          extension = 'txt';
+          break;
+
+        case 'md':
+          content = `# ${conversationTitle}\n\n`;
+          messages.forEach((msg) => {
+            const role = msg.role === 'user' ? '👤 You' : '🤖 AI Assistant';
+            content += `### ${role}\n`;
+            content += `*${formatDate(msg.timestamp)}*\n\n`;
+            content += `${msg.content}\n\n`;
+            content += `---\n\n`;
+          });
+          mimeType = 'text/markdown';
+          extension = 'md';
+          break;
+
+        case 'html':
+          const messagesHtml = messages.map(msg => `
+            <div class="message ${msg.role}">
+              <div class="message-header">
+                <strong>${msg.role === 'user' ? '👤 You' : '🤖 AI Assistant'}</strong>
+                <span class="timestamp">${formatDate(msg.timestamp)}</span>
+              </div>
+              <div class="message-content">${msg.content.replace(/\n/g, '<br>')}</div>
+            </div>
+          `).join('');
+
+          content = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>${conversationTitle}</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      line-height: 1.6;
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    h1 {
+      color: #0A2342;
+      border-bottom: 3px solid #FFC300;
+      padding-bottom: 10px;
+    }
+    .message {
+      margin-bottom: 20px;
+      padding: 15px;
+      border-radius: 8px;
+      background: white;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .message.user {
+      border-left: 4px solid #4CAF50;
+    }
+    .message.assistant {
+      border-left: 4px solid #2196F3;
+    }
+    .message-header {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 10px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #eee;
+    }
+    .timestamp {
+      color: #666;
+      font-size: 12px;
+    }
+    .message-content {
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+  </style>
+</head>
+<body>
+  <h1>${conversationTitle}</h1>
+  <div class="messages">
+    ${messagesHtml}
+  </div>
+</body>
+</html>`;
+          mimeType = 'text/html';
+          extension = 'html';
+          break;
+      }
+
+      const blob = new Blob([content], { type: mimeType });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      const fileName = conversationTitle.replace(/[^a-z0-9]/gi, '_').toLowerCase();
-      link.download = `${fileName}_conversation.txt`;
+      link.download = `${fileName}_conversation.${extension}`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
 
-      toast.success('Conversation downloaded');
+      toast.success(`Conversation downloaded as ${extension.toUpperCase()}`);
     } catch (error) {
       toast.error('Failed to download conversation');
     }
@@ -818,14 +924,33 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
               >
                 <Printer className="h-4 w-4" />
               </Button>
-              <Button
-                onClick={handleDownload}
-                size="sm"
-                variant="outline"
-                title="Download conversation as text file"
-              >
-                <Download className="h-4 w-4" />
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    title="Download conversation"
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    Download
+                    <ChevronDown className="h-3 w-3 ml-1" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => handleDownload('txt')}>
+                    Plain Text (.txt)
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleDownload('md')}>
+                    Markdown (.md)
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleDownload('html')}>
+                    HTML (.html)
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleDownload('pdf')}>
+                    PDF (via Print)
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </>
           )}
           {messages.length > 0 && messages.some(m => m.role === 'assistant') && (
