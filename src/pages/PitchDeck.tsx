@@ -95,6 +95,21 @@ export default function PitchDeck() {
     return titleMatch || categoryMatch || summaryMatch;
   }) || [];
 
+  // Smart slide count suggestion based on topic complexity and document count
+  const suggestSlideCount = (): number => {
+    const topicLength = topic.length;
+    const docCount = selectedDocIds.length;
+
+    // Simple heuristic based on content complexity
+    if (topicLength < 50 && docCount < 3) return 8;
+    if (topicLength < 100 && docCount < 5) return 10;
+    if (topicLength > 200 || docCount > 10) return 15;
+
+    return 12; // Default
+  };
+
+  const suggestedSlides = suggestSlideCount();
+
   // Fetch saved pitch decks
   const { data: savedDecks, refetch: refetchSavedDecks } = useQuery({
     queryKey: ['saved-pitch-decks', user?.id],
@@ -1231,9 +1246,26 @@ Generated with AI Query Hub
                 onChange={(e) => setNumberOfSlides(e.target.value)}
                 placeholder="e.g., 10"
               />
-              <p className="text-xs text-muted-foreground mt-1">
-                Choose between 3 and 50 slides
-              </p>
+              <div className="flex items-center justify-between mt-1">
+                <p className="text-xs text-muted-foreground">
+                  {topic || selectedDocIds.length > 0 ? (
+                    <>Suggested: <span className="font-medium text-primary">{suggestedSlides} slides</span></>
+                  ) : (
+                    'Choose between 3 and 50 slides'
+                  )}
+                </p>
+                {(topic || selectedDocIds.length > 0) && suggestedSlides.toString() !== numberOfSlides && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 text-xs"
+                    onClick={() => setNumberOfSlides(suggestedSlides.toString())}
+                  >
+                    Use suggested
+                  </Button>
+                )}
+              </div>
             </div>
 
             <div>
