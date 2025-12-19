@@ -242,9 +242,10 @@ Make it compelling, data-driven where appropriate (especially if source document
 
     // Step 2: Generate images for slides that need them (if requested)
     if (includeImages) {
-      console.log('Generating images for slides...');
+      console.log('Generating images for slides in parallel...');
 
-      for (const slide of pitchDeckStructure.slides) {
+      // Generate all images in parallel to avoid timeout
+      const imagePromises = pitchDeckStructure.slides.map(async (slide) => {
         // For revisions, preserve existing images unless the slide was modified
         const shouldGenerateImage = slide.visualType && slide.visualType !== 'none' && slide.visualPrompt;
         const isRevisedSlide = isRevision && slideNumber ? slide.slideNumber === slideNumber : true;
@@ -255,7 +256,7 @@ Make it compelling, data-driven where appropriate (especially if source document
           if (existingSlide?.imageData) {
             slide.imageData = existingSlide.imageData;
             console.log(`Preserved existing image for slide ${slide.slideNumber}`);
-            continue;
+            return;
           }
         }
 
@@ -287,7 +288,11 @@ Make it compelling, data-driven where appropriate (especially if source document
             // Continue without the image
           }
         }
-      }
+      });
+
+      // Wait for all images to complete
+      await Promise.all(imagePromises);
+      console.log('All images generated');
     }
 
     console.log('Pitch deck generated successfully');
