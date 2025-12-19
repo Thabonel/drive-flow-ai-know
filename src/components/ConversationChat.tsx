@@ -6,7 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Loader2, Send, Archive, Trash2, Edit2, Check, X, FileText, MessageCircle, Calendar } from 'lucide-react';
+import { Loader2, Send, Archive, Trash2, Edit2, Check, X, FileText, MessageCircle, Calendar, Printer, Download } from 'lucide-react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { DictationButton } from '@/components/DictationButton';
@@ -625,6 +625,139 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
     }
   };
 
+  const handlePrint = () => {
+    if (messages.length === 0) {
+      toast.error('No messages to print');
+      return;
+    }
+
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      toast.error('Please allow popups to print conversations');
+      return;
+    }
+
+    const formatDate = (timestamp: string) => {
+      return new Date(timestamp).toLocaleString();
+    };
+
+    const messagesHtml = messages.map(msg => `
+      <div class="message ${msg.role}">
+        <div class="message-header">
+          <strong>${msg.role === 'user' ? 'You' : 'AI Assistant'}</strong>
+          <span class="timestamp">${formatDate(msg.timestamp)}</span>
+        </div>
+        <div class="message-content">${msg.content.replace(/\n/g, '<br>')}</div>
+      </div>
+    `).join('');
+
+    const printContent = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>${conversationTitle}</title>
+          <style>
+            body {
+              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+              line-height: 1.6;
+              max-width: 800px;
+              margin: 0 auto;
+              padding: 20px;
+            }
+            h1 {
+              font-size: 24px;
+              margin-bottom: 20px;
+              border-bottom: 2px solid #333;
+              padding-bottom: 10px;
+            }
+            .message {
+              margin-bottom: 20px;
+              padding: 15px;
+              border-radius: 8px;
+            }
+            .message.user {
+              background-color: #f0f0f0;
+            }
+            .message.assistant {
+              background-color: #e8f4f8;
+            }
+            .message-header {
+              display: flex;
+              justify-content: space-between;
+              margin-bottom: 8px;
+              font-size: 14px;
+            }
+            .timestamp {
+              color: #666;
+              font-size: 12px;
+            }
+            .message-content {
+              white-space: pre-wrap;
+              word-wrap: break-word;
+            }
+            @media print {
+              body { padding: 0; }
+              .message.user { background-color: #f5f5f5; }
+              .message.assistant { background-color: #f0f8ff; }
+            }
+          </style>
+        </head>
+        <body>
+          <h1>${conversationTitle}</h1>
+          <div class="messages">
+            ${messagesHtml}
+          </div>
+        </body>
+      </html>
+    `;
+
+    printWindow.document.write(printContent);
+    printWindow.document.close();
+    printWindow.onload = () => {
+      printWindow.print();
+    };
+
+    toast.success('Print dialog opened');
+  };
+
+  const handleDownload = () => {
+    if (messages.length === 0) {
+      toast.error('No messages to download');
+      return;
+    }
+
+    try {
+      const formatDate = (timestamp: string) => {
+        return new Date(timestamp).toLocaleString();
+      };
+
+      let content = `${conversationTitle}\n${'='.repeat(conversationTitle.length)}\n\n`;
+
+      messages.forEach((msg, index) => {
+        content += `[${msg.role === 'user' ? 'You' : 'AI Assistant'}] - ${formatDate(msg.timestamp)}\n`;
+        content += `${msg.content}\n\n`;
+        if (index < messages.length - 1) {
+          content += '---\n\n';
+        }
+      });
+
+      const blob = new Blob([content], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      const fileName = conversationTitle.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+      link.download = `${fileName}_conversation.txt`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      toast.success('Conversation downloaded');
+    } catch (error) {
+      toast.error('Failed to download conversation');
+    }
+  };
+
   return (
     <div className="flex flex-col h-full overflow-hidden">
       <div className="flex justify-between items-center mb-1 flex-shrink-0">
@@ -674,6 +807,26 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
             <div className="text-sm text-muted-foreground bg-yellow-50 dark:bg-yellow-900/20 px-3 py-1.5 rounded-md border border-yellow-200 dark:border-yellow-800">
               Temporary Chat (not saved)
             </div>
+          )}
+          {messages.length > 0 && (
+            <>
+              <Button
+                onClick={handlePrint}
+                size="sm"
+                variant="outline"
+                title="Print conversation"
+              >
+                <Printer className="h-4 w-4" />
+              </Button>
+              <Button
+                onClick={handleDownload}
+                size="sm"
+                variant="outline"
+                title="Download conversation as text file"
+              >
+                <Download className="h-4 w-4" />
+              </Button>
+            </>
           )}
           {messages.length > 0 && messages.some(m => m.role === 'assistant') && (
             <Button
