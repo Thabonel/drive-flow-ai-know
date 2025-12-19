@@ -261,24 +261,6 @@ const DragDropUpload = ({ onFilesAdded }: DragDropUploadProps) => {
           return; // Don't save broken document
         }
 
-        // Verify we have actual content
-        if (!content || content.trim().length === 0) {
-          toast({
-            title: 'Empty Document',
-            description: `No content could be extracted from ${file.name}`,
-            variant: 'destructive',
-          });
-
-          setUploadingFiles(prev =>
-            prev.map(f =>
-              f.id === uploadingFile.id
-                ? { ...f, status: 'error', progress: 0 }
-                : f
-            )
-          );
-          return;
-        }
-
         // Save to database with extracted content
         await saveDocument(file.name, content, fileType, uploadingFile.id, mimeType);
 
