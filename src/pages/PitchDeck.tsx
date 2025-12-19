@@ -41,6 +41,8 @@ export default function PitchDeck() {
   const [pitchDeck, setPitchDeck] = useState<PitchDeck | null>(null);
   const [selectedDocIds, setSelectedDocIds] = useState<string[]>([]);
   const [showDocSelector, setShowDocSelector] = useState(false);
+  const [revisionRequest, setRevisionRequest] = useState('');
+  const [isRevising, setIsRevising] = useState(false);
 
   // Fetch user's documents
   const { data: documents, isLoading: loadingDocs } = useQuery({
@@ -96,6 +98,50 @@ export default function PitchDeck() {
       toast.error('Failed to generate pitch deck. Please try again.');
     } finally {
       setGenerating(false);
+    }
+  };
+
+  const handleRevise = async (slideNumber?: number) => {
+    if (!user || !pitchDeck) {
+      toast.error('Please generate a pitch deck first');
+      return;
+    }
+
+    if (!revisionRequest.trim()) {
+      toast.error('Please describe what you want to change');
+      return;
+    }
+
+    setIsRevising(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-pitch-deck', {
+        body: {
+          topic,
+          targetAudience,
+          numberOfSlides: parseInt(numberOfSlides),
+          style,
+          includeImages,
+          selectedDocumentIds: selectedDocIds.length > 0 ? selectedDocIds : undefined,
+          revisionRequest,
+          currentDeck: pitchDeck,
+          slideNumber
+        }
+      });
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      setPitchDeck(data);
+      setRevisionRequest('');
+      toast.success(slideNumber
+        ? `Slide ${slideNumber} revised successfully!`
+        : 'Pitch deck revised successfully!');
+    } catch (error) {
+      console.error('Pitch deck revision error:', error);
+      toast.error('Failed to revise pitch deck. Please try again.');
+    } finally {
+      setIsRevising(false);
     }
   };
 
@@ -428,7 +474,40 @@ export default function PitchDeck() {
             )}
 
             {pitchDeck && (
-              <div className="space-y-6 max-h-[800px] overflow-y-auto pr-4">
+              <>
+                {/* Revision Input */}
+                <div className="mb-6 p-4 border rounded-lg bg-muted/50">
+                  <Label htmlFor="revision" className="mb-2 block">Request Changes</Label>
+                  <div className="flex gap-2">
+                    <Textarea
+                      id="revision"
+                      placeholder="e.g., Make slide 3 more technical, add market size data to slide 5, make the whole deck more concise..."
+                      value={revisionRequest}
+                      onChange={(e) => setRevisionRequest(e.target.value)}
+                      rows={2}
+                      className="flex-1"
+                    />
+                    <Button
+                      onClick={() => handleRevise()}
+                      disabled={isRevising || !revisionRequest.trim()}
+                      size="lg"
+                    >
+                      {isRevising ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Revising...
+                        </>
+                      ) : (
+                        'Revise Deck'
+                      )}
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Describe changes for the whole deck, or mention specific slide numbers for targeted revisions
+                  </p>
+                </div>
+
+                <div className="space-y-6 max-h-[800px] overflow-y-auto pr-4">
                 {/* Title Slide */}
                 <Card className="bg-gradient-to-br from-primary/10 to-accent/10 border-primary/20">
                   <CardContent className="pt-6">
@@ -443,7 +522,23 @@ export default function PitchDeck() {
                     <CardHeader>
                       <div className="flex items-center justify-between">
                         <CardTitle className="text-xl">{slide.title}</CardTitle>
-                        <span className="text-sm text-muted-foreground">Slide {slide.slideNumber}</span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-muted-foreground">Slide {slide.slideNumber}</span>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              if (revisionRequest.trim()) {
+                                handleRevise(slide.slideNumber);
+                              } else {
+                                toast.error('Please enter a revision request above');
+                              }
+                            }}
+                            disabled={isRevising}
+                          >
+                            Revise
+                          </Button>
+                        </div>
                       </div>
                     </CardHeader>
                     <CardContent className="space-y-4">
@@ -464,6 +559,7 @@ export default function PitchDeck() {
                   </Card>
                 ))}
               </div>
+              </>
             )}
           </CardContent>
         </Card>

@@ -14,6 +14,9 @@ interface PitchDeckRequest {
   style?: 'professional' | 'creative' | 'minimal' | 'bold';
   includeImages?: boolean;
   selectedDocumentIds?: string[];
+  revisionRequest?: string;
+  currentDeck?: PitchDeckResponse;
+  slideNumber?: number;
 }
 
 interface Slide {
@@ -61,10 +64,21 @@ serve(async (req) => {
       numberOfSlides = 10,
       style = 'professional',
       includeImages = true,
-      selectedDocumentIds
+      selectedDocumentIds,
+      revisionRequest,
+      currentDeck,
+      slideNumber
     }: PitchDeckRequest = await req.json();
 
-    console.log('Generating pitch deck:', { topic, numberOfSlides, style, selectedDocs: selectedDocumentIds?.length || 0 });
+    const isRevision = !!revisionRequest && !!currentDeck;
+    console.log('Generating pitch deck:', {
+      topic,
+      numberOfSlides,
+      style,
+      selectedDocs: selectedDocumentIds?.length || 0,
+      isRevision,
+      targetSlide: slideNumber
+    });
 
     // Fetch selected documents if provided
     let documentContext = '';
@@ -98,11 +112,61 @@ serve(async (req) => {
       throw new Error('ANTHROPIC_API_KEY not configured');
     }
 
-    const structurePrompt = `You are an expert pitch deck consultant. ${
-      documentContext
-        ? `Using the source documents provided below, create a comprehensive ${numberOfSlides}-slide pitch deck.`
-        : `Create a comprehensive ${numberOfSlides}-slide pitch deck about: "${topic}"`
-    }
+    let structurePrompt = '';
+
+    if (isRevision && currentDeck) {
+      // Revision mode
+      const currentDeckJSON = JSON.stringify(currentDeck, null, 2);
+
+      if (slideNumber) {
+        // Single slide revision
+        const targetSlide = currentDeck.slides.find(s => s.slideNumber === slideNumber);
+        structurePrompt = `You are an expert pitch deck consultant. The user has requested a revision to slide ${slideNumber} of their pitch deck.
+
+## Current Slide ${slideNumber}:
+${JSON.stringify(targetSlide, null, 2)}
+
+## Revision Request:
+${revisionRequest}
+
+## Instructions:
+Revise ONLY slide ${slideNumber} based on the user's request. Keep the same slide structure but update the content, title, visual elements, and speaker notes as needed.
+
+Return the COMPLETE deck with all slides, but with slide ${slideNumber} revised according to the request. Keep all other slides exactly as they are.
+
+${documentContext ? `\n## Available Source Documents:\n\n${documentContext}\n\n` : ''}
+
+## Current Full Deck:
+${currentDeckJSON}`;
+      } else {
+        // Full deck revision
+        structurePrompt = `You are an expert pitch deck consultant. The user has requested revisions to their pitch deck.
+
+## Current Pitch Deck:
+${currentDeckJSON}
+
+## Revision Request:
+${revisionRequest}
+
+## Instructions:
+Revise the pitch deck based on the user's request. This could involve:
+- Modifying content across multiple slides
+- Changing the tone or style
+- Adding or removing information
+- Restructuring slides
+- Updating visuals
+
+Maintain the same number of slides (${currentDeck.totalSlides}) unless the user specifically requests otherwise.
+
+${documentContext ? `\n## Available Source Documents:\n\n${documentContext}\n\n` : ''}`;
+      }
+    } else {
+      // New generation mode
+      structurePrompt = `You are an expert pitch deck consultant. ${
+        documentContext
+          ? `Using the source documents provided below, create a comprehensive ${numberOfSlides}-slide pitch deck.`
+          : `Create a comprehensive ${numberOfSlides}-slide pitch deck about: "${topic}"`
+      }
 
 Target audience: ${targetAudience}
 Style: ${style}
@@ -112,7 +176,10 @@ ${documentContext ? `\n## Source Documents\n\n${documentContext}\n\n` : ''}
 ${documentContext
   ? 'Extract the key information from the source documents and structure them into a compelling pitch deck. Use data, facts, and insights from the documents to make the pitch persuasive and credible.'
   : 'Research and create compelling content for the pitch deck based on the topic.'
-}
+}`;
+    }
+
+    structurePrompt += `
 
 For each slide, provide:
 1. Slide number
@@ -178,7 +245,21 @@ Make it compelling, data-driven where appropriate (especially if source document
       console.log('Generating images for slides...');
 
       for (const slide of pitchDeckStructure.slides) {
-        if (slide.visualType && slide.visualType !== 'none' && slide.visualPrompt) {
+        // For revisions, preserve existing images unless the slide was modified
+        const shouldGenerateImage = slide.visualType && slide.visualType !== 'none' && slide.visualPrompt;
+        const isRevisedSlide = isRevision && slideNumber ? slide.slideNumber === slideNumber : true;
+
+        // If revision and not the target slide, try to preserve existing image
+        if (isRevision && !isRevisedSlide && currentDeck) {
+          const existingSlide = currentDeck.slides.find(s => s.slideNumber === slide.slideNumber);
+          if (existingSlide?.imageData) {
+            slide.imageData = existingSlide.imageData;
+            console.log(`Preserved existing image for slide ${slide.slideNumber}`);
+            continue;
+          }
+        }
+
+        if (shouldGenerateImage) {
           try {
             // Call the generate-image function
             const imageResponse = await fetch(`${supabaseUrl}/functions/v1/generate-image`, {
