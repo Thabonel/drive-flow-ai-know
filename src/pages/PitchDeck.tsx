@@ -15,6 +15,7 @@ import { useQuery } from '@tanstack/react-query';
 import jsPDF from 'jspdf';
 import pptxgen from 'pptxgenjs';
 import JSZip from 'jszip';
+import { PageHelp } from '@/components/PageHelp';
 
 interface Slide {
   slideNumber: number;
@@ -963,13 +964,32 @@ Generated with AI Query Hub
   return (
     <div className="container mx-auto p-6 max-w-6xl">
       <div className="mb-8">
-        <h1 className="text-4xl font-bold text-primary mb-2 flex items-center gap-3">
-          <Presentation className="h-10 w-10" />
-          AI Pitch Deck Generator
-        </h1>
-        <p className="text-muted-foreground">
-          Create professional pitch decks with AI-generated content and graphics
-        </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-4xl font-bold text-primary mb-2 flex items-center gap-3">
+              <Presentation className="h-10 w-10" />
+              AI Pitch Deck Generator
+            </h1>
+            <p className="text-muted-foreground">
+              Create professional pitch decks with AI-generated content and graphics
+            </p>
+          </div>
+          <PageHelp
+            title="Pitch Deck Generator Help"
+            description="Create professional AI-powered pitch decks in minutes. Generate decks from topics or your existing documents, customize with AI revisions, and export to multiple formats."
+            tips={[
+              "Enter a topic or select documents from your knowledge base to generate a deck",
+              "Use the revision input to request changes to the entire deck or specific slides",
+              "Search through 700+ documents to find relevant content for your pitch",
+              "Save your deck to load and edit it later",
+              "Export to PDF, PowerPoint, HTML, or ZIP with all assets",
+              "Click 'Start Presentation' for fullscreen mode with keyboard navigation",
+              "Use arrow keys to navigate, N to toggle notes, ESC to exit presentation",
+              "Generate a share link to share your deck publicly with a unique URL",
+              "Presentation mode includes a live timer and slide counter"
+            ]}
+          />
+        </div>
       </div>
 
       {/* Saved Decks Section */}
