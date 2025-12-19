@@ -157,8 +157,8 @@ export default function PitchDeck() {
           setCurrentSlideIndex(0);
           break;
         case 'End':
-          // Last slide
-          setCurrentSlideIndex(pitchDeck.totalSlides);
+          // Last slide - use slides.length for robustness
+          setCurrentSlideIndex(pitchDeck.slides?.length || 0);
           break;
         case 'Escape':
           // Exit presentation mode
@@ -221,7 +221,9 @@ export default function PitchDeck() {
   };
 
   const handleNextSlide = () => {
-    if (pitchDeck && currentSlideIndex < pitchDeck.totalSlides) {
+    // Use actual slides array length instead of totalSlides property
+    // to handle cases where totalSlides is undefined/missing
+    if (pitchDeck && pitchDeck.slides && currentSlideIndex < pitchDeck.slides.length) {
       setCurrentSlideIndex(prev => prev + 1);
     }
   };
@@ -470,7 +472,7 @@ export default function PitchDeck() {
         // Slide number indicator (top right)
         pdf.setFontSize(10);
         pdf.setTextColor(150, 150, 150);
-        pdf.text(`Slide ${slide.slideNumber} of ${pitchDeck.totalSlides}`, pageWidth - margin, margin);
+        pdf.text(`Slide ${slide.slideNumber} of ${pitchDeck.slides?.length || 0}`, pageWidth - margin, margin);
 
         // Title
         pdf.setTextColor(10, 35, 66); // Navy
@@ -1436,7 +1438,7 @@ Generated with AI Query Hub
           <CardHeader>
             <CardTitle>Preview</CardTitle>
             <CardDescription>
-              {pitchDeck ? `${pitchDeck.totalSlides} slides generated` : 'Your pitch deck will appear here'}
+              {pitchDeck ? `${pitchDeck.slides?.length || 0} slides generated` : 'Your pitch deck will appear here'}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -1611,7 +1613,7 @@ Generated with AI Query Hub
               <Button
                 ref={nextButtonRef}
                 onClick={handleNextSlide}
-                disabled={currentSlideIndex === pitchDeck.totalSlides}
+                disabled={currentSlideIndex === (pitchDeck.slides?.length || 0)}
                 variant="ghost"
                 size="sm"
                 className="text-white hover:bg-white/20"
@@ -1626,7 +1628,7 @@ Generated with AI Query Hub
               </span>
 
               <span className="text-white text-sm">
-                Slide {currentSlideIndex} of {pitchDeck.totalSlides}
+                Slide {currentSlideIndex} of {pitchDeck.slides?.length || 0}
               </span>
 
               <Button
