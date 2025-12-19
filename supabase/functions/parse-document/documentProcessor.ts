@@ -384,50 +384,23 @@ async function parsePDF(filePath: string, fileName: string): Promise<ParseResult
 
 async function parseWord(filePath: string, fileName: string): Promise<ParseResult> {
   try {
-    // For DOCX files, we can use Claude Vision as well
-    console.log('Parsing Word document using Claude Vision...');
+    console.log('Parsing Word document using mammoth...');
+
+    // Import mammoth library dynamically
+    const mammoth = await import('npm:mammoth@1.6.0');
+
     const fileBytes = await Deno.readFile(filePath);
-    const base64 = arrayBufferToBase64(fileBytes);
+    const arrayBuffer = fileBytes.buffer;
 
-    const apiKey = Deno.env.get('ANTHROPIC_API_KEY');
-    if (!apiKey) {
-      throw new Error('ANTHROPIC_API_KEY not configured');
+    // Use mammoth to extract text from DOCX
+    const result = await mammoth.extractRawText({ arrayBuffer });
+    const extractedContent = result.value || '';
+
+    if (result.messages && result.messages.length > 0) {
+      console.log('Mammoth parsing warnings:', result.messages);
     }
 
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01'
-      },
-      body: JSON.stringify({
-        model: CLAUDE_MODELS.PRIMARY,
-        max_tokens: 16384,
-        messages: [{
-          role: 'user',
-          content: [{
-            type: 'document',
-            source: {
-              type: 'base64',
-              media_type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-              data: base64
-            }
-          }, {
-            type: 'text',
-            text: 'Extract ALL text content from this Word document. Preserve the original formatting, paragraph structure, and headings. Return ONLY the extracted text content.'
-          }]
-        }]
-      })
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Claude API error: ${response.status}`);
-    }
-
-    const result = await response.json();
-    const extractedContent = result.content?.[0]?.text || '';
+    console.log(`Word document parsed: ${extractedContent.length} characters extracted`);
 
     return {
       content: extractedContent,
@@ -435,12 +408,12 @@ async function parseWord(filePath: string, fileName: string): Promise<ParseResul
       metadata: {
         type: 'word',
         originalName: fileName,
-        extractionMethod: 'claude-vision'
+        extractionMethod: 'mammoth'
       }
     };
   } catch (error) {
     console.error('Word parsing error:', error);
-    throw error;
+    throw new Error(`Failed to parse Word document: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
 
