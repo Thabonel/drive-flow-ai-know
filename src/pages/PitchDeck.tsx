@@ -5,10 +5,13 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Loader2, Presentation, Download, Eye } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
 
 interface Slide {
   slideNumber: number;
@@ -36,6 +39,27 @@ export default function PitchDeck() {
   const [includeImages, setIncludeImages] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [pitchDeck, setPitchDeck] = useState<PitchDeck | null>(null);
+  const [selectedDocIds, setSelectedDocIds] = useState<string[]>([]);
+  const [showDocSelector, setShowDocSelector] = useState(false);
+
+  // Fetch user's documents
+  const { data: documents, isLoading: loadingDocs } = useQuery({
+    queryKey: ['documents', user?.id],
+    queryFn: async () => {
+      if (!user) return null;
+
+      const { data, error } = await supabase
+        .from('knowledge_documents')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('is_archived', false)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user,
+  });
 
   const handleGenerate = async () => {
     if (!user) {
@@ -43,8 +67,8 @@ export default function PitchDeck() {
       return;
     }
 
-    if (!topic.trim()) {
-      toast.error('Please enter a topic for your pitch deck');
+    if (!topic.trim() && selectedDocIds.length === 0) {
+      toast.error('Please enter a topic or select documents for your pitch deck');
       return;
     }
 
@@ -56,7 +80,8 @@ export default function PitchDeck() {
           targetAudience,
           numberOfSlides: parseInt(numberOfSlides),
           style,
-          includeImages
+          includeImages,
+          selectedDocumentIds: selectedDocIds.length > 0 ? selectedDocIds : undefined
         }
       });
 
@@ -200,6 +225,12 @@ export default function PitchDeck() {
           <CardContent className="space-y-4">
             <div>
               <Label htmlFor="topic">Topic / Company Name</Label>
+              <p className="text-xs text-muted-foreground mb-2">
+                {selectedDocIds.length > 0
+                  ? 'Documents selected - topic is optional'
+                  : 'Describe what your pitch deck is about'
+                }
+              </p>
               <Textarea
                 id="topic"
                 placeholder="e.g., AI-powered knowledge management platform"
@@ -207,6 +238,83 @@ export default function PitchDeck() {
                 onChange={(e) => setTopic(e.target.value)}
                 rows={3}
               />
+            </div>
+
+            {/* Document Selection Section */}
+            <div className="border rounded-lg p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <Label>Source Documents (Optional)</Label>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowDocSelector(!showDocSelector)}
+                >
+                  {showDocSelector ? 'Hide' : 'Show'} Documents
+                </Button>
+              </div>
+
+              {selectedDocIds.length > 0 && (
+                <div className="flex items-center justify-between">
+                  <p className="text-sm text-muted-foreground">
+                    {selectedDocIds.length} document{selectedDocIds.length > 1 ? 's' : ''} selected
+                  </p>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setSelectedDocIds([])}
+                  >
+                    Clear Selection
+                  </Button>
+                </div>
+              )}
+
+              {showDocSelector && (
+                <div className="max-h-96 overflow-y-auto space-y-2 border rounded p-3">
+                  {loadingDocs ? (
+                    <p className="text-center text-muted-foreground py-4">Loading documents...</p>
+                  ) : documents && documents.length > 0 ? (
+                    documents.map(doc => (
+                      <div key={doc.id} className="flex items-start gap-3 p-2 hover:bg-muted rounded">
+                        <Checkbox
+                          id={`doc-${doc.id}`}
+                          checked={selectedDocIds.includes(doc.id)}
+                          onCheckedChange={(checked) => {
+                            setSelectedDocIds(prev =>
+                              checked
+                                ? [...prev, doc.id]
+                                : prev.filter(id => id !== doc.id)
+                            );
+                          }}
+                        />
+                        <div className="flex-1">
+                          <Label htmlFor={`doc-${doc.id}`} className="cursor-pointer">
+                            <div className="font-medium">{doc.title}</div>
+                            {doc.ai_summary && (
+                              <div className="text-xs text-muted-foreground line-clamp-2">
+                                {doc.ai_summary}
+                              </div>
+                            )}
+                            <div className="flex gap-2 mt-1">
+                              {doc.category && (
+                                <Badge variant="secondary" className="text-xs">
+                                  {doc.category}
+                                </Badge>
+                              )}
+                              <span className="text-xs text-muted-foreground">
+                                {new Date(doc.created_at).toLocaleDateString()}
+                              </span>
+                            </div>
+                          </Label>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-center text-muted-foreground py-4">
+                      No documents available. Upload documents first.
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
 
             <div>
@@ -262,7 +370,7 @@ export default function PitchDeck() {
 
             <Button
               onClick={handleGenerate}
-              disabled={generating || !topic.trim()}
+              disabled={generating || (!topic.trim() && selectedDocIds.length === 0)}
               className="w-full"
               size="lg"
             >
