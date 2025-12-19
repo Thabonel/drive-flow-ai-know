@@ -43,6 +43,7 @@ export default function PitchDeck() {
   const [showDocSelector, setShowDocSelector] = useState(false);
   const [revisionRequest, setRevisionRequest] = useState('');
   const [isRevising, setIsRevising] = useState(false);
+  const [documentSearch, setDocumentSearch] = useState('');
 
   // Fetch user's documents
   const { data: documents, isLoading: loadingDocs } = useQuery({
@@ -62,6 +63,18 @@ export default function PitchDeck() {
     },
     enabled: !!user,
   });
+
+  // Filter documents based on search query
+  const filteredDocuments = documents?.filter(doc => {
+    if (!documentSearch.trim()) return true;
+
+    const searchLower = documentSearch.toLowerCase();
+    const titleMatch = doc.title?.toLowerCase().includes(searchLower);
+    const categoryMatch = doc.category?.toLowerCase().includes(searchLower);
+    const summaryMatch = doc.ai_summary?.toLowerCase().includes(searchLower);
+
+    return titleMatch || categoryMatch || summaryMatch;
+  }) || [];
 
   const handleGenerate = async () => {
     if (!user) {
@@ -315,11 +328,51 @@ export default function PitchDeck() {
               )}
 
               {showDocSelector && (
-                <div className="max-h-96 overflow-y-auto space-y-2 border rounded p-3">
+                <>
+                  {/* Search Input */}
+                  <div className="mb-3">
+                    <Input
+                      placeholder="Search documents by title, category, or content..."
+                      value={documentSearch}
+                      onChange={(e) => setDocumentSearch(e.target.value)}
+                      className="w-full"
+                    />
+                    <div className="flex items-center justify-between mt-2">
+                      {documentSearch && (
+                        <p className="text-xs text-muted-foreground">
+                          Showing {filteredDocuments.length} of {documents?.length || 0} documents
+                        </p>
+                      )}
+                      {filteredDocuments.length > 0 && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            const filteredIds = filteredDocuments.map(doc => doc.id);
+                            const allSelected = filteredIds.every(id => selectedDocIds.includes(id));
+
+                            if (allSelected) {
+                              // Deselect all filtered
+                              setSelectedDocIds(prev => prev.filter(id => !filteredIds.includes(id)));
+                            } else {
+                              // Select all filtered
+                              setSelectedDocIds(prev => [...new Set([...prev, ...filteredIds])]);
+                            }
+                          }}
+                        >
+                          {filteredDocuments.every(doc => selectedDocIds.includes(doc.id))
+                            ? 'Deselect All'
+                            : 'Select All'}
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="max-h-96 overflow-y-auto space-y-2 border rounded p-3">
                   {loadingDocs ? (
                     <p className="text-center text-muted-foreground py-4">Loading documents...</p>
-                  ) : documents && documents.length > 0 ? (
-                    documents.map(doc => (
+                  ) : filteredDocuments.length > 0 ? (
+                    filteredDocuments.map(doc => (
                       <div key={doc.id} className="flex items-start gap-3 p-2 hover:bg-muted rounded">
                         <Checkbox
                           id={`doc-${doc.id}`}
@@ -354,12 +407,17 @@ export default function PitchDeck() {
                         </div>
                       </div>
                     ))
+                  ) : documents && documents.length > 0 ? (
+                    <p className="text-center text-muted-foreground py-4">
+                      No documents match your search. Try different keywords.
+                    </p>
                   ) : (
                     <p className="text-center text-muted-foreground py-4">
                       No documents available. Upload documents first.
                     </p>
                   )}
                 </div>
+                </>
               )}
             </div>
 
