@@ -462,15 +462,20 @@ export default function PitchDeck() {
               </Select>
             </div>
 
-            <div className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                id="includeImages"
-                checked={includeImages}
-                onChange={(e) => setIncludeImages(e.target.checked)}
-                className="rounded"
-              />
-              <Label htmlFor="includeImages">Generate images with Gemini</Label>
+            <div>
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="includeImages"
+                  checked={includeImages}
+                  onChange={(e) => setIncludeImages(e.target.checked)}
+                  className="rounded"
+                />
+                <Label htmlFor="includeImages">Generate images with Gemini</Label>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1 ml-6">
+                Creates AI-generated visuals for each slide. Uncheck for faster, text-only generation.
+              </p>
             </div>
 
             <Button
