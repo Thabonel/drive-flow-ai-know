@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Loader2, Presentation, Download, Eye, FileText, FileSlides, Share2, X, Archive } from 'lucide-react';
+import { Loader2, Presentation, Download, Eye, FileText, Layers, Share2, X, Archive } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import jsPDF from 'jspdf';
 import pptxgen from 'pptxgenjs';
@@ -1290,7 +1290,7 @@ Generated with AI Query Hub
                   variant="default"
                   className="w-full"
                 >
-                  <FileSlides className="h-4 w-4 mr-2" />
+                  <Layers className="h-4 w-4 mr-2" />
                   Export as PowerPoint
                 </Button>
                 <Button
