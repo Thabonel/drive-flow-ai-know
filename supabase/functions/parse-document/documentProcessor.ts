@@ -389,23 +389,37 @@ async function parseWord(filePath: string, fileName: string): Promise<ParseResul
     // Import mammoth library dynamically
     const mammoth = await import('npm:mammoth@1.6.0');
 
-    // Use mammoth to extract text from DOCX using file path
-    const result = await mammoth.extractRawText({ path: filePath });
-    const extractedContent = result.value || '';
+    // Convert DOCX to HTML to preserve all formatting, tables, and styling
+    const result = await mammoth.convertToHtml({
+      path: filePath,
+      // Preserve styles and formatting
+      styleMap: [
+        "p[style-name='Heading 1'] => h1:fresh",
+        "p[style-name='Heading 2'] => h2:fresh",
+        "p[style-name='Heading 3'] => h3:fresh",
+        "p[style-name='Heading 4'] => h4:fresh",
+        "p[style-name='Heading 5'] => h5:fresh",
+        "p[style-name='Heading 6'] => h6:fresh"
+      ]
+    });
+
+    const html = result.value || '';
 
     if (result.messages && result.messages.length > 0) {
       console.log('Mammoth parsing warnings:', result.messages);
     }
 
-    console.log(`Word document parsed: ${extractedContent.length} characters extracted`);
+    console.log(`Word document parsed: ${html.length} characters of HTML extracted`);
 
     return {
-      content: extractedContent,
+      content: html,
       title: fileName.replace(/\.[^/.]+$/, ''),
       metadata: {
         type: 'word',
         originalName: fileName,
-        extractionMethod: 'mammoth'
+        extractionMethod: 'mammoth-html',
+        preservesFormatting: true,
+        contentFormat: 'html'
       }
     };
   } catch (error) {
