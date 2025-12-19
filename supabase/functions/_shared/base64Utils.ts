@@ -1,4 +1,4 @@
-import { encodeBase64, decodeBase64 } from "https://deno.land/std@0.168.0/encoding/base64.ts";
+import { encode as encodeBase64, decode as decodeBase64 } from "https://deno.land/std@0.224.0/encoding/base64.ts";
 
 /**
  * Converts Uint8Array to base64 using Deno standard library.
