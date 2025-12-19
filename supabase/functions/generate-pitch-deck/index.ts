@@ -13,6 +13,7 @@ interface PitchDeckRequest {
   numberOfSlides?: number;
   style?: 'professional' | 'creative' | 'minimal' | 'bold';
   includeImages?: boolean;
+  selectedDocumentIds?: string[];
 }
 
 interface Slide {
@@ -59,10 +60,37 @@ serve(async (req) => {
       targetAudience = 'general business audience',
       numberOfSlides = 10,
       style = 'professional',
-      includeImages = true
+      includeImages = true,
+      selectedDocumentIds
     }: PitchDeckRequest = await req.json();
 
-    console.log('Generating pitch deck:', { topic, numberOfSlides, style });
+    console.log('Generating pitch deck:', { topic, numberOfSlides, style, selectedDocs: selectedDocumentIds?.length || 0 });
+
+    // Fetch selected documents if provided
+    let documentContext = '';
+
+    if (selectedDocumentIds && selectedDocumentIds.length > 0) {
+      console.log(`Fetching ${selectedDocumentIds.length} selected documents...`);
+
+      const { data: selectedDocs, error: docsError } = await supabase
+        .from('knowledge_documents')
+        .select('*')
+        .in('id', selectedDocumentIds);
+
+      if (docsError) {
+        console.error('Error fetching documents:', docsError);
+      } else if (selectedDocs && selectedDocs.length > 0) {
+        // Build context from selected documents
+        documentContext = selectedDocs
+          .map(doc => {
+            const content = doc.content || doc.ai_summary || '';
+            return `### Document: ${doc.title}\nCategory: ${doc.category || 'General'}\n\n${content}`;
+          })
+          .join('\n\n---\n\n');
+
+        console.log(`Built context from ${selectedDocs.length} documents (${documentContext.length} chars)`);
+      }
+    }
 
     // Step 1: Use Claude to generate pitch deck structure and content
     const anthropicKey = Deno.env.get('ANTHROPIC_API_KEY');
@@ -70,18 +98,29 @@ serve(async (req) => {
       throw new Error('ANTHROPIC_API_KEY not configured');
     }
 
-    const structurePrompt = `You are an expert pitch deck consultant. Create a comprehensive ${numberOfSlides}-slide pitch deck about: "${topic}"
+    const structurePrompt = `You are an expert pitch deck consultant. ${
+      documentContext
+        ? `Using the source documents provided below, create a comprehensive ${numberOfSlides}-slide pitch deck.`
+        : `Create a comprehensive ${numberOfSlides}-slide pitch deck about: "${topic}"`
+    }
 
 Target audience: ${targetAudience}
 Style: ${style}
 
+${documentContext ? `\n## Source Documents\n\n${documentContext}\n\n` : ''}
+
+${documentContext
+  ? 'Extract the key information from the source documents and structure them into a compelling pitch deck. Use data, facts, and insights from the documents to make the pitch persuasive and credible.'
+  : 'Research and create compelling content for the pitch deck based on the topic.'
+}
+
 For each slide, provide:
 1. Slide number
 2. Title (clear, engaging)
-3. Content (bullet points, key messages)
+3. Content (bullet points, key messages${documentContext ? ' - use information from source documents' : ''})
 4. Visual recommendation (what type of visual would enhance this slide: chart, diagram, illustration, icon, photo, or none)
 5. Visual prompt (if a visual is needed, describe what should be shown)
-6. Speaker notes (what the presenter should say)
+6. Speaker notes (what the presenter should say${documentContext ? ' - reference source documents where relevant' : ''})
 
 Return the response in this exact JSON format:
 {
@@ -99,7 +138,7 @@ Return the response in this exact JSON format:
   ]
 }
 
-Make it compelling, data-driven where appropriate, and visually engaging.`;
+Make it compelling, data-driven where appropriate (especially if source documents contain data), and visually engaging.`;
 
     const claudeResponse = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
