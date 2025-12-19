@@ -119,7 +119,7 @@ export default function PitchDeck() {
         case ' ':
         case 'Enter':
           // Next slide
-          if (currentSlideIndex <= pitchDeck.totalSlides) {
+          if (currentSlideIndex < pitchDeck.totalSlides) {
             setCurrentSlideIndex(prev => prev + 1);
           }
           break;
@@ -151,7 +151,7 @@ export default function PitchDeck() {
 
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [isPresentationMode, currentSlideIndex, pitchDeck]);
+  }, [isPresentationMode, pitchDeck]);
 
   // Presentation timer
   useEffect(() => {
@@ -191,7 +191,7 @@ export default function PitchDeck() {
   };
 
   const handleNextSlide = () => {
-    if (pitchDeck && currentSlideIndex <= pitchDeck.totalSlides) {
+    if (pitchDeck && currentSlideIndex < pitchDeck.totalSlides) {
       setCurrentSlideIndex(prev => prev + 1);
     }
   };
