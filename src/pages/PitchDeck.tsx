@@ -471,7 +471,7 @@ export default function PitchDeck() {
                   onChange={(e) => setIncludeImages(e.target.checked)}
                   className="rounded"
                 />
-                <Label htmlFor="includeImages">Generate images with Gemini</Label>
+                <Label htmlFor="includeImages">Include AI-generated images</Label>
               </div>
               <p className="text-xs text-muted-foreground mt-1 ml-6">
                 Creates AI-generated visuals for each slide. Uncheck for faster, text-only generation.
