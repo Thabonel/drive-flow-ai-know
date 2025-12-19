@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -59,6 +59,9 @@ export default function PitchDeck() {
   const [shareToken, setShareToken] = useState<string | null>(null);
   const [isGeneratingShareLink, setIsGeneratingShareLink] = useState(false);
 
+  // Ref for presentation mode focus management
+  const presentationRef = useRef<HTMLDivElement>(null);
+
   // Fetch user's documents
   const { data: documents, isLoading: loadingDocs } = useQuery({
     queryKey: ['documents', user?.id],
@@ -114,6 +117,11 @@ export default function PitchDeck() {
     if (!isPresentationMode || !pitchDeck) return;
 
     const handleKeyPress = (e: KeyboardEvent) => {
+      if (!isPresentationMode) return;
+
+      e.preventDefault();
+      e.stopPropagation();
+
       switch (e.key) {
         case 'ArrowRight':
         case ' ':
@@ -151,7 +159,7 @@ export default function PitchDeck() {
 
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [isPresentationMode, pitchDeck]);
+  }, [isPresentationMode, pitchDeck, currentSlideIndex]);
 
   // Presentation timer
   useEffect(() => {
@@ -164,6 +172,13 @@ export default function PitchDeck() {
 
     return () => clearInterval(interval);
   }, [isPresentationMode, presentationStartTime]);
+
+  // Auto-focus presentation container for keyboard events
+  useEffect(() => {
+    if (isPresentationMode && presentationRef.current) {
+      presentationRef.current.focus();
+    }
+  }, [isPresentationMode]);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -1505,7 +1520,11 @@ Generated with AI Query Hub
 
       {/* Fullscreen Presentation Mode */}
       {isPresentationMode && pitchDeck && (
-        <div className="fixed inset-0 bg-black z-50 flex flex-col">
+        <div
+          ref={presentationRef}
+          className="fixed inset-0 bg-black z-50 flex flex-col"
+          tabIndex={0}
+        >
           {/* Presentation Content */}
           <div className="flex-1 flex items-center justify-center p-8">
             {currentSlideIndex === 0 ? (
