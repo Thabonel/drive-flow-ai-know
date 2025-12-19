@@ -433,17 +433,18 @@ export default function PitchDeck() {
 
             <div>
               <Label htmlFor="slides">Number of Slides</Label>
-              <Select value={numberOfSlides} onValueChange={setNumberOfSlides}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="5">5 slides</SelectItem>
-                  <SelectItem value="10">10 slides</SelectItem>
-                  <SelectItem value="15">15 slides</SelectItem>
-                  <SelectItem value="20">20 slides</SelectItem>
-                </SelectContent>
-              </Select>
+              <Input
+                id="slides"
+                type="number"
+                min="3"
+                max="50"
+                value={numberOfSlides}
+                onChange={(e) => setNumberOfSlides(e.target.value)}
+                placeholder="e.g., 10"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Choose between 3 and 50 slides
+              </p>
             </div>
 
             <div>
