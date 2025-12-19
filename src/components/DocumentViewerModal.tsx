@@ -450,8 +450,10 @@ export const DocumentViewerModal = ({ document, isOpen, onClose }: DocumentViewe
               />
             ) : (
               <div className="p-6 border rounded-md bg-background min-h-[300px] select-text prose prose-slate dark:prose-invert max-w-none break-words prose-headings:text-foreground prose-p:text-foreground prose-li:text-foreground prose-strong:text-foreground prose-a:text-primary prose-code:text-foreground prose-table:border-collapse prose-th:border prose-th:border-slate-300 prose-th:p-2 prose-td:border prose-td:border-slate-300 prose-td:p-2">
-                {/* Render HTML content directly if it's from a Word document */}
-                {document?.metadata?.contentFormat === 'html' ? (
+                {/* Render HTML content directly if it's from a Word document or contains HTML tags */}
+                {(document?.metadata?.contentFormat === 'html' ||
+                  document?.metadata?.extractionMethod === 'mammoth-html' ||
+                  (formData.content && /<[a-z][\s\S]*>/i.test(formData.content))) ? (
                   <div
                     dangerouslySetInnerHTML={{ __html: formData.content || 'No content available' }}
                   />
