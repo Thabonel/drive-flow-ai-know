@@ -49,6 +49,49 @@ function getStyleGuidance(style: string): string {
   return styleGuide[style] || styleGuide.professional;
 }
 
+/**
+ * Calculate relevance score between document and topic
+ * Higher score = more relevant
+ */
+function calculateRelevance(doc: any, topic: string): number {
+  const docText = `${doc.title} ${doc.content || ''} ${doc.ai_summary || ''}`.toLowerCase();
+  const topicWords = topic.toLowerCase().split(/\s+/).filter(w => w.length > 3);
+
+  let score = 0;
+  topicWords.forEach(word => {
+    const count = (docText.match(new RegExp(word, 'g')) || []).length;
+    score += count;
+  });
+
+  // Boost score if title matches
+  if (doc.title.toLowerCase().includes(topic.toLowerCase().substring(0, 20))) {
+    score += 10;
+  }
+
+  return score;
+}
+
+/**
+ * Extract key metrics and numbers from document content
+ */
+function extractMetrics(content: string): string[] {
+  const metrics: string[] = [];
+
+  // Match numbers with context (e.g., "50% growth", "$1M revenue", "10K users")
+  const patterns = [
+    /(\d+%?\s*(?:percent|growth|increase|decrease|users|customers|revenue|profit))/gi,
+    /(\$\d+(?:\.\d+)?(?:[KMB])?(?:\s*(?:million|billion|thousand))?)/gi,
+    /(\d+(?:\.\d+)?(?:[KMB])?\s*(?:users|customers|clients|members))/gi
+  ];
+
+  patterns.forEach(pattern => {
+    const matches = content.match(pattern) || [];
+    metrics.push(...matches.slice(0, 3)); // Top 3 per pattern
+  });
+
+  return [...new Set(metrics)].slice(0, 5); // Return up to 5 unique metrics
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -107,15 +150,28 @@ serve(async (req) => {
       if (docsError) {
         console.error('Error fetching documents:', docsError);
       } else if (selectedDocs && selectedDocs.length > 0) {
-        // Build context from selected documents
-        documentContext = selectedDocs
+        // Rank documents by relevance and extract key metrics
+        const rankedDocs = selectedDocs
+          .map(doc => ({
+            ...doc,
+            relevanceScore: calculateRelevance(doc, topic),
+            keyMetrics: extractMetrics(doc.content || doc.ai_summary || '')
+          }))
+          .sort((a, b) => b.relevanceScore - a.relevanceScore)
+          .slice(0, 10); // Limit to top 10 most relevant documents
+
+        // Build smarter context with summaries and metrics
+        documentContext = rankedDocs
           .map(doc => {
-            const content = doc.content || doc.ai_summary || '';
-            return `### Document: ${doc.title}\nCategory: ${doc.category || 'General'}\n\n${content}`;
+            const summary = doc.ai_summary || doc.content?.substring(0, 500) || '';
+            const metricsText = doc.keyMetrics.length > 0
+              ? `\nKey Metrics: ${doc.keyMetrics.join(', ')}`
+              : '';
+            return `### ${doc.title}\nCategory: ${doc.category || 'General'}${metricsText}\n\n${summary}`;
           })
           .join('\n\n---\n\n');
 
-        console.log(`Built context from ${selectedDocs.length} documents (${documentContext.length} chars)`);
+        console.log(`Built ranked context from ${rankedDocs.length}/${selectedDocs.length} documents (${documentContext.length} chars)`);
       }
     }
 
