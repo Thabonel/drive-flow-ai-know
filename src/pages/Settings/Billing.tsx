@@ -43,7 +43,7 @@ export default function Billing() {
   const [verifyingSession, setVerifyingSession] = useState(false);
 
   // Fetch user's active subscription
-  const { data: subscription, isLoading: isLoadingSubscription } = useQuery({
+  const { data: subscription, isLoading: isLoadingSubscription, error: subscriptionError } = useQuery({
     queryKey: ['subscription', user?.id],
     queryFn: async () => {
       if (!user) return null;
@@ -222,6 +222,23 @@ export default function Billing() {
           {subscription ? 'Manage your subscription' : 'Choose the plan that\'s right for you'}
         </p>
       </div>
+
+      {/* Error state */}
+      {subscriptionError && (
+        <Card className="border-red-500 bg-red-50 dark:bg-red-950">
+          <CardHeader>
+            <CardTitle className="text-red-800 dark:text-red-200">Error Loading Billing Information</CardTitle>
+            <CardDescription className="text-red-700 dark:text-red-300">
+              {subscriptionError instanceof Error ? subscriptionError.message : 'Failed to load subscription data. Please try refreshing the page.'}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-red-600 dark:text-red-400">
+              If this error persists, please contact support.
+            </p>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Verifying session loading state */}
       {verifyingSession && (
