@@ -1,4 +1,6 @@
 import { arrayBufferToBase64 } from '../_shared/base64Utils.ts';
+import { CLAUDE_MODELS } from '../_shared/models.ts';
+import { DOMParser } from "https://deno.land/x/deno_dom@v0.1.38/deno-dom-wasm.ts";
 
 interface ParseResult {
   content: string;
@@ -61,10 +63,23 @@ async function parseFDX(filePath: string, fileName: string): Promise<ParseResult
   try {
     console.log('Parsing FDX (Final Draft) file...');
     const fileBytes = await Deno.readFile(filePath);
-    const text = new TextDecoder().decode(fileBytes);
 
-    // Parse XML using DOMParser
-    const { DOMParser } = await import("https://deno.land/x/deno_dom@v0.1.38/deno-dom-wasm.ts");
+    // Detect encoding from XML declaration and BOM
+    let text: string;
+    try {
+      // Try UTF-8 first (most common)
+      text = new TextDecoder('utf-8').decode(fileBytes);
+
+      // Check for UTF-16 BOM or encoding declaration
+      if (text.charCodeAt(0) === 0xFEFF || text.includes('encoding="UTF-16"')) {
+        text = new TextDecoder('utf-16').decode(fileBytes);
+      }
+    } catch (e) {
+      // Fallback to UTF-8 with replacement characters
+      text = new TextDecoder('utf-8', { fatal: false }).decode(fileBytes);
+    }
+
+    // Parse XML using DOMParser (now statically imported)
     const parser = new DOMParser();
     const doc = parser.parseFromString(text, 'text/xml');
 
@@ -322,7 +337,7 @@ async function parsePDF(filePath: string, fileName: string): Promise<ParseResult
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-5-20250929',
+        model: CLAUDE_MODELS.PRIMARY,
         max_tokens: 16384,
         messages: [{
           role: 'user',
@@ -393,7 +408,7 @@ async function parseWord(filePath: string, fileName: string): Promise<ParseResul
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-5-20250929',
+        model: CLAUDE_MODELS.PRIMARY,
         max_tokens: 16384,
         messages: [{
           role: 'user',
