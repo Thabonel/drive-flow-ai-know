@@ -1,4 +1,4 @@
-import { Home, FileText, Brain, Settings, LogOut, HelpCircle, Clock, Users, UserCog, Building2, Calendar, Bot, MessageSquare } from 'lucide-react';
+import { Home, FileText, Brain, Settings, LogOut, HelpCircle, Clock, Users, UserCog, Building2, Calendar, Bot, MessageSquare, Presentation } from 'lucide-react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { FeatureGate } from '@/components/FeatureGate';
@@ -22,6 +22,7 @@ const navigationItems = [
   { title: 'AI Chat', url: '/conversations', icon: MessageSquare },
   { title: 'Document Creator', url: '/dashboard', icon: Brain },
   { title: 'Documents', url: '/documents', icon: FileText },
+  { title: 'Pitch Deck', url: '/pitch-deck', icon: Presentation },
 ];
 
 const executiveNavigationItems = [

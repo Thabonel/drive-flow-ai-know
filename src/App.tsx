@@ -17,6 +17,7 @@ import GoogleDrive from "./pages/GoogleDrive";
 import Documents from "./pages/Documents";
 import AddDocuments from "./pages/AddDocuments";
 import KnowledgeBases from "./pages/KnowledgeBases";
+import PitchDeck from "./pages/PitchDeck";
 import SyncStatus from "./pages/SyncStatus";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
@@ -155,6 +156,11 @@ const App = () => (
             <Route path="/knowledge" element={
               <ProtectedRoute>
                 <KnowledgeBases />
+              </ProtectedRoute>
+            } />
+            <Route path="/pitch-deck" element={
+              <ProtectedRoute>
+                <PitchDeck />
               </ProtectedRoute>
             } />
             <Route path="/sync" element={
