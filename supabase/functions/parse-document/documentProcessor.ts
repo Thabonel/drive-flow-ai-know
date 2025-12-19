@@ -389,13 +389,8 @@ async function parseWord(filePath: string, fileName: string): Promise<ParseResul
     // Import mammoth library dynamically
     const mammoth = await import('npm:mammoth@1.6.0');
 
-    const fileBytes = await Deno.readFile(filePath);
-
-    // Convert Uint8Array to Buffer for mammoth
-    const buffer = Buffer.from(fileBytes);
-
-    // Use mammoth to extract text from DOCX
-    const result = await mammoth.extractRawText({ buffer });
+    // Use mammoth to extract text from DOCX using file path
+    const result = await mammoth.extractRawText({ path: filePath });
     const extractedContent = result.value || '';
 
     if (result.messages && result.messages.length > 0) {
