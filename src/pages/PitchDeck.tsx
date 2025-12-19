@@ -59,8 +59,10 @@ export default function PitchDeck() {
   const [shareToken, setShareToken] = useState<string | null>(null);
   const [isGeneratingShareLink, setIsGeneratingShareLink] = useState(false);
 
-  // Ref for presentation mode focus management
+  // Refs for presentation mode focus management and keyboard navigation
   const presentationRef = useRef<HTMLDivElement>(null);
+  const nextButtonRef = useRef<HTMLButtonElement>(null);
+  const prevButtonRef = useRef<HTMLButtonElement>(null);
 
   // Fetch user's documents
   const { data: documents, isLoading: loadingDocs } = useQuery({
@@ -117,7 +119,9 @@ export default function PitchDeck() {
     if (!isPresentationMode || !pitchDeck) return;
 
     const handleKeyPress = (e: KeyboardEvent) => {
-      if (!isPresentationMode) return;
+      // Only handle presentation keys
+      const presentationKeys = ['ArrowRight', 'ArrowLeft', ' ', 'Enter', 'Home', 'End', 'Escape', 'n', 'N'];
+      if (!presentationKeys.includes(e.key)) return;
 
       e.preventDefault();
       e.stopPropagation();
@@ -126,16 +130,12 @@ export default function PitchDeck() {
         case 'ArrowRight':
         case ' ':
         case 'Enter':
-          // Next slide
-          if (currentSlideIndex < pitchDeck.totalSlides) {
-            setCurrentSlideIndex(prev => prev + 1);
-          }
+          // Trigger Next button click (uses existing working button logic)
+          nextButtonRef.current?.click();
           break;
         case 'ArrowLeft':
-          // Previous slide
-          if (currentSlideIndex > 0) {
-            setCurrentSlideIndex(prev => prev - 1);
-          }
+          // Trigger Previous button click (uses existing working button logic)
+          prevButtonRef.current?.click();
           break;
         case 'Home':
           // First slide
@@ -159,7 +159,7 @@ export default function PitchDeck() {
 
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [isPresentationMode, pitchDeck, currentSlideIndex]);
+  }, [isPresentationMode, pitchDeck]);
 
   // Presentation timer
   useEffect(() => {
@@ -1567,6 +1567,7 @@ Generated with AI Query Hub
           <div className="bg-black/80 border-t border-white/10 p-4 flex items-center justify-between">
             <div className="flex gap-2">
               <Button
+                ref={prevButtonRef}
                 onClick={handlePreviousSlide}
                 disabled={currentSlideIndex === 0}
                 variant="ghost"
@@ -1576,6 +1577,7 @@ Generated with AI Query Hub
                 ← Previous
               </Button>
               <Button
+                ref={nextButtonRef}
                 onClick={handleNextSlide}
                 disabled={currentSlideIndex === pitchDeck.totalSlides}
                 variant="ghost"
