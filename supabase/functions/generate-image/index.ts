@@ -34,6 +34,10 @@ serve(async (req) => {
       throw new Error('GEMINI_API_KEY not configured');
     }
 
+    // Default negative prompt to avoid common issues
+    const defaultNegativePrompt = "blurry, low quality, distorted, watermark, text overlay, stock photo cliche, generic, amateur";
+    const finalNegativePrompt = negativePrompt || defaultNegativePrompt;
+
     // Enhanced prompt based on style
     let enhancedPrompt = prompt;
     switch (style) {
@@ -53,6 +57,9 @@ serve(async (req) => {
         enhancedPrompt = `Simple icon, minimal design, clean lines: ${prompt}`;
         break;
     }
+
+    // Append negative prompt guidance
+    enhancedPrompt += `\n\nAvoid: ${finalNegativePrompt}`;
 
     // Use Gemini 3 Pro Image (released Nov 20, 2025)
     // Model: gemini-3-pro-image-preview (aka Nano Banana Pro)

@@ -36,6 +36,19 @@ interface PitchDeckResponse {
   totalSlides: number;
 }
 
+/**
+ * Get style-specific guidance for pitch deck generation
+ */
+function getStyleGuidance(style: string): string {
+  const styleGuide: Record<string, string> = {
+    professional: 'Use formal language, data-driven arguments, structured layouts. Emphasize credibility and authority. Include statistics and metrics where possible.',
+    creative: 'Use storytelling, bold visuals, innovative metaphors. Emphasize differentiation and vision. Be memorable and engaging.',
+    minimal: 'Use extreme clarity, white space, key messages only. Emphasize simplicity and focus. One core idea per slide.',
+    bold: 'Use strong statements, confident language, striking visuals. Emphasize strength and conviction. Be direct and assertive.'
+  };
+  return styleGuide[style] || styleGuide.professional;
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -169,12 +182,60 @@ ${documentContext ? `\n## Available Source Documents:\n\n${documentContext}\n\n`
       }
 
 Target audience: ${targetAudience}
-Style: ${style}
+Style: ${style} - ${getStyleGuidance(style)}
 
 ${documentContext ? `\n## Source Documents\n\n${documentContext}\n\n` : ''}
 
+## Pitch Deck Structure Guidelines
+
+**Opening Slide (Slide 1):**
+- Strong hook that captures attention immediately
+- Clear value proposition in 1-2 sentences
+- Visual: Compelling hero image or brand visual
+
+**Problem/Opportunity Slides (typically 2-3 slides):**
+- Articulate the pain point or market opportunity
+- Use data and statistics${documentContext ? ' from source documents' : ''} where possible
+- Make the problem tangible and urgent
+- Visual: Relevant diagram or chart showing the problem
+
+**Solution Slides (typically 3-5 slides):**
+- Explain how your solution addresses the problem
+- Highlight unique differentiators (not just features)
+- Focus on benefits and outcomes, not technical details
+- Visual: Product screenshots, diagrams, or illustrations
+
+**Proof/Traction Slides (typically 2-3 slides):**
+- Include metrics, case studies, testimonials${documentContext ? ' from documents' : ''}
+- Show credibility and momentum
+- Visual: Charts, graphs, or customer logos
+
+**Closing Slide (Final slide):**
+- Clear call-to-action (what should audience do next?)
+- Memorable closing statement
+- Visual: Inspiring or aspirational image
+
+## Content Guidelines
+
+- Each slide should have 3-4 bullet points maximum
+- Each bullet point should be 10-15 words maximum
+- Use clear, concise language - avoid jargon unless audience-specific
+- Lead with benefits, not features
+- Use active voice and strong verbs
+- Include specific data points and metrics where available${documentContext ? ' from source documents' : ''}
+
+## Visual Recommendations
+
+- Match visual type to content purpose:
+  - Data → chart or graph
+  - Process/workflow → diagram
+  - Concept/idea → illustration
+  - Credibility/trust → photo or icon
+- Visual prompts should be specific and aligned with slide content
+- Avoid generic stock photo concepts
+
 ${documentContext
-  ? 'Extract the key information from the source documents and structure them into a compelling pitch deck. Use data, facts, and insights from the documents to make the pitch persuasive and credible.'
+  ? 'Extract key metrics, data points, and credible facts from the source documents provided. Use this information to make the pitch persuasive and credible.'
   : 'Research and create compelling content for the pitch deck based on the topic.'
 }`;
     }
