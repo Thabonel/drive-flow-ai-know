@@ -260,11 +260,11 @@ export default function Billing() {
               <div>
                 <CardTitle className="flex items-center gap-2">
                   <Check className="h-5 w-5 text-primary" />
-                  Current Plan: {subscription.plan_type.charAt(0).toUpperCase() + subscription.plan_type.slice(1)}
+                  Current Plan: {subscription.plan_tier.charAt(0).toUpperCase() + subscription.plan_tier.slice(1)}
                 </CardTitle>
                 <CardDescription className="mt-2">
                   {subscription.status === 'trialing' ? (
-                    <>Trial ends {new Date(subscription.trial_end!).toLocaleDateString()}</>
+                    <>Trial ends {new Date(subscription.trial_ends_at!).toLocaleDateString()}</>
                   ) : (
                     <>Next billing date: {new Date(subscription.current_period_end).toLocaleDateString()}</>
                   )}
@@ -303,7 +303,7 @@ export default function Billing() {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {plans.map((plan) => {
-          const isCurrentPlan = subscription?.plan_type === plan.planType;
+          const isCurrentPlan = subscription?.plan_tier === plan.planType;
 
           return (
             <Card
