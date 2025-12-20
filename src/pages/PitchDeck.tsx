@@ -208,6 +208,23 @@ export default function PitchDeck() {
     }
   }, [isPresentationMode]);
 
+  // Trigger presentation mode after presenter session is initialized
+  // This ensures state coordination to avoid race conditions
+  useEffect(() => {
+    if (presenterSessionId && presentationSync && !isPresentationMode) {
+      setIsPresentationMode(true);
+      setCurrentSlideIndex(0);
+      setShowPresenterNotes(false);
+      setPresentationStartTime(Date.now());
+      setElapsedSeconds(0);
+
+      toast.info('Presenter View Started', {
+        description: 'Drag the audience window to your projector/external monitor, then click "Connect" on that screen',
+        duration: 8000,
+      });
+    }
+  }, [presenterSessionId, presentationSync, isPresentationMode]);
+
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
@@ -317,19 +334,8 @@ export default function PitchDeck() {
 
       setAudienceWindow(newWindow);
 
-      // Start presenter view
-      setCurrentSlideIndex(0);
-      setIsPresentationMode(true);
-      setShowPresenterNotes(false);
-      setPresentationStartTime(Date.now());
-      setElapsedSeconds(0);
-
-      // Show instructions to user
-      toast.info('Presenter View Started', {
-        description:
-          'Drag the audience window to your projector/external monitor, then click "Connect" on that screen',
-        duration: 8000,
-      });
+      // Note: Presentation mode will be triggered by useEffect hook
+      // after presenterSessionId and presentationSync are both set
 
       // Monitor if audience window is closed
       const checkWindowInterval = setInterval(() => {
@@ -1709,7 +1715,7 @@ Generated with AI Query Hub
       </div>
 
       {/* Fullscreen Presentation Mode */}
-      {isPresentationMode && pitchDeck && presenterSessionId && (
+      {isPresentationMode && pitchDeck && presenterSessionId && presentationSync && (
         // Presenter View Mode (dual-window)
         <PresenterView
           pitchDeck={{
