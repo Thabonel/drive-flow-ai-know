@@ -72,6 +72,10 @@ export default function PitchDeck() {
   const [audienceWindow, setAudienceWindow] = useState<Window | null>(null);
   const [presentationSync, setPresentationSync] = useState<PresentationSync | null>(null);
 
+  // Single-screen presentation enhancement state
+  const [presentationStarted, setPresentationStarted] = useState(false);
+  const [showSplitScreenNotes, setShowSplitScreenNotes] = useState(false);
+
   // Refs for presentation mode focus management and keyboard navigation
   const presentationRef = useRef<HTMLDivElement>(null);
   const nextButtonRef = useRef<HTMLButtonElement>(null);
@@ -154,6 +158,15 @@ export default function PitchDeck() {
       e.preventDefault();
       e.stopPropagation();
 
+      // Handle Space key in preview mode to start presentation
+      if (!presentationStarted && e.key === ' ') {
+        handleStartActualPresentation();
+        return;
+      }
+
+      // Don't allow navigation in preview mode
+      if (!presentationStarted) return;
+
       switch (e.key) {
         case 'ArrowRight':
         case ' ':
@@ -170,8 +183,8 @@ export default function PitchDeck() {
           setCurrentSlideIndex(0);
           break;
         case 'End':
-          // Last slide - use slides.length for robustness
-          setCurrentSlideIndex(pitchDeck.slides?.length || 0);
+          // Last slide (length - 1 for zero-indexed array)
+          setCurrentSlideIndex((pitchDeck.slides?.length || 1) - 1);
           break;
         case 'Escape':
           // Exit presentation mode
@@ -179,15 +192,15 @@ export default function PitchDeck() {
           break;
         case 'n':
         case 'N':
-          // Toggle presenter notes
-          setShowPresenterNotes(prev => !prev);
+          // Toggle split-screen notes view
+          setShowSplitScreenNotes(prev => !prev);
           break;
       }
     };
 
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [isPresentationMode, pitchDeck]);
+  }, [isPresentationMode, pitchDeck, presentationStarted]);
 
   // Presentation timer
   useEffect(() => {
@@ -238,9 +251,15 @@ export default function PitchDeck() {
     }
     setCurrentSlideIndex(0);
     setIsPresentationMode(true);
+    setPresentationStarted(false); // Start in preview mode
     setShowPresenterNotes(false);
+    setShowSplitScreenNotes(false); // Reset split-screen state
     setPresentationStartTime(Date.now());
     setElapsedSeconds(0);
+  };
+
+  const handleStartActualPresentation = () => {
+    setPresentationStarted(true);
   };
 
   const handleExitPresentation = () => {
@@ -264,6 +283,8 @@ export default function PitchDeck() {
     setCurrentSlideIndex(0);
     setPresentationStartTime(null);
     setElapsedSeconds(0);
+    setPresentationStarted(false);
+    setShowSplitScreenNotes(false);
   };
 
   const handleStartPresenterView = () => {
@@ -1748,8 +1769,8 @@ Generated with AI Query Hub
         />
       )}
 
-      {isPresentationMode && pitchDeck && !presenterSessionId && (
-        // Keep existing single-view fullscreen mode unchanged
+      {/* Preview Mode - Fullscreen with START button */}
+      {isPresentationMode && pitchDeck && !presenterSessionId && !presentationStarted && (
         <div
           ref={presentationRef}
           className="fixed inset-0 bg-black z-50 flex flex-col"
@@ -1785,13 +1806,16 @@ Generated with AI Query Hub
             )}
           </div>
 
-          {/* Presenter Notes Overlay */}
-          {showPresenterNotes && currentSlideIndex > 0 && pitchDeck.slides[currentSlideIndex - 1].notes && (
-            <div className="absolute bottom-24 left-0 right-0 bg-black/90 text-white p-6 border-t border-white/20">
-              <p className="text-sm font-semibold mb-2">Speaker Notes:</p>
-              <p className="text-base opacity-90">{pitchDeck.slides[currentSlideIndex - 1].notes}</p>
-            </div>
-          )}
+          {/* START Button Overlay */}
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <Button
+              onClick={handleStartActualPresentation}
+              className="pointer-events-auto text-4xl py-12 px-24 bg-accent hover:bg-accent/90 text-accent-foreground animate-pulse"
+              size="lg"
+            >
+              START
+            </Button>
+          </div>
 
           {/* Navigation Controls */}
           <div className="bg-black/80 border-t border-white/10 p-4 flex items-center justify-between">
@@ -1828,15 +1852,6 @@ Generated with AI Query Hub
               </span>
 
               <Button
-                onClick={() => setShowPresenterNotes(prev => !prev)}
-                variant="ghost"
-                size="sm"
-                className="text-white hover:bg-white/20"
-              >
-                {showPresenterNotes ? 'Hide Notes' : 'Show Notes'} (N)
-              </Button>
-
-              <Button
                 onClick={handleExitPresentation}
                 variant="ghost"
                 size="sm"
@@ -1846,13 +1861,90 @@ Generated with AI Query Hub
               </Button>
             </div>
           </div>
+        </div>
+      )}
 
-          {/* Keyboard Shortcuts Helper */}
-          <div className="absolute top-4 right-4 bg-black/60 text-white text-xs p-3 rounded opacity-70">
-            <p className="font-semibold mb-1">Keyboard Shortcuts:</p>
-            <p>← / → : Navigate slides</p>
-            <p>N : Toggle notes</p>
-            <p>ESC : Exit presentation</p>
+      {/* Presentation Mode - Fullscreen with hidden controls */}
+      {isPresentationMode && pitchDeck && !presenterSessionId && presentationStarted && (
+        <div className="fixed inset-0 bg-black z-50 flex flex-col">
+          {showSplitScreenNotes ? (
+            // Split-Screen Mode: 70% Slide / 30% Notes
+            <>
+              {/* Slide Area - 70% height */}
+              <div className="flex-[7] flex items-center justify-center p-4">
+                {currentSlideIndex === 0 ? (
+                  // Title slide
+                  <div className="text-center max-w-4xl">
+                    <h1 className="text-5xl font-bold text-accent mb-6">{pitchDeck.title}</h1>
+                    <p className="text-2xl text-white opacity-90">{pitchDeck.subtitle}</p>
+                  </div>
+                ) : (
+                  // Content slide
+                  <div className="w-full max-w-6xl">
+                    <h2 className="text-4xl font-bold text-white mb-6">
+                      {pitchDeck.slides[currentSlideIndex - 1].title}
+                    </h2>
+                    {pitchDeck.slides[currentSlideIndex - 1].imageData && (
+                      <img
+                        src={`data:image/png;base64,${pitchDeck.slides[currentSlideIndex - 1].imageData}`}
+                        alt={pitchDeck.slides[currentSlideIndex - 1].visualPrompt || ''}
+                        className="w-full max-h-64 object-contain rounded-lg mb-4"
+                      />
+                    )}
+                    <div className="text-xl text-white whitespace-pre-wrap leading-relaxed">
+                      {pitchDeck.slides[currentSlideIndex - 1].content}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Speaker Notes Area - 30% height */}
+              <div className="flex-[3] bg-gray-900/95 border-t border-white/20 p-6 overflow-y-auto">
+                {currentSlideIndex > 0 && pitchDeck.slides[currentSlideIndex - 1].notes ? (
+                  <>
+                    <p className="text-sm font-semibold text-gray-400 mb-3 uppercase tracking-wide">Speaker Notes</p>
+                    <p className="text-base text-white leading-relaxed whitespace-pre-wrap">
+                      {pitchDeck.slides[currentSlideIndex - 1].notes}
+                    </p>
+                  </>
+                ) : (
+                  <p className="text-gray-500 italic text-center">No speaker notes for this slide</p>
+                )}
+              </div>
+            </>
+          ) : (
+            // Full-Slide Mode: 100% Slide (no controls visible)
+            <div className="flex-1 flex items-center justify-center p-8">
+              {currentSlideIndex === 0 ? (
+                // Title slide
+                <div className="text-center max-w-4xl">
+                  <h1 className="text-6xl font-bold text-accent mb-6">{pitchDeck.title}</h1>
+                  <p className="text-3xl text-white opacity-90">{pitchDeck.subtitle}</p>
+                </div>
+              ) : (
+                // Content slide
+                <div className="w-full max-w-6xl">
+                  <h2 className="text-5xl font-bold text-white mb-8">
+                    {pitchDeck.slides[currentSlideIndex - 1].title}
+                  </h2>
+                  {pitchDeck.slides[currentSlideIndex - 1].imageData && (
+                    <img
+                      src={`data:image/png;base64,${pitchDeck.slides[currentSlideIndex - 1].imageData}`}
+                      alt={pitchDeck.slides[currentSlideIndex - 1].visualPrompt || ''}
+                      className="w-full max-h-96 object-contain rounded-lg mb-6"
+                    />
+                  )}
+                  <div className="text-2xl text-white whitespace-pre-wrap leading-relaxed">
+                    {pitchDeck.slides[currentSlideIndex - 1].content}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Minimal keyboard hints */}
+          <div className="absolute top-4 right-4 text-xs text-gray-500 bg-black/50 px-3 py-2 rounded">
+            ← → Navigate | N Notes | ESC Exit
           </div>
         </div>
       )}
