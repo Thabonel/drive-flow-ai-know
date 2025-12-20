@@ -171,12 +171,22 @@ export default function PitchDeck() {
         case 'ArrowRight':
         case ' ':
         case 'Enter':
-          // Trigger Next button click (uses existing working button logic)
-          nextButtonRef.current?.click();
+          // Navigate to next slide
+          if (presentationStarted) {
+            handleNextSlide();
+          } else {
+            // In preview mode, trigger button click
+            nextButtonRef.current?.click();
+          }
           break;
         case 'ArrowLeft':
-          // Trigger Previous button click (uses existing working button logic)
-          prevButtonRef.current?.click();
+          // Navigate to previous slide
+          if (presentationStarted) {
+            handlePreviousSlide();
+          } else {
+            // In preview mode, trigger button click
+            prevButtonRef.current?.click();
+          }
           break;
         case 'Home':
           // First slide
