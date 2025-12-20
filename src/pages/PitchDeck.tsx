@@ -1897,31 +1897,33 @@ Generated with AI Query Hub
             // Split-Screen Mode: 70% Slide / 30% Notes
             <>
               {/* Slide Area - 70% height */}
-              <div className="flex-[7] flex items-center justify-center p-4">
-                {currentSlideIndex === 0 ? (
-                  // Title slide
-                  <div className="text-center max-w-4xl">
-                    <h1 className="text-5xl font-bold text-accent mb-6">{pitchDeck.title}</h1>
-                    <p className="text-2xl text-white opacity-90">{pitchDeck.subtitle}</p>
-                  </div>
-                ) : (
-                  // Content slide
-                  <div className="w-full max-w-6xl">
-                    <h2 className="text-4xl font-bold text-white mb-6">
-                      {pitchDeck.slides[currentSlideIndex - 1].title}
-                    </h2>
-                    {pitchDeck.slides[currentSlideIndex - 1].imageData && (
-                      <img
-                        src={`data:image/png;base64,${pitchDeck.slides[currentSlideIndex - 1].imageData}`}
-                        alt={pitchDeck.slides[currentSlideIndex - 1].visualPrompt || ''}
-                        className="w-full max-h-64 object-contain rounded-lg mb-4"
-                      />
-                    )}
-                    <div className="text-xl text-white whitespace-pre-wrap leading-relaxed">
-                      {pitchDeck.slides[currentSlideIndex - 1].content}
+              <div className="flex-[7] flex items-center justify-center p-4 overflow-y-auto min-h-0">
+                <div className="max-h-full w-full flex items-center justify-center">
+                  {currentSlideIndex === 0 ? (
+                    // Title slide
+                    <div className="text-center max-w-4xl">
+                      <h1 className="font-bold text-accent mb-4" style={{ fontSize: 'calc(1.75rem + 1.5vh)' }}>{pitchDeck.title}</h1>
+                      <p className="text-white opacity-90" style={{ fontSize: 'calc(1rem + 0.75vh)' }}>{pitchDeck.subtitle}</p>
                     </div>
-                  </div>
-                )}
+                  ) : (
+                    // Content slide
+                    <div className="w-full max-w-6xl">
+                      <h2 className="font-bold text-white mb-3" style={{ fontSize: 'calc(1.5rem + 1.5vh)' }}>
+                        {pitchDeck.slides[currentSlideIndex - 1].title}
+                      </h2>
+                      {pitchDeck.slides[currentSlideIndex - 1].imageData && (
+                        <img
+                          src={`data:image/png;base64,${pitchDeck.slides[currentSlideIndex - 1].imageData}`}
+                          alt={pitchDeck.slides[currentSlideIndex - 1].visualPrompt || ''}
+                          className="w-full max-h-[25vh] object-contain rounded-lg mb-3"
+                        />
+                      )}
+                      <div className="text-white whitespace-pre-wrap leading-relaxed overflow-y-auto max-h-[20vh]" style={{ fontSize: 'calc(0.875rem + 0.5vh)' }}>
+                        {pitchDeck.slides[currentSlideIndex - 1].content}
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Speaker Notes Area - 30% height */}
@@ -1940,31 +1942,33 @@ Generated with AI Query Hub
             </>
           ) : (
             // Full-Slide Mode: 100% Slide (no controls visible)
-            <div className="flex-1 flex items-center justify-center p-8">
-              {currentSlideIndex === 0 ? (
-                // Title slide
-                <div className="text-center max-w-4xl">
-                  <h1 className="text-6xl font-bold text-accent mb-6">{pitchDeck.title}</h1>
-                  <p className="text-3xl text-white opacity-90">{pitchDeck.subtitle}</p>
-                </div>
-              ) : (
-                // Content slide
-                <div className="w-full max-w-6xl">
-                  <h2 className="text-5xl font-bold text-white mb-8">
-                    {pitchDeck.slides[currentSlideIndex - 1].title}
-                  </h2>
-                  {pitchDeck.slides[currentSlideIndex - 1].imageData && (
-                    <img
-                      src={`data:image/png;base64,${pitchDeck.slides[currentSlideIndex - 1].imageData}`}
-                      alt={pitchDeck.slides[currentSlideIndex - 1].visualPrompt || ''}
-                      className="w-full max-h-96 object-contain rounded-lg mb-6"
-                    />
-                  )}
-                  <div className="text-2xl text-white whitespace-pre-wrap leading-relaxed">
-                    {pitchDeck.slides[currentSlideIndex - 1].content}
+            <div className="flex-1 flex items-center justify-center p-8 overflow-y-auto">
+              <div className="max-h-[90vh] w-full flex items-center justify-center">
+                {currentSlideIndex === 0 ? (
+                  // Title slide
+                  <div className="text-center max-w-4xl">
+                    <h1 className="font-bold text-accent mb-6" style={{ fontSize: 'calc(2.5rem + 2vh)' }}>{pitchDeck.title}</h1>
+                    <p className="text-white opacity-90" style={{ fontSize: 'calc(1.5rem + 1vh)' }}>{pitchDeck.subtitle}</p>
                   </div>
-                </div>
-              )}
+                ) : (
+                  // Content slide
+                  <div className="w-full max-w-6xl">
+                    <h2 className="font-bold text-white mb-6" style={{ fontSize: 'calc(2rem + 2vh)' }}>
+                      {pitchDeck.slides[currentSlideIndex - 1].title}
+                    </h2>
+                    {pitchDeck.slides[currentSlideIndex - 1].imageData && (
+                      <img
+                        src={`data:image/png;base64,${pitchDeck.slides[currentSlideIndex - 1].imageData}`}
+                        alt={pitchDeck.slides[currentSlideIndex - 1].visualPrompt || ''}
+                        className="w-full max-h-[50vh] object-contain rounded-lg mb-4"
+                      />
+                    )}
+                    <div className="text-white whitespace-pre-wrap leading-relaxed overflow-y-auto max-h-[30vh]" style={{ fontSize: 'calc(1rem + 0.75vh)' }}>
+                      {pitchDeck.slides[currentSlideIndex - 1].content}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
