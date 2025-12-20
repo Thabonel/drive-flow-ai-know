@@ -172,21 +172,37 @@ export default function PitchDeck() {
         case ' ':
         case 'Enter':
           // Navigate to next slide
-          if (presentationStarted) {
-            handleNextSlide();
-          } else {
-            // In preview mode, trigger button click
-            nextButtonRef.current?.click();
-          }
+          setCurrentSlideIndex(prev => {
+            if (prev < (pitchDeck.slides?.length || 0)) {
+              const newIndex = prev + 1;
+              // Broadcast slide change if in presenter view mode
+              if (presenterSessionId && presentationSync) {
+                presentationSync.send({
+                  type: 'SLIDE_CHANGE',
+                  index: newIndex,
+                });
+              }
+              return newIndex;
+            }
+            return prev;
+          });
           break;
         case 'ArrowLeft':
           // Navigate to previous slide
-          if (presentationStarted) {
-            handlePreviousSlide();
-          } else {
-            // In preview mode, trigger button click
-            prevButtonRef.current?.click();
-          }
+          setCurrentSlideIndex(prev => {
+            if (prev > 0) {
+              const newIndex = prev - 1;
+              // Broadcast slide change if in presenter view mode
+              if (presenterSessionId && presentationSync) {
+                presentationSync.send({
+                  type: 'SLIDE_CHANGE',
+                  index: newIndex,
+                });
+              }
+              return newIndex;
+            }
+            return prev;
+          });
           break;
         case 'Home':
           // First slide
