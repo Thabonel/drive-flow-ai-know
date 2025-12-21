@@ -23,7 +23,9 @@ import {
   BarChart3,
   Upload,
   Menu,
-  X
+  X,
+  LayoutGrid,
+  Presentation
 } from 'lucide-react';
 
 const plans = [
@@ -36,6 +38,8 @@ const plans = [
       'AI-powered document search',
       '5 GB storage',
       '3 knowledge bases',
+      'AI chat conversations',
+      '10 pitch decks/month',
       'AI document analysis',
       'Timeline management',
       'Save all conversations',
@@ -55,6 +59,7 @@ const plans = [
       'Everything in Starter',
       '50 GB storage',
       'Unlimited knowledge bases',
+      'Unlimited pitch decks',
       'All AI features',
       'Advanced timeline features',
       'Daily planning & shutdown rituals',
@@ -74,6 +79,7 @@ const plans = [
     features: [
       'Everything in Pro',
       '500 GB storage',
+      'Unlimited pitch decks',
       'Team collaboration features',
       'Team shared documents',
       'Team timeline',
@@ -407,6 +413,104 @@ export default function Landing() {
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* AI Pitch Deck Generator Showcase */}
+      <section className="py-20 bg-gradient-to-br from-accent/5 to-accent/10">
+        <div className="container max-w-7xl mx-auto px-4">
+          <div className="text-center mb-12">
+            <Badge className="mb-4 bg-accent/20 text-accent border-accent">
+              NEW FEATURE
+            </Badge>
+            <h2 className="text-4xl md:text-5xl font-bold text-primary mb-4">
+              Turn Your Docs Into Investor-Ready Pitch Decks
+            </h2>
+            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+              Our AI analyzes your documents and creates professional pitch decks in minutes.
+              16:9 slides, AI-determined optimal length, and presentation-ready visuals.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-8 items-center">
+            {/* Left: Visual Demo */}
+            <div className="relative">
+              <img
+                src="https://fskwutnoxbbflzqrphro.supabase.co/storage/v1/object/public/landing-images/pitch-deck-demo.png"
+                alt="AI-generated pitch deck example"
+                className="rounded-2xl shadow-2xl border border-primary/10"
+                onError={(e) => {
+                  // Fallback to placeholder if image fails to load
+                  e.currentTarget.style.display = 'none';
+                  const placeholder = e.currentTarget.nextElementSibling;
+                  if (placeholder) placeholder.style.display = 'flex';
+                }}
+              />
+              <div className="hidden rounded-2xl shadow-2xl border border-primary/10 bg-muted/20 items-center justify-center h-[400px]">
+                <div className="text-center">
+                  <Presentation className="w-24 h-24 text-muted-foreground/40 mx-auto mb-4" />
+                  <p className="text-muted-foreground">Pitch Deck Preview</p>
+                </div>
+              </div>
+              <Badge className="absolute top-4 right-4 bg-success">
+                Generated in 2 minutes
+              </Badge>
+            </div>
+
+            {/* Right: Benefits */}
+            <div className="space-y-6">
+              <div className="flex gap-4">
+                <div className="w-12 h-12 rounded-xl bg-accent/20 flex items-center justify-center flex-shrink-0">
+                  <Sparkles className="w-6 h-6 text-accent" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-semibold text-primary mb-2">
+                    AI Determines Perfect Length
+                  </h3>
+                  <p className="text-muted-foreground">
+                    No more guessing. AI analyzes complexity and recommends 8-15 slides following
+                    Guy Kawasaki's 10/20/30 rule and Y Combinator standards.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex gap-4">
+                <div className="w-12 h-12 rounded-xl bg-accent/20 flex items-center justify-center flex-shrink-0">
+                  <LayoutGrid className="w-6 h-6 text-accent" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-semibold text-primary mb-2">
+                    Professional 16:9 Format
+                  </h3>
+                  <p className="text-muted-foreground">
+                    All slides use industry-standard 16:9 aspect ratio. No letterboxing,
+                    no formatting issues. Export to PDF, PowerPoint, or present directly.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex gap-4">
+                <div className="w-12 h-12 rounded-xl bg-accent/20 flex items-center justify-center flex-shrink-0">
+                  <FileText className="w-6 h-6 text-accent" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-semibold text-primary mb-2">
+                    Uses Your Document Data
+                  </h3>
+                  <p className="text-muted-foreground">
+                    AI pulls metrics, facts, and insights from your uploaded documents to create
+                    data-driven, credible presentations.
+                  </p>
+                </div>
+              </div>
+
+              <Button asChild size="lg" className="w-full md:w-auto">
+                <Link to="/auth">
+                  Try Pitch Deck Generator <ArrowRight className="ml-2 w-4 h-4" />
+                </Link>
+              </Button>
+            </div>
           </div>
         </div>
       </section>
