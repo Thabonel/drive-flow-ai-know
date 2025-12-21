@@ -47,6 +47,7 @@ export default function PitchDeck() {
   const [topic, setTopic] = useState('');
   const [targetAudience, setTargetAudience] = useState('general business audience');
   const [numberOfSlides, setNumberOfSlides] = useState('10');
+  const [autoSlideCount, setAutoSlideCount] = useState(false);
   const [style, setStyle] = useState('professional');
   const [includeImages, setIncludeImages] = useState(true);
   const [generating, setGenerating] = useState(false);
@@ -452,7 +453,8 @@ export default function PitchDeck() {
         body: {
           topic,
           targetAudience,
-          numberOfSlides: parseInt(numberOfSlides),
+          numberOfSlides: autoSlideCount ? undefined : parseInt(numberOfSlides) || 10,
+          autoSlideCount: autoSlideCount,
           style,
           includeImages,
           selectedDocumentIds: selectedDocIds.length > 0 ? selectedDocIds : undefined
@@ -490,7 +492,8 @@ export default function PitchDeck() {
         body: {
           topic,
           targetAudience,
-          numberOfSlides: parseInt(numberOfSlides),
+          numberOfSlides: autoSlideCount ? undefined : parseInt(numberOfSlides) || 10,
+          autoSlideCount: autoSlideCount,
           style,
           includeImages,
           selectedDocumentIds: selectedDocIds.length > 0 ? selectedDocIds : undefined,
@@ -896,7 +899,7 @@ export default function PitchDeck() {
             topic,
             target_audience: targetAudience,
             style,
-            number_of_slides: parseInt(numberOfSlides),
+            number_of_slides: pitchDeck.totalSlides,
             source_document_ids: selectedDocIds.length > 0 ? selectedDocIds : null,
             updated_at: new Date().toISOString(),
           })
@@ -916,7 +919,7 @@ export default function PitchDeck() {
             topic,
             target_audience: targetAudience,
             style,
-            number_of_slides: parseInt(numberOfSlides),
+            number_of_slides: pitchDeck.totalSlides,
             source_document_ids: selectedDocIds.length > 0 ? selectedDocIds : null,
           })
           .select()
@@ -1438,8 +1441,31 @@ Generated with AI Query Hub
               />
             </div>
 
+            {/* Auto Slide Count Toggle */}
+            <div className="flex items-center space-x-2 py-2">
+              <Checkbox
+                id="autoSlideCount"
+                checked={autoSlideCount}
+                onCheckedChange={(checked) => {
+                  setAutoSlideCount(checked as boolean);
+                  if (checked) {
+                    // Clear manual slide count when auto is enabled
+                    setNumberOfSlides('');
+                  } else {
+                    // Reset to default when disabling auto mode
+                    setNumberOfSlides('10');
+                  }
+                }}
+              />
+              <Label htmlFor="autoSlideCount" className="cursor-pointer text-sm font-normal">
+                Let AI determine optimal slide count (8-15 slides)
+              </Label>
+            </div>
+
             <div>
-              <Label htmlFor="slides">Number of Slides</Label>
+              <Label htmlFor="slides">
+                Number of Slides {autoSlideCount && <Badge variant="secondary" className="ml-2">Auto</Badge>}
+              </Label>
               <Input
                 id="slides"
                 type="number"
@@ -1447,28 +1473,31 @@ Generated with AI Query Hub
                 max="50"
                 value={numberOfSlides}
                 onChange={(e) => setNumberOfSlides(e.target.value)}
-                placeholder="e.g., 10"
+                disabled={autoSlideCount}
+                placeholder={autoSlideCount ? "AI will decide" : "e.g., 10"}
               />
-              <div className="flex items-center justify-between mt-1">
-                <p className="text-xs text-muted-foreground">
-                  {topic || selectedDocIds.length > 0 ? (
-                    <>Suggested: <span className="font-medium text-primary">{suggestedSlides} slides</span></>
-                  ) : (
-                    'Choose between 3 and 50 slides'
+              {!autoSlideCount && (
+                <div className="flex items-center justify-between mt-1">
+                  <p className="text-xs text-muted-foreground">
+                    {topic || selectedDocIds.length > 0 ? (
+                      <>Suggested: <span className="font-medium text-primary">{suggestedSlides} slides</span></>
+                    ) : (
+                      'Choose between 3 and 50 slides'
+                    )}
+                  </p>
+                  {(topic || selectedDocIds.length > 0) && suggestedSlides.toString() !== numberOfSlides && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 text-xs"
+                      onClick={() => setNumberOfSlides(suggestedSlides.toString())}
+                    >
+                      Use suggested
+                    </Button>
                   )}
-                </p>
-                {(topic || selectedDocIds.length > 0) && suggestedSlides.toString() !== numberOfSlides && (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="h-6 text-xs"
-                    onClick={() => setNumberOfSlides(suggestedSlides.toString())}
-                  >
-                    Use suggested
-                  </Button>
-                )}
-              </div>
+                </div>
+              )}
             </div>
 
             <div>
