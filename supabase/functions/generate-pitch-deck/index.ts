@@ -11,6 +11,7 @@ interface PitchDeckRequest {
   topic: string;
   targetAudience?: string;
   numberOfSlides?: number;
+  autoSlideCount?: boolean;  // NEW: Enable AI-determined count
   style?: 'professional' | 'creative' | 'minimal' | 'bold';
   includeImages?: boolean;
   selectedDocumentIds?: string[];
@@ -92,6 +93,101 @@ function extractMetrics(content: string): string[] {
   return [...new Set(metrics)].slice(0, 5); // Return up to 5 unique metrics
 }
 
+/**
+ * Determine optimal slide count using AI
+ * Returns number between 8-15 based on content complexity
+ */
+async function determineOptimalSlideCount(
+  topic: string,
+  documentContext: string,
+  targetAudience: string,
+  anthropicKey: string
+): Promise<{ count: number; reasoning: string }> {
+
+  const analysisPrompt = `Analyze this pitch deck topic and recommend the optimal number of slides.
+
+## Topic
+${topic}
+
+## Target Audience
+${targetAudience}
+
+## Available Context
+${documentContext ? `${documentContext.substring(0, 2000)}...` : 'No source documents provided'}
+
+## Guidelines
+- Minimum: 8 slides (cover essential story)
+- Maximum: 15 slides (respect investor time)
+- Standard sections: Problem, Solution, Market, Product, Traction, Competition, Team, Business Model, Financials, Ask
+- Consider: topic complexity, data availability, audience sophistication
+
+## Task
+Recommend the optimal number of slides (8-15) for this pitch deck.
+
+Return ONLY a JSON object:
+{
+  "recommendedSlides": <number between 8-15>,
+  "reasoning": "<brief explanation in 1-2 sentences>"
+}`;
+
+  const response = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': anthropicKey,
+      'anthropic-version': '2023-06-01'
+    },
+    body: JSON.stringify({
+      model: CLAUDE_MODELS.FAST,  // Use fast model for analysis
+      max_tokens: 500,
+      messages: [{
+        role: 'user',
+        content: analysisPrompt
+      }]
+    })
+  });
+
+  if (!response.ok) {
+    console.warn('Failed to determine slide count, using default 12');
+    return { count: 12, reasoning: 'Default count used due to API error' };
+  }
+
+  const result = await response.json();
+  const content = result.content[0].text;
+
+  try {
+    const jsonMatch = content.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      const analysis = JSON.parse(jsonMatch[0]);
+
+      // Enforce constraints
+      const count = Math.max(8, Math.min(15, analysis.recommendedSlides));
+
+      console.log(`AI recommended ${count} slides: ${analysis.reasoning}`);
+      return { count, reasoning: analysis.reasoning };
+    }
+  } catch (error) {
+    console.error('Failed to parse slide count recommendation:', error);
+  }
+
+  // Fallback to smart default
+  return { count: 12, reasoning: 'Standard pitch deck length' };
+}
+
+/**
+ * Get standardized image generation parameters
+ * Enforces 16:9 aspect ratio for all slides
+ */
+function getStandardImageParams(visualPrompt: string, visualType: string) {
+  return {
+    prompt: visualPrompt,
+    style: visualType,
+    aspectRatio: '16:9',  // ENFORCE 16:9 for all slides
+    // Negative prompt to avoid common issues
+    negativePrompt: 'vertical orientation, portrait mode, non-standard aspect ratio'
+  };
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -117,7 +213,8 @@ serve(async (req) => {
     const {
       topic,
       targetAudience = 'general business audience',
-      numberOfSlides = 10,
+      numberOfSlides,
+      autoSlideCount = false,
       style = 'professional',
       includeImages = true,
       selectedDocumentIds,
@@ -130,6 +227,7 @@ serve(async (req) => {
     console.log('Generating pitch deck:', {
       topic,
       numberOfSlides,
+      autoSlideCount,
       style,
       selectedDocs: selectedDocumentIds?.length || 0,
       isRevision,
@@ -175,12 +273,36 @@ serve(async (req) => {
       }
     }
 
-    // Step 1: Use Claude to generate pitch deck structure and content
+    // Determine slide count
     const anthropicKey = Deno.env.get('ANTHROPIC_API_KEY');
     if (!anthropicKey) {
       throw new Error('ANTHROPIC_API_KEY not configured');
     }
 
+    let finalSlideCount: number;
+    let slideCountReasoning: string | undefined;
+
+    if (autoSlideCount && !isRevision) {
+      // Use AI to determine optimal count
+      console.log('Using AI to determine optimal slide count...');
+      const slideCountAnalysis = await determineOptimalSlideCount(
+        topic,
+        documentContext,
+        targetAudience,
+        anthropicKey
+      );
+
+      finalSlideCount = slideCountAnalysis.count;
+      slideCountReasoning = slideCountAnalysis.reasoning;
+
+      console.log(`AI determined ${finalSlideCount} slides: ${slideCountReasoning}`);
+    } else {
+      // Use user-specified count or default
+      finalSlideCount = numberOfSlides || 10;
+      console.log(`Using ${finalSlideCount} slides (${numberOfSlides ? 'user-specified' : 'default'})`);
+    }
+
+    // Step 1: Use Claude to generate pitch deck structure and content
     let structurePrompt = '';
 
     if (isRevision && currentDeck) {
@@ -233,12 +355,14 @@ ${documentContext ? `\n## Available Source Documents:\n\n${documentContext}\n\n`
       // New generation mode
       structurePrompt = `You are an expert pitch deck consultant. ${
         documentContext
-          ? `Using the source documents provided below, create a comprehensive ${numberOfSlides}-slide pitch deck.`
-          : `Create a comprehensive ${numberOfSlides}-slide pitch deck about: "${topic}"`
+          ? `Using the source documents provided below, create a comprehensive ${finalSlideCount}-slide pitch deck.`
+          : `Create a comprehensive ${finalSlideCount}-slide pitch deck about: "${topic}"`
       }
 
 Target audience: ${targetAudience}
 Style: ${style} - ${getStyleGuidance(style)}
+
+${slideCountReasoning ? `\n## Slide Count Rationale\nThis deck uses ${finalSlideCount} slides because: ${slideCountReasoning}\n` : ''}
 
 ${documentContext ? `\n## Source Documents\n\n${documentContext}\n\n` : ''}
 
@@ -379,18 +503,14 @@ Make it compelling, data-driven where appropriate (especially if source document
 
         if (shouldGenerateImage) {
           try {
-            // Call the generate-image function
+            // Call the generate-image function with standardized 16:9 parameters
             const imageResponse = await fetch(`${supabaseUrl}/functions/v1/generate-image`, {
               method: 'POST',
               headers: {
                 'Authorization': authHeader,
                 'Content-Type': 'application/json',
               },
-              body: JSON.stringify({
-                prompt: slide.visualPrompt,
-                style: slide.visualType,
-                aspectRatio: '16:9'
-              })
+              body: JSON.stringify(getStandardImageParams(slide.visualPrompt, slide.visualType))
             });
 
             if (imageResponse.ok) {
