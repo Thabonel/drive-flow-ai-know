@@ -437,7 +437,7 @@ export default function Landing() {
             {/* Left: Visual Demo */}
             <div className="relative">
               <img
-                src="https://fskwutnoxbbflzqrphro.supabase.co/storage/v1/object/public/landing-images/pitch-deck-demo.png"
+                src="https://fskwutnoxbbflzqrphro.supabase.co/storage/v1/object/public/assets/Slide%20Deck.jpg"
                 alt="AI-generated pitch deck example"
                 className="rounded-2xl shadow-2xl border border-primary/10"
                 onError={(e) => {
