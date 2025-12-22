@@ -13,7 +13,7 @@ interface GoogleDrivePickerProps {
 
 const GoogleDrivePicker = ({ onItemsSelected }: GoogleDrivePickerProps) => {
   const [isOpen, setIsOpen] = useState(false);
-  const { isAuthenticated, driveItems, isLoading, initializeGoogleDrive, signIn, loadDriveItems } = useGoogleDrive();
+  const { isAuthenticated, driveItems, isLoading, breadcrumbs, initializeGoogleDrive, signIn, loadDriveItems, navigateToFolder, navigateToBreadcrumb } = useGoogleDrive();
 
   const handleConfirmSelection = (selectedItems: DriveItem[]) => {
     const formattedItems: SelectedDriveItem[] = selectedItems.map(item => ({
@@ -60,6 +60,9 @@ const GoogleDrivePicker = ({ onItemsSelected }: GoogleDrivePickerProps) => {
           <DriveItemsList
             items={driveItems}
             isLoading={isLoading}
+            breadcrumbs={breadcrumbs}
+            onFolderClick={navigateToFolder}
+            onBreadcrumbClick={navigateToBreadcrumb}
             onConfirmSelection={handleConfirmSelection}
           />
         )}

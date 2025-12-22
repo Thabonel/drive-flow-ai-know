@@ -9,6 +9,10 @@ export const useGoogleDrive = () => {
   const [driveItems, setDriveItems] = useState<DriveItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSigningIn, setIsSigningIn] = useState(false);
+  const [currentFolder, setCurrentFolder] = useState<string>('root');
+  const [breadcrumbs, setBreadcrumbs] = useState<Array<{ id: string; name: string }>>([
+    { id: 'root', name: 'My Drive' }
+  ]);
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -295,7 +299,7 @@ export const useGoogleDrive = () => {
   }, [user, toast]);
 
   // Load Drive items using the access token
-  const loadDriveItems = useCallback(async () => {
+  const loadDriveItems = useCallback(async (folderId: string = 'root') => {
     const accessToken = await getAccessToken();
 
     if (!accessToken) {
@@ -309,10 +313,10 @@ export const useGoogleDrive = () => {
 
     setIsLoading(true);
     try {
-      // Query for root-level items only (in "My Drive", not nested in photo backups)
+      // Query for items in the specified folder
       const response = await fetch(
         'https://www.googleapis.com/drive/v3/files?' + new URLSearchParams({
-          q: "'root' in parents and trashed=false",
+          q: `'${folderId}' in parents and trashed=false`,
           fields: 'files(id,name,mimeType,parents)',
           pageSize: '100',
           orderBy: 'folder,name'
@@ -330,6 +334,7 @@ export const useGoogleDrive = () => {
 
       const data = await response.json();
       setDriveItems(data.files || []);
+      setCurrentFolder(folderId);
     } catch (error) {
       console.error('Error loading drive items:', error);
       toast({
@@ -347,14 +352,32 @@ export const useGoogleDrive = () => {
     await checkConnection();
   }, [checkConnection]);
 
+  // Navigate into a folder
+  const navigateToFolder = useCallback(async (folderId: string, folderName: string) => {
+    // Add to breadcrumbs
+    setBreadcrumbs(prev => [...prev, { id: folderId, name: folderName }]);
+    await loadDriveItems(folderId);
+  }, [loadDriveItems]);
+
+  // Navigate back via breadcrumb
+  const navigateToBreadcrumb = useCallback(async (index: number) => {
+    const targetCrumb = breadcrumbs[index];
+    setBreadcrumbs(breadcrumbs.slice(0, index + 1));
+    await loadDriveItems(targetCrumb.id);
+  }, [breadcrumbs, loadDriveItems]);
+
   return {
     isAuthenticated,
     driveItems,
     isLoading,
     isSigningIn,
+    currentFolder,
+    breadcrumbs,
     initializeGoogleDrive,
     signIn,
     loadDriveItems,
+    navigateToFolder,
+    navigateToBreadcrumb,
     checkConnection,
   };
 };

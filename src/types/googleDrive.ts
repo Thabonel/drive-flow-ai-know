@@ -11,6 +11,12 @@ export interface SelectedDriveItem {
   folder_path: string | null;
 }
 
+export interface DriveNavigationState {
+  currentFolderId: string | 'root';
+  folderName: string;
+  breadcrumbs: Array<{ id: string; name: string }>;
+}
+
 declare global {
   interface Window {
     gapi: any;
