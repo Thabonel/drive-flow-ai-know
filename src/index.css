@@ -8,10 +8,10 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
+    --background: 0 0% 93%;
     --foreground: 217 33% 17%;
 
-    --card: 0 0% 100%;
+    --card: 0 0% 93%;
     --card-foreground: 217 33% 17%;
 
     --popover: 0 0% 100%;
@@ -53,8 +53,19 @@ All colors MUST be HSL.
                      radial-gradient(at 100% 100%, hsl(165 98% 30% / 0.15) 0px, transparent 50%);
 
     --shadow-glow: 0 0 60px -10px hsl(212 48% 52% / 0.5);
-    /* 3D effect: dual-shadow system with close proximity + primary drop shadow */
-    --shadow-card: 0 4px 8px rgba(0, 0, 0, 0.12), 0 16px 32px rgba(0, 0, 0, 0.2);
+
+    /* Neumorphic shadow system */
+    --neomorph-light: 0 0% 98%;
+    --neomorph-dark: 0 0% 80%;
+    --neomorph-distance: 8px;
+    --neomorph-blur: 16px;
+
+    --shadow-neu-raised: -8px -8px 16px hsl(0 0% 98% / 0.6), 8px 8px 16px hsl(0 0% 80% / 0.2);
+    --shadow-neu-pressed: inset -4px -4px 8px hsl(0 0% 98% / 0.5), inset 4px 4px 8px hsl(0 0% 80% / 0.25);
+    --shadow-neu-flat: -4px -4px 8px hsl(0 0% 98% / 0.4), 4px 4px 8px hsl(0 0% 80% / 0.15);
+
+    /* 3D effect: dual-shadow system with close proximity + primary drop shadow (aliased to neumorphic) */
+    --shadow-card: var(--shadow-neu-raised);
 
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 212 48% 52%;
@@ -70,7 +81,7 @@ All colors MUST be HSL.
     --background: 212 48% 12%;
     --foreground: 0 0% 98%;
 
-    --card: 212 48% 16%;
+    --card: 212 48% 14%;
     --card-foreground: 0 0% 98%;
 
     --popover: 212 48% 16%;
@@ -110,8 +121,19 @@ All colors MUST be HSL.
                      radial-gradient(at 100% 100%, hsl(165 98% 35% / 0.2) 0px, transparent 50%);
 
     --shadow-glow: 0 0 80px -10px hsl(212 48% 58% / 0.6);
-    /* 3D effect: dual-shadow system (dark mode - more pronounced) */
-    --shadow-card: 0 4px 8px rgba(0, 0, 0, 0.3), 0 16px 32px rgba(0, 0, 0, 0.4);
+
+    /* Neumorphic shadow system */
+    --neomorph-light: 212 48% 20%;
+    --neomorph-dark: 212 48% 6%;
+    --neomorph-distance: 10px;
+    --neomorph-blur: 20px;
+
+    --shadow-neu-raised: -10px -10px 20px hsl(212 48% 20% / 0.5), 10px 10px 20px hsl(212 48% 6% / 0.35);
+    --shadow-neu-pressed: inset -5px -5px 10px hsl(212 48% 20% / 0.4), inset 5px 5px 10px hsl(212 48% 6% / 0.4);
+    --shadow-neu-flat: -5px -5px 10px hsl(212 48% 20% / 0.3), 5px 5px 10px hsl(212 48% 6% / 0.25);
+
+    /* 3D effect: dual-shadow system (dark mode - aliased to neumorphic) */
+    --shadow-card: var(--shadow-neu-raised);
 
     --sidebar-background: 212 48% 12%;
     --sidebar-foreground: 0 0% 96%;
@@ -124,10 +146,10 @@ All colors MUST be HSL.
   }
 
   .pure-light {
-    --background: 0 0% 98%;
+    --background: 0 0% 92%;
     --foreground: 0 0% 10%;
 
-    --card: 0 0% 100%;
+    --card: 0 0% 92%;
     --card-foreground: 0 0% 10%;
 
     --popover: 0 0% 100%;
@@ -155,6 +177,18 @@ All colors MUST be HSL.
     --input: 0 0% 90%;
     --ring: 0 0% 30%;
 
+    /* Neumorphic shadow system */
+    --neomorph-light: 0 0% 97%;
+    --neomorph-dark: 0 0% 78%;
+    --neomorph-distance: 8px;
+    --neomorph-blur: 16px;
+
+    --shadow-neu-raised: -8px -8px 16px hsl(0 0% 97% / 0.7), 8px 8px 16px hsl(0 0% 78% / 0.2);
+    --shadow-neu-pressed: inset -4px -4px 8px hsl(0 0% 97% / 0.6), inset 4px 4px 8px hsl(0 0% 78% / 0.25);
+    --shadow-neu-flat: -4px -4px 8px hsl(0 0% 97% / 0.5), 4px 4px 8px hsl(0 0% 78% / 0.15);
+
+    --shadow-card: var(--shadow-neu-raised);
+
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 0 0% 10%;
     --sidebar-primary: 0 0% 20%;
@@ -169,7 +203,7 @@ All colors MUST be HSL.
     --background: 222 47% 11%;
     --foreground: 210 40% 98%;
 
-    --card: 222 47% 15%;
+    --card: 222 47% 13%;
     --card-foreground: 210 40% 98%;
 
     --popover: 222 47% 15%;
@@ -197,6 +231,18 @@ All colors MUST be HSL.
     --input: 217 33% 20%;
     --ring: 217 91% 60%;
 
+    /* Neumorphic shadow system */
+    --neomorph-light: 217 91% 25%;
+    --neomorph-dark: 222 47% 5%;
+    --neomorph-distance: 10px;
+    --neomorph-blur: 20px;
+
+    --shadow-neu-raised: -10px -10px 20px hsl(217 91% 25% / 0.3), 10px 10px 20px hsl(222 47% 5% / 0.4);
+    --shadow-neu-pressed: inset -5px -5px 10px hsl(217 91% 25% / 0.25), inset 5px 5px 10px hsl(222 47% 5% / 0.45);
+    --shadow-neu-flat: -5px -5px 10px hsl(217 91% 25% / 0.2), 5px 5px 10px hsl(222 47% 5% / 0.3);
+
+    --shadow-card: var(--shadow-neu-raised);
+
     --sidebar-background: 222 47% 11%;
     --sidebar-foreground: 210 40% 98%;
     --sidebar-primary: 217 91% 60%;
@@ -211,7 +257,7 @@ All colors MUST be HSL.
     --background: 0 0% 12%;
     --foreground: 0 0% 95%;
 
-    --card: 0 0% 16%;
+    --card: 0 0% 14%;
     --card-foreground: 0 0% 95%;
 
     --popover: 0 0% 16%;
@@ -239,6 +285,18 @@ All colors MUST be HSL.
     --input: 0 0% 22%;
     --ring: 0 0% 50%;
 
+    /* Neumorphic shadow system */
+    --neomorph-light: 0 0% 22%;
+    --neomorph-dark: 0 0% 6%;
+    --neomorph-distance: 10px;
+    --neomorph-blur: 20px;
+
+    --shadow-neu-raised: -10px -10px 20px hsl(0 0% 22% / 0.5), 10px 10px 20px hsl(0 0% 6% / 0.4);
+    --shadow-neu-pressed: inset -5px -5px 10px hsl(0 0% 22% / 0.4), inset 5px 5px 10px hsl(0 0% 6% / 0.45);
+    --shadow-neu-flat: -5px -5px 10px hsl(0 0% 22% / 0.3), 5px 5px 10px hsl(0 0% 6% / 0.3);
+
+    --shadow-card: var(--shadow-neu-raised);
+
     --sidebar-background: 0 0% 12%;
     --sidebar-foreground: 0 0% 95%;
     --sidebar-primary: 0 0% 85%;
@@ -261,14 +319,28 @@ All colors MUST be HSL.
 }
 
 @layer utilities {
+  /* Neumorphic shadow utilities */
+  .shadow-neu-raised {
+    box-shadow: var(--shadow-neu-raised);
+  }
+
+  .shadow-neu-pressed {
+    box-shadow: var(--shadow-neu-pressed);
+  }
+
+  .shadow-neu-flat {
+    box-shadow: var(--shadow-neu-flat);
+  }
+
+  .shadow-elevated {
+    box-shadow:
+      calc(-1 * var(--neomorph-distance) * 1.5) calc(-1 * var(--neomorph-distance) * 1.5) calc(var(--neomorph-blur) * 1.5) hsl(var(--neomorph-light) / 0.7),
+      calc(var(--neomorph-distance) * 1.5) calc(var(--neomorph-distance) * 1.5) calc(var(--neomorph-blur) * 1.5) hsl(var(--neomorph-dark) / 0.3);
+  }
+
   /* 3D card lighting effect: simulates top-down natural lighting */
   .card-3d-lighting {
     background: linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 0%, rgba(0, 0, 0, 0.02) 100%);
-  }
-
-  /* Elevated card variant: higher floating effect like main cards in sleep tracker */
-  .shadow-elevated {
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15), 0 24px 48px rgba(0, 0, 0, 0.25);
   }
 
   /* Force shadow-card on all cards for consistency */
