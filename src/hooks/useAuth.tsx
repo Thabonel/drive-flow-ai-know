@@ -97,8 +97,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       // Success
       toast({
-        title: "Registration Successful",
-        description: registerData?.message || "Please check your email to verify your account.",
+        title: "Account Created",
+        description: "We've sent a confirmation email to your inbox. Please check your email (and spam folder) to activate your account.",
+        duration: 7000,
       });
 
       return { error: null };
