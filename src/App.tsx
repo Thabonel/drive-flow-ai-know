@@ -13,6 +13,7 @@ import Header from "./layout/Header";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import ResetPassword from "./pages/ResetPassword";
+import ConfirmEmail from "./pages/ConfirmEmail";
 import GoogleDrive from "./pages/GoogleDrive";
 import Documents from "./pages/Documents";
 import AddDocuments from "./pages/AddDocuments";
@@ -127,6 +128,7 @@ const App = () => (
               </PublicRoute>
             } />
             <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/auth/confirm" element={<ConfirmEmail />} />
             <Route path="/auth/microsoft/callback" element={<MicrosoftCallback />} />
             <Route path="/auth/dropbox/callback" element={<DropboxCallback />} />
             <Route path="/" element={
