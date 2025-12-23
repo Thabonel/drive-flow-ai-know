@@ -2,6 +2,13 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+**For comprehensive documentation, see [docs/BIBLE/](docs/BIBLE/)** - Complete system documentation including:
+- Email confirmation system ([05-SECURITY/EMAIL_CONFIRMATION.md](docs/BIBLE/05-SECURITY/EMAIL_CONFIRMATION.md))
+- Neumorphic design system ([09-REFERENCE/DESIGN_SYSTEM.md](docs/BIBLE/09-REFERENCE/DESIGN_SYSTEM.md))
+- Complete architecture, features, and guides
+
+This CLAUDE.md provides quick reference for AI assistants. The BIBLE contains full documentation.
+
 ## Claude Code Rules
 
 ### Defaults
@@ -96,6 +103,12 @@ cd DeepResearchAgency && python agency.py
 - `useAuth` hook provides user state throughout app
 - `ProtectedRoute` and `PublicRoute` components handle route-based auth
 - User tokens stored in `user_google_tokens` table for Google Drive integration
+- **Email Confirmation Flow**:
+  - New signups require email confirmation (`email_confirm: false` in auth settings)
+  - Confirmation handled via `/auth/confirm` route (`src/pages/ConfirmEmail.tsx`)
+  - Auto-login on successful confirmation with redirect to `/dashboard`
+  - Email template configured in Supabase dashboard with spam prevention measures
+  - Uses custom domain SMTP for deliverability (smtp.resend.com)
 
 #### AI Query Flow
 1. User submits query via `AIQueryInput` component
@@ -128,7 +141,7 @@ cd DeepResearchAgency && python agency.py
 
 ### Color Scheme
 
-The application uses a **"Deep Corporate" Navy & Gold** theme for professional, authoritative branding.
+The application uses a **"Deep Corporate" Navy & Gold** theme for professional, authoritative branding with a **neumorphic (soft UI) design system** featuring shadow-based depth.
 
 **Primary Colors:**
 - **Navy**: #0A2342 (HSL: 213 74% 15%) - Used for headers, main text, primary UI elements
@@ -141,6 +154,50 @@ The application uses a **"Deep Corporate" Navy & Gold** theme for professional, 
 - Uses HSL format for consistency with Tailwind and shadcn-ui
 - Supports light and dark modes with separate color definitions
 - Additional theme variants available: `.pure-light`, `.magic-blue`, `.classic-dark`
+- **6 total theme variants** with neumorphic shadows
+
+### Neumorphic Design System
+
+**Implemented**: December 2024 (commit `d7a2485`)
+
+**Neumorphism** (soft UI) creates depth using shadows instead of borders:
+- **Raised**: Elements appear to float above background (`shadow-neu-raised`)
+- **Flat**: Elements flush with background (`shadow-neu-flat`)
+- **Pressed**: Elements appear pressed into background (`shadow-neu-pressed`)
+
+**Shadow Variables** (`src/index.css`):
+```css
+--shadow-neu-raised:
+  6px 6px 12px rgba(0, 0, 0, 0.1),
+  -6px -6px 12px rgba(255, 255, 255, 0.7);
+
+--shadow-neu-pressed:
+  inset 4px 4px 8px rgba(0, 0, 0, 0.15),
+  inset -4px -4px 8px rgba(255, 255, 255, 0.5);
+```
+
+**Component Application**:
+- **Buttons**: Raised shadow with `rounded-2xl` (16px radius)
+- **Cards**: Raised shadow with `rounded-2xl`
+- **Inputs**: Pressed (inset) shadow with `rounded-xl` (12px radius)
+- **Dialogs**: Raised shadow with `rounded-2xl`
+- **Select Dropdowns**: Pressed trigger, raised content
+
+**Micro-interactions**:
+- Smooth transitions (150-200ms)
+- Hover: Shadow reduction (raised → flat)
+- Active: Pressed state
+- Scale effects on interaction (scale-[1.02] on hover)
+
+**Files Modified**:
+- `src/index.css` - Shadow variables for all 6 themes
+- `src/components/ui/button.tsx` - Neumorphic buttons
+- `src/components/ui/card.tsx` - Soft shadow cards
+- `src/components/ui/input.tsx` - Inset inputs
+- `src/components/ui/select.tsx` - Matching input styling
+- `src/components/ui/dialog.tsx` - Raised dialogs
+
+See [docs/BIBLE/09-REFERENCE/DESIGN_SYSTEM.md](docs/BIBLE/09-REFERENCE/DESIGN_SYSTEM.md) for complete design system documentation.
 
 ### Color Variables (src/index.css)
 
@@ -321,8 +378,16 @@ Override via environment variables:
 ### Adding New Pages
 1. Create page component in `src/pages/`
 2. Add route in `src/App.tsx` within `<Routes>` block
-3. Wrap with `<ProtectedRoute>` if authentication required
+3. Wrap with `<ProtectedRoute>` if authentication required (or `<PublicRoute>` for auth pages)
 4. Add navigation link in `src/components/AppSidebar.tsx` if needed
+
+### Email Confirmation Flow
+- New signups require email confirmation (`email_confirm: false` in `register-user` Edge Function)
+- Confirmation handled via `/auth/confirm` route (`src/pages/ConfirmEmail.tsx`)
+- Auto-login on successful confirmation with redirect to `/dashboard`
+- Email template configured in Supabase dashboard with spam prevention
+- Custom domain SMTP via Resend (smtp.resend.com)
+- See [docs/BIBLE/05-SECURITY/EMAIL_CONFIRMATION.md](docs/BIBLE/05-SECURITY/EMAIL_CONFIRMATION.md) for details
 
 ### Adding New Edge Functions
 1. Create function directory in `supabase/functions/`
