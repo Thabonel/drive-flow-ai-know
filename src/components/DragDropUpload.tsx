@@ -494,20 +494,28 @@ const DragDropUpload = ({ onFilesAdded }: DragDropUploadProps) => {
           <h4 className="font-medium">Uploading Files</h4>
           {uploadingFiles.map((uploadingFile) => {
             const Icon = getFileIcon(uploadingFile.file);
+            const isStalled = uploadingFile.status === 'uploading' && uploadingFile.progress >= 40 && uploadingFile.progress < 80;
+
             return (
               <div key={uploadingFile.id} className="flex items-center gap-3 p-3 border rounded-lg">
                 <Icon className="h-5 w-5 flex-shrink-0" />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between mb-1">
                     <p className="font-medium truncate">{uploadingFile.file.name}</p>
-                    {uploadingFile.status === 'uploading' && uploadingFile.progress >= 40 && uploadingFile.progress < 80 && (
+                    {isStalled && (
                       <span className="text-xs text-blue-600 dark:text-blue-400 animate-pulse">
                         Extracting content...
                       </span>
                     )}
                   </div>
                   <div className="flex items-center gap-2">
-                    <Progress value={uploadingFile.progress} className="flex-1 h-2" />
+                    <div className="relative flex-1">
+                      <Progress
+                        value={uploadingFile.progress}
+                        className="h-2"
+                        indicatorClassName={isStalled ? 'animate-pulse' : 'transition-all duration-300'}
+                      />
+                    </div>
                     <span className="text-xs text-muted-foreground font-medium min-w-[3ch]">
                       {Math.round(uploadingFile.progress)}%
                     </span>
