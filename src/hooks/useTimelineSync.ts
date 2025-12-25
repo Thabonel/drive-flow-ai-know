@@ -15,6 +15,10 @@ interface TimelineSyncCallbacks {
 export function useTimelineSync(callbacks: TimelineSyncCallbacks) {
   const { user } = useAuth();
 
+  // Store callbacks in refs so they're always current without triggering re-subscriptions
+  const callbacksRef = useRef(callbacks);
+  callbacksRef.current = callbacks;
+
   // Debounce timers to prevent rapid refetches
   const itemsDebounceTimer = useRef<NodeJS.Timeout | null>(null);
   const layersDebounceTimer = useRef<NodeJS.Timeout | null>(null);
@@ -44,7 +48,7 @@ export function useTimelineSync(callbacks: TimelineSyncCallbacks) {
     };
 
     // Subscribe to timeline_items changes
-    if (callbacks.onItemsChange) {
+    if (callbacksRef.current.onItemsChange) {
       const itemsChannel = supabase
         .channel('timeline_items_changes')
         .on(
@@ -55,7 +59,7 @@ export function useTimelineSync(callbacks: TimelineSyncCallbacks) {
             table: 'timeline_items',
             filter: `user_id=eq.${user.id}`,
           },
-          debounce(callbacks.onItemsChange, itemsDebounceTimer, 150)
+          debounce(() => callbacksRef.current.onItemsChange?.(), itemsDebounceTimer, 150)
         )
         .subscribe();
 
@@ -63,7 +67,7 @@ export function useTimelineSync(callbacks: TimelineSyncCallbacks) {
     }
 
     // Subscribe to timeline_layers changes
-    if (callbacks.onLayersChange) {
+    if (callbacksRef.current.onLayersChange) {
       const layersChannel = supabase
         .channel('timeline_layers_changes')
         .on(
@@ -74,7 +78,7 @@ export function useTimelineSync(callbacks: TimelineSyncCallbacks) {
             table: 'timeline_layers',
             filter: `user_id=eq.${user.id}`,
           },
-          debounce(callbacks.onLayersChange, layersDebounceTimer, 150)
+          debounce(() => callbacksRef.current.onLayersChange?.(), layersDebounceTimer, 150)
         )
         .subscribe();
 
@@ -82,7 +86,7 @@ export function useTimelineSync(callbacks: TimelineSyncCallbacks) {
     }
 
     // Subscribe to timeline_settings changes
-    if (callbacks.onSettingsChange) {
+    if (callbacksRef.current.onSettingsChange) {
       const settingsChannel = supabase
         .channel('timeline_settings_changes')
         .on(
@@ -93,7 +97,7 @@ export function useTimelineSync(callbacks: TimelineSyncCallbacks) {
             table: 'timeline_settings',
             filter: `user_id=eq.${user.id}`,
           },
-          debounce(callbacks.onSettingsChange, settingsDebounceTimer, 150)
+          debounce(() => callbacksRef.current.onSettingsChange?.(), settingsDebounceTimer, 150)
         )
         .subscribe();
 
@@ -101,7 +105,7 @@ export function useTimelineSync(callbacks: TimelineSyncCallbacks) {
     }
 
     // Subscribe to timeline_parked_items changes
-    if (callbacks.onParkedItemsChange) {
+    if (callbacksRef.current.onParkedItemsChange) {
       const parkedItemsChannel = supabase
         .channel('timeline_parked_items_changes')
         .on(
@@ -112,7 +116,7 @@ export function useTimelineSync(callbacks: TimelineSyncCallbacks) {
             table: 'timeline_parked_items',
             filter: `user_id=eq.${user.id}`,
           },
-          debounce(callbacks.onParkedItemsChange, parkedItemsDebounceTimer, 150)
+          debounce(() => callbacksRef.current.onParkedItemsChange?.(), parkedItemsDebounceTimer, 150)
         )
         .subscribe();
 
@@ -132,5 +136,5 @@ export function useTimelineSync(callbacks: TimelineSyncCallbacks) {
         supabase.removeChannel(channel);
       });
     };
-  }, [user, callbacks.onItemsChange, callbacks.onLayersChange, callbacks.onSettingsChange, callbacks.onParkedItemsChange]);
+  }, [user]); // Remove callback dependencies to prevent reconnection loops
 }
