@@ -170,7 +170,7 @@ const DragDropUpload = ({ onFilesAdded }: DragDropUploadProps) => {
           )
         );
 
-        // Save to database
+        // Save to database (text files don't need original file storage)
         await saveDocument(file.name, content, 'text', uploadingFile.id);
       };
       reader.readAsText(file);
@@ -280,8 +280,8 @@ const DragDropUpload = ({ onFilesAdded }: DragDropUploadProps) => {
             return; // Don't save broken document
           }
 
-          // Save to database with extracted content
-          await saveDocument(file.name, content, fileType, uploadingFile.id, mimeType);
+          // Save to database with extracted content AND original file
+          await saveDocument(file.name, content, fileType, uploadingFile.id, mimeType, file);
 
         } catch (error) {
           // Clear the progress interval on error
@@ -307,7 +307,14 @@ const DragDropUpload = ({ onFilesAdded }: DragDropUploadProps) => {
     }
   };
 
-  const saveDocument = async (title: string, content: string, type: string, uploadId: string, mimeType?: string) => {
+  const saveDocument = async (
+    title: string,
+    content: string,
+    type: string,
+    uploadId: string,
+    mimeType?: string,
+    originalFile?: File
+  ) => {
     try {
       // Determine mime type based on file extension if not provided
       let finalMimeType = mimeType;
@@ -325,6 +332,41 @@ const DragDropUpload = ({ onFilesAdded }: DragDropUploadProps) => {
         finalMimeType = mimeMap[ext || ''] || 'application/octet-stream';
       }
 
+      // Upload original file to Supabase Storage (for PDFs and binary files)
+      let fileUrl: string | null = null;
+      let storagePath: string | null = null;
+      let originalFileSize: number | null = null;
+
+      if (originalFile && (type === 'pdf' || !originalFile.type.startsWith('text/'))) {
+        const fileName = `${user!.id}/${Date.now()}_${originalFile.name}`;
+        storagePath = fileName;
+
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('documents')
+          .upload(fileName, originalFile, {
+            cacheControl: '3600',
+            upsert: false,
+            contentType: finalMimeType
+          });
+
+        if (uploadError) {
+          console.error('Storage upload error:', uploadError);
+          toast({
+            title: 'File Upload Warning',
+            description: 'Original file could not be stored, but content was extracted successfully.',
+            variant: 'default',
+          });
+        } else {
+          // Get public URL for the uploaded file
+          const { data: urlData } = supabase.storage
+            .from('documents')
+            .getPublicUrl(fileName);
+
+          fileUrl = urlData.publicUrl;
+          originalFileSize = originalFile.size;
+        }
+      }
+
       const { data, error } = await supabase
         .from('knowledge_documents')
         .insert({
@@ -335,7 +377,10 @@ const DragDropUpload = ({ onFilesAdded }: DragDropUploadProps) => {
           category: 'general',
           file_type: type,
           file_size: content.length,
-          mime_type: finalMimeType
+          mime_type: finalMimeType,
+          file_url: fileUrl,
+          storage_path: storagePath,
+          original_file_size: originalFileSize
         })
         .select()
         .single();

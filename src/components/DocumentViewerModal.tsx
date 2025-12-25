@@ -7,7 +7,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { FileText, Edit, Copy, Save, X, Tag, Sparkles, Lightbulb, Calendar, Printer, Download, ChevronDown } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { FileText, Edit, Copy, Save, X, Tag, Sparkles, Lightbulb, Calendar, Printer, Download, ChevronDown, FileImage } from 'lucide-react';
+import { PDFViewer } from '@/components/PDFViewer';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -449,20 +451,67 @@ export const DocumentViewerModal = ({ document, isOpen, onClose }: DocumentViewe
                 className="resize-none font-sans"
               />
             ) : (
-              <div className="p-6 border rounded-md bg-background min-h-[300px] select-text prose prose-slate dark:prose-invert max-w-none break-words prose-headings:text-foreground prose-p:text-foreground prose-li:text-foreground prose-strong:text-foreground prose-a:text-primary prose-code:text-foreground prose-table:border-collapse prose-th:border prose-th:border-slate-300 prose-th:p-2 prose-td:border prose-td:border-slate-300 prose-td:p-2">
-                {/* Render HTML content directly if it's from a Word document or contains HTML tags */}
-                {(document?.metadata?.contentFormat === 'html' ||
-                  document?.metadata?.extractionMethod === 'mammoth-html' ||
-                  (formData.content && /<[a-z][\s\S]*>/i.test(formData.content))) ? (
-                  <div
-                    dangerouslySetInnerHTML={{ __html: formData.content || 'No content available' }}
-                  />
+              <>
+                {/* Show tabs if original file is available (PDF, etc.) */}
+                {document.file_url && (document.file_type === 'pdf' || document.mime_type === 'application/pdf') ? (
+                  <Tabs defaultValue="original" className="w-full">
+                    <TabsList className="grid w-full grid-cols-2">
+                      <TabsTrigger value="original" className="flex items-center gap-2">
+                        <FileImage className="h-4 w-4" />
+                        Original PDF
+                      </TabsTrigger>
+                      <TabsTrigger value="extracted" className="flex items-center gap-2">
+                        <FileText className="h-4 w-4" />
+                        Extracted Text (for AI)
+                      </TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="original" className="mt-4">
+                      <PDFViewer
+                        fileUrl={document.file_url}
+                        fileName={formData.title}
+                        showDownload={true}
+                      />
+                    </TabsContent>
+                    <TabsContent value="extracted" className="mt-4">
+                      <div className="p-6 border rounded-md bg-background min-h-[300px] select-text prose prose-slate dark:prose-invert max-w-none break-words prose-headings:text-foreground prose-p:text-foreground prose-li:text-foreground prose-strong:text-foreground prose-a:text-primary prose-code:text-foreground prose-table:border-collapse prose-th:border prose-th:border-slate-300 prose-th:p-2 prose-td:border prose-td:border-slate-300 prose-td:p-2">
+                        {/* Render HTML content directly if it's from a Word document or contains HTML tags */}
+                        {(document?.metadata?.contentFormat === 'html' ||
+                          document?.metadata?.extractionMethod === 'mammoth-html' ||
+                          (formData.content && /<[a-z][\s\S]*>/i.test(formData.content))) ? (
+                          <div
+                            dangerouslySetInnerHTML={{ __html: formData.content || 'No content available' }}
+                          />
+                        ) : (
+                          <ReactMarkdown>
+                            {formData.content || 'No content available'}
+                          </ReactMarkdown>
+                        )}
+                      </div>
+                      <div className="mt-2 text-xs text-muted-foreground">
+                        <p>
+                          <strong>Note:</strong> This text includes descriptions of images and graphics (marked with [IMAGE: ...])
+                          that appear in the original PDF. Use the "Original PDF" tab to see the actual visuals.
+                        </p>
+                      </div>
+                    </TabsContent>
+                  </Tabs>
                 ) : (
-                  <ReactMarkdown>
-                    {formData.content || 'No content available'}
-                  </ReactMarkdown>
+                  <div className="p-6 border rounded-md bg-background min-h-[300px] select-text prose prose-slate dark:prose-invert max-w-none break-words prose-headings:text-foreground prose-p:text-foreground prose-li:text-foreground prose-strong:text-foreground prose-a:text-primary prose-code:text-foreground prose-table:border-collapse prose-th:border prose-th:border-slate-300 prose-th:p-2 prose-td:border prose-td:border-slate-300 prose-td:p-2">
+                    {/* Render HTML content directly if it's from a Word document or contains HTML tags */}
+                    {(document?.metadata?.contentFormat === 'html' ||
+                      document?.metadata?.extractionMethod === 'mammoth-html' ||
+                      (formData.content && /<[a-z][\s\S]*>/i.test(formData.content))) ? (
+                      <div
+                        dangerouslySetInnerHTML={{ __html: formData.content || 'No content available' }}
+                      />
+                    ) : (
+                      <ReactMarkdown>
+                        {formData.content || 'No content available'}
+                      </ReactMarkdown>
+                    )}
+                  </div>
                 )}
-              </div>
+              </>
             )}
           </div>
 
