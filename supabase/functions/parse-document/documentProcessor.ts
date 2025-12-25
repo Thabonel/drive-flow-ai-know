@@ -344,7 +344,32 @@ async function parsePDF(filePath: string, fileName: string): Promise<ParseResult
             }
           }, {
             type: 'text',
-            text: 'Extract ALL content from this PDF document, including both text and visual elements. For text: preserve the original formatting, paragraph structure, headings, and layout. For images, charts, diagrams, and graphics: provide detailed descriptions of what they show, including any labels, data, or key information they contain. Maintain the order of content as it appears in the document. Format the output as plain text with image descriptions clearly marked (e.g., "[IMAGE: description here]").'
+            text: `Extract ALL content from this PDF document. DO NOT skip any visual elements.
+
+IMPORTANT: This PDF contains both text AND graphics (images, charts, diagrams, photos, illustrations, etc.). You MUST include both.
+
+For TEXT content:
+- Preserve all text exactly as it appears
+- Maintain formatting, headings, paragraph structure
+- Include all captions, labels, and annotations
+
+For VISUAL content (CRITICAL - DO NOT SKIP):
+- Identify EVERY image, chart, diagram, graph, photo, illustration, or graphic
+- For EACH visual element, provide a detailed description including:
+  * What the visual shows
+  * Any text, labels, or data visible in the visual
+  * Colors, layout, and key details
+  * Context (e.g., "appears next to heading X")
+- Mark each visual with "[IMAGE: detailed description]"
+
+Example format:
+[Normal text content here]
+
+[IMAGE: A bar chart showing quarterly sales data for 2024. The chart has four bars in blue, labeled Q1 ($50K), Q2 ($75K), Q3 ($90K), Q4 ($120K). The y-axis shows dollar amounts from 0-150K, and the x-axis shows quarters. Title reads "2024 Sales Performance".]
+
+[More text content]
+
+Maintain the document's original order - place each [IMAGE: ...] description exactly where that visual appears in the PDF.`
           }]
         }]
       })
