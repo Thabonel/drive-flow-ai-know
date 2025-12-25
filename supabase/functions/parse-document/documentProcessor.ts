@@ -344,7 +344,7 @@ async function parsePDF(filePath: string, fileName: string): Promise<ParseResult
             }
           }, {
             type: 'text',
-            text: 'Extract ALL text content from this PDF document. Preserve the original formatting, paragraph structure, headings, and layout as much as possible. Include all text from every page. Return ONLY the extracted text content, without any commentary or analysis.'
+            text: 'Extract ALL content from this PDF document, including both text and visual elements. For text: preserve the original formatting, paragraph structure, headings, and layout. For images, charts, diagrams, and graphics: provide detailed descriptions of what they show, including any labels, data, or key information they contain. Maintain the order of content as it appears in the document. Format the output as plain text with image descriptions clearly marked (e.g., "[IMAGE: description here]").'
           }]
         }]
       })
