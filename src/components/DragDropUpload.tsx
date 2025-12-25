@@ -210,61 +210,80 @@ const DragDropUpload = ({ onFilesAdded }: DragDropUploadProps) => {
           mimeType = 'application/pdf';
         }
 
-        // Call the parse-document edge function
-        const { data, error } = await supabase.functions.invoke('parse-document', {
-          body: {
-            fileName: file.name,
-            mimeType: mimeType || 'application/octet-stream',
-            fileData: base64
-          }
-        });
+        // Start simulated progress for long-running operations (PDFs with Claude Vision can take 10-30s)
+        const progressInterval = setInterval(() => {
+          setUploadingFiles(prev =>
+            prev.map(f => {
+              if (f.id === uploadingFile.id && f.progress < 75) {
+                // Slowly increment progress from 40% to 75% while waiting
+                return { ...f, progress: Math.min(f.progress + 2, 75) };
+              }
+              return f;
+            })
+          );
+        }, 500); // Update every 500ms
 
-        // Update progress - parsing complete
-        setUploadingFiles(prev =>
-          prev.map(f =>
-            f.id === uploadingFile.id
-              ? { ...f, progress: 80 }
-              : f
-          )
-        );
-
-        if (error) {
-          console.error('Parse error:', error);
-          throw new Error(error.message || 'Failed to parse document');
-        }
-
-        const content = data?.content || '';
-        const fileType = fileName.split('.').pop() || 'binary';
-
-        // Check for parsing errors hidden in metadata
-        const actualError = data?.metadata?.parseError;
-        if (actualError) {
-          console.error('Document parsing error:', actualError);
-
-          // Show user-friendly error notification
-          toast({
-            title: 'Document Parsing Failed',
-            description: actualError.includes('ANTHROPIC_API_KEY')
-              ? 'PDF extraction requires API configuration. Please contact support.'
-              : `Failed to extract content from ${file.name}: ${actualError}`,
-            variant: 'destructive',
+        try {
+          // Call the parse-document edge function
+          const { data, error } = await supabase.functions.invoke('parse-document', {
+            body: {
+              fileName: file.name,
+              mimeType: mimeType || 'application/octet-stream',
+              fileData: base64
+            }
           });
 
-          // Mark upload as failed
+          // Clear the progress interval
+          clearInterval(progressInterval);
+
+          // Update progress - parsing complete
           setUploadingFiles(prev =>
             prev.map(f =>
               f.id === uploadingFile.id
-                ? { ...f, status: 'error', progress: 0 }
+                ? { ...f, progress: 80 }
                 : f
             )
           );
-          return; // Don't save broken document
-        }
 
-        // Save to database with extracted content
-        await saveDocument(file.name, content, fileType, uploadingFile.id, mimeType);
+          if (error) {
+            console.error('Parse error:', error);
+            throw new Error(error.message || 'Failed to parse document');
+          }
 
-      } catch (error) {
+          const content = data?.content || '';
+          const fileType = fileName.split('.').pop() || 'binary';
+
+          // Check for parsing errors hidden in metadata
+          const actualError = data?.metadata?.parseError;
+          if (actualError) {
+            console.error('Document parsing error:', actualError);
+
+            // Show user-friendly error notification
+            toast({
+              title: 'Document Parsing Failed',
+              description: actualError.includes('ANTHROPIC_API_KEY')
+                ? 'PDF extraction requires API configuration. Please contact support.'
+                : `Failed to extract content from ${file.name}: ${actualError}`,
+              variant: 'destructive',
+            });
+
+            // Mark upload as failed
+            setUploadingFiles(prev =>
+              prev.map(f =>
+                f.id === uploadingFile.id
+                  ? { ...f, status: 'error', progress: 0 }
+                  : f
+              )
+            );
+            return; // Don't save broken document
+          }
+
+          // Save to database with extracted content
+          await saveDocument(file.name, content, fileType, uploadingFile.id, mimeType);
+
+        } catch (error) {
+          // Clear the progress interval on error
+          clearInterval(progressInterval);
         console.error('Binary file processing error:', error);
 
         // Show error notification
