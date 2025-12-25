@@ -5,14 +5,17 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Brain, Eye, EyeOff, AlertCircle } from 'lucide-react';
+import { Brain, Eye, EyeOff, AlertCircle, Mail, CheckCircle } from 'lucide-react';
 import { validatePassword, validateEmail, validateFullName, getPasswordStrength } from '@/lib/validation';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { PasswordRequirements } from '@/components/PasswordRequirements';
 
 const Auth = () => {
   const { signIn, signUp, resetPassword } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [resetEmailSent, setResetEmailSent] = useState(false);
+  const [signUpSuccess, setSignUpSuccess] = useState(false);
+  const [signUpEmail, setSignUpEmail] = useState('');
   const [showSignInPassword, setShowSignInPassword] = useState(false);
   const [showSignUpPassword, setShowSignUpPassword] = useState(false);
   const [signUpPassword, setSignUpPassword] = useState('');
@@ -77,8 +80,14 @@ const Auth = () => {
     }
 
     setIsLoading(true);
-    await signUp(email, password, fullName);
+    const result = await signUp(email, password, fullName);
     setIsLoading(false);
+
+    // Show success screen if signup succeeded
+    if (!result.error) {
+      setSignUpEmail(email);
+      setSignUpSuccess(true);
+    }
   };
 
   const handleResetPassword = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -163,13 +172,62 @@ const Auth = () => {
           <TabsContent value="signup">
             <Card>
               <CardHeader>
-                <CardTitle>Create account</CardTitle>
+                <CardTitle>{signUpSuccess ? 'Check Your Email' : 'Create account'}</CardTitle>
                 <CardDescription>
-                  Sign up for your AI Query Hub account
+                  {signUpSuccess
+                    ? 'We\'ve sent you a confirmation email'
+                    : 'Sign up for your AI Query Hub account'
+                  }
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <form onSubmit={handleSignUp} className="space-y-4">
+                {signUpSuccess ? (
+                  <div className="space-y-4 py-4">
+                    <div className="flex justify-center">
+                      <div className="h-16 w-16 rounded-full bg-green-100 dark:bg-green-900/20 flex items-center justify-center">
+                        <Mail className="h-8 w-8 text-green-600 dark:text-green-500" />
+                      </div>
+                    </div>
+
+                    <div className="text-center space-y-2">
+                      <h3 className="font-semibold text-lg">Confirm Your Email</h3>
+                      <p className="text-sm text-muted-foreground">
+                        We've sent a confirmation email to:
+                      </p>
+                      <p className="font-medium text-foreground">{signUpEmail}</p>
+                    </div>
+
+                    <Alert className="border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-950/20">
+                      <CheckCircle className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                      <AlertDescription className="text-sm text-blue-900 dark:text-blue-100">
+                        <strong>Next steps:</strong>
+                        <ol className="list-decimal list-inside mt-2 space-y-1">
+                          <li>Check your inbox (and spam folder)</li>
+                          <li>Click the confirmation link in the email</li>
+                          <li>You'll be automatically logged in</li>
+                        </ol>
+                      </AlertDescription>
+                    </Alert>
+
+                    <div className="pt-4 text-center">
+                      <p className="text-sm text-muted-foreground mb-3">
+                        Didn't receive the email?
+                      </p>
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          setSignUpSuccess(false);
+                          setSignUpEmail('');
+                          setSignUpPassword('');
+                          setConfirmPassword('');
+                        }}
+                      >
+                        Try Again
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <form onSubmit={handleSignUp} className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="signup-name">Full Name</Label>
                     <Input
@@ -224,9 +282,12 @@ const Auth = () => {
                       </button>
                     </div>
 
+                    {/* Password requirements checklist */}
+                    <PasswordRequirements password={signUpPassword} />
+
                     {/* Password strength indicator */}
                     {signUpPassword && (
-                      <div className="space-y-1">
+                      <div className="space-y-1 mt-3">
                         <div className="flex items-center justify-between text-xs">
                           <span className="text-muted-foreground">Password strength:</span>
                           <span
@@ -246,20 +307,6 @@ const Auth = () => {
                           />
                         </div>
                       </div>
-                    )}
-
-                    {/* Password validation errors */}
-                    {validationErrors.password && validationErrors.password.length > 0 && (
-                      <Alert variant="destructive" className="mt-2">
-                        <AlertCircle className="h-4 w-4" />
-                        <AlertDescription>
-                          <ul className="list-disc list-inside space-y-1 text-sm">
-                            {validationErrors.password.map((error, index) => (
-                              <li key={index}>{error}</li>
-                            ))}
-                          </ul>
-                        </AlertDescription>
-                      </Alert>
                     )}
                   </div>
                   <div className="space-y-2">
@@ -301,6 +348,7 @@ const Auth = () => {
                     {isLoading ? 'Creating account...' : 'Sign Up'}
                   </Button>
                 </form>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
