@@ -286,21 +286,31 @@ const DragDropUpload = ({ onFilesAdded }: DragDropUploadProps) => {
         } catch (error) {
           // Clear the progress interval on error
           clearInterval(progressInterval);
-        console.error('Binary file processing error:', error);
+          console.error('Binary file processing error:', error);
 
-        // Show error notification
-        toast({
-          title: 'Upload Failed',
-          description: error instanceof Error ? error.message : 'Unknown error occurred',
-          variant: 'destructive',
-        });
+          // Show error notification
+          toast({
+            title: 'Upload Failed',
+            description: error instanceof Error ? error.message : 'Unknown error occurred',
+            variant: 'destructive',
+          });
 
-        // Mark upload as failed
+          // Mark upload as failed
+          setUploadingFiles(prev =>
+            prev.map(f =>
+              f.id === uploadingFile.id
+                ? { ...f, status: 'error', progress: 0 }
+                : f
+            )
+          );
+        }
+      } catch (error) {
+        console.error('File processing error:', error);
         setUploadingFiles(prev =>
           prev.map(f =>
             f.id === uploadingFile.id
               ? { ...f, status: 'error', progress: 0 }
-                : f
+              : f
           )
         );
       }
