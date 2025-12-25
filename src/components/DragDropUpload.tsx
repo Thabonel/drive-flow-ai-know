@@ -212,15 +212,17 @@ const DragDropUpload = ({ onFilesAdded }: DragDropUploadProps) => {
 
         // Start simulated progress for long-running operations (PDFs with Claude Vision can take 10-30s)
         const progressInterval = setInterval(() => {
-          setUploadingFiles(prev =>
-            prev.map(f => {
-              if (f.id === uploadingFile.id && f.progress < 75) {
+          setUploadingFiles(prev => {
+            return prev.map(f => {
+              if (f.id === uploadingFile.id && f.progress < 75 && f.status === 'uploading') {
                 // Slowly increment progress from 40% to 75% while waiting
-                return { ...f, progress: Math.min(f.progress + 2, 75) };
+                const newProgress = Math.min(f.progress + 2, 75);
+                console.log(`Simulated progress: ${f.progress}% → ${newProgress}%`);
+                return { ...f, progress: newProgress };
               }
               return f;
-            })
-          );
+            });
+          });
         }, 500); // Update every 500ms
 
         try {
@@ -441,11 +443,18 @@ const DragDropUpload = ({ onFilesAdded }: DragDropUploadProps) => {
               <div key={uploadingFile.id} className="flex items-center gap-3 p-3 border rounded-lg">
                 <Icon className="h-5 w-5 flex-shrink-0" />
                 <div className="flex-1 min-w-0">
-                  <p className="font-medium truncate">{uploadingFile.file.name}</p>
-                  <div className="flex items-center gap-2 mt-1">
+                  <div className="flex items-center justify-between mb-1">
+                    <p className="font-medium truncate">{uploadingFile.file.name}</p>
+                    {uploadingFile.status === 'uploading' && uploadingFile.progress >= 40 && uploadingFile.progress < 80 && (
+                      <span className="text-xs text-blue-600 dark:text-blue-400 animate-pulse">
+                        Extracting content...
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2">
                     <Progress value={uploadingFile.progress} className="flex-1 h-2" />
-                    <span className="text-xs text-muted-foreground">
-                      {uploadingFile.progress}%
+                    <span className="text-xs text-muted-foreground font-medium min-w-[3ch]">
+                      {Math.round(uploadingFile.progress)}%
                     </span>
                   </div>
                 </div>
