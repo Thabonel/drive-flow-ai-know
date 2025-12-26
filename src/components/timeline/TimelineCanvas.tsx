@@ -2,6 +2,7 @@
 
 import React, { useRef, useState, useEffect } from 'react';
 import { TimelineItem } from './TimelineItem';
+import { TimelinePhilosophy } from './TimelinePhilosophy';
 import {
   TimelineItem as TimelineItemType,
   TimelineLayer,
@@ -388,30 +389,40 @@ export function TimelineCanvas({
       })}
 
       {/* Timeline items */}
-      {filteredItems.map((item) => {
-        const layer = visibleLayers.find(l => l.id === item.layer_id);
-        if (!layer) return null;
+      {filteredItems.length === 0 ? (
+        // Empty state with philosophy
+        <foreignObject x="0" y="100" width={viewportWidth} height="400">
+          <div className="flex items-center justify-center py-12 px-4">
+            <TimelinePhilosophy mode="standalone" />
+          </div>
+        </foreignObject>
+      ) : (
+        // Existing items rendering
+        filteredItems.map((item) => {
+          const layer = visibleLayers.find(l => l.id === item.layer_id);
+          if (!layer) return null;
 
-        const layerIndex = visibleLayers.indexOf(layer);
-        const y = calculateLayerY(layerIndex, layerHeight, TIMELINE_HEADER_HEIGHT);
+          const layerIndex = visibleLayers.indexOf(layer);
+          const y = calculateLayerY(layerIndex, layerHeight, TIMELINE_HEADER_HEIGHT);
 
-        return (
-          <g key={item.id} transform={`translate(0, ${y})`}>
-            <TimelineItem
-              item={item}
-              layerIndex={layerIndex}
-              layerHeight={layerHeight}
-              viewportWidth={viewportWidth}
-              pixelsPerHour={pixelsPerHour}
-              scrollOffset={scrollOffset}
-              nowTime={nowTime}
-              onClick={onItemClick}
-              onDragEnd={handleItemDragEnd}
-              onResize={onItemResize}
-            />
-          </g>
-        );
-      })}
+          return (
+            <g key={item.id} transform={`translate(0, ${y})`}>
+              <TimelineItem
+                item={item}
+                layerIndex={layerIndex}
+                layerHeight={layerHeight}
+                viewportWidth={viewportWidth}
+                pixelsPerHour={pixelsPerHour}
+                scrollOffset={scrollOffset}
+                nowTime={nowTime}
+                onClick={onItemClick}
+                onDragEnd={handleItemDragEnd}
+                onResize={onItemResize}
+              />
+            </g>
+          );
+        })
+      )}
     </svg>
   );
 }
