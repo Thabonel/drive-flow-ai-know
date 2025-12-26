@@ -866,9 +866,9 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
-      <div className="flex justify-between items-center mb-1 flex-shrink-0">
+      <div className="flex flex-col gap-3 mb-1 flex-shrink-0">
         {isEditingTitle ? (
-          <div className="flex items-center gap-2 flex-1 mr-4">
+          <div className="flex items-center gap-2">
             <Input
               value={editedTitle}
               onChange={(e) => setEditedTitle(e.target.value)}
@@ -897,7 +897,7 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
             )}
           </div>
         )}
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           {/* Document Access Toggle */}
           <Button
             size="sm"
