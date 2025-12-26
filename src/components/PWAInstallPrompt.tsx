@@ -13,6 +13,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 export function PWAInstallPrompt() {
   const [showPrompt, setShowPrompt] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
+  const [isSafari, setIsSafari] = useState(false);
   const [isStandalone, setIsStandalone] = useState(false);
   const [hasPromptBeenDismissed, setHasPromptBeenDismissed] = useState(false);
 
@@ -29,20 +30,22 @@ export function PWAInstallPrompt() {
     const isIOSDevice = /iphone|ipad|ipod/.test(userAgent);
     setIsIOS(isIOSDevice);
 
+    // Detect Safari
+    const isSafariBrowser = /safari/.test(userAgent) && !/chrome/.test(userAgent) && !/crios/.test(userAgent) && !/fxios/.test(userAgent);
+    setIsSafari(isSafariBrowser);
+
     // Check if already installed (standalone mode)
     const isInStandaloneMode =
       ('standalone' in window.navigator && (window.navigator as any).standalone) ||
       window.matchMedia('(display-mode: standalone)').matches;
     setIsStandalone(isInStandaloneMode);
 
-    // Show prompt only if:
+    // Show prompt if:
     // 1. On iOS device
     // 2. Not already in standalone mode
-    // 3. Using Safari (not Chrome/Firefox)
-    // 4. Haven't dismissed before
-    const isSafari = /safari/.test(userAgent) && !/chrome/.test(userAgent);
-
-    if (isIOSDevice && !isInStandaloneMode && isSafari && !dismissed) {
+    // 3. Haven't dismissed before
+    // Will show different content based on whether using Safari or not
+    if (isIOSDevice && !isInStandaloneMode && !dismissed) {
       // Show after 5 seconds to not be intrusive
       const timer = setTimeout(() => {
         setShowPrompt(true);
@@ -93,61 +96,139 @@ export function PWAInstallPrompt() {
           </DialogHeader>
 
           <div className="space-y-4 py-4">
-            <Alert>
-              <AlertDescription>
-                Get the full app experience with offline access and faster loading!
-              </AlertDescription>
-            </Alert>
+            {!isSafari ? (
+              <>
+                {/* Non-Safari browser instructions */}
+                <Alert className="border-yellow-500 bg-yellow-50 dark:bg-yellow-900/20">
+                  <AlertDescription className="text-yellow-800 dark:text-yellow-200">
+                    To install this app, you need to open it in Safari first.
+                  </AlertDescription>
+                </Alert>
 
-            <div className="space-y-3">
-              <div className="flex items-start gap-3">
-                <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-medium">
-                  1
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm font-medium">Tap the Share button</p>
-                  <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
-                    <Share className="h-4 w-4" />
-                    <span>Located at the bottom or top of Safari</span>
+                <div className="space-y-3">
+                  <div className="flex items-start gap-3">
+                    <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-medium">
+                      1
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium">Open Safari browser</p>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        PWA installation only works in Safari on iOS
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-3">
+                    <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-medium">
+                      2
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium">Navigate to this website</p>
+                      <p className="mt-1 text-xs text-muted-foreground font-mono bg-muted px-2 py-1 rounded">
+                        {window.location.origin}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-3">
+                    <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-medium">
+                      3
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium">Tap the Share button</p>
+                      <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
+                        <Share className="h-4 w-4" />
+                        <span>Located at the bottom or top of Safari</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-3">
+                    <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-medium">
+                      4
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium">Select "Add to Home Screen"</p>
+                      <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
+                        <Plus className="h-4 w-4" />
+                        <span>Scroll down if you don't see it immediately</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-3">
+                    <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-medium">
+                      5
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium">Tap "Add"</p>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        The app will appear on your home screen
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
+              </>
+            ) : (
+              <>
+                {/* Safari browser instructions */}
+                <Alert>
+                  <AlertDescription>
+                    Get the full app experience with offline access and faster loading!
+                  </AlertDescription>
+                </Alert>
 
-              <div className="flex items-start gap-3">
-                <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-medium">
-                  2
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm font-medium">Select "Add to Home Screen"</p>
-                  <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
-                    <Plus className="h-4 w-4" />
-                    <span>Scroll down if you don't see it immediately</span>
+                <div className="space-y-3">
+                  <div className="flex items-start gap-3">
+                    <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-medium">
+                      1
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium">Tap the Share button</p>
+                      <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
+                        <Share className="h-4 w-4" />
+                        <span>Located at the bottom or top of Safari</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-3">
+                    <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-medium">
+                      2
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium">Select "Add to Home Screen"</p>
+                      <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
+                        <Plus className="h-4 w-4" />
+                        <span>Scroll down if you don't see it immediately</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-3">
+                    <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-medium">
+                      3
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium">Tap "Add"</p>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        The app will appear on your home screen
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <div className="flex items-start gap-3">
-                <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-medium">
-                  3
+                <div className="rounded-lg bg-muted p-3 text-sm">
+                  <p className="font-medium mb-1">Why install?</p>
+                  <ul className="space-y-1 text-xs text-muted-foreground">
+                    <li>• Full-screen experience (no browser bars)</li>
+                    <li>• Faster loading with offline support</li>
+                    <li>• Quick access from your home screen</li>
+                    <li>• Feels like a native iPad app</li>
+                  </ul>
                 </div>
-                <div className="flex-1">
-                  <p className="text-sm font-medium">Tap "Add"</p>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    The app will appear on your home screen
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="rounded-lg bg-muted p-3 text-sm">
-              <p className="font-medium mb-1">Why install?</p>
-              <ul className="space-y-1 text-xs text-muted-foreground">
-                <li>• Full-screen experience (no browser bars)</li>
-                <li>• Faster loading with offline support</li>
-                <li>• Quick access from your home screen</li>
-                <li>• Feels like a native iPad app</li>
-              </ul>
-            </div>
+              </>
+            )}
           </div>
 
           <div className="flex gap-2">
