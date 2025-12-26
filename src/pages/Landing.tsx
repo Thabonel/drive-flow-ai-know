@@ -348,6 +348,9 @@ export default function Landing() {
               src="https://fskwutnoxbbflzqrphro.supabase.co/storage/v1/object/public/assets/AI%20Qyeryhubhero.jpg"
               alt="AI Query Hub - AI Knowledge Assistant"
               className="max-w-6xl w-full h-auto object-contain rounded-2xl"
+              fetchpriority="high"
+              decoding="async"
+              loading="eager"
             />
           </div>
 
