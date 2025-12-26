@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { TimelineCanvas } from './TimelineCanvas';
 import { TimelineControls } from './TimelineControls';
 import { TimelineLayerManager } from './TimelineLayerManager';
+import { TimelinePhilosophy } from './TimelinePhilosophy';
 import { AddItemForm } from './AddItemForm';
 import { ItemActionMenu } from './ItemActionMenu';
 import { ParkedItemsPanel } from './ParkedItemsPanel';
@@ -409,6 +410,7 @@ export function TimelineManager({ onCanvasReady }: TimelineManagerProps = {}) {
           <h1 className="text-3xl font-bold flex items-center gap-2">
             <Clock className="h-8 w-8" />
             Timeline Manager
+            <TimelinePhilosophy mode="dialog" trigger="icon" />
             <PageHelp
               title="Timeline Manager Help"
               description="The Timeline Manager helps you visualize and manage your tasks on a flowing timeline. Items move towards the NOW line, and become 'logjammed' (red pulsing) when overdue. You can drag items to reschedule, resize them to adjust duration, or park them for later."
