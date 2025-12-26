@@ -15,7 +15,7 @@ import {
   BarChart3, Activity, Database, FileText, Brain, Settings,
   TrendingUp, AlertTriangle, Eye, Globe, AlertCircle, Ticket, Trash2,
   RefreshCw, Crown, UserCheck, UserX, Mail, Megaphone, History,
-  Zap, Wrench, AlertOctagon, CheckCircle2
+  Zap, Wrench, AlertOctagon, CheckCircle2, Gift
 } from 'lucide-react';
 import {
   Table,
@@ -943,6 +943,12 @@ export default function Admin() {
                                 <SelectContent>
                                   <SelectItem value="free">
                                     <span className="flex items-center gap-2">Free</span>
+                                  </SelectItem>
+                                  <SelectItem value="lifetime_free">
+                                    <span className="flex items-center gap-2">
+                                      <Gift className="h-3 w-3 text-success" />
+                                      Free for Life
+                                    </span>
                                   </SelectItem>
                                   <SelectItem value="ai_starter">
                                     <span className="flex items-center gap-2">AI Starter</span>
