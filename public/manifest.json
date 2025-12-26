@@ -1,0 +1,47 @@
+{
+  "name": "AI Query Hub",
+  "short_name": "AI Query Hub",
+  "description": "An AI Assistant That Remembers Everything - Connect your documents and chat naturally",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0A2342",
+  "theme_color": "#0A2342",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    }
+  ],
+  "categories": ["productivity", "business", "utilities"],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "New Conversation",
+      "short_name": "Chat",
+      "description": "Start a new AI conversation",
+      "url": "/conversations",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Documents",
+      "short_name": "Docs",
+      "description": "View your documents",
+      "url": "/documents",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}
