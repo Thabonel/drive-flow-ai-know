@@ -134,7 +134,7 @@ serve(async (req) => {
         throw new Error('userId and planTier are required')
       }
 
-      const validTiers = ['free', 'ai_starter', 'professional', 'executive']
+      const validTiers = ['free', 'lifetime_free', 'ai_starter', 'professional', 'executive']
       if (!validTiers.includes(planTier)) {
         throw new Error(`Invalid plan tier. Must be one of: ${validTiers.join(', ')}`)
       }
