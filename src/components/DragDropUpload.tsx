@@ -509,11 +509,13 @@ const DragDropUpload = ({ onFilesAdded }: DragDropUploadProps) => {
                     )}
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className="relative flex-1">
-                      <Progress
-                        value={uploadingFile.progress}
-                        className="h-2"
-                        indicatorClassName={isStalled ? 'animate-pulse' : 'transition-all duration-300'}
+                    {/* Custom progress bar with full control */}
+                    <div className="relative flex-1 h-2 bg-secondary rounded-full overflow-hidden">
+                      <div
+                        className={`h-full bg-primary rounded-full transition-all duration-300 ${
+                          isStalled ? 'animate-pulse' : ''
+                        }`}
+                        style={{ width: `${uploadingFile.progress}%` }}
                       />
                     </div>
                     <span className="text-xs text-muted-foreground font-medium min-w-[3ch]">
