@@ -19,7 +19,9 @@ const GoogleDrivePicker = ({ onItemsSelected }: GoogleDrivePickerProps) => {
     const formattedItems: SelectedDriveItem[] = selectedItems.map(item => ({
       folder_id: item.id,
       folder_name: item.name,
-      folder_path: null
+      folder_path: null,
+      mimeType: item.mimeType,
+      isFolder: item.mimeType === 'application/vnd.google-apps.folder'
     }));
 
     onItemsSelected(formattedItems);

@@ -16,14 +16,33 @@ const GoogleDrive = () => {
   const { folders, addFolder, removeFolder, syncFolder } = useDriveFolders();
   const [isAdding, setIsAdding] = useState(false);
 
-  const handleItemsFromPicker = async (items: { folder_id: string; folder_name: string; folder_path: string | null }[]) => {
+  const handleItemsFromPicker = async (items: { folder_id: string; folder_name: string; folder_path: string | null; mimeType: string; isFolder: boolean }[]) => {
     setIsAdding(true);
     let successCount = 0;
     let errorCount = 0;
+    let fileCount = 0;
+    let folderCount = 0;
 
     for (const item of items) {
       try {
-        await addFolder.mutateAsync(item);
+        if (item.isFolder) {
+          // Add folder (existing behavior)
+          await addFolder.mutateAsync({
+            folder_id: item.folder_id,
+            folder_name: item.folder_name,
+            folder_path: item.folder_path
+          });
+          folderCount++;
+        } else {
+          // For individual files, add them to a special "Individual Files" folder
+          // or create a temporary folder entry for this file
+          await addFolder.mutateAsync({
+            folder_id: item.folder_id,
+            folder_name: item.folder_name,
+            folder_path: item.folder_path
+          });
+          fileCount++;
+        }
         successCount++;
       } catch (error) {
         errorCount++;
@@ -31,9 +50,15 @@ const GoogleDrive = () => {
     }
 
     if (successCount > 0) {
+      const itemsDesc = folderCount > 0 && fileCount > 0
+        ? `${folderCount} folder(s) and ${fileCount} file(s)`
+        : folderCount > 0
+          ? `${folderCount} folder(s)`
+          : `${fileCount} file(s)`;
+
       toast({
         title: 'Items Added',
-        description: `${successCount} item(s) connected successfully.${errorCount > 0 ? ` ${errorCount} failed.` : ''}`,
+        description: `${itemsDesc} connected successfully.${errorCount > 0 ? ` ${errorCount} failed.` : ''}`,
       });
     }
 

@@ -9,6 +9,8 @@ export interface SelectedDriveItem {
   folder_id: string;
   folder_name: string;
   folder_path: string | null;
+  mimeType: string;
+  isFolder: boolean;
 }
 
 export interface DriveNavigationState {
