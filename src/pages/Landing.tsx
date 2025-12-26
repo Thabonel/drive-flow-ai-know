@@ -5,27 +5,10 @@ import { Badge } from '@/components/ui/badge';
 import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import {
-  ArrowRight,
   Check,
-  FileText,
-  MessageSquare,
-  Shield,
-  Star,
-  Users,
-  Zap,
-  Clock,
-  TrendingUp,
-  Brain,
-  Lock,
-  Globe,
-  Sparkles,
   CheckCircle2,
-  BarChart3,
-  Upload,
   Menu,
-  X,
-  LayoutGrid,
-  Presentation
+  X
 } from 'lucide-react';
 
 const plans = [
@@ -97,73 +80,61 @@ const plans = [
 
 const features = [
   {
-    icon: MessageSquare,
     title: 'Ask Questions Like Normal',
     description: 'Type what you want to know. Get answers pulled from your docs. No special keywords needed.',
     benefit: 'Plain English works',
   },
   {
-    icon: Shield,
     title: 'Your Files, Your Rules',
     description: 'Use our cloud, or connect Google Drive, Microsoft 365, or S3. Choose where your files live.',
     benefit: 'Keep control of your data',
   },
   {
-    icon: Zap,
     title: 'Fast Search',
     description: 'Search through all your documents quickly. Get answers in seconds, not hours.',
     benefit: 'Fast answers',
   },
   {
-    icon: Brain,
     title: 'Future-Proof AI Intelligence',
     description: 'Multi-provider architecture with leading AI models. We automatically route to the best available AI and update to the latest frontier models. No switching services, no new accounts, no manual upgrades.',
     benefit: 'Always latest AI',
   },
   {
-    icon: Clock,
     title: 'Timeline Manager',
     description: 'Visual timeline that flows in real-time. Schedule tasks, see what\'s logjammed, park items for later. Switch between day, week, and month views.',
     benefit: 'Time flows naturally',
   },
   {
-    icon: FileText,
     title: 'Group Your Documents',
     description: 'Make collections from related files. The AI reads them together to answer your questions.',
     benefit: 'Context-aware answers',
   },
   {
-    icon: Brain,
     title: 'Persistent Knowledge Base',
     description: 'Upload documents once and they stay forever. Every conversation has access to your entire library. No more re-uploading files.',
     benefit: 'Upload once, use forever',
   },
   {
-    icon: Globe,
     title: 'Works Anywhere',
     description: 'Open it in any browser. Desktop, laptop, tablet, phone—doesn\'t matter.',
     benefit: 'No app to install',
   },
   {
-    icon: Users,
     title: 'Context Operates at Team Level',
     description: 'Team-shared documents mean everyone\'s AI has access to the same knowledge. No more asking "who has that file?"',
     benefit: 'Shared organizational context',
   },
   {
-    icon: Lock,
     title: 'Context is Local',
     description: 'Your team\'s knowledge stays within your organization. AI assistants only see what your team uploads—context that\'s private and controlled.',
     benefit: 'Your data, your boundaries',
   },
   {
-    icon: Sparkles,
     title: 'Context Fluency Across Organization',
     description: 'Everyone sings from the same song list. Team members get consistent AI responses because they\'re all working from shared documents.',
     benefit: 'Organization-wide alignment',
   },
   {
-    icon: TrendingUp,
     title: 'Meaningfully Upshift Bottom Line',
     description: 'Teams waste hours every week searching for information. AI Query Hub turns that into billable hours, faster projects, and more closed deals—real ROI, not just "AI experiments." Give your team instant answers so they can ship faster, close more deals, and make you more money.',
     benefit: 'ROI you can measure',
@@ -173,10 +144,10 @@ const features = [
 export default function Landing() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [stats, setStats] = useState([
-    { value: '0', label: 'Questions Answered', icon: MessageSquare },
-    { value: '0', label: 'Hours Saved', icon: Clock },
-    { value: '0', label: 'Active Users', icon: Users },
-    { value: '4.9/5', label: 'User Rating', icon: Star },
+    { value: '0', label: 'Questions Answered' },
+    { value: '0', label: 'Hours Saved' },
+    { value: '0', label: 'Active Users' },
+    { value: '4.9/5', label: 'User Rating' },
   ]);
 
   useEffect(() => {
@@ -199,24 +170,21 @@ export default function Landing() {
             value: totalQueries >= 1000000 ? `${(totalQueries / 1000000).toFixed(1)}M+` :
                    totalQueries >= 1000 ? `${(totalQueries / 1000).toFixed(1)}K+` :
                    totalQueries.toString(),
-            label: 'Questions Answered',
-            icon: MessageSquare
+            label: 'Questions Answered'
           },
           {
             value: hoursSaved >= 1000000 ? `${(hoursSaved / 1000000).toFixed(1)}M+` :
                    hoursSaved >= 1000 ? `${(hoursSaved / 1000).toFixed(1)}K+` :
                    hoursSaved.toString(),
-            label: 'Hours Saved',
-            icon: Clock
+            label: 'Hours Saved'
           },
           {
             value: totalUsers >= 1000000 ? `${(totalUsers / 1000000).toFixed(1)}M+` :
                    totalUsers >= 1000 ? `${(totalUsers / 1000).toFixed(1)}K+` :
                    totalUsers.toString(),
-            label: 'Active Users',
-            icon: Users
+            label: 'Active Users'
           },
-          { value: '4.9/5', label: 'User Rating', icon: Star },
+          { value: '4.9/5', label: 'User Rating' },
         ]);
       } catch (error) {
         console.error('Error fetching stats:', error);
@@ -232,9 +200,6 @@ export default function Landing() {
       <header className="relative border-b border-primary bg-primary sticky top-0 z-50 shadow-lg">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center space-x-2">
-            <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-secondary to-primary flex items-center justify-center shadow-glow">
-              <FileText className="h-5 w-5 text-white" />
-            </div>
             <span className="text-xl font-bold text-white">AI Query Hub</span>
             <Badge className="ml-2 hidden sm:inline-flex bg-secondary border-secondary text-white">Chat With Your Docs</Badge>
           </div>
@@ -316,7 +281,6 @@ export default function Landing() {
               <Button asChild size="lg" className="text-base px-6 py-4 bg-accent hover:bg-accent/90 shadow-lg hover:shadow-xl transition-all hover:scale-105 border-0 text-white">
                 <Link to="/auth">
                   Start Free 14-Day Trial
-                  <ArrowRight className="ml-2 w-4 h-4" />
                 </Link>
               </Button>
             </div>
@@ -324,19 +288,15 @@ export default function Landing() {
             {/* Trust Indicators */}
             <div className="flex flex-wrap gap-3 justify-center items-center pt-2 text-xs">
               <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/30 backdrop-blur-sm">
-                <Shield className="w-4 h-4 text-primary" />
                 <span className="font-medium text-primary">Your data stays private</span>
               </div>
               <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-success/10 border border-success/30 backdrop-blur-sm">
-                <Zap className="w-4 h-4 text-success" />
                 <span className="font-medium text-success">Fast, reliable answers</span>
               </div>
               <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-accent/10 border border-accent/30 backdrop-blur-sm">
-                <CheckCircle2 className="w-4 h-4 text-accent" />
                 <span className="font-medium text-accent">No credit card required</span>
               </div>
               <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/30 backdrop-blur-sm">
-                <CheckCircle2 className="w-4 h-4 text-primary" />
                 <span className="font-medium text-primary">Always latest AI models</span>
               </div>
             </div>
@@ -357,17 +317,14 @@ export default function Landing() {
           {/* Trust Badges - Replacing Disabled Stats */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-16">
             <div className="text-center p-6 rounded-2xl bg-primary/5 border border-primary/20 shadow-card hover:shadow-lg transition-all">
-              <Shield className="w-12 h-12 mx-auto mb-3 text-primary" />
               <h3 className="text-xl font-bold text-primary mb-2">Secure & Encrypted</h3>
               <p className="text-sm text-muted-foreground">Your documents are stored securely with industry-standard encryption.</p>
             </div>
             <div className="text-center p-6 rounded-2xl bg-success/5 border border-success/20 shadow-card hover:shadow-lg transition-all">
-              <Lock className="w-12 h-12 mx-auto mb-3 text-success" />
               <h3 className="text-xl font-bold text-success mb-2">100% Private</h3>
               <p className="text-sm text-muted-foreground">Your documents stay private. Use your own storage or ours - you choose.</p>
             </div>
             <div className="text-center p-6 rounded-2xl bg-accent/5 border border-accent/20 shadow-card hover:shadow-lg transition-all">
-              <Zap className="w-12 h-12 mx-auto mb-3 text-accent" />
               <h3 className="text-xl font-bold text-accent mb-2">Lightning Fast</h3>
               <p className="text-sm text-muted-foreground">Search all your documents in seconds. Get answers without the wait.</p>
             </div>
@@ -387,23 +344,12 @@ export default function Landing() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {[
-              { icon: Upload, title: "Upload", desc: "Drop in your files (PDFs, docs, whatever)", color: "primary" },
-              { icon: MessageSquare, title: "Ask", desc: "Type your question like texting a friend", color: "secondary" },
-              { icon: Sparkles, title: "Get Answers", desc: "AI pulls exact answers from your docs", color: "success" }
+              { title: "Upload", desc: "Drop in your files (PDFs, docs, whatever)", color: "primary" },
+              { title: "Ask", desc: "Type your question like texting a friend", color: "secondary" },
+              { title: "Get Answers", desc: "AI pulls exact answers from your docs", color: "success" }
             ].map((step, i) => (
               <div key={i} className="relative group">
                 <div className={`text-center p-6 rounded-2xl bg-card border border-border shadow-card backdrop-blur-xl transition-all hover:scale-105 hover:shadow-lg`}>
-                  <div className={`w-16 h-16 mx-auto mb-4 rounded-2xl ${
-                    step.color === 'primary' ? 'bg-primary/10 border-primary/20' :
-                    step.color === 'secondary' ? 'bg-secondary/10 border-secondary/20' :
-                    'bg-success/10 border-success/20'
-                  } flex items-center justify-center group-hover:scale-110 transition-transform border`}>
-                    <step.icon className={`w-8 h-8 ${
-                      step.color === 'primary' ? 'text-primary' :
-                      step.color === 'secondary' ? 'text-secondary' :
-                      'text-success'
-                    }`} />
-                  </div>
                   <div className={`text-7xl font-bold absolute top-4 right-4 ${
                     step.color === 'primary' ? 'text-primary/10' :
                     step.color === 'secondary' ? 'text-secondary/10' :
@@ -452,7 +398,6 @@ export default function Landing() {
               />
               <div className="hidden rounded-2xl shadow-2xl border border-primary/10 bg-muted/20 items-center justify-center h-[400px]">
                 <div className="text-center">
-                  <Presentation className="w-24 h-24 text-muted-foreground/40 mx-auto mb-4" />
                   <p className="text-muted-foreground">Pitch Deck Preview</p>
                 </div>
               </div>
@@ -463,54 +408,39 @@ export default function Landing() {
 
             {/* Right: Benefits */}
             <div className="space-y-6">
-              <div className="flex gap-4">
-                <div className="w-12 h-12 rounded-xl bg-accent/20 flex items-center justify-center flex-shrink-0">
-                  <Sparkles className="w-6 h-6 text-accent" />
-                </div>
-                <div>
-                  <h3 className="text-xl font-semibold text-primary mb-2">
-                    AI Determines Perfect Length
-                  </h3>
-                  <p className="text-muted-foreground">
-                    No more guessing. AI analyzes complexity and recommends 8-15 slides following
-                    Guy Kawasaki's 10/20/30 rule and Y Combinator standards.
-                  </p>
-                </div>
+              <div>
+                <h3 className="text-xl font-semibold text-primary mb-2">
+                  AI Determines Perfect Length
+                </h3>
+                <p className="text-muted-foreground">
+                  No more guessing. AI analyzes complexity and recommends 8-15 slides following
+                  Guy Kawasaki's 10/20/30 rule and Y Combinator standards.
+                </p>
               </div>
 
-              <div className="flex gap-4">
-                <div className="w-12 h-12 rounded-xl bg-accent/20 flex items-center justify-center flex-shrink-0">
-                  <LayoutGrid className="w-6 h-6 text-accent" />
-                </div>
-                <div>
-                  <h3 className="text-xl font-semibold text-primary mb-2">
-                    Professional 16:9 Format
-                  </h3>
-                  <p className="text-muted-foreground">
-                    All slides use industry-standard 16:9 aspect ratio. No letterboxing,
-                    no formatting issues. Export to PDF, PowerPoint, or present directly.
-                  </p>
-                </div>
+              <div>
+                <h3 className="text-xl font-semibold text-primary mb-2">
+                  Professional 16:9 Format
+                </h3>
+                <p className="text-muted-foreground">
+                  All slides use industry-standard 16:9 aspect ratio. No letterboxing,
+                  no formatting issues. Export to PDF, PowerPoint, or present directly.
+                </p>
               </div>
 
-              <div className="flex gap-4">
-                <div className="w-12 h-12 rounded-xl bg-accent/20 flex items-center justify-center flex-shrink-0">
-                  <FileText className="w-6 h-6 text-accent" />
-                </div>
-                <div>
-                  <h3 className="text-xl font-semibold text-primary mb-2">
-                    Uses Your Document Data
-                  </h3>
-                  <p className="text-muted-foreground">
-                    AI pulls metrics, facts, and insights from your uploaded documents to create
-                    data-driven, credible presentations.
-                  </p>
-                </div>
+              <div>
+                <h3 className="text-xl font-semibold text-primary mb-2">
+                  Uses Your Document Data
+                </h3>
+                <p className="text-muted-foreground">
+                  AI pulls metrics, facts, and insights from your uploaded documents to create
+                  data-driven, credible presentations.
+                </p>
               </div>
 
               <Button asChild size="lg" className="w-full md:w-auto">
                 <Link to="/auth">
-                  Try Pitch Deck Generator <ArrowRight className="ml-2 w-4 h-4" />
+                  Try Pitch Deck Generator
                 </Link>
               </Button>
             </div>
@@ -522,7 +452,6 @@ export default function Landing() {
       <section className="relative py-16 px-6 bg-primary">
         <div className="max-w-5xl mx-auto text-center">
           <div className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-accent/20 border border-accent/30 backdrop-blur-xl mb-6">
-            <Brain className="w-5 h-5 text-accent" />
             <span className="text-sm font-semibold text-accent">
               The Problem With Other AI Chatbots
             </span>
@@ -701,7 +630,6 @@ export default function Landing() {
         <div className="max-w-5xl mx-auto">
           <div className="text-center p-12 rounded-3xl bg-card border border-border shadow-card">
             <div className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-success/20 border border-success/30 backdrop-blur-xl mb-6">
-              <Users className="w-5 h-5 text-success" />
               <span className="text-sm font-semibold text-success">
                 Join Early Adopters
               </span>
@@ -734,7 +662,6 @@ export default function Landing() {
             <Button asChild size="lg" className="mt-8 text-lg px-8 py-6 bg-accent hover:bg-accent/90 shadow-lg hover:shadow-xl transition-all hover:scale-105 border-0 text-white">
               <Link to="/auth">
                 Get Started Free
-                <ArrowRight className="ml-2 w-5 h-5" />
               </Link>
             </Button>
           </div>
@@ -746,7 +673,6 @@ export default function Landing() {
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-12">
             <div className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-success/20 border border-success/30 backdrop-blur-xl shadow-glow mb-4">
-              <Sparkles className="w-5 h-5 text-success animate-pulse-glow" />
               <span className="text-sm font-semibold text-success">
                 14-Day Free Trial • No Credit Card Required
               </span>
@@ -777,7 +703,6 @@ export default function Landing() {
                   </div>
                   {plan.savings && (
                     <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-accent/10 border border-accent/30 text-accent text-xs font-bold">
-                      <TrendingUp className="w-3 h-3" />
                       {plan.savings}
                     </div>
                   )}
@@ -790,11 +715,11 @@ export default function Landing() {
                     </li>
                   ))}
                 </ul>
-                <Button 
+                <Button
                   asChild
                   className={`w-full ${
-                    plan.popular 
-                      ? 'bg-accent hover:bg-accent/90 border-0 shadow-lg hover:shadow-xl text-white' 
+                    plan.popular
+                      ? 'bg-accent hover:bg-accent/90 border-0 shadow-lg hover:shadow-xl text-white'
                       : ''
                   }`}
                   variant={plan.popular ? "default" : "outline"}
@@ -802,7 +727,6 @@ export default function Landing() {
                 >
                   <Link to={`/auth${plan.trial ? '' : `?plan=${plan.name.toLowerCase()}`}`}>
                     {plan.trial ? 'Start Free Trial' : 'Get Started'}
-                    <ArrowRight className="ml-2 h-5 w-5" />
                   </Link>
                 </Button>
               </div>
@@ -814,7 +738,6 @@ export default function Landing() {
               Try any plan free for 14 days. All prices in AUD.
             </p>
             <p className="text-xs text-muted-foreground flex items-center justify-center gap-2">
-              <Shield className="h-3 w-3" />
               Cancel anytime • 14-day free trial
             </p>
           </div>
@@ -835,7 +758,6 @@ export default function Landing() {
               <Button asChild size="lg" className="text-lg px-8 py-6 bg-accent hover:bg-accent/90 text-white shadow-xl hover:shadow-2xl transition-all hover:scale-105 border-0">
                 <Link to="/auth">
                   Start Free Trial
-                  <ArrowRight className="ml-2 w-5 h-5" />
                 </Link>
               </Button>
               {/* Schedule Demo - Commented out until we have significant user numbers to showcase
@@ -848,15 +770,12 @@ export default function Landing() {
             </div>
             <div className="flex flex-wrap gap-6 justify-center items-center mt-6 text-sm text-white/90">
               <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 backdrop-blur-sm border border-white/20">
-                <Shield className="w-4 h-4" />
                 <span>No credit card required</span>
               </div>
               <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 backdrop-blur-sm border border-white/20">
-                <CheckCircle2 className="w-4 h-4" />
                 <span>14-day free trial</span>
               </div>
               <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 backdrop-blur-sm border border-white/20">
-                <Users className="w-4 h-4" />
                 <span>Cancel anytime</span>
               </div>
             </div>
