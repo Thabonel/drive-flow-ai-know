@@ -271,6 +271,9 @@ export const useGoogleDrive = () => {
               title: 'Connected Successfully!',
               description: 'Google Drive is now connected.',
             });
+
+            // Automatically load drive items after successful authentication
+            await loadDriveItems('root');
           } catch (storeError: any) {
             console.error('Error storing token:', storeError);
             const errorMessage = storeError?.message || 'Unknown error';
