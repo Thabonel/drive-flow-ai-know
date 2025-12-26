@@ -48,10 +48,16 @@ const LocalFilesPicker = ({ onFilesAdded }: LocalFilesPickerProps) => {
 
         const textFiles = fileList.filter((file: File) =>
           file.type.startsWith('text/') ||
+          file.type === 'application/pdf' ||
+          file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+          file.type === 'application/msword' ||
+          file.type === 'application/rtf' ||
           file.name.endsWith('.md') ||
           file.name.endsWith('.txt') ||
           file.name.endsWith('.pdf') ||
-          file.name.endsWith('.docx')
+          file.name.endsWith('.docx') ||
+          file.name.endsWith('.doc') ||
+          file.name.endsWith('.rtf')
         );
 
         if (textFiles.length === 0) {
@@ -95,10 +101,16 @@ const LocalFilesPicker = ({ onFilesAdded }: LocalFilesPickerProps) => {
       const files = Array.from((e.target as HTMLInputElement).files || []);
       const textFiles = files.filter(file =>
         file.type.startsWith('text/') ||
+        file.type === 'application/pdf' ||
+        file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+        file.type === 'application/msword' ||
+        file.type === 'application/rtf' ||
         file.name.endsWith('.md') ||
         file.name.endsWith('.txt') ||
         file.name.endsWith('.pdf') ||
-        file.name.endsWith('.docx')
+        file.name.endsWith('.docx') ||
+        file.name.endsWith('.doc') ||
+        file.name.endsWith('.rtf')
       );
 
       if (textFiles.length > 0) {
