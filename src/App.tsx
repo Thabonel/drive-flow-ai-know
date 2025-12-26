@@ -9,6 +9,7 @@ import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { useKeyboardShortcuts, globalShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { AppSidebar } from "@/components/AppSidebar";
+import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
 import Header from "./layout/Header";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
@@ -121,6 +122,7 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <AuthProvider>
+          <PWAInstallPrompt />
           <Routes>
             <Route path="/auth" element={
               <PublicRoute>
