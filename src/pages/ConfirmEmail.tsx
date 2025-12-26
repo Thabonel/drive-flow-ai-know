@@ -28,7 +28,7 @@ const ConfirmEmail = () => {
           });
 
           setTimeout(() => {
-            navigate('/dashboard');
+            navigate('/conversations');
           }, 2000);
         } else {
           throw new Error('Invalid confirmation link');

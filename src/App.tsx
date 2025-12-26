@@ -107,7 +107,7 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
   }
   
   if (user) {
-    return <Navigate to="/timeline" replace />;
+    return <Navigate to="/conversations" replace />;
   }
   
   return <>{children}</>;
