@@ -18,6 +18,61 @@ interface ImageGenerationResponse {
   error?: string;
 }
 
+// Design system guidelines for human-crafted aesthetic
+const DESIGN_SYSTEM_PROMPT = `
+DESIGN GUIDELINES - STRICT REQUIREMENTS:
+
+COLORS - AVOID:
+- Purple, violet, indigo, lavender tones
+- Gold, metallic gold, champagne accents
+- Purple-to-blue or pink-to-purple gradients
+- Neon or glowing effects
+- Typical tech startup palette (indigo-500, violet gradients on dark)
+
+COLORS - USE:
+- Warm earth tones: terracotta, warm browns, sage greens, olive, rust, cream
+- Classic professional: navy blue, charcoal gray, forest green, burgundy
+- Natural palettes: stone, sand, moss, sky blue, coral
+- Monochromatic with one thoughtful accent
+- Muted, desaturated tones over bright saturated
+
+TYPOGRAPHY - AVOID:
+- Em dashes, emojis, sparkles ✨
+- Excessive bold, ALL CAPS
+- Generic icon-heavy layouts
+
+TYPOGRAPHY - USE:
+- Clean fonts with personality
+- Simple hyphens instead of em dashes
+- Natural sentence structure
+- Human-written text, not marketing templates
+
+DESIGN STYLE - AVOID:
+- Floating geometric shapes, abstract blobs
+- Glossy plastic surfaces
+- Perfect symmetry, sterile layouts
+- Generic "modern startup" aesthetic
+- Cookie-cutter card grids
+- Aurora/gradient mesh backgrounds
+- "3 features in boxes" templates
+
+DESIGN STYLE - USE:
+- Organic imperfections that feel human
+- Asymmetrical layouts with intentional hierarchy
+- Texture: paper grain, subtle noise, natural materials
+- Hand-drawn or sketch elements where appropriate
+- Thoughtful white space
+- Unique compositions, not template patterns
+- Photography-inspired: natural lighting, depth, realistic shadows
+
+PRINCIPLES:
+- Design as if created by a skilled human designer, not AI
+- Prioritize warmth, authenticity, personality over "sleek modern"
+- Choose less obvious, less trendy options
+- Every choice should feel intentional, not default
+- Avoid template library aesthetics
+`;
+
 serve(async (req) => {
   // Handle CORS
   if (req.method === 'OPTIONS') {
@@ -38,25 +93,28 @@ serve(async (req) => {
     const defaultNegativePrompt = "blurry, low quality, distorted, watermark, text overlay, stock photo cliche, generic, amateur";
     const finalNegativePrompt = negativePrompt || defaultNegativePrompt;
 
-    // Enhanced prompt based on style
+    // Enhanced prompt based on style with design system enforcement
     let enhancedPrompt = prompt;
     switch (style) {
       case 'photorealistic':
         enhancedPrompt = `Photorealistic, high-quality, detailed: ${prompt}`;
         break;
       case 'illustration':
-        enhancedPrompt = `Professional illustration, clean, modern design: ${prompt}`;
+        enhancedPrompt = `Professional illustration, clean, human-crafted design (not generic AI style): ${prompt}`;
         break;
       case 'diagram':
-        enhancedPrompt = `Clean technical diagram, minimalist, professional: ${prompt}`;
+        enhancedPrompt = `Clean technical diagram, minimalist, professional, human-designed: ${prompt}`;
         break;
       case 'chart':
-        enhancedPrompt = `Data visualization, professional chart, clean design: ${prompt}`;
+        enhancedPrompt = `Data visualization, professional chart, clean human-crafted design: ${prompt}`;
         break;
       case 'icon':
-        enhancedPrompt = `Simple icon, minimal design, clean lines: ${prompt}`;
+        enhancedPrompt = `Simple icon, minimal design, clean lines, human-crafted: ${prompt}`;
         break;
     }
+
+    // Prepend design system guidelines
+    enhancedPrompt = DESIGN_SYSTEM_PROMPT + '\n\n' + enhancedPrompt;
 
     // Append negative prompt guidance
     enhancedPrompt += `\n\nAvoid: ${finalNegativePrompt}`;
