@@ -143,7 +143,7 @@ const DriveItemsList = ({ items, isLoading, breadcrumbs, onFolderClick, onBreadc
       </ScrollArea>
 
       {selectedItems.size > 0 && (
-        <div className="flex justify-between items-center pt-4 border-t">
+        <div className="flex flex-col items-center gap-3 pt-4 border-t">
           <span className="text-sm text-muted-foreground">
             {selectedItems.size} item(s) selected
           </span>
