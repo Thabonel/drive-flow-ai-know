@@ -386,8 +386,8 @@ export default function Landing() {
             {/* Left: Visual Demo */}
             <div className="relative">
               <img
-                src="https://fskwutnoxbbflzqrphro.supabase.co/storage/v1/object/public/assets/Slide%20Deck.jpg?v=2"
-                alt="AI-generated pitch deck example"
+                src="https://fskwutnoxbbflzqrphro.supabase.co/storage/v1/object/public/assets/wheels.jpg"
+                alt="AI Pitch Deck Generator interface showing Wheels & Wins presentation"
                 className="rounded-2xl shadow-2xl border border-primary/10"
                 onError={(e) => {
                   // Fallback to placeholder if image fails to load
