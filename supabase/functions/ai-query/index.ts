@@ -172,11 +172,38 @@ async function claudeCompletion(messages: Message[], systemMessage: string) {
 
   // Helper function to process tool uses recursively (with depth limit)
   async function processWithTools(currentMessages: any[], depth: number = 0): Promise<string> {
-    const MAX_TOOL_DEPTH = 3; // Prevent infinite loops
+    const MAX_TOOL_DEPTH = 5; // Allow more searches for thorough research
 
     if (depth >= MAX_TOOL_DEPTH) {
-      console.log('Max tool depth reached, returning last text response');
-      return "I've searched multiple times but couldn't find a complete answer. Please try a more specific question.";
+      console.log('Max tool depth reached, forcing final answer');
+      // Instead of giving up, force Claude to synthesize an answer from what it learned
+      const finalMessages = [
+        ...currentMessages,
+        {
+          role: 'user',
+          content: 'Based on all the information you gathered from your searches, please provide the best answer you can. Even if the information is partial or you had to search multiple times, synthesize what you learned and give a helpful response. Do not say you couldn\'t find an answer - use what you discovered.'
+        }
+      ];
+
+      const response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'x-api-key': anthropicApiKey!,
+          'anthropic-version': '2023-06-01',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: CLAUDE_MODELS.PRIMARY,
+          max_tokens: 4096,
+          system: systemMessage,
+          messages: finalMessages,
+          // No tools - force text response
+        }),
+      });
+
+      const data = await response.json();
+      const textBlock = data.content?.find((block: any) => block.type === 'text');
+      return textBlock?.text || "I apologize, but I'm having difficulty formulating a response. Please try rephrasing your question.";
     }
 
     const response = await fetch('https://api.anthropic.com/v1/messages', {
@@ -672,9 +699,11 @@ serve(async (req) => {
       IMPORTANT INSTRUCTIONS:
       - Use web_search when you need current information beyond your training data (like recent product reviews, current prices, news, etc.)
       - Do NOT mention or reference user documents (you don't have access to them in this conversation)
-      - Answer questions directly and helpfully
+      - Answer questions directly and helpfully - ALWAYS provide the best answer you can, even if information is partial
+      - Do NOT refuse to answer or say "I couldn't find information" - synthesize what you know and what you found
       - Be conversational and natural
       - When using web search results, cite your sources and check result freshness
+      - If web search doesn't yield perfect results, combine your training knowledge with search results to give helpful answers
 
       SEARCH QUERY BEST PRACTICES:
       - For time-sensitive queries, include temporal context: "today", "current", "2025", "latest"
