@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, Mail, CheckCircle2, XCircle, Users, Building2 } from 'lucide-react';
+import { PageHelp } from '@/components/PageHelp';
 
 /**
  * Accept Team Invitation Page
@@ -126,7 +127,21 @@ export default function AcceptInvite() {
           <div className="mx-auto h-16 w-16 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mb-4">
             <Mail className="h-8 w-8 text-blue-600 dark:text-blue-400" />
           </div>
-          <CardTitle className="text-2xl">Team Invitation</CardTitle>
+          <CardTitle className="text-2xl flex items-center justify-center gap-2">
+            Team Invitation
+            <PageHelp
+              title="Team Invitation Help"
+              description="You've received an invitation to join a team workspace. Accepting will grant you access to shared documents, team timeline, and collaborative features."
+              tips={[
+                "Team invitations are valid for 7 days from the time they were sent",
+                "You'll get the role assigned by the team admin (Member, Viewer, or Admin)",
+                "Access to team documents means AI queries will include team knowledge",
+                "You can be a member of multiple teams simultaneously",
+                "If you decline, the team admin can send a new invitation later",
+                "Contact the team admin if you have questions about your role or access"
+              ]}
+            />
+          </CardTitle>
           <CardDescription>
             You've been invited to join a team
           </CardDescription>

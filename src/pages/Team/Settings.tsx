@@ -17,6 +17,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import { PageHelp } from '@/components/PageHelp';
 
 /**
  * Team Settings Page
@@ -86,6 +87,17 @@ export default function TeamSettings() {
           <h1 className="text-3xl font-bold flex items-center gap-2">
             <Building2 className="h-8 w-8" />
             Team Settings
+            <PageHelp
+              title="Team Settings Help"
+              description="Manage your team's configuration, name, and settings. Only team owners and admins can modify team settings."
+              tips={[
+                "Change your team's display name and URL slug",
+                "Team slugs must be unique and can only contain lowercase letters, numbers, and hyphens",
+                "Only team owners can delete a team",
+                "Deleting a team will remove all team data, members, and shared documents",
+                "Team name changes are reflected immediately for all members"
+              ]}
+            />
           </h1>
           <p className="text-muted-foreground mt-2">
             Manage your team's configuration and settings
@@ -192,6 +204,17 @@ export default function TeamSettings() {
         <h1 className="text-3xl font-bold flex items-center gap-2">
           <Building2 className="h-8 w-8" />
           Team Settings
+          <PageHelp
+            title="Team Settings Help"
+            description="Manage your team's configuration, name, and settings. Only team owners and admins can modify team settings."
+            tips={[
+              "Change your team's display name and URL slug",
+              "Team slugs must be unique and can only contain lowercase letters, numbers, and hyphens",
+              "Only team owners can delete a team",
+              "Deleting a team will remove all team data, members, and shared documents",
+              "Team name changes are reflected immediately for all members"
+            ]}
+          />
         </h1>
         <p className="text-muted-foreground mt-2">
           Manage your team's configuration and settings
