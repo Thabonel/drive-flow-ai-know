@@ -18,6 +18,8 @@ import { useNavigate } from 'react-router-dom';
 import { DictationButton } from '@/components/DictationButton';
 import { AIProgressIndicator } from '@/components/ai/AIProgressIndicator';
 import { ExtractToTimelineDialog } from '@/components/ai/ExtractToTimelineDialog';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 interface Message {
   id: string;
@@ -1016,7 +1018,15 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
                         : 'bg-muted'
                     }`}
                   >
-                    <p className="whitespace-pre-wrap">{message.content}</p>
+                    {message.role === 'assistant' ? (
+                      <div className="prose prose-sm max-w-none dark:prose-invert prose-headings:mt-3 prose-headings:mb-2 prose-p:my-2 prose-pre:my-2 prose-ul:my-2 prose-ol:my-2 prose-li:my-0">
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                          {message.content}
+                        </ReactMarkdown>
+                      </div>
+                    ) : (
+                      <p className="whitespace-pre-wrap">{message.content}</p>
+                    )}
                     <p className="text-xs opacity-70 mt-1">
                       {new Date(message.timestamp).toLocaleTimeString()}
                     </p>
@@ -1036,7 +1046,7 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder="Type your message..."
-              className="resize-none"
+              className="resize-none border-2 border-primary/30 focus:border-primary focus:ring-2 focus:ring-primary/20"
               rows={2}
               disabled={isLoading}
               onKeyDown={(e) => {
