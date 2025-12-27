@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, Building2, Users, FileText, Calendar, Sparkles } from 'lucide-react';
+import { PageHelp } from '@/components/PageHelp';
 
 /**
  * Create Team Page
@@ -75,6 +76,18 @@ export default function CreateTeam() {
           <h1 className="text-4xl font-bold flex items-center justify-center gap-2">
             <Building2 className="h-10 w-10" />
             Create Your Team
+            <PageHelp
+              title="Create Team Help"
+              description="Set up a team workspace to enable collaboration and context fluency across your organization. All team members will have access to shared documents and timelines."
+              tips={[
+                "Team names should be clear and professional (e.g., 'Acme Corporation', 'Legal Department')",
+                "Team slugs are used in URLs and must be unique across the platform",
+                "Use lowercase letters, numbers, and hyphens only in slugs",
+                "After creation, you can invite up to 5 members (Business tier)",
+                "You'll become the team owner with full administrative access",
+                "Upload team documents to enable shared context for all members"
+              ]}
+            />
           </h1>
           <p className="text-muted-foreground text-lg">
             Enable context fluency across your organization

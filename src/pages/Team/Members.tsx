@@ -27,6 +27,7 @@ import {
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, Users, Mail, UserPlus, Trash2, Shield, Eye, UserCog, Crown } from 'lucide-react';
 import { toast } from 'sonner';
+import { PageHelp } from '@/components/PageHelp';
 
 /**
  * Team Members Page
@@ -158,6 +159,19 @@ export default function TeamMembers() {
             <h1 className="text-3xl font-bold flex items-center gap-2">
               <Users className="h-8 w-8" />
               Team Members
+              <PageHelp
+                title="Team Members Help"
+                description="Invite and manage team members, assign roles, and control access permissions. Team members can collaborate on shared documents and timeline."
+                tips={[
+                  "Admins and owners can invite new members by email",
+                  "Four roles available: Owner, Admin, Member, and Viewer",
+                  "Owners have full control including deleting the team",
+                  "Admins can manage members and settings",
+                  "Members can view and edit shared content",
+                  "Viewers have read-only access to team resources",
+                  "Pending invitations can be cancelled by admins"
+                ]}
+              />
             </h1>
             <p className="text-muted-foreground mt-2">
               Manage your team members and invitations (3/5 members)
@@ -275,6 +289,19 @@ export default function TeamMembers() {
           <h1 className="text-3xl font-bold flex items-center gap-2">
             <Users className="h-8 w-8" />
             Team Members
+            <PageHelp
+              title="Team Members Help"
+              description="Invite and manage team members, assign roles, and control access permissions. Team members can collaborate on shared documents and timeline."
+              tips={[
+                "Admins and owners can invite new members by email",
+                "Four roles available: Owner, Admin, Member, and Viewer",
+                "Owners have full control including deleting the team",
+                "Admins can manage members and settings",
+                "Members can view and edit shared content",
+                "Viewers have read-only access to team resources",
+                "Pending invitations can be cancelled by admins"
+              ]}
+            />
           </h1>
           <p className="text-muted-foreground mt-2">
             Manage your team members and invitations ({memberCount}/{team.max_members} members)

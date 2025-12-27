@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/select';
 import { Loader2, Calendar, Clock, CheckCircle2, Circle, Users, Filter } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
+import { PageHelp } from '@/components/PageHelp';
 
 interface TeamTimelineItem {
   id: string;
@@ -180,6 +181,18 @@ export default function TeamTimeline() {
             <h1 className="text-3xl font-bold flex items-center gap-2">
               <Calendar className="h-8 w-8" />
               Team Timeline
+              <PageHelp
+                title="Team Timeline Help"
+                description="View and manage tasks and events shared across your team. All team members can see and collaborate on timeline items."
+                tips={[
+                  "Team timeline shows tasks visible to all team members",
+                  "Filter by member to see tasks assigned to specific people",
+                  "Filter by status to focus on active, completed, or all tasks",
+                  "Team members can assign tasks to each other",
+                  "All timeline changes are visible to the entire team in real-time",
+                  "Use this for coordinating team projects and deadlines"
+                ]}
+              />
             </h1>
             <p className="text-muted-foreground mt-2">
               Shared tasks and events visible to all team members

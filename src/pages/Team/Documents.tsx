@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, FileText, Upload, Search, Calendar, Users } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { PageHelp } from '@/components/PageHelp';
 
 interface TeamDocument {
   id: string;
@@ -123,6 +124,18 @@ export default function TeamDocuments() {
             <h1 className="text-3xl font-bold flex items-center gap-2">
               <FileText className="h-8 w-8" />
               Team Documents
+              <PageHelp
+                title="Team Documents Help"
+                description="Access and manage documents shared with your team. All team members can query these documents using the AI assistant, enabling 'context fluency' across your organization."
+                tips={[
+                  "Team documents are automatically included in AI queries for all members",
+                  "Upload documents via Add Documents page and set visibility to 'Team'",
+                  "All team members see the same shared document library",
+                  "Changes to team documents are immediately available to all members",
+                  "Use tags to organize and search team documents effectively",
+                  "Team documents enable shared context - everyone queries the same knowledge base"
+                ]}
+              />
             </h1>
             <p className="text-muted-foreground mt-2">
               Shared documents accessible by all team members
@@ -209,6 +222,18 @@ export default function TeamDocuments() {
           <h1 className="text-3xl font-bold flex items-center gap-2">
             <FileText className="h-8 w-8" />
             Team Documents
+            <PageHelp
+              title="Team Documents Help"
+              description="Access and manage documents shared with your team. All team members can query these documents using the AI assistant, enabling 'context fluency' across your organization."
+              tips={[
+                "Team documents are automatically included in AI queries for all members",
+                "Upload documents via Add Documents page and set visibility to 'Team'",
+                "All team members see the same shared document library",
+                "Changes to team documents are immediately available to all members",
+                "Use tags to organize and search team documents effectively",
+                "Team documents enable shared context - everyone queries the same knowledge base"
+              ]}
+            />
           </h1>
           <p className="text-muted-foreground mt-2">
             Shared documents accessible by all team members
