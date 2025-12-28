@@ -66,22 +66,6 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Check if user already has a team
-    const { data: existingTeam } = await supabase
-      .from("teams")
-      .select("id")
-      .eq("owner_user_id", user.id)
-      .single();
-
-    if (existingTeam) {
-      return new Response(
-        JSON.stringify({
-          error: "You already have a team. Each subscription supports one team.",
-        }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
     // Create team
     const { data: team, error: teamError } = await supabase
       .from("teams")
@@ -113,7 +97,41 @@ Deno.serve(async (req) => {
       .update({ team_id: team.id })
       .eq("id", subscription.id);
 
-    console.log(`Team created: ${team.id} by user ${user.id}`);
+    // Create team_subscription record
+    const { data: teamSubscriptions } = await supabase
+      .from("team_subscriptions")
+      .select("id")
+      .eq("user_id", user.id);
+
+    const isPrimaryTeam = !teamSubscriptions || teamSubscriptions.length === 0;
+
+    const { error: teamSubError } = await supabase
+      .from("team_subscriptions")
+      .insert({
+        team_id: team.id,
+        user_id: user.id,
+        is_primary_team: isPrimaryTeam,
+        stripe_subscription_id: null, // Primary team uses main subscription
+        status: 'active',
+      });
+
+    if (teamSubError) {
+      console.error("Error creating team subscription:", teamSubError);
+    }
+
+    // Set as active team if first team
+    if (isPrimaryTeam) {
+      const { error: settingsError } = await supabase
+        .from("user_settings")
+        .update({ active_team_id: team.id })
+        .eq("user_id", user.id);
+
+      if (settingsError) {
+        console.error("Error setting active team:", settingsError);
+      }
+    }
+
+    console.log(`Team created: ${team.id} by user ${user.id} (primary: ${isPrimaryTeam})`);
 
     return new Response(
       JSON.stringify({

@@ -143,6 +143,51 @@ async function processWebhookEvent(event: any, supabase: any) {
       // Skipping for now - needs proper implementation with user_usage table
       // and correct column names (ai_queries_count, etc.)
 
+      // Handle additional team purchase
+      const isAdditionalTeam = subscription.metadata?.is_additional_team === 'true';
+
+      if (isAdditionalTeam && event.type === "customer.subscription.created") {
+        console.log('Creating additional team from subscription metadata');
+
+        // Create team from metadata
+        const { data: team, error: teamError } = await supabase
+          .from('teams')
+          .insert({
+            name: subscription.metadata.team_name,
+            slug: subscription.metadata.team_slug,
+            owner_user_id: userId,
+            max_members: 5, // Default for Business plan
+          })
+          .select()
+          .single();
+
+        if (teamError) {
+          console.error('Error creating additional team:', teamError);
+          throw teamError;
+        }
+
+        console.log(`Additional team created: ${team.id}`);
+
+        // Create team_subscription record
+        const { error: teamSubError } = await supabase
+          .from('team_subscriptions')
+          .insert({
+            team_id: team.id,
+            user_id: userId,
+            stripe_subscription_id: subscription.id,
+            is_primary_team: false, // This is a purchased additional team
+            status: 'active',
+          });
+
+        if (teamSubError) {
+          console.error('Error creating team subscription record:', teamSubError);
+          throw teamSubError;
+        }
+
+        console.log(`Team subscription record created for team: ${team.id}`);
+        // Note: team member is automatically added by database trigger
+      }
+
       break;
     }
 
@@ -158,6 +203,22 @@ async function processWebhookEvent(event: any, supabase: any) {
       if (error) {
         console.error("Error updating subscription status:", error);
         throw error;
+      }
+
+      // Handle additional team subscription cancellation
+      // Mark team subscription as canceled (don't delete the team, just mark inactive)
+      const { data: teamSub, error: teamSubError } = await supabase
+        .from('team_subscriptions')
+        .update({ status: 'canceled' })
+        .eq('stripe_subscription_id', subscription.id)
+        .select('team_id')
+        .single();
+
+      if (teamSub) {
+        console.log(`Additional team subscription canceled for team: ${teamSub.team_id}`);
+      } else if (teamSubError && teamSubError.code !== 'PGRST116') {
+        // PGRST116 is "no rows returned" - it's fine if this is a regular subscription
+        console.error('Error updating team subscription status:', teamSubError);
       }
 
       break;

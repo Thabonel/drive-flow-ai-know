@@ -35,16 +35,17 @@ export function useTeam() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
-  // Fetch user's team memberships
-  const { data: teamMemberships, isLoading: membershipsLoading } = useQuery({
-    queryKey: ['team-memberships', user?.id],
+  // Fetch ALL user's team memberships (not just primary)
+  const { data: allTeamMemberships, isLoading: membershipsLoading } = useQuery({
+    queryKey: ['all-team-memberships', user?.id],
     queryFn: async () => {
       if (!user?.id) return [];
 
       const { data, error } = await supabase
         .from('team_members')
         .select('*, teams(*)')
-        .eq('user_id', user.id);
+        .eq('user_id', user.id)
+        .order('joined_at', { ascending: true });
 
       if (error) {
         console.error('Error fetching team memberships:', error);
@@ -61,9 +62,40 @@ export function useTeam() {
     retryDelay: 1000,
   });
 
-  // Get the user's primary team (first one they're a member of)
-  const primaryTeam = teamMemberships?.[0]?.teams as Team | undefined;
-  const primaryMembership = teamMemberships?.[0];
+  // Get active team ID from user_settings
+  const { data: activeTeamData } = useQuery({
+    queryKey: ['active-team-id', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return null;
+
+      const { data, error } = await supabase
+        .from('user_settings')
+        .select('active_team_id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (error) {
+        console.error('Error fetching active team ID:', error);
+        return null;
+      }
+
+      return data?.active_team_id;
+    },
+    enabled: !!user?.id,
+    retry: 1,
+    retryDelay: 1000,
+  });
+
+  const activeTeamId = activeTeamData;
+
+  // Find active team membership based on active_team_id
+  // Fallback to first team if no active team set
+  const activeTeamMembership = allTeamMemberships?.find(
+    (m: any) => m.teams?.id === activeTeamId
+  ) || allTeamMemberships?.[0];
+
+  const primaryTeam = activeTeamMembership?.teams as Team | undefined;
+  const primaryMembership = activeTeamMembership;
 
   // Fetch detailed team data if user has a team
   const { data: teamDetails, isLoading: teamLoading } = useQuery({
@@ -105,8 +137,9 @@ export function useTeam() {
       return data.team;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['team-memberships'] });
+      queryClient.invalidateQueries({ queryKey: ['all-team-memberships'] });
       queryClient.invalidateQueries({ queryKey: ['team-details'] });
+      queryClient.invalidateQueries({ queryKey: ['active-team-id'] });
       toast.success('Team created successfully');
     },
     onError: (error: Error) => {
@@ -129,7 +162,7 @@ export function useTeam() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['team-details'] });
-      queryClient.invalidateQueries({ queryKey: ['team-memberships'] });
+      queryClient.invalidateQueries({ queryKey: ['all-team-memberships'] });
       toast.success('Team updated successfully');
     },
     onError: (error: Error) => {
@@ -148,7 +181,7 @@ export function useTeam() {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['team-memberships'] });
+      queryClient.invalidateQueries({ queryKey: ['all-team-memberships'] });
       queryClient.invalidateQueries({ queryKey: ['team-details'] });
       toast.success('Team deleted successfully');
     },
@@ -157,11 +190,41 @@ export function useTeam() {
     },
   });
 
+  // Set active team mutation
+  const setActiveTeamMutation = useMutation({
+    mutationFn: async (teamId: string) => {
+      if (!user?.id) throw new Error('User not authenticated');
+
+      const { error } = await supabase
+        .from('user_settings')
+        .update({ active_team_id: teamId })
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['active-team-id'] });
+      queryClient.invalidateQueries({ queryKey: ['team-details'] });
+      queryClient.invalidateQueries({ queryKey: ['all-team-memberships'] });
+      toast.success('Switched team successfully');
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Failed to switch team');
+    },
+  });
+
   return {
-    // Team data
+    // Active team context
     team: teamDetails || primaryTeam,
     membership: primaryMembership,
     hasTeam: !!primaryTeam,
+
+    // Multi-team support
+    allTeams: allTeamMemberships?.map((m: any) => m.teams as Team).filter(Boolean) || [],
+    activeTeamId,
+    setActiveTeam: setActiveTeamMutation.mutate,
+
+    // Role checks (for active team)
     isOwner: primaryMembership?.role === 'owner',
     isAdmin: primaryMembership?.role === 'admin' || primaryMembership?.role === 'owner',
     role: primaryMembership?.role,

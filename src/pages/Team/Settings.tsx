@@ -5,7 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, Building2, Trash2, Save } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Loader2, Building2, Trash2, Save, Info } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -308,6 +309,45 @@ export default function TeamSettings() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Team Privacy */}
+      {isAdmin && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Privacy & Visibility</CardTitle>
+            <CardDescription>Control who can see and join your team</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <Label>Privacy Mode</Label>
+                <p className="text-sm text-muted-foreground">
+                  {team.privacy_mode === 'private'
+                    ? 'Team is invite-only and not discoverable'
+                    : 'Team is discoverable (invite still required to join)'}
+                </p>
+              </div>
+              <Switch
+                checked={team.privacy_mode === 'open'}
+                onCheckedChange={(checked) => {
+                  updateTeam({
+                    teamId: team.id,
+                    updates: { privacy_mode: checked ? 'open' : 'private' },
+                  });
+                }}
+                disabled={!isAdmin}
+              />
+            </div>
+            <Alert>
+              <Info className="h-4 w-4" />
+              <AlertDescription>
+                <strong>Private:</strong> Walled garden, invite-only, not searchable<br />
+                <strong>Open:</strong> Discoverable in team directory (future feature)
+              </AlertDescription>
+            </Alert>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Danger Zone - Only visible to owners */}
       {isOwner && (

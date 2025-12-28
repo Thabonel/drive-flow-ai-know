@@ -5,10 +5,11 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { ShoppingCart, Zap, Loader2, Check, ExternalLink } from 'lucide-react';
-import { STRIPE_PRICE_IDS } from '@/lib/stripe-config';
+import { ShoppingCart, Zap, Loader2, Check, ExternalLink, Users } from 'lucide-react';
+import { STRIPE_PRICE_IDS, PRICING_AUD } from '@/lib/stripe-config';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
+import { FeatureGate } from '@/components/FeatureGate';
 
 const plans = [
   {
@@ -36,6 +37,7 @@ const plans = [
 
 export default function Billing() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
   const [loadingPortal, setLoadingPortal] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
@@ -399,6 +401,44 @@ export default function Billing() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Additional Teams Section - Only for Business tier */}
+      <FeatureGate requiredTier="business">
+        <div className="mt-8">
+          <h2 className="text-2xl font-bold text-foreground mb-4">Additional Teams</h2>
+          <Card className="max-w-md mx-auto">
+            <CardHeader className="text-center">
+              <div className="flex justify-center mb-2">
+                <Users className="h-8 w-8 text-primary" />
+              </div>
+              <CardTitle>Additional Team Workspaces</CardTitle>
+              <CardDescription className="text-2xl font-bold">${PRICING_AUD.additionalTeam}/month</CardDescription>
+            </CardHeader>
+            <CardContent className="text-center">
+              <ul className="space-y-2 mb-6 text-sm">
+                <li>✓ 5 team members included</li>
+                <li>✓ Unlimited shared documents</li>
+                <li>✓ Shared team timeline</li>
+                <li>✓ Full AI context fluency</li>
+                <li>✓ Separate team workspace</li>
+              </ul>
+              <Button
+                onClick={() => navigate('/team/create?purchase=true')}
+                className="w-full"
+                disabled={!user}
+              >
+                <ShoppingCart className="h-4 w-4 mr-2" />
+                Purchase Additional Team
+              </Button>
+              {!user && (
+                <p className="text-sm text-muted-foreground mt-2">
+                  Please log in to purchase additional teams
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </FeatureGate>
 
       <div className="text-center mt-6 text-sm text-muted-foreground">
         <p>All plans include 10 GB storage. Purchase additional storage as needed.</p>

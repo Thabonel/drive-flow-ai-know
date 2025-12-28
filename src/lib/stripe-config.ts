@@ -6,6 +6,7 @@ export const STRIPE_PRICE_IDS = {
   pro: 'price_1SJ24pDXysaVZSVhjWh5Z9dk',
   business: 'price_1SJ25YDXysaVZSVhyjwdk3HN',
   additionalUser: 'price_1SJ2JaDXysaVZSVhHqLhbHgR',
+  additionalTeam: 'price_1Sj7yODXysaVZSVhhxfqxKKi', // $60/month per additional team
 } as const;
 
 export const PLAN_LIMITS = {
@@ -44,6 +45,7 @@ export const PRICING_AUD = {
   pro: 45,
   business: 150,
   additionalUser: 10,
+  additionalTeam: 60, // $60/month per additional team
 } as const;
 
 export type PlanType = keyof typeof PLAN_LIMITS;
