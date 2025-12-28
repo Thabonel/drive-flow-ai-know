@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Loader2, Send, Archive, Trash2, Edit2, Check, X, FileText, MessageCircle, Calendar, Printer, Download, ChevronDown } from 'lucide-react';
 import {
   DropdownMenu,
@@ -1031,18 +1030,18 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
       {messages.length === 0 ? (
         // Empty state - input in Card (normal flow)
         <Card className="flex flex-col overflow-hidden h-auto">
-          <ScrollArea className="p-2 h-20" ref={scrollRef}>
+          <div className="p-2 h-20 overflow-y-auto" ref={scrollRef}>
             <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
               <p>Start a conversation</p>
             </div>
-          </ScrollArea>
+          </div>
           {renderInputForm()}
         </Card>
       ) : (
         // Active conversation - sticky input
         <div className="flex flex-col flex-1 overflow-hidden">
           <Card className="flex-1 flex flex-col overflow-hidden mb-0">
-            <ScrollArea className="flex-1 p-4" ref={scrollRef}>
+            <div className="flex-1 p-4 overflow-y-auto" ref={scrollRef}>
               <div className="space-y-4 pb-6">
                 {messages.map((message) => (
                   <div
@@ -1075,7 +1074,7 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
                   <AIProgressIndicator useDocuments={false} />
                 )}
               </div>
-            </ScrollArea>
+            </div>
           </Card>
 
           {/* Sticky input at bottom */}
