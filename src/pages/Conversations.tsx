@@ -135,8 +135,8 @@ export default function Conversations() {
   };
 
   return (
-    <div className="w-full px-1 h-screen max-h-screen overflow-hidden">
-      <div className={`grid grid-cols-1 gap-2 h-full ${sidebarCollapsed ? 'lg:grid-cols-[80px_1fr]' : 'lg:grid-cols-3'}`}>
+    <div className="w-full px-1 h-screen max-h-screen flex flex-col overflow-hidden">
+      <div className={`grid grid-cols-1 gap-2 flex-1 min-h-0 ${sidebarCollapsed ? 'lg:grid-cols-[80px_1fr]' : 'lg:grid-cols-3'}`}>
         {/* Sidebar */}
         <Card className={`h-full flex flex-col overflow-hidden transition-all duration-200 ${sidebarCollapsed ? 'lg:w-20' : 'lg:col-span-1'}`}>
           <CardHeader className="flex-shrink-0">
@@ -264,7 +264,7 @@ export default function Conversations() {
         </Card>
 
         {/* Chat Area */}
-        <div className={`h-full overflow-hidden ${sidebarCollapsed ? 'lg:col-span-1' : 'lg:col-span-2'} flex flex-col`}>
+        <div className={`flex-1 min-h-0 flex flex-col ${sidebarCollapsed ? 'lg:col-span-1' : 'lg:col-span-2'}`}>
           {selectedConversation || isCreating ? (
             <ConversationChat
               conversationId={selectedConversation || undefined}
