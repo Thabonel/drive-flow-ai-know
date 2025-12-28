@@ -373,7 +373,7 @@ export const AIQueryInput = ({ selectedKnowledgeBase, onClearSelection }: AIQuer
         </div>
       </CardHeader>
 
-      <CardContent className="space-y-4 pt-2 pb-8">
+      <CardContent className="space-y-4 pt-2">
         {/* Conversation History */}
         {messages.length > 0 && (
           <ScrollArea className="h-[400px] pr-4" ref={scrollRef}>
