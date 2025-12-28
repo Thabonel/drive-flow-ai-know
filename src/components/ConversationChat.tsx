@@ -867,7 +867,7 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
 
   // Extract input form to avoid duplication (used in both empty and active states)
   const renderInputForm = () => (
-    <form onSubmit={handleSubmit} className="p-3 border-t flex-shrink-0 bg-background">
+    <form onSubmit={handleSubmit} className="p-2 border-t flex-shrink-0 bg-background">
       <div className="flex gap-2">
         <Textarea
           value={input}
