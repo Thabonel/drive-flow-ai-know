@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { offlineEnabled } from "@/lib/ai";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
@@ -56,6 +56,7 @@ const queryClient = new QueryClient();
 
 function AppLayout({ children }: { children: React.ReactNode }) {
   const offline = offlineEnabled();
+  const location = useLocation();
   useKeyboardShortcuts(globalShortcuts);
 
   return (
@@ -70,7 +71,9 @@ function AppLayout({ children }: { children: React.ReactNode }) {
           <AppSidebar />
           <main className="flex-1">
             <Header />
-            <div className="p-6">{children}</div>
+            <div className={location.pathname === '/conversations' ? '' : 'p-6'}>
+              {children}
+            </div>
           </main>
         </div>
       </div>
