@@ -58,7 +58,7 @@ const Index = () => {
 
   return (
     <div className="min-h-screen w-full">
-      <div className="max-w-7xl mx-auto space-y-8 px-6 pt-8 pb-16">
+      <div className="max-w-7xl mx-auto space-y-8 px-6 py-8">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
