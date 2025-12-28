@@ -866,6 +866,36 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
     }
   };
 
+  // Extract input form to avoid duplication (used in both empty and active states)
+  const renderInputForm = () => (
+    <form onSubmit={handleSubmit} className="p-3 border-t flex-shrink-0 bg-background">
+      <div className="flex gap-2">
+        <Textarea
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          placeholder="Type your message..."
+          className="resize-none border-2 border-primary/30 focus:border-primary focus:ring-2 focus:ring-primary/20"
+          rows={2}
+          disabled={isLoading}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+              e.preventDefault();
+              handleSubmit(e);
+            }
+          }}
+        />
+        <div className="flex flex-col gap-2">
+          <DictationButton
+            onTranscription={(text) => setInput(prev => prev ? prev + ' ' + text : text)}
+          />
+          <Button type="submit" disabled={isLoading || !input.trim()}>
+            <Send className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+    </form>
+  );
+
   return (
     <div className="flex flex-col h-full overflow-hidden">
       <div className="flex flex-col gap-3 mb-1 flex-shrink-0">
@@ -998,75 +1028,62 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
         </div>
       </div>
 
-      <Card className={`flex flex-col overflow-hidden ${messages.length === 0 ? 'h-auto' : 'flex-1'}`}>
-        <ScrollArea className={`${messages.length === 0 ? 'p-2 h-20' : 'p-4 flex-1'}`} ref={scrollRef}>
-          {messages.length === 0 ? (
+      {messages.length === 0 ? (
+        // Empty state - input in Card (normal flow)
+        <Card className="flex flex-col overflow-hidden h-auto">
+          <ScrollArea className="p-2 h-20" ref={scrollRef}>
             <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
               <p>Start a conversation</p>
             </div>
-          ) : (
-            <div className="space-y-4">
-              {messages.map((message) => (
-                <div
-                  key={message.id}
-                  className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                >
+          </ScrollArea>
+          {renderInputForm()}
+        </Card>
+      ) : (
+        // Active conversation - sticky input
+        <>
+          <Card className="flex-1 flex flex-col overflow-hidden mb-0">
+            <ScrollArea className="flex-1 p-4" ref={scrollRef}>
+              <div className="space-y-4 pb-6">
+                {messages.map((message) => (
                   <div
-                    className={`max-w-[80%] rounded-lg p-3 ${
-                      message.role === 'user'
-                        ? 'bg-primary text-primary-foreground'
-                        : 'bg-muted'
-                    }`}
+                    key={message.id}
+                    className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
                   >
-                    {message.role === 'assistant' ? (
-                      <div className="prose prose-sm max-w-none dark:prose-invert prose-headings:mt-3 prose-headings:mb-2 prose-p:my-2 prose-pre:my-2 prose-ul:my-2 prose-ol:my-2 prose-li:my-0">
-                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                          {message.content}
-                        </ReactMarkdown>
-                      </div>
-                    ) : (
-                      <p className="whitespace-pre-wrap">{message.content}</p>
-                    )}
-                    <p className="text-xs opacity-70 mt-1">
-                      {new Date(message.timestamp).toLocaleTimeString()}
-                    </p>
+                    <div
+                      className={`max-w-[80%] rounded-lg p-3 ${
+                        message.role === 'user'
+                          ? 'bg-primary text-primary-foreground'
+                          : 'bg-muted'
+                      }`}
+                    >
+                      {message.role === 'assistant' ? (
+                        <div className="prose prose-sm max-w-none dark:prose-invert prose-headings:mt-3 prose-headings:mb-2 prose-p:my-2 prose-pre:my-2 prose-ul:my-2 prose-ol:my-2 prose-li:my-0">
+                          <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                            {message.content}
+                          </ReactMarkdown>
+                        </div>
+                      ) : (
+                        <p className="whitespace-pre-wrap">{message.content}</p>
+                      )}
+                      <p className="text-xs opacity-70 mt-1">
+                        {new Date(message.timestamp).toLocaleTimeString()}
+                      </p>
+                    </div>
                   </div>
-                </div>
-              ))}
-              {isLoading && (
-                <AIProgressIndicator useDocuments={false} />
-              )}
-            </div>
-          )}
-        </ScrollArea>
+                ))}
+                {isLoading && (
+                  <AIProgressIndicator useDocuments={false} />
+                )}
+              </div>
+            </ScrollArea>
+          </Card>
 
-        <form onSubmit={handleSubmit} className="p-3 border-t flex-shrink-0">
-          <div className="flex gap-2">
-            <Textarea
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder="Type your message..."
-              className="resize-none border-2 border-primary/30 focus:border-primary focus:ring-2 focus:ring-primary/20"
-              rows={2}
-              disabled={isLoading}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault();
-                  handleSubmit(e);
-                }
-              }}
-            />
-            <div className="flex flex-col gap-2">
-              <DictationButton
-                onTranscription={(text) => setInput(prev => prev ? prev + ' ' + text : text)}
-              />
-              <Button type="submit" disabled={isLoading || !input.trim()}>
-                <Send className="h-4 w-4" />
-              </Button>
-            </div>
+          {/* Sticky input at bottom */}
+          <div className="flex-shrink-0 shadow-[0_-2px_10px_rgba(0,0,0,0.1)] dark:shadow-[0_-2px_10px_rgba(0,0,0,0.3)]">
+            {renderInputForm()}
           </div>
-        </form>
-      </Card>
+        </>
+      )}
 
       {/* Extract to Timeline Dialog */}
       <ExtractToTimelineDialog
