@@ -868,7 +868,7 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
 
   // Extract input form to avoid duplication (used in both empty and active states)
   const renderInputForm = () => (
-    <form onSubmit={handleSubmit} className="p-3 border-t bg-background">
+    <form onSubmit={handleSubmit} className="p-3 border-t flex-shrink-0 bg-background">
       <div className="flex gap-2">
         <Textarea
           value={input}
@@ -1040,8 +1040,8 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
         </Card>
       ) : (
         // Active conversation - sticky input
-        <div className="grid grid-rows-[1fr_auto] flex-1 overflow-hidden">
-          <Card className="flex flex-col overflow-hidden mb-0">
+        <div className="flex flex-col flex-1 overflow-hidden">
+          <Card className="flex-1 flex flex-col overflow-hidden mb-0">
             <ScrollArea className="flex-1 p-4" ref={scrollRef}>
               <div className="space-y-4 pb-6">
                 {messages.map((message) => (
@@ -1079,7 +1079,7 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
           </Card>
 
           {/* Sticky input at bottom */}
-          <div className="shadow-[0_-2px_10px_rgba(0,0,0,0.1)] dark:shadow-[0_-2px_10px_rgba(0,0,0,0.3)]">
+          <div className="flex-shrink-0 shadow-[0_-2px_10px_rgba(0,0,0,0.1)] dark:shadow-[0_-2px_10px_rgba(0,0,0,0.3)]">
             {renderInputForm()}
           </div>
         </div>
