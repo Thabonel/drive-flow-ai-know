@@ -264,7 +264,7 @@ export default function Conversations() {
         </Card>
 
         {/* Chat Area */}
-        <div className={`h-full overflow-hidden ${sidebarCollapsed ? 'lg:col-span-1' : 'lg:col-span-2'} flex flex-col gap-2`}>
+        <div className={`h-full overflow-hidden ${sidebarCollapsed ? 'lg:col-span-1' : 'lg:col-span-2'} flex flex-col`}>
           {selectedConversation || isCreating ? (
             <ConversationChat
               conversationId={selectedConversation || undefined}
