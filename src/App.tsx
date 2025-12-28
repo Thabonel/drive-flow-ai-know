@@ -68,9 +68,9 @@ function AppLayout({ children }: { children: React.ReactNode }) {
         )}
         <div className="flex flex-1 w-full">
           <AppSidebar />
-          <main className="flex-1 flex flex-col">
+          <main className="flex-1">
             <Header />
-            <div className="flex-1 p-6">{children}</div>
+            <div className="p-6">{children}</div>
           </main>
         </div>
       </div>
