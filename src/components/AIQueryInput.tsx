@@ -14,6 +14,8 @@ import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { DictationButton } from '@/components/DictationButton';
 import { AIProgressIndicator } from '@/components/ai/AIProgressIndicator';
 import { ExtractToTimelineDialog } from '@/components/ai/ExtractToTimelineDialog';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -390,14 +392,20 @@ export const AIQueryInput = ({ selectedKnowledgeBase, onClearSelection }: AIQuer
                         : 'bg-muted border border-border'
                     }`}
                   >
-                    <div className="flex items-start space-x-2">
-                      {message.role === 'assistant' && (
+                    {message.role === 'assistant' ? (
+                      <div className="flex items-start space-x-2">
                         <Brain className="h-4 w-4 mt-0.5 flex-shrink-0" />
-                      )}
+                        <div className="prose prose-sm max-w-none dark:prose-invert prose-headings:mt-3 prose-headings:mb-2 prose-p:my-2 prose-pre:my-2 prose-ul:my-2 prose-ol:my-2 prose-li:my-0">
+                          <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                            {message.content}
+                          </ReactMarkdown>
+                        </div>
+                      </div>
+                    ) : (
                       <p className="text-sm leading-relaxed whitespace-pre-wrap">
                         {message.content}
                       </p>
-                    </div>
+                    )}
                   </div>
                 </div>
               ))}
