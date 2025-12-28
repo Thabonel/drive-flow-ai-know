@@ -1,7 +1,8 @@
-import { Home, FileText, Brain, Settings, LogOut, HelpCircle, Clock, Users, UserCog, Building2, Calendar, Bot, MessageSquare, Presentation } from 'lucide-react';
+import { Home, FileText, Brain, Settings, LogOut, HelpCircle, Clock, Users, UserCog, Building2, Calendar, Bot, MessageSquare, Presentation, Plus } from 'lucide-react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { FeatureGate } from '@/components/FeatureGate';
+import { TeamSwitcher } from '@/components/TeamSwitcher';
 import {
   Sidebar,
   SidebarContent,
@@ -74,10 +75,27 @@ export function AppSidebar() {
 
         {/* Team Navigation - Only visible for Business tier and above */}
         <FeatureGate requiredTier="business">
+          {/* Team Switcher */}
+          {!collapsed && (
+            <div className="px-3 py-2">
+              <TeamSwitcher />
+            </div>
+          )}
+
           <SidebarGroup>
             <SidebarGroupLabel>Team</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
+                {/* Create Team - Always visible for Business users */}
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild>
+                    <NavLink to="/team/create" className={getNavCls}>
+                      <Plus className="h-4 w-4" />
+                      {!collapsed && <span>Create Team</span>}
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+
                 <SidebarMenuItem>
                   <SidebarMenuButton asChild>
                     <NavLink to="/team/timeline" className={getNavCls}>
