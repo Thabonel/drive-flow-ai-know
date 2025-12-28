@@ -897,7 +897,7 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
-      <div className="flex flex-col gap-3 mb-1 flex-shrink-0 max-h-[200px] overflow-y-auto">
+      <div className="flex flex-col gap-3 flex-shrink-0 max-h-[200px] overflow-y-auto">
         {isEditingTitle ? (
           <div className="flex items-center gap-2">
             <Input
@@ -1042,7 +1042,7 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
         <div className="flex flex-col flex-1 overflow-hidden">
           <Card className="flex-1 flex flex-col overflow-hidden mb-0">
             <div className="flex-1 min-h-0 p-4 overflow-y-auto" ref={scrollRef}>
-              <div className="space-y-4 pb-6">
+              <div className="space-y-3">
                 {messages.map((message) => (
                   <div
                     key={message.id}
