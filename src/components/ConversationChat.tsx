@@ -897,7 +897,7 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
-      <div className="flex flex-col gap-3 mb-1 flex-shrink-0">
+      <div className="flex flex-col gap-3 mb-1 flex-shrink-0 max-h-[200px] overflow-y-auto">
         {isEditingTitle ? (
           <div className="flex items-center gap-2">
             <Input
