@@ -1041,7 +1041,7 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
         // Active conversation - sticky input
         <div className="flex flex-col flex-1 overflow-hidden">
           <Card className="flex-1 flex flex-col overflow-hidden mb-0">
-            <div className="flex-1 p-4 overflow-y-auto" ref={scrollRef}>
+            <div className="flex-1 min-h-0 p-4 overflow-y-auto" ref={scrollRef}>
               <div className="space-y-4 pb-6">
                 {messages.map((message) => (
                   <div
