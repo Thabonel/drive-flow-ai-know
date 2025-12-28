@@ -1,7 +1,7 @@
 # AI Query Hub - Complete Documentation (THE BIBLE)
 
-**Last Updated**: 2024-12-24
-**Version**: 2.0.0
+**Last Updated**: 2024-12-29
+**Version**: 2.0.1
 **Status**: Comprehensive Reference
 
 ---
@@ -15,6 +15,13 @@ This is the complete, authoritative documentation for AI Query Hub. Every system
 ---
 
 ## Recent Updates (December 2024)
+
+### Viewport Height Fix (2024-12-29)
+- ✅ Fixed `/conversations` page overflow issue
+- ✅ Perfect viewport fit using `calc(100vh-48px)`
+- ✅ Documented layout pattern in LAYOUT_PATTERNS.md
+- ✅ Matches ChatGPT/Claude viewport behavior
+- ✅ No page scrolling, input fully visible
 
 ### Email Confirmation System
 - ✅ Supabase native email confirmation implemented
@@ -49,6 +56,7 @@ This is the complete, authoritative documentation for AI Query Hub. Every system
 ### For System Understanding
 - **Architecture**: [09-REFERENCE/ARCHITECTURE.md](09-REFERENCE/ARCHITECTURE.md)
 - **Design System**: [09-REFERENCE/DESIGN_SYSTEM.md](09-REFERENCE/DESIGN_SYSTEM.md)
+- **Layout Patterns**: [09-REFERENCE/LAYOUT_PATTERNS.md](09-REFERENCE/LAYOUT_PATTERNS.md)
 - **AI Query Flow**: [04-EDGE-FUNCTIONS/AI_QUERY_SYSTEM.md](04-EDGE-FUNCTIONS/AI_QUERY_SYSTEM.md)
 
 ### For Feature Development
@@ -322,6 +330,11 @@ This is the complete, authoritative documentation for AI Query Hub. Every system
   - Neumorphic shadows
   - 6 theme variants
   - CSS variables
+- **LAYOUT_PATTERNS.md** - CSS layout patterns and solutions
+  - Viewport height calculation
+  - Flex column containment
+  - ChatGPT/Claude layout comparison
+  - Troubleshooting guide
   - Component styling
 
 - **DEPLOYMENT.md** - Deployment guide
