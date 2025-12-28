@@ -135,7 +135,7 @@ export default function Conversations() {
   };
 
   return (
-    <div className="w-full px-1 h-screen max-h-screen overflow-hidden">
+    <div className="w-full px-1 h-full overflow-hidden">
       <div className={`grid grid-cols-1 gap-2 h-full ${sidebarCollapsed ? 'lg:grid-cols-[80px_1fr]' : 'lg:grid-cols-3'}`}>
         {/* Sidebar */}
         <Card className={`h-full flex flex-col overflow-hidden transition-all duration-200 ${sidebarCollapsed ? 'lg:w-20' : 'lg:col-span-1'}`}>
