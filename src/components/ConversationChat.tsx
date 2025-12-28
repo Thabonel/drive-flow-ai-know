@@ -1040,7 +1040,7 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
         </Card>
       ) : (
         // Active conversation - sticky input
-        <>
+        <div className="flex flex-col flex-1 overflow-hidden">
           <Card className="flex-1 flex flex-col overflow-hidden mb-0">
             <ScrollArea className="flex-1 p-4" ref={scrollRef}>
               <div className="space-y-4 pb-6">
@@ -1082,7 +1082,7 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
           <div className="flex-shrink-0 shadow-[0_-2px_10px_rgba(0,0,0,0.1)] dark:shadow-[0_-2px_10px_rgba(0,0,0,0.3)]">
             {renderInputForm()}
           </div>
-        </>
+        </div>
       )}
 
       {/* Extract to Timeline Dialog */}
