@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/useAuth';
+import { usePresentationMode } from '@/contexts/PresentationModeContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Loader2, Presentation, Download, Eye, FileText, Layers, Share2, X, Archive, Monitor } from 'lucide-react';
@@ -44,6 +45,7 @@ interface PitchDeck {
 
 export default function PitchDeck() {
   const { user } = useAuth();
+  const { isPresentationMode, enterPresentationMode, exitPresentationMode } = usePresentationMode();
   const [topic, setTopic] = useState('');
   const [targetAudience, setTargetAudience] = useState('general business audience');
   const [numberOfSlides, setNumberOfSlides] = useState('10');
@@ -60,7 +62,6 @@ export default function PitchDeck() {
   const [savedDeckId, setSavedDeckId] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [showSavedDecks, setShowSavedDecks] = useState(false);
-  const [isPresentationMode, setIsPresentationMode] = useState(false);
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
   const [showPresenterNotes, setShowPresenterNotes] = useState(false);
   const [presentationStartTime, setPresentationStartTime] = useState<number | null>(null);
@@ -252,7 +253,7 @@ export default function PitchDeck() {
   // This ensures state coordination to avoid race conditions
   useEffect(() => {
     if (presenterSessionId && presentationSync && !isPresentationMode) {
-      setIsPresentationMode(true);
+      enterPresentationMode();
       setCurrentSlideIndex(0);
       setShowPresenterNotes(false);
       setPresentationStartTime(Date.now());
@@ -277,14 +278,12 @@ export default function PitchDeck() {
       return;
     }
     setCurrentSlideIndex(0);
-    setIsPresentationMode(true);
+    enterPresentationMode();
     setPresentationStarted(false); // Start in preview mode
     setShowPresenterNotes(false);
     setShowSplitScreenNotes(false); // Reset split-screen state
     setPresentationStartTime(Date.now());
     setElapsedSeconds(0);
-    // Add URL parameter to signal presentation mode (for hiding sidebar)
-    window.history.pushState({}, '', '/pitch-deck?presenting=true');
   };
 
   const handleStartActualPresentation = () => {
@@ -308,14 +307,12 @@ export default function PitchDeck() {
       setPresenterSessionId(null);
     }
 
-    setIsPresentationMode(false);
+    exitPresentationMode();
     setCurrentSlideIndex(0);
     setPresentationStartTime(null);
     setElapsedSeconds(0);
     setPresentationStarted(false);
     setShowSplitScreenNotes(false);
-    // Remove URL parameter to restore sidebar
-    window.history.pushState({}, '', '/pitch-deck');
   };
 
   const handleStartPresenterView = () => {
@@ -1883,9 +1880,8 @@ Generated with AI Query Hub
                 ref={prevButtonRef}
                 onClick={handlePreviousSlide}
                 disabled={currentSlideIndex === 0}
-                variant="ghost"
                 size="sm"
-                className="text-white hover:bg-white/20 hover:text-white"
+                className="bg-transparent text-white border-none shadow-none hover:bg-white/20 hover:text-white active:bg-white/30 transition-colors"
               >
                 ← Previous
               </Button>
@@ -1893,9 +1889,8 @@ Generated with AI Query Hub
                 ref={nextButtonRef}
                 onClick={handleNextSlide}
                 disabled={currentSlideIndex === (pitchDeck.slides?.length || 0)}
-                variant="ghost"
                 size="sm"
-                className="text-white hover:bg-white/20 hover:text-white"
+                className="bg-transparent text-white border-none shadow-none hover:bg-white/20 hover:text-white active:bg-white/30 transition-colors"
               >
                 Next →
               </Button>
@@ -1912,9 +1907,8 @@ Generated with AI Query Hub
 
               <Button
                 onClick={handleExitPresentation}
-                variant="ghost"
                 size="sm"
-                className="text-white hover:bg-white/20"
+                className="bg-transparent text-white border-none shadow-none hover:bg-white/20 hover:text-white active:bg-white/30 transition-colors"
               >
                 Exit (ESC)
               </Button>

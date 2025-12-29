@@ -1,6 +1,7 @@
 import { Home, FileText, Brain, Settings, LogOut, HelpCircle, Clock, Users, UserCog, Building2, Calendar, Bot, MessageSquare, Presentation, Plus } from 'lucide-react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+import { usePresentationMode } from '@/contexts/PresentationModeContext';
 import { FeatureGate } from '@/components/FeatureGate';
 import { TeamSwitcher } from '@/components/TeamSwitcher';
 import {
@@ -68,13 +69,14 @@ export function AppSidebar() {
   const currentPath = location.pathname;
   const collapsed = state === 'collapsed';
 
+  // Get presentation mode from context
+  const { isPresentationMode } = usePresentationMode();
+
   // Hide sidebar during presentation mode
-  const searchParams = new URLSearchParams(location.search);
-  const isPresentingMode = searchParams.get('presenting') === 'true';
   const isPresentationRoute = currentPath.startsWith('/presentation-audience');
 
   // Return null to completely remove sidebar from DOM during presentation
-  if (isPresentingMode || isPresentationRoute) {
+  if (isPresentationMode || isPresentationRoute) {
     return null;
   }
 
