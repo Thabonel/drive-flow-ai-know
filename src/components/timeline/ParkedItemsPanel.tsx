@@ -21,6 +21,12 @@ import {
 } from '@/components/ui/select';
 import { ParkedItem, TimelineLayer } from '@/lib/timelineUtils';
 import { Archive, Trash2, Plus } from 'lucide-react';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 interface ParkedItemsPanelProps {
   open: boolean;
@@ -71,6 +77,7 @@ export function ParkedItemsPanel({
   const restoringItem = parkedItems.find(item => item.id === restoringItemId);
 
   return (
+    <TooltipProvider delayDuration={300}>
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-2xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
@@ -184,13 +191,21 @@ export function ParkedItemsPanel({
                         Restore
                       </Button>
                       {onDeleteParkedItem && (
-                        <Button
-                          onClick={() => onDeleteParkedItem(item.id)}
-                          size="sm"
-                          variant="ghost"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              onClick={() => onDeleteParkedItem(item.id)}
+                              size="sm"
+                              variant="ghost"
+                              className="text-destructive hover:text-destructive"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            Delete parked item
+                          </TooltipContent>
+                        </Tooltip>
                       )}
                     </div>
                   </div>
@@ -209,5 +224,6 @@ export function ParkedItemsPanel({
         )}
       </DialogContent>
     </Dialog>
+    </TooltipProvider>
   );
 }

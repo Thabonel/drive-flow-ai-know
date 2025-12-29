@@ -7,6 +7,12 @@ import { DocumentVisualizationPanel } from './DocumentVisualizationPanel';
 import { SpreadsheetViewer } from './SpreadsheetViewer';
 import { ExtractToTimelineDialog } from './ai/ExtractToTimelineDialog';
 import { useState } from 'react';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 interface DocumentCardProps {
   document: {
@@ -58,6 +64,7 @@ export const DocumentCard = ({
   const hasChartableData = doc.metadata?.chartableDatasets?.length > 0 || hasSpreadsheetData;
 
   return (
+    <TooltipProvider delayDuration={300}>
     <>
     <Card
       data-document-card
@@ -119,14 +126,21 @@ export const DocumentCard = ({
               View
             </Button>
             {onDelete && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => onDelete(doc)}
-                className="text-destructive hover:text-destructive hover:bg-destructive/10"
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => onDelete(doc)}
+                    className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  Delete document
+                </TooltipContent>
+              </Tooltip>
             )}
           </div>
           
@@ -258,5 +272,6 @@ export const DocumentCard = ({
       sourceTitle={doc.title}
     />
     </>
+    </TooltipProvider>
   );
 };

@@ -12,6 +12,12 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { DictationButton } from '@/components/DictationButton';
@@ -896,6 +902,7 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
   );
 
   return (
+    <TooltipProvider delayDuration={300}>
     <div className="flex flex-col h-full overflow-hidden">
       <div className="flex flex-col gap-3 flex-shrink-0 max-h-[200px] overflow-y-auto">
         {isEditingTitle ? (
@@ -1014,14 +1021,21 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
                   </>
                 )}
               </Button>
-              <Button
-                onClick={handleDelete}
-                size="sm"
-                variant="outline"
-                className="text-destructive"
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    onClick={handleDelete}
+                    size="sm"
+                    variant="outline"
+                    className="text-destructive"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  Delete conversation
+                </TooltipContent>
+              </Tooltip>
             </>
           )}
         </div>
@@ -1092,5 +1106,6 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
         sourceType="ai-response"
       />
     </div>
+    </TooltipProvider>
   );
 }

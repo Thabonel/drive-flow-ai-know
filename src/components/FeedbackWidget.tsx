@@ -12,6 +12,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { MessageCircle, Star } from 'lucide-react';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -78,16 +84,24 @@ export function FeedbackWidget() {
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button
-          variant="outline"
-          size="icon"
-          className="fixed bottom-6 right-6 h-12 w-12 rounded-full shadow-lg z-50 bg-gradient-to-r from-purple-500 to-blue-500 text-white border-0 hover:from-purple-600 hover:to-blue-600"
-        >
-          <MessageCircle className="h-5 w-5" />
-        </Button>
-      </DialogTrigger>
+    <TooltipProvider delayDuration={300}>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <Tooltip>
+          <DialogTrigger asChild>
+            <TooltipTrigger asChild>
+              <Button
+                variant="outline"
+                size="icon"
+                className="fixed bottom-6 right-6 h-12 w-12 rounded-full shadow-lg z-50 bg-gradient-to-r from-purple-500 to-blue-500 text-white border-0 hover:from-purple-600 hover:to-blue-600"
+              >
+                <MessageCircle className="h-5 w-5" />
+              </Button>
+            </TooltipTrigger>
+          </DialogTrigger>
+          <TooltipContent side="left">
+            Send feedback
+          </TooltipContent>
+        </Tooltip>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>Send Feedback</DialogTitle>
@@ -177,5 +191,6 @@ export function FeedbackWidget() {
         </div>
       </DialogContent>
     </Dialog>
+    </TooltipProvider>
   );
 }
