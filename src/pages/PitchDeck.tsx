@@ -83,6 +83,11 @@ export default function PitchDeck() {
   const nextButtonRef = useRef<HTMLButtonElement>(null);
   const prevButtonRef = useRef<HTMLButtonElement>(null);
 
+  // Refs for scroll reset in presentation mode
+  const fullSlideContainerRef = useRef<HTMLDivElement>(null);
+  const splitSlideContainerRef = useRef<HTMLDivElement>(null);
+  const speakerNotesRef = useRef<HTMLDivElement>(null);
+
   // Fetch user's documents
   const { data: documents, isLoading: loadingDocs } = useQuery({
     queryKey: ['documents', user?.id],
@@ -412,6 +417,17 @@ export default function PitchDeck() {
       const newIndex = currentSlideIndex + 1;
       setCurrentSlideIndex(newIndex);
 
+      // Reset scroll position to top on slide change
+      if (fullSlideContainerRef.current) {
+        fullSlideContainerRef.current.scrollTop = 0;
+      }
+      if (splitSlideContainerRef.current) {
+        splitSlideContainerRef.current.scrollTop = 0;
+      }
+      if (speakerNotesRef.current) {
+        speakerNotesRef.current.scrollTop = 0;
+      }
+
       // Broadcast slide change to audience window if in presenter view mode
       if (presenterSessionId && presentationSync) {
         presentationSync.send({
@@ -426,6 +442,17 @@ export default function PitchDeck() {
     if (currentSlideIndex > 0) {
       const newIndex = currentSlideIndex - 1;
       setCurrentSlideIndex(newIndex);
+
+      // Reset scroll position to top on slide change
+      if (fullSlideContainerRef.current) {
+        fullSlideContainerRef.current.scrollTop = 0;
+      }
+      if (splitSlideContainerRef.current) {
+        splitSlideContainerRef.current.scrollTop = 0;
+      }
+      if (speakerNotesRef.current) {
+        speakerNotesRef.current.scrollTop = 0;
+      }
 
       // Broadcast slide change to audience window if in presenter view mode
       if (presenterSessionId && presentationSync) {
@@ -1926,7 +1953,7 @@ Generated with AI Query Hub
             // Split-Screen Mode: 70% Slide / 30% Notes
             <>
               {/* Slide Area - 70% height */}
-              <div className="flex-[7] flex items-center justify-center p-4 overflow-y-auto min-h-0 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+              <div ref={splitSlideContainerRef} className="flex-[7] flex items-center justify-center p-4 overflow-y-auto min-h-0 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                 <div className="max-h-full w-full flex items-center justify-center">
                   {currentSlideIndex === 0 ? (
                     // Title slide
@@ -1956,7 +1983,7 @@ Generated with AI Query Hub
               </div>
 
               {/* Speaker Notes Area - 30% height */}
-              <div className="flex-[3] bg-gray-900/95 border-t border-white/20 p-6 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+              <div ref={speakerNotesRef} className="flex-[3] bg-gray-900/95 border-t border-white/20 p-6 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                 {currentSlideIndex > 0 && pitchDeck.slides[currentSlideIndex - 1].notes ? (
                   <>
                     <p className="text-sm font-semibold text-gray-400 mb-3 uppercase tracking-wide">Speaker Notes</p>
@@ -1971,7 +1998,7 @@ Generated with AI Query Hub
             </>
           ) : (
             // Full-Slide Mode: 100% Slide (no controls visible)
-            <div className="flex-1 flex items-center justify-center p-8 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+            <div ref={fullSlideContainerRef} className="flex-1 flex items-center justify-center p-8 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
               <div className="max-h-[90vh] w-full flex items-center justify-center">
                 {currentSlideIndex === 0 ? (
                   // Title slide
