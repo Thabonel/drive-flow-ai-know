@@ -199,9 +199,9 @@ export default function PresenterView({
           ref={prevButtonRef}
           onClick={() => canGoPrevious && onSlideChange(currentSlideIndex - 1)}
           disabled={!canGoPrevious}
-          variant="outline"
+          variant={null as any}
           size="lg"
-          className="min-w-40"
+          className="min-w-40 !bg-accent !text-accent-foreground hover:!bg-accent/90 !shadow-none disabled:!opacity-100 disabled:!bg-accent"
         >
           <ChevronLeft className="h-5 w-5 mr-2" />
           Previous
