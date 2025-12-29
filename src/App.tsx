@@ -10,6 +10,7 @@ import { useKeyboardShortcuts, globalShortcuts } from "@/hooks/useKeyboardShortc
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { AppSidebar } from "@/components/AppSidebar";
 import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
+import { PresentationModeProvider } from "@/contexts/PresentationModeContext";
 import Header from "./layout/Header";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
@@ -119,14 +120,15 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <ThemeProvider defaultTheme="system" storageKey="aiqueryhub-theme">
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <AuthProvider>
-          <PWAInstallPrompt />
-          <Routes>
+    <PresentationModeProvider>
+      <ThemeProvider defaultTheme="system" storageKey="aiqueryhub-theme">
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <AuthProvider>
+            <PWAInstallPrompt />
+            <Routes>
             <Route path="/auth" element={
               <PublicRoute>
                 <Auth />
@@ -285,6 +287,7 @@ const App = () => (
       </BrowserRouter>
     </TooltipProvider>
     </ThemeProvider>
+    </PresentationModeProvider>
   </QueryClientProvider>
 );
 
