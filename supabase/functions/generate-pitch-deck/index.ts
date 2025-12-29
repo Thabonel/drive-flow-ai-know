@@ -404,6 +404,34 @@ ${documentContext ? `\n## Source Documents\n\n${documentContext}\n\n` : ''}
 - Use active voice and strong verbs
 - Include specific data points and metrics where available${documentContext ? ' from source documents' : ''}
 
+## ANTI-AI AESTHETIC GUIDELINES (MANDATORY)
+
+**Writing Constraints:**
+- NEVER use em dashes (—). Use commas or periods instead
+- AVOID overused AI words: delve, realm, tapestry, unleash, unlock, harness, navigate, embark, journey, elevate, robust, cutting-edge, game-changer, testament, vibrant, bustling, meticulous, paramount, pivotal, seamless, groundbreaking, revolutionize, transformative, unprecedented, beacon, landscape, illuminate, unveil, synergy, paradigm, foster, leverage, empower, holistic, streamline
+- AVOID generic phrases: "In today's digital age", "It's important to note", "When it comes to", "In the realm of", "A testament to", "Unlock the secrets", "Designed to enhance"
+- Write in direct, conversational language. Short sentences. Active voice
+- No lists of three unless essential
+- Prefer prose over excessive bullet points
+
+**Visual Constraints:**
+- NEVER recommend purple, violet, or indigo as primary colors
+- NEVER suggest purple-to-blue gradients
+- NEVER use gold or bronze accents
+- NEVER recommend neon colors on dark backgrounds
+- INSTEAD use: warm neutrals, earth tones, classic navy, forest green, terracotta, or specific brand colors
+- Prefer clean whites, subtle grays, and single accent colors
+
+**Typography Guidance:**
+- AVOID: Inter, Roboto, Arial, or generic system fonts
+- Prefer distinctive fonts appropriate to context (reference real design systems like Apple's minimalism or editorial design standards)
+- Use high contrast in weights (300 vs 700, not 400 vs 500)
+
+**Formatting:**
+- Minimal headers - let content speak
+- Avoid cookie-cutter slide structures
+- Each slide should feel intentionally designed, not template-filled
+
 ## Visual Recommendations
 
 - Match visual type to content purpose:
