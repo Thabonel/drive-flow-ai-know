@@ -1926,7 +1926,7 @@ Generated with AI Query Hub
             // Split-Screen Mode: 70% Slide / 30% Notes
             <>
               {/* Slide Area - 70% height */}
-              <div className="flex-[7] flex items-center justify-center p-4 overflow-y-auto min-h-0">
+              <div className="flex-[7] flex items-center justify-center p-4 overflow-y-auto min-h-0 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                 <div className="max-h-full w-full flex items-center justify-center">
                   {currentSlideIndex === 0 ? (
                     // Title slide
@@ -1947,7 +1947,7 @@ Generated with AI Query Hub
                           className="w-full max-h-[25vh] object-contain rounded-lg mb-3"
                         />
                       )}
-                      <div className="text-white whitespace-pre-wrap leading-relaxed overflow-y-auto max-h-[20vh]" style={{ fontSize: 'calc(0.875rem + 0.5vh)' }}>
+                      <div className="text-white whitespace-pre-wrap leading-relaxed overflow-y-auto max-h-[20vh] [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]" style={{ fontSize: 'calc(0.875rem + 0.5vh)' }}>
                         {pitchDeck.slides[currentSlideIndex - 1].content}
                       </div>
                     </div>
@@ -1956,7 +1956,7 @@ Generated with AI Query Hub
               </div>
 
               {/* Speaker Notes Area - 30% height */}
-              <div className="flex-[3] bg-gray-900/95 border-t border-white/20 p-6 overflow-y-auto">
+              <div className="flex-[3] bg-gray-900/95 border-t border-white/20 p-6 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                 {currentSlideIndex > 0 && pitchDeck.slides[currentSlideIndex - 1].notes ? (
                   <>
                     <p className="text-sm font-semibold text-gray-400 mb-3 uppercase tracking-wide">Speaker Notes</p>
@@ -1971,7 +1971,7 @@ Generated with AI Query Hub
             </>
           ) : (
             // Full-Slide Mode: 100% Slide (no controls visible)
-            <div className="flex-1 flex items-center justify-center p-8 overflow-y-auto">
+            <div className="flex-1 flex items-center justify-center p-8 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
               <div className="max-h-[90vh] w-full flex items-center justify-center">
                 {currentSlideIndex === 0 ? (
                   // Title slide
@@ -1992,7 +1992,7 @@ Generated with AI Query Hub
                         className="w-full max-h-[50vh] object-contain rounded-lg mb-4"
                       />
                     )}
-                    <div className="text-white whitespace-pre-wrap leading-relaxed overflow-y-auto max-h-[30vh]" style={{ fontSize: 'calc(1rem + 0.75vh)' }}>
+                    <div className="text-white whitespace-pre-wrap leading-relaxed overflow-y-auto max-h-[30vh] [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]" style={{ fontSize: 'calc(1rem + 0.75vh)' }}>
                       {pitchDeck.slides[currentSlideIndex - 1].content}
                     </div>
                   </div>
