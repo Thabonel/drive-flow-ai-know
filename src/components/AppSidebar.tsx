@@ -17,6 +17,12 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 const navigationItems = [
   { title: 'Timeline', url: '/timeline', icon: Clock },
@@ -42,36 +48,52 @@ export function AppSidebar() {
     isActive ? 'bg-sidebar-accent text-sidebar-accent-foreground' : 'hover:bg-sidebar-accent/50';
 
   return (
-    <Sidebar className={collapsed ? 'w-14' : 'w-60'} collapsible="icon">
-      <SidebarHeader className="border-b border-sidebar-border p-4">
-        <div className="flex items-center space-x-2">
-          <Brain className="h-6 w-6 text-sidebar-primary" />
-          {!collapsed && (
-            <span className="font-semibold text-sidebar-foreground">
-              AI Query Hub
-            </span>
-          )}
-        </div>
-      </SidebarHeader>
+    <TooltipProvider delayDuration={300}>
+      <Sidebar className={collapsed ? 'w-14' : 'w-60'} collapsible="icon">
+        <SidebarHeader className="border-b border-sidebar-border p-4">
+          <div className="flex items-center space-x-2">
+            <Brain className="h-6 w-6 text-sidebar-primary" />
+            {!collapsed && (
+              <span className="font-semibold text-sidebar-foreground">
+                AI Query Hub
+              </span>
+            )}
+          </div>
+        </SidebarHeader>
 
-      <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupLabel>Navigation</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {navigationItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <NavLink to={item.url} end className={getNavCls}>
-                      <item.icon className="h-4 w-4" />
-                      {!collapsed && <span>{item.title}</span>}
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        <SidebarContent>
+          <SidebarGroup>
+            <SidebarGroupLabel>Navigation</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {navigationItems.map((item) => (
+                  <SidebarMenuItem key={item.title}>
+                    {collapsed ? (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <SidebarMenuButton asChild>
+                            <NavLink to={item.url} end className={getNavCls}>
+                              <item.icon className="h-4 w-4" />
+                            </NavLink>
+                          </SidebarMenuButton>
+                        </TooltipTrigger>
+                        <TooltipContent side="right">
+                          {item.title}
+                        </TooltipContent>
+                      </Tooltip>
+                    ) : (
+                      <SidebarMenuButton asChild>
+                        <NavLink to={item.url} end className={getNavCls}>
+                          <item.icon className="h-4 w-4" />
+                          <span>{item.title}</span>
+                        </NavLink>
+                      </SidebarMenuButton>
+                    )}
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
 
         {/* Team Navigation - Only visible for Business tier and above */}
         <FeatureGate requiredTier="business">
@@ -88,45 +110,110 @@ export function AppSidebar() {
               <SidebarMenu>
                 {/* Create Team - Always visible for Business users */}
                 <SidebarMenuItem>
-                  <SidebarMenuButton asChild>
-                    <NavLink to="/team/create" className={getNavCls}>
-                      <Plus className="h-4 w-4" />
-                      {!collapsed && <span>Create Team</span>}
-                    </NavLink>
-                  </SidebarMenuButton>
+                  {collapsed ? (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <SidebarMenuButton asChild>
+                          <NavLink to="/team/create" className={getNavCls}>
+                            <Plus className="h-4 w-4" />
+                          </NavLink>
+                        </SidebarMenuButton>
+                      </TooltipTrigger>
+                      <TooltipContent side="right">Create Team</TooltipContent>
+                    </Tooltip>
+                  ) : (
+                    <SidebarMenuButton asChild>
+                      <NavLink to="/team/create" className={getNavCls}>
+                        <Plus className="h-4 w-4" />
+                        <span>Create Team</span>
+                      </NavLink>
+                    </SidebarMenuButton>
+                  )}
                 </SidebarMenuItem>
 
                 <SidebarMenuItem>
-                  <SidebarMenuButton asChild>
-                    <NavLink to="/team/timeline" className={getNavCls}>
-                      <Calendar className="h-4 w-4" />
-                      {!collapsed && <span>Team Timeline</span>}
-                    </NavLink>
-                  </SidebarMenuButton>
+                  {collapsed ? (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <SidebarMenuButton asChild>
+                          <NavLink to="/team/timeline" className={getNavCls}>
+                            <Calendar className="h-4 w-4" />
+                          </NavLink>
+                        </SidebarMenuButton>
+                      </TooltipTrigger>
+                      <TooltipContent side="right">Team Timeline</TooltipContent>
+                    </Tooltip>
+                  ) : (
+                    <SidebarMenuButton asChild>
+                      <NavLink to="/team/timeline" className={getNavCls}>
+                        <Calendar className="h-4 w-4" />
+                        <span>Team Timeline</span>
+                      </NavLink>
+                    </SidebarMenuButton>
+                  )}
                 </SidebarMenuItem>
                 <SidebarMenuItem>
-                  <SidebarMenuButton asChild>
-                    <NavLink to="/team/documents" className={getNavCls}>
-                      <FileText className="h-4 w-4" />
-                      {!collapsed && <span>Team Documents</span>}
-                    </NavLink>
-                  </SidebarMenuButton>
+                  {collapsed ? (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <SidebarMenuButton asChild>
+                          <NavLink to="/team/documents" className={getNavCls}>
+                            <FileText className="h-4 w-4" />
+                          </NavLink>
+                        </SidebarMenuButton>
+                      </TooltipTrigger>
+                      <TooltipContent side="right">Team Documents</TooltipContent>
+                    </Tooltip>
+                  ) : (
+                    <SidebarMenuButton asChild>
+                      <NavLink to="/team/documents" className={getNavCls}>
+                        <FileText className="h-4 w-4" />
+                        <span>Team Documents</span>
+                      </NavLink>
+                    </SidebarMenuButton>
+                  )}
                 </SidebarMenuItem>
                 <SidebarMenuItem>
-                  <SidebarMenuButton asChild>
-                    <NavLink to="/team/members" className={getNavCls}>
-                      <Users className="h-4 w-4" />
-                      {!collapsed && <span>Team Members</span>}
-                    </NavLink>
-                  </SidebarMenuButton>
+                  {collapsed ? (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <SidebarMenuButton asChild>
+                          <NavLink to="/team/members" className={getNavCls}>
+                            <Users className="h-4 w-4" />
+                          </NavLink>
+                        </SidebarMenuButton>
+                      </TooltipTrigger>
+                      <TooltipContent side="right">Team Members</TooltipContent>
+                    </Tooltip>
+                  ) : (
+                    <SidebarMenuButton asChild>
+                      <NavLink to="/team/members" className={getNavCls}>
+                        <Users className="h-4 w-4" />
+                        <span>Team Members</span>
+                      </NavLink>
+                    </SidebarMenuButton>
+                  )}
                 </SidebarMenuItem>
                 <SidebarMenuItem>
-                  <SidebarMenuButton asChild>
-                    <NavLink to="/team/settings" className={getNavCls}>
-                      <Building2 className="h-4 w-4" />
-                      {!collapsed && <span>Team Settings</span>}
-                    </NavLink>
-                  </SidebarMenuButton>
+                  {collapsed ? (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <SidebarMenuButton asChild>
+                          <NavLink to="/team/settings" className={getNavCls}>
+                            <Building2 className="h-4 w-4" />
+                          </NavLink>
+                        </SidebarMenuButton>
+                      </TooltipTrigger>
+                      <TooltipContent side="right">Team Settings</TooltipContent>
+                    </Tooltip>
+                  ) : (
+                    <SidebarMenuButton asChild>
+                      <NavLink to="/team/settings" className={getNavCls}>
+                        <Building2 className="h-4 w-4" />
+                        <span>Team Settings</span>
+                      </NavLink>
+                    </SidebarMenuButton>
+                  )}
                 </SidebarMenuItem>
               </SidebarMenu>
             </SidebarGroupContent>
@@ -141,12 +228,25 @@ export function AppSidebar() {
               <SidebarMenu>
                 {executiveNavigationItems.map((item) => (
                   <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton asChild>
-                      <NavLink to={item.url} className={getNavCls}>
-                        <item.icon className="h-4 w-4" />
-                        {!collapsed && <span>{item.title}</span>}
-                      </NavLink>
-                    </SidebarMenuButton>
+                    {collapsed ? (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <SidebarMenuButton asChild>
+                            <NavLink to={item.url} className={getNavCls}>
+                              <item.icon className="h-4 w-4" />
+                            </NavLink>
+                          </SidebarMenuButton>
+                        </TooltipTrigger>
+                        <TooltipContent side="right">{item.title}</TooltipContent>
+                      </Tooltip>
+                    ) : (
+                      <SidebarMenuButton asChild>
+                        <NavLink to={item.url} className={getNavCls}>
+                          <item.icon className="h-4 w-4" />
+                          <span>{item.title}</span>
+                        </NavLink>
+                      </SidebarMenuButton>
+                    )}
                   </SidebarMenuItem>
                 ))}
               </SidebarMenu>
@@ -158,34 +258,77 @@ export function AppSidebar() {
       <SidebarFooter className="border-t border-sidebar-border p-4">
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton asChild>
-              <NavLink to="/support" className={getNavCls}>
-                <HelpCircle className="h-4 w-4" />
-                {!collapsed && <span>Support</span>}
-              </NavLink>
-            </SidebarMenuButton>
+            {collapsed ? (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <SidebarMenuButton asChild>
+                    <NavLink to="/support" className={getNavCls}>
+                      <HelpCircle className="h-4 w-4" />
+                    </NavLink>
+                  </SidebarMenuButton>
+                </TooltipTrigger>
+                <TooltipContent side="right">Support</TooltipContent>
+              </Tooltip>
+            ) : (
+              <SidebarMenuButton asChild>
+                <NavLink to="/support" className={getNavCls}>
+                  <HelpCircle className="h-4 w-4" />
+                  <span>Support</span>
+                </NavLink>
+              </SidebarMenuButton>
+            )}
           </SidebarMenuItem>
           <SidebarMenuItem>
-            <SidebarMenuButton asChild>
-              <NavLink to="/settings" className={getNavCls}>
-                <Settings className="h-4 w-4" />
-                {!collapsed && <span>Settings</span>}
-              </NavLink>
-            </SidebarMenuButton>
+            {collapsed ? (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <SidebarMenuButton asChild>
+                    <NavLink to="/settings" className={getNavCls}>
+                      <Settings className="h-4 w-4" />
+                    </NavLink>
+                  </SidebarMenuButton>
+                </TooltipTrigger>
+                <TooltipContent side="right">Settings</TooltipContent>
+              </Tooltip>
+            ) : (
+              <SidebarMenuButton asChild>
+                <NavLink to="/settings" className={getNavCls}>
+                  <Settings className="h-4 w-4" />
+                  <span>Settings</span>
+                </NavLink>
+              </SidebarMenuButton>
+            )}
           </SidebarMenuItem>
           <SidebarMenuItem>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={signOut}
-              className="w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent"
-            >
-              <LogOut className="h-4 w-4" />
-              {!collapsed && <span className="ml-2">Sign Out</span>}
-            </Button>
+            {collapsed ? (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={signOut}
+                    className="w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent"
+                  >
+                    <LogOut className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="right">Sign Out</TooltipContent>
+              </Tooltip>
+            ) : (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={signOut}
+                className="w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent"
+              >
+                <LogOut className="h-4 w-4" />
+                <span className="ml-2">Sign Out</span>
+              </Button>
+            )}
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>
     </Sidebar>
+    </TooltipProvider>
   );
 }
