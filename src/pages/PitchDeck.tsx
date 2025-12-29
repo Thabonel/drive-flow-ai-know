@@ -283,6 +283,8 @@ export default function PitchDeck() {
     setShowSplitScreenNotes(false); // Reset split-screen state
     setPresentationStartTime(Date.now());
     setElapsedSeconds(0);
+    // Add URL parameter to signal presentation mode (for hiding sidebar)
+    window.history.pushState({}, '', '/pitch-deck?presenting=true');
   };
 
   const handleStartActualPresentation = () => {
@@ -312,6 +314,8 @@ export default function PitchDeck() {
     setElapsedSeconds(0);
     setPresentationStarted(false);
     setShowSplitScreenNotes(false);
+    // Remove URL parameter to restore sidebar
+    window.history.pushState({}, '', '/pitch-deck');
   };
 
   const handleStartPresenterView = () => {
@@ -1881,7 +1885,7 @@ Generated with AI Query Hub
                 disabled={currentSlideIndex === 0}
                 variant="ghost"
                 size="sm"
-                className="text-white hover:bg-white/20"
+                className="text-white hover:bg-white/20 hover:text-white"
               >
                 ← Previous
               </Button>
@@ -1891,7 +1895,7 @@ Generated with AI Query Hub
                 disabled={currentSlideIndex === (pitchDeck.slides?.length || 0)}
                 variant="ghost"
                 size="sm"
-                className="text-white hover:bg-white/20"
+                className="text-white hover:bg-white/20 hover:text-white"
               >
                 Next →
               </Button>

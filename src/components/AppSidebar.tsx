@@ -68,6 +68,16 @@ export function AppSidebar() {
   const currentPath = location.pathname;
   const collapsed = state === 'collapsed';
 
+  // Hide sidebar during presentation mode
+  const searchParams = new URLSearchParams(location.search);
+  const isPresentingMode = searchParams.get('presenting') === 'true';
+  const isPresentationRoute = currentPath.startsWith('/presentation-audience');
+
+  // Return null to completely remove sidebar from DOM during presentation
+  if (isPresentingMode || isPresentationRoute) {
+    return null;
+  }
+
   const isActive = (path: string) => currentPath === path;
   const getNavCls = ({ isActive }: { isActive: boolean }) =>
     isActive ? 'bg-sidebar-accent text-sidebar-accent-foreground' : 'hover:bg-sidebar-accent/50';
