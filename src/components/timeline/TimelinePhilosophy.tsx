@@ -107,14 +107,14 @@ export function TimelinePhilosophy({
       <DialogTrigger asChild>
         {triggerButton}
       </DialogTrigger>
-      <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-2xl max-h-[80vh] overflow-y-auto pb-6">
         <DialogHeader>
           <DialogTitle>Timeline Philosophy</DialogTitle>
           <DialogDescription className="sr-only">
             Learn about the design philosophy behind the timeline system
           </DialogDescription>
         </DialogHeader>
-        <div className="pt-4 pb-2">
+        <div className="pt-4 pb-8">
           {philosophyContent}
         </div>
       </DialogContent>
