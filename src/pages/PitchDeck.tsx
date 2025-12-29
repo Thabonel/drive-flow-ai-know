@@ -1891,8 +1891,8 @@ Generated with AI Query Hub
                 onClick={handleNextSlide}
                 disabled={currentSlideIndex === (pitchDeck.slides?.length || 0)}
                 size="sm"
-                variant={null as any}
-                className="!bg-blue-600 !text-white hover:!bg-blue-700 !shadow-none disabled:!opacity-100 disabled:!bg-blue-600"
+                variant="default"
+                className="bg-primary hover:bg-primary/90"
               >
                 Next →
               </Button>
