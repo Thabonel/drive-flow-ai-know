@@ -80,8 +80,6 @@ export default function PitchDeck() {
 
   // Refs for presentation mode focus management and keyboard navigation
   const presentationRef = useRef<HTMLDivElement>(null);
-  const nextButtonRef = useRef<HTMLButtonElement>(null);
-  const prevButtonRef = useRef<HTMLButtonElement>(null);
 
   // Fetch user's documents
   const { data: documents, isLoading: loadingDocs } = useQuery({
@@ -1877,22 +1875,22 @@ Generated with AI Query Hub
           <div className="bg-black/80 border-t border-white/10 p-4 flex items-center justify-between">
             <div className="flex gap-2">
               <Button
-                ref={prevButtonRef}
                 onClick={handlePreviousSlide}
                 disabled={currentSlideIndex === 0}
                 size="sm"
-                className="bg-blue-600 text-white border-none shadow-none hover:bg-blue-700 active:bg-blue-800 transition-colors disabled:opacity-100"
+                variant="ghost"
+                className="text-white hover:bg-white/10"
               >
-                ← Previous
+                Previous
               </Button>
               <Button
-                ref={nextButtonRef}
                 onClick={handleNextSlide}
                 disabled={currentSlideIndex === (pitchDeck.slides?.length || 0)}
                 size="sm"
-                className="bg-blue-600 text-white border-none shadow-none hover:bg-blue-700 active:bg-blue-800 transition-colors disabled:opacity-100"
+                variant="ghost"
+                className="text-white hover:bg-white/10"
               >
-                Next →
+                Next
               </Button>
             </div>
 
