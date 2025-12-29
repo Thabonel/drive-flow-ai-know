@@ -3,6 +3,12 @@ import { Button } from '@/components/ui/button'
 import { Mic, MicOff, Loader2 } from 'lucide-react'
 import { useDictation } from '@/hooks/useDictation'
 import { cn } from '@/lib/utils'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 
 interface DictationButtonProps {
   onTranscription: (text: string) => void
@@ -61,19 +67,27 @@ export function DictationButton({
   }
 
   return (
-    <Button
-      type="button"
-      variant={variant}
-      size={size}
-      onClick={handleClick}
-      disabled={isTranscribing}
-      title={getTitle()}
-      className={cn(
-        isRecording && 'animate-pulse bg-destructive/10 hover:bg-destructive/20',
-        className
-      )}
-    >
-      {getIcon()}
-    </Button>
+    <TooltipProvider delayDuration={300}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            type="button"
+            variant={variant}
+            size={size}
+            onClick={handleClick}
+            disabled={isTranscribing}
+            className={cn(
+              isRecording && 'animate-pulse bg-destructive/10 hover:bg-destructive/20',
+              className
+            )}
+          >
+            {getIcon()}
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>
+          {getTitle()}
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   )
 }
