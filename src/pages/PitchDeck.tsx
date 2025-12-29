@@ -1881,7 +1881,8 @@ Generated with AI Query Hub
                 onClick={handlePreviousSlide}
                 disabled={currentSlideIndex === 0}
                 size="sm"
-                className="bg-blue-600 text-white border-none shadow-none hover:bg-blue-700 active:bg-blue-800 transition-colors disabled:opacity-100"
+                variant="ghost"
+                className="bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-100"
               >
                 ← Previous
               </Button>
@@ -1890,7 +1891,8 @@ Generated with AI Query Hub
                 onClick={handleNextSlide}
                 disabled={currentSlideIndex === (pitchDeck.slides?.length || 0)}
                 size="sm"
-                className="bg-blue-600 text-white border-none shadow-none hover:bg-blue-700 active:bg-blue-800 transition-colors disabled:opacity-100"
+                variant="ghost"
+                className="bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-100"
               >
                 Next →
               </Button>
