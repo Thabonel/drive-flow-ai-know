@@ -178,46 +178,28 @@ export default function PitchDeck() {
         case 'ArrowRight':
         case ' ':
         case 'Enter':
-          // Navigate to next slide
-          setCurrentSlideIndex(prev => {
-            if (prev < (pitchDeck.slides?.length || 0)) {
-              const newIndex = prev + 1;
-              // Broadcast slide change if in presenter view mode
-              if (presenterSessionId && presentationSync) {
-                presentationSync.send({
-                  type: 'SLIDE_CHANGE',
-                  index: newIndex,
-                });
-              }
-              return newIndex;
-            }
-            return prev;
-          });
+          // Navigate to next slide (scroll reset handled in handleNextSlide)
+          handleNextSlide();
           break;
         case 'ArrowLeft':
-          // Navigate to previous slide
-          setCurrentSlideIndex(prev => {
-            if (prev > 0) {
-              const newIndex = prev - 1;
-              // Broadcast slide change if in presenter view mode
-              if (presenterSessionId && presentationSync) {
-                presentationSync.send({
-                  type: 'SLIDE_CHANGE',
-                  index: newIndex,
-                });
-              }
-              return newIndex;
-            }
-            return prev;
-          });
+          // Navigate to previous slide (scroll reset handled in handlePreviousSlide)
+          handlePreviousSlide();
           break;
         case 'Home':
           // First slide
           setCurrentSlideIndex(0);
+          // Reset scroll position
+          if (fullSlideContainerRef.current) fullSlideContainerRef.current.scrollTop = 0;
+          if (splitSlideContainerRef.current) splitSlideContainerRef.current.scrollTop = 0;
+          if (speakerNotesRef.current) speakerNotesRef.current.scrollTop = 0;
           break;
         case 'End':
           // Last slide (length - 1 for zero-indexed array)
           setCurrentSlideIndex((pitchDeck.slides?.length || 1) - 1);
+          // Reset scroll position
+          if (fullSlideContainerRef.current) fullSlideContainerRef.current.scrollTop = 0;
+          if (splitSlideContainerRef.current) splitSlideContainerRef.current.scrollTop = 0;
+          if (speakerNotesRef.current) speakerNotesRef.current.scrollTop = 0;
           break;
         case 'Escape':
           // Exit presentation mode
