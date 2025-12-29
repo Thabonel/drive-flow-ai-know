@@ -1882,7 +1882,7 @@ Generated with AI Query Hub
                 disabled={currentSlideIndex === 0}
                 size="sm"
                 variant={null as any}
-                className="!bg-blue-600 !text-white hover:!bg-blue-700 !shadow-none disabled:!opacity-100 disabled:!bg-blue-600"
+                className="!bg-accent !text-accent-foreground hover:!bg-accent/90 !shadow-none disabled:!opacity-100 disabled:!bg-accent"
               >
                 ← Previous
               </Button>
