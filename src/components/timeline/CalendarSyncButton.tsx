@@ -6,6 +6,12 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { useGoogleCalendar } from '@/hooks/useGoogleCalendar';
 import { CalendarSyncSettings } from './CalendarSyncSettings';
 import { formatDistanceToNow } from 'date-fns';
@@ -78,32 +84,47 @@ export function CalendarSyncButton() {
   };
 
   return (
+    <TooltipProvider delayDuration={300}>
     <>
       <Popover>
-        <PopoverTrigger asChild>
-          <Button
-            variant="outline"
-            className="gap-2 min-w-[140px]"
-            disabled={isConnecting}
-          >
-            {getStatusIcon()}
-            <span className="hidden sm:inline">Calendar</span>
-          </Button>
-        </PopoverTrigger>
+        <Tooltip>
+          <PopoverTrigger asChild>
+            <TooltipTrigger asChild>
+              <Button
+                variant="outline"
+                className="gap-2 min-w-[140px]"
+                disabled={isConnecting}
+              >
+                {getStatusIcon()}
+                <span className="hidden sm:inline">Calendar</span>
+              </Button>
+            </TooltipTrigger>
+          </PopoverTrigger>
+          <TooltipContent>
+            {getStatusText()}
+          </TooltipContent>
+        </Tooltip>
         <PopoverContent className="w-80" align="start">
           <div className="space-y-4">
             {/* Header */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <h3 className="font-semibold text-sm">Google Calendar Sync</h3>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowSettings(true)}
-                  disabled={!isAuthenticated}
-                >
-                  <Settings className="h-4 w-4" />
-                </Button>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setShowSettings(true)}
+                      disabled={!isAuthenticated}
+                    >
+                      <Settings className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    Sync settings
+                  </TooltipContent>
+                </Tooltip>
               </div>
               <p className="text-xs text-muted-foreground">
                 {getStatusText()}
@@ -212,5 +233,6 @@ export function CalendarSyncButton() {
         />
       )}
     </>
+    </TooltipProvider>
   );
 }
