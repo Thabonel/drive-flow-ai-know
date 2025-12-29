@@ -1,4 +1,4 @@
-import { HelpCircle, Zap, Clock, Target } from 'lucide-react';
+import { HelpCircle, Clock, Target } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -23,8 +23,7 @@ export function TimelinePhilosophy({
   const philosophyContent = (
     <div className="space-y-4">
       <div className="space-y-2">
-        <h3 className="font-semibold text-lg flex items-center gap-2">
-          <Zap className="h-5 w-5 text-accent" />
+        <h3 className="font-semibold text-lg">
           Design Over Discipline
         </h3>
         <p className="text-sm leading-relaxed">
@@ -65,10 +64,6 @@ export function TimelinePhilosophy({
         <div className="flex items-start gap-2">
           <Target className="h-4 w-4 mt-0.5 shrink-0" />
           <span><strong>If-Then</strong>: Remove decision fatigue with pre-planned actions</span>
-        </div>
-        <div className="flex items-start gap-2">
-          <Zap className="h-4 w-4 mt-0.5 shrink-0" />
-          <span><strong>Forcing Function</strong>: Design constraints that make success inevitable</span>
         </div>
       </div>
     </div>
@@ -112,14 +107,14 @@ export function TimelinePhilosophy({
       <DialogTrigger asChild>
         {triggerButton}
       </DialogTrigger>
-      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Timeline Philosophy</DialogTitle>
           <DialogDescription className="sr-only">
             Learn about the design philosophy behind the timeline system
           </DialogDescription>
         </DialogHeader>
-        <div className="pt-4">
+        <div className="pt-4 pb-2">
           {philosophyContent}
         </div>
       </DialogContent>
