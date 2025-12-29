@@ -8,6 +8,12 @@ import { useOffline } from '@/hooks/useOffline';
 import { useUserSettings } from '@/hooks/useUserSettings';
 import { LogOut, Settings, User } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 const Header = () => {
   const { user, signOut } = useAuth();
@@ -27,55 +33,64 @@ const Header = () => {
   };
 
   return (
-    <header className="h-12 flex items-center justify-between border-b bg-background px-4 relative">
-      <div className="flex items-center gap-4">
-        <SidebarTrigger />
-        <h2 className="text-lg font-semibold text-foreground hidden sm:block">AI Query Hub</h2>
-      </div>
-      
-      <div className="flex items-center gap-2">
-        <KeyboardShortcutsHelp />
-
-        {user && (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="relative h-8 w-8 rounded-full" aria-label="User menu">
-                <Avatar className="h-8 w-8">
-                  <AvatarFallback>
-                    {getInitials(user?.user_metadata?.full_name || user?.email || 'U')}
-                  </AvatarFallback>
-                </Avatar>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-56" align="end" forceMount>
-              <div className="flex items-center justify-start gap-2 p-2">
-                <div className="flex flex-col space-y-1 leading-none">
-                  <p className="font-medium">{user?.user_metadata?.full_name || 'User'}</p>
-                  <p className="w-[200px] truncate text-sm text-muted-foreground">
-                    {user?.email}
-                  </p>
-                </div>
-              </div>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => navigate('/settings')}>
-                <Settings className="mr-2 h-4 w-4" />
-                Settings
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={handleSignOut}>
-                <LogOut className="mr-2 h-4 w-4" />
-                Sign out
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        )}
-      </div>
-
-      {showBanner && (
-        <div className="absolute inset-x-0 top-full bg-yellow-500 dark:bg-yellow-600 text-white dark:text-yellow-50 text-center py-1 text-sm font-medium z-50">
-          📶 You are currently using AI offline (Ollama). All processing is local.
+    <TooltipProvider delayDuration={300}>
+      <header className="h-12 flex items-center justify-between border-b bg-background px-4 relative">
+        <div className="flex items-center gap-4">
+          <SidebarTrigger />
+          <h2 className="text-lg font-semibold text-foreground hidden sm:block">AI Query Hub</h2>
         </div>
-      )}
-    </header>
+
+        <div className="flex items-center gap-2">
+          <KeyboardShortcutsHelp />
+
+          {user && (
+            <DropdownMenu>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="relative h-8 w-8 rounded-full" aria-label="User menu">
+                      <Avatar className="h-8 w-8">
+                        <AvatarFallback>
+                          {getInitials(user?.user_metadata?.full_name || user?.email || 'U')}
+                        </AvatarFallback>
+                      </Avatar>
+                    </Button>
+                  </DropdownMenuTrigger>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">
+                  {user?.user_metadata?.full_name || user?.email || 'User menu'}
+                </TooltipContent>
+              </Tooltip>
+              <DropdownMenuContent className="w-56" align="end" forceMount>
+                <div className="flex items-center justify-start gap-2 p-2">
+                  <div className="flex flex-col space-y-1 leading-none">
+                    <p className="font-medium">{user?.user_metadata?.full_name || 'User'}</p>
+                    <p className="w-[200px] truncate text-sm text-muted-foreground">
+                      {user?.email}
+                    </p>
+                  </div>
+                </div>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => navigate('/settings')}>
+                  <Settings className="mr-2 h-4 w-4" />
+                  Settings
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleSignOut}>
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Sign out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+        </div>
+
+        {showBanner && (
+          <div className="absolute inset-x-0 top-full bg-yellow-500 dark:bg-yellow-600 text-white dark:text-yellow-50 text-center py-1 text-sm font-medium z-50">
+            📶 You are currently using AI offline (Ollama). All processing is local.
+          </div>
+        )}
+      </header>
+    </TooltipProvider>
   );
 };
 
