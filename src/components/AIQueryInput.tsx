@@ -331,7 +331,7 @@ export const AIQueryInput = ({ selectedKnowledgeBase, onClearSelection }: AIQuer
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <CardTitle className="flex items-center text-xl">
             <Brain className="h-6 w-6 mr-3 text-primary" />
-            Document Creator
+            Dashboard
           </CardTitle>
 
           <div className="flex flex-wrap items-center gap-2">
