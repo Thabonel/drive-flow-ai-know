@@ -25,11 +25,36 @@ import {
 } from '@/components/ui/tooltip';
 
 const navigationItems = [
-  { title: 'Timeline', url: '/timeline', icon: Clock },
-  { title: 'AI Chat', url: '/conversations', icon: MessageSquare },
-  { title: 'Document Creator', url: '/dashboard', icon: Brain },
-  { title: 'Documents', url: '/documents', icon: FileText },
-  { title: 'Pitch Deck', url: '/pitch-deck', icon: Presentation },
+  {
+    title: 'Timeline',
+    url: '/timeline',
+    icon: Clock,
+    description: 'Plan your day & track tasks'
+  },
+  {
+    title: 'AI Chat',
+    url: '/conversations',
+    icon: MessageSquare,
+    description: 'Ask questions & get insights'
+  },
+  {
+    title: 'Dashboard',
+    url: '/dashboard',
+    icon: Brain,
+    description: 'Overview & quick actions'
+  },
+  {
+    title: 'Documents',
+    url: '/documents',
+    icon: FileText,
+    description: 'Browse & manage files'
+  },
+  {
+    title: 'Pitch Deck',
+    url: '/pitch-deck',
+    icon: Presentation,
+    description: 'Create presentations'
+  },
 ];
 
 const executiveNavigationItems = [
@@ -78,14 +103,18 @@ export function AppSidebar() {
                           </SidebarMenuButton>
                         </TooltipTrigger>
                         <TooltipContent side="right">
-                          {item.title}
+                          <div className="font-medium">{item.title}</div>
+                          <div className="text-xs text-muted-foreground">{item.description}</div>
                         </TooltipContent>
                       </Tooltip>
                     ) : (
                       <SidebarMenuButton asChild>
                         <NavLink to={item.url} end className={getNavCls}>
                           <item.icon className="h-4 w-4" />
-                          <span>{item.title}</span>
+                          <div className="flex flex-col gap-0.5">
+                            <span className="font-medium text-sm">{item.title}</span>
+                            <span className="text-xs text-muted-foreground">{item.description}</span>
+                          </div>
                         </NavLink>
                       </SidebarMenuButton>
                     )}
