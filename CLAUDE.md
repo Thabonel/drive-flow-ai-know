@@ -91,6 +91,8 @@ AI Query Hub (formerly Knowledge Base App) is a React/TypeScript application tha
 
 Built with Vite, React, shadcn-ui, Tailwind CSS, and Supabase backend.
 
+**Supabase Project**: `fskwutnoxbbflzqrphro` (https://fskwutnoxbbflzqrphro.supabase.co)
+
 ## Development Commands
 
 ### Frontend Development
