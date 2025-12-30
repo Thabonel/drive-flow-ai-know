@@ -1,5 +1,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { updateTokenUsage, extractTokensFromClaudeResponse } from '../../_shared/token-tracking.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -181,6 +182,14 @@ Format as markdown bullet list. Be specific with times and names. Keep each bull
     const briefingContent = data.content[0].text;
 
     console.log('Generated briefing:', briefingContent);
+
+    // Track token usage
+    const tokensUsed = extractTokensFromClaudeResponse(data);
+    const tokenUpdate = await updateTokenUsage(subAgent.session_id, tokensUsed);
+
+    if (tokenUpdate.budgetExceeded) {
+      console.warn(`Token budget exceeded. Session paused. Tokens remaining: ${tokenUpdate.tokensRemaining}`);
+    }
 
     // STEP 6: Store briefing in agent_memory
     await supabase
