@@ -13,9 +13,10 @@
 
 import { useEffect, useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight, X, Settings } from 'lucide-react';
+import { ChevronLeft, ChevronRight, X, Settings, HelpCircle } from 'lucide-react';
 import type { PitchDeck } from '@/lib/presentationStorage';
 import type { PresentationSettingsData } from '@/components/PresentationSettings';
+import KeyboardShortcutsHelp from '@/components/KeyboardShortcutsHelp';
 
 interface PresenterViewProps {
   pitchDeck: PitchDeck;
@@ -46,6 +47,7 @@ export default function PresenterView({
   onOpenSettings,
 }: PresenterViewProps) {
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const [helpOpen, setHelpOpen] = useState(false);
 
   // Button refs for keyboard delegation
   const prevButtonRef = useRef<HTMLButtonElement>(null);
@@ -98,6 +100,10 @@ export default function PresenterView({
           e.preventDefault();
           onOpenSettings();
           break;
+        case '?':
+          e.preventDefault();
+          setHelpOpen(true);
+          break;
         default:
           break;
       }
@@ -127,6 +133,16 @@ export default function PresenterView({
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <Button
+            onClick={() => setHelpOpen(true)}
+            variant="ghost"
+            size="sm"
+            className="text-white hover:bg-gray-700"
+            title="Keyboard Shortcuts (?)"
+          >
+            <HelpCircle className="h-5 w-5 mr-2" />
+            Help
+          </Button>
           <Button
             onClick={onOpenSettings}
             variant="ghost"
@@ -243,8 +259,15 @@ export default function PresenterView({
 
       {/* Keyboard Shortcuts Hint */}
       <div className="bg-gray-900 px-6 py-2 text-xs text-gray-500 text-center border-t border-gray-800">
-        Keyboard: ← → (arrows) | Space (next) | Home/End | S (settings) | ESC (exit)
+        Keyboard: ← → (arrows) | Space (next) | Home/End | S (settings) | ? (help) | ESC (exit)
       </div>
+
+      {/* Keyboard Shortcuts Help Overlay */}
+      <KeyboardShortcutsHelp
+        open={helpOpen}
+        onOpenChange={setHelpOpen}
+        mode="presenter"
+      />
     </div>
   );
 }
