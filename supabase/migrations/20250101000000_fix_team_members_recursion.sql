@@ -8,8 +8,11 @@
 -- Drop the problematic policy on teams
 DROP POLICY IF EXISTS "Users can view teams they belong to or open teams" ON teams;
 
+-- Drop existing function first (it may have different parameter names)
+DROP FUNCTION IF EXISTS is_team_member(UUID, UUID) CASCADE;
+
 -- Create security definer function to check team membership (breaks recursion)
-CREATE OR REPLACE FUNCTION is_team_member(team_id_param UUID, user_id_param UUID)
+CREATE OR REPLACE FUNCTION is_team_member(p_team_id UUID, p_user_id UUID)
 RETURNS BOOLEAN
 LANGUAGE plpgsql
 SECURITY DEFINER
@@ -19,8 +22,8 @@ BEGIN
   RETURN EXISTS (
     SELECT 1
     FROM team_members tm
-    WHERE tm.team_id = team_id_param
-      AND tm.user_id = user_id_param
+    WHERE tm.team_id = p_team_id
+      AND tm.user_id = p_user_id
   );
 END;
 $$;
