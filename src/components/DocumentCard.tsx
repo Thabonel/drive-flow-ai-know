@@ -2,7 +2,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { FileText, Calendar as CalendarIcon, Tag, Brain, Edit, Trash2, Sparkles, BarChart3, FileSpreadsheet, Clock } from 'lucide-react';
+import { FileText, Calendar as CalendarIcon, Tag, BookOpen, Edit, Trash2, BarChart3, FileSpreadsheet, Clock } from 'lucide-react';
 import { DocumentVisualizationPanel } from './DocumentVisualizationPanel';
 import { SpreadsheetViewer } from './SpreadsheetViewer';
 import { ExtractToTimelineDialog } from './ai/ExtractToTimelineDialog';
@@ -186,12 +186,12 @@ export const DocumentCard = ({
                 </>
               ) : (
                 <>
-                  <Brain className="h-4 w-4 mr-2" />
+                  <BookOpen className="h-4 w-4 mr-2" />
                   AI Insights
                 </>
               )}
             </Button>
-            
+
             {onClaudeProcess && (doc.file_type === 'pdf' || doc.file_type?.includes('sheet') || doc.file_type?.includes('document')) && (
               <Button
                 variant="secondary"
@@ -199,7 +199,7 @@ export const DocumentCard = ({
                 onClick={() => onClaudeProcess(doc.id)}
                 className="flex-1 min-w-[120px]"
               >
-                <Sparkles className="h-4 w-4 mr-2" />
+                <FileText className="h-4 w-4 mr-2" />
                 Claude MVP
               </Button>
             )}

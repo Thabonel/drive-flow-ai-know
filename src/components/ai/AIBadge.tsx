@@ -1,4 +1,3 @@
-import { Sparkles, Brain, Zap } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 
@@ -14,11 +13,10 @@ export function AIBadge({ variant = 'default', confidence, className }: AIBadgeP
       <Badge
         variant="outline"
         className={cn(
-          "gap-1.5 bg-gradient-to-r from-purple-500/10 to-blue-500/10 border-purple-500/20 text-purple-700 dark:text-purple-300",
+          "bg-gradient-to-r from-purple-500/10 to-blue-500/10 border-purple-500/20 text-purple-700 dark:text-purple-300",
           className
         )}
       >
-        <Sparkles className="h-3 w-3" />
         <span className="text-xs font-medium">Powered by GPT-4</span>
       </Badge>
     );
@@ -35,9 +33,8 @@ export function AIBadge({ variant = 'default', confidence, className }: AIBadgeP
     return (
       <Badge
         variant="outline"
-        className={cn('gap-1.5 bg-gradient-to-r', confidenceColor, className)}
+        className={cn('bg-gradient-to-r', confidenceColor, className)}
       >
-        <Brain className="h-3 w-3" />
         <span className="text-xs font-medium">{Math.round(confidence * 100)}% confident</span>
       </Badge>
     );
@@ -47,11 +44,10 @@ export function AIBadge({ variant = 'default', confidence, className }: AIBadgeP
     <Badge
       variant="outline"
       className={cn(
-        "gap-1.5 bg-gradient-to-r from-purple-500/10 to-blue-500/10 border-purple-500/20 text-purple-700 dark:text-purple-300",
+        "bg-gradient-to-r from-purple-500/10 to-blue-500/10 border-purple-500/20 text-purple-700 dark:text-purple-300",
         className
       )}
     >
-      <Zap className="h-3 w-3" />
       <span className="text-xs font-medium">AI Generated</span>
     </Badge>
   );
@@ -60,10 +56,9 @@ export function AIBadge({ variant = 'default', confidence, className }: AIBadgeP
 export function AIFeatureBadge({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
     <div className={cn(
-      "inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-gradient-to-r from-purple-500/10 to-blue-500/10 border border-purple-500/20",
+      "inline-flex items-center px-2 py-1 rounded-md bg-gradient-to-r from-purple-500/10 to-blue-500/10 border border-purple-500/20",
       className
     )}>
-      <Sparkles className="h-3.5 w-3.5 text-purple-500" />
       <span className="text-xs font-medium text-purple-700 dark:text-purple-300">{children}</span>
     </div>
   );
