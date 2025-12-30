@@ -16,6 +16,7 @@ import { get, set, del } from 'idb-keyval';
 export interface PitchDeck {
   id: string;
   title: string;
+  subtitle?: string;
   slides: Slide[];
   created_at?: string;
   updated_at?: string;
@@ -40,6 +41,10 @@ export interface Slide {
   speakerNotes?: string;
   // Animation frames for expressive mode (Phase 5)
   frames?: AnimationFrame[];
+  // Video support for expressive mode (Phase 6)
+  videoUrl?: string;
+  videoDuration?: number;
+  videoFileSizeMb?: number;
 }
 
 /**
