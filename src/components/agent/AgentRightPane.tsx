@@ -78,9 +78,51 @@ export function AgentRightPane({ userId }: { userId: string }) {
 
     fetchAgentData();
 
-    // Refresh every 30 seconds
-    const interval = setInterval(fetchAgentData, 30000);
-    return () => clearInterval(interval);
+    if (!session) return;
+
+    // Set up real-time subscriptions for sub-agents
+    const subAgentsChannel = supabase
+      .channel(`sub_agents:${session.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'sub_agents',
+          filter: `session_id=eq.${session.id}`,
+        },
+        (payload) => {
+          console.log('Sub-agent update:', payload);
+          // Refetch data when sub-agents change
+          fetchAgentData();
+        }
+      )
+      .subscribe();
+
+    // Set up real-time subscriptions for agent memory (goals)
+    const memoryChannel = supabase
+      .channel(`agent_memory:${session.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'agent_memory',
+          filter: `session_id=eq.${session.id}`,
+        },
+        (payload) => {
+          console.log('Agent memory update:', payload);
+          // Refetch data when new memory entries are added
+          fetchAgentData();
+        }
+      )
+      .subscribe();
+
+    // Cleanup subscriptions on unmount
+    return () => {
+      supabase.removeChannel(subAgentsChannel);
+      supabase.removeChannel(memoryChannel);
+    };
   }, [session]);
 
   const getStatusBadge = () => {
