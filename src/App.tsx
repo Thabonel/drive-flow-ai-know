@@ -56,6 +56,7 @@ import TeamTimeline from "./pages/Team/TeamTimeline";
 import CreateTeam from "./pages/Team/CreateTeam";
 import AcceptInvite from "./pages/Team/AcceptInvite";
 import PresentationAudience from "./pages/PresentationAudience";
+import { Agent } from "./pages/Agent";
 
 const queryClient = new QueryClient();
 
@@ -248,6 +249,11 @@ const App = () => (
             <Route path="/conversations" element={
               <ProtectedRoute>
                 <Conversations />
+              </ProtectedRoute>
+            } />
+            <Route path="/agent" element={
+              <ProtectedRoute>
+                <Agent />
               </ProtectedRoute>
             } />
             <Route path="/support" element={
