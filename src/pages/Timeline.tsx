@@ -42,6 +42,7 @@ function TimelineContent() {
   const [promptDismissed, setPromptDismissed] = useState(() => {
     return localStorage.getItem('timeline-planning-prompt-dismissed') === 'true';
   });
+  const [shutdownPromptDismissed, setShutdownPromptDismissed] = useState(false);
 
   // Check if planning is needed on mount and at intervals
   useEffect(() => {
@@ -96,6 +97,10 @@ function TimelineContent() {
     localStorage.setItem('timeline-planning-prompt-dismissed', 'true');
   };
 
+  const handleDismissShutdown = () => {
+    setShutdownPromptDismissed(true);
+  };
+
   const handleStartPlanning = () => {
     setShowPrompt(false);
     setShowPlanning(true);
@@ -116,7 +121,7 @@ function TimelineContent() {
       <p className="text-muted-foreground text-sm">Hey {user?.user_metadata?.full_name || user?.email?.split('@')[0]}</p>
 
       {/* Combined Planning & Shutdown Prompt */}
-      {(showPrompt && !todaySession?.completed_at) || (shutdownNeeded && settings?.enable_shutdown_ritual) ? (
+      {(showPrompt && !todaySession?.completed_at) || (shutdownNeeded && settings?.enable_shutdown_ritual && !shutdownPromptDismissed) ? (
         <Alert className="border-2 border-blue-500 shadow-lg bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/50 dark:to-orange-950/50 p-1">
           <div className="flex items-start gap-2">
             {/* Left side: Shutdown content or Planning prompt */}
@@ -174,7 +179,7 @@ function TimelineContent() {
               variant="ghost"
               size="icon"
               className="flex-shrink-0"
-              onClick={showPrompt ? handleDismiss : () => {}}
+              onClick={showPrompt ? handleDismiss : handleDismissShutdown}
             >
               <X className="h-4 w-4" />
             </Button>
