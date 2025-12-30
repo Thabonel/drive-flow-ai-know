@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { FileText, Edit, Copy, Save, X, Tag, Sparkles, Lightbulb, Calendar, Printer, Download, ChevronDown, FileImage } from 'lucide-react';
+import { FileText, Edit, Copy, Save, X, Tag, Calendar, Printer, Download, ChevronDown, FileImage } from 'lucide-react';
 import { PDFViewer } from '@/components/PDFViewer';
 import {
   DropdownMenu,
@@ -518,9 +518,8 @@ export const DocumentViewerModal = ({ document, isOpen, onClose }: DocumentViewe
           {/* AI Summary Section */}
           {document.ai_summary && !isEditing && (
             <div className="space-y-2">
-              <Label className="flex items-center gap-2">
-                <Sparkles className="h-4 w-4 text-accent" />
-                AI Summary
+              <Label>
+                Summary
               </Label>
               <div className="p-4 border rounded-md bg-accent/5 border-accent/20">
                 <p className="text-sm text-foreground">{document.ai_summary}</p>
@@ -531,9 +530,8 @@ export const DocumentViewerModal = ({ document, isOpen, onClose }: DocumentViewe
           {/* AI Insights Section */}
           {document.ai_insights && !isEditing && (
             <div className="space-y-2">
-              <Label className="flex items-center gap-2">
-                <Lightbulb className="h-4 w-4 text-accent" />
-                AI Insights
+              <Label>
+                Insights
               </Label>
               <div className="p-4 border rounded-md bg-accent/5 border-accent/20 space-y-3">
                 {document.ai_insights.insights && document.ai_insights.insights.length > 0 && (

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Lightbulb, Sparkles, X, ChevronRight } from 'lucide-react';
+import { X, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
@@ -132,12 +132,9 @@ export function DailyAITips({
         <CardContent className="p-4 space-y-3">
           <div className="flex items-start justify-between gap-2">
             <div className="flex items-center gap-2">
-              <div className="rounded-full bg-gradient-to-r from-amber-500 to-orange-500 p-2">
-                <Lightbulb className="h-4 w-4 text-white" />
-              </div>
               <div>
                 <p className="text-xs font-semibold text-amber-900 dark:text-amber-100">
-                  AI Tip of the Day
+                  Tip of the Day
                 </p>
                 <p className="text-xs text-muted-foreground">{tip.category}</p>
               </div>
@@ -185,9 +182,8 @@ export function DailyAITips({
     <div className={cn('space-y-2 p-3 rounded-lg bg-gradient-to-br from-amber-500/5 to-orange-500/5 border border-amber-500/10', className)}>
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Sparkles className="h-4 w-4 text-amber-500" />
           <p className="text-xs font-semibold text-amber-900 dark:text-amber-100">
-            AI Tip of the Day
+            Tip of the Day
           </p>
         </div>
         {showClose && (

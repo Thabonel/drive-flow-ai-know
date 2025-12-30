@@ -1,16 +1,14 @@
-import { Loader2, Sparkles, Brain } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface AILoadingAnimationProps {
   message?: string;
   size?: 'sm' | 'md' | 'lg';
-  variant?: 'default' | 'sparkles' | 'brain';
 }
 
 export function AILoadingAnimation({
   message = 'AI is thinking...',
   size = 'md',
-  variant = 'default'
 }: AILoadingAnimationProps) {
   const sizeClasses = {
     sm: 'h-4 w-4',
@@ -40,9 +38,7 @@ export function AILoadingAnimation({
           sizeClasses[size]
         )}>
           <div className="rounded-full bg-background p-1.5">
-            {variant === 'sparkles' && <Sparkles className={cn("text-purple-500", sizeClasses[size === 'sm' ? 'sm' : size === 'md' ? 'sm' : 'md'])} />}
-            {variant === 'brain' && <Brain className={cn("text-blue-500", sizeClasses[size === 'sm' ? 'sm' : size === 'md' ? 'sm' : 'md'])} />}
-            {variant === 'default' && <Loader2 className={cn("text-primary", sizeClasses[size === 'sm' ? 'sm' : size === 'md' ? 'sm' : 'md'])} />}
+            <Loader2 className={cn("text-primary", sizeClasses[size === 'sm' ? 'sm' : size === 'md' ? 'sm' : 'md'])} />
           </div>
         </div>
       </div>
@@ -67,13 +63,12 @@ export function AILoadingAnimation({
 export function AITypingIndicator() {
   return (
     <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-muted/50 w-fit">
-      <Sparkles className="h-4 w-4 text-purple-500 animate-pulse" />
       <div className="flex gap-1">
         <span className="h-2 w-2 rounded-full bg-purple-500 animate-bounce [animation-delay:-0.3s]" />
         <span className="h-2 w-2 rounded-full bg-purple-500 animate-bounce [animation-delay:-0.15s]" />
         <span className="h-2 w-2 rounded-full bg-purple-500 animate-bounce" />
       </div>
-      <span className="text-xs text-muted-foreground">AI is typing</span>
+      <span className="text-xs text-muted-foreground">Typing...</span>
     </div>
   );
 }

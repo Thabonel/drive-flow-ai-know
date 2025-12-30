@@ -6,7 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, ResponsiveContainer, ScatterChart, Scatter, AreaChart, Area } from 'recharts';
-import { BarChart3, LineChart as LineChartIcon, PieChart as PieChartIcon, Zap as ScatterIcon, TrendingUp, Download, Share, Sparkles, AlertCircle, CheckCircle } from 'lucide-react';
+import { BarChart3, LineChart as LineChartIcon, PieChart as PieChartIcon, Zap as ScatterIcon, TrendingUp, Download, Share, AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -245,14 +245,14 @@ export const DocumentVisualizationPanel: React.FC<DocumentVisualizationPanelProp
       <Card className="w-full">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5 animate-pulse" />
+            <Loader2 className="h-5 w-5 animate-spin" />
             Analyzing Document for Visualizations
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <Progress value={33} className="animate-pulse" />
           <div className="text-sm text-muted-foreground">
-            AI is analyzing your document to identify visualization opportunities...
+            Analyzing your document to identify visualization opportunities...
           </div>
         </CardContent>
       </Card>
@@ -274,7 +274,7 @@ export const DocumentVisualizationPanel: React.FC<DocumentVisualizationPanelProp
               No suitable data for visualization was found in this document.
             </div>
             <Button onClick={analyzeDocument} variant="outline">
-              <Sparkles className="h-4 w-4 mr-2" />
+              <BarChart3 className="h-4 w-4 mr-2" />
               Re-analyze
             </Button>
           </div>
