@@ -14,7 +14,7 @@ CREATE TABLE IF NOT EXISTS customer_invites (
 
   -- Status tracking
   status TEXT NOT NULL DEFAULT 'pending' CHECK (
-    status IN ('pending', 'used', 'expired', 'cancelled')
+    status IN ('pending', 'used', 'expired', 'cancelled', 'archived')
   ),
 
   -- Usage tracking
