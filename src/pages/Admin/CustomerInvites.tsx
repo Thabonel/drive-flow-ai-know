@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
+import { PageHelp } from '@/components/PageHelp';
 import {
   Gift,
   Copy,
@@ -172,14 +173,32 @@ export default function CustomerInvites() {
     <div className="container mx-auto py-8 max-w-7xl">
       <div className="space-y-6">
         {/* Header */}
-        <div>
-          <h1 className="text-3xl font-bold flex items-center gap-2">
-            <Gift className="h-8 w-8" />
-            Customer Invites
-          </h1>
-          <p className="text-muted-foreground mt-2">
-            Generate and manage magic link invites for free Executive accounts
-          </p>
+        <div className="flex items-start justify-between">
+          <div>
+            <h1 className="text-3xl font-bold flex items-center gap-2">
+              <Gift className="h-8 w-8" />
+              Customer Invites
+            </h1>
+            <p className="text-muted-foreground mt-2">
+              Generate and manage magic link invites for free Executive accounts
+            </p>
+          </div>
+          <PageHelp
+            title="How Customer Invites Work"
+            description="The customer invite system allows you to grant instant Executive account access to customers via magic links. No payment required, no email confirmation needed."
+            tips={[
+              "Generate a magic link using the form below",
+              "Share the link with your customer via email, chat, or any channel",
+              "Customer clicks the link and completes signup (name, email, password)",
+              "Their account is automatically upgraded to Executive tier",
+              "They're instantly logged in - no email confirmation needed",
+              "You can assign invites to specific email addresses for security",
+              "Set expiration dates (default 30 days) to limit invite validity",
+              "Track invite usage in the table below (pending/used/expired)",
+              "Cancel pending invites at any time if needed",
+              "Generic invites can be used by anyone with the link"
+            ]}
+          />
         </div>
 
         {/* Generate Invite Form */}
