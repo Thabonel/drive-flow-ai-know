@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, Sparkles } from 'lucide-react';
+import { Loader2, Cpu } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface AgentModeToggleProps {
@@ -88,7 +88,7 @@ export function AgentModeToggle({ userId }: AgentModeToggleProps) {
             <Label htmlFor="agent-mode" className="text-base font-semibold">
               Agent Assistant Mode
             </Label>
-            {agentMode && <Sparkles className="h-4 w-4 text-accent" />}
+            {agentMode && <Cpu className="h-4 w-4 text-accent" />}
           </div>
           <p className="text-sm text-muted-foreground">
             Enable autonomous AI assistance for proactive task management
@@ -104,7 +104,7 @@ export function AgentModeToggle({ userId }: AgentModeToggleProps) {
 
       {agentMode && (
         <Alert className="border-accent/20 bg-accent/5">
-          <Sparkles className="h-4 w-4 text-accent" />
+          <Cpu className="h-4 w-4 text-accent" />
           <AlertDescription>
             <strong>Agent mode is active.</strong> Your AI assistant will:
             <ul className="mt-2 ml-4 list-disc space-y-1 text-sm">
