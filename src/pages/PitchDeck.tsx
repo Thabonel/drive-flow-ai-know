@@ -25,6 +25,7 @@ import PausedIndicator from '@/components/PausedIndicator';
 import { usePresentationSettings } from '@/hooks/usePresentationSettings';
 import { useContentAutoScroll } from '@/hooks/useContentAutoScroll';
 import { useSlideAutoAdvance } from '@/hooks/useSlideAutoAdvance';
+import { useFrameAnimation } from '@/hooks/useFrameAnimation';
 import {
   createPresentationSync,
   generateSessionId,
@@ -32,6 +33,13 @@ import {
   type PresentationMessage,
 } from '@/lib/presentationSync';
 import type { PitchDeck as PitchDeckType } from '@/lib/presentationStorage';
+
+interface AnimationFrame {
+  frameNumber: number;
+  description: string;
+  visualPrompt: string;
+  imageData?: string;
+}
 
 interface Slide {
   slideNumber: number;
@@ -41,6 +49,8 @@ interface Slide {
   visualPrompt?: string;
   imageData?: string;
   notes?: string;
+  // Animation frames for expressive mode (Phase 5)
+  frames?: AnimationFrame[];
 }
 
 interface PitchDeck {
@@ -207,19 +217,49 @@ export default function PitchDeck() {
     resetDependency: currentSlideIndex,
   });
 
+  // Get current slide's animation frames for expressive mode
+  const currentSlideFrames = currentSlideIndex > 0 && pitchDeck?.slides?.[currentSlideIndex - 1]?.frames;
+
+  // Frame animation for expressive mode
+  const frameAnimation = useFrameAnimation({
+    frames: currentSlideFrames || undefined,
+    enabled: isPresentationMode && presentationStarted && presentationSettings.animationStyle === 'expressive',
+    frameInterval: 1500, // 1.5 seconds per frame
+    loop: true,
+    resetDependency: currentSlideIndex,
+  });
+
+  // Get the current display image for presentation mode
+  // Uses frame image if available (expressive mode), otherwise falls back to main slide image
+  const getCurrentSlideImage = () => {
+    if (currentSlideIndex === 0) return undefined; // Title slide has no image
+    const slide = pitchDeck?.slides?.[currentSlideIndex - 1];
+    if (!slide) return undefined;
+
+    // If expressive mode with frames, use current frame's image
+    if (presentationSettings.animationStyle === 'expressive' && frameAnimation.currentFrame?.imageData) {
+      return frameAnimation.currentFrame.imageData;
+    }
+
+    // Fallback to main slide image
+    return slide.imageData;
+  };
+
   // Combined pause/resume for hover interactions
   const handlePresentationMouseEnter = () => {
     contentAutoScroll.pause();
     slideAutoAdvance.pause();
+    frameAnimation.pause();
   };
 
   const handlePresentationMouseLeave = () => {
     contentAutoScroll.resume();
     slideAutoAdvance.resume();
+    frameAnimation.resume();
   };
 
   // Check if any auto-feature is paused
-  const isAutoPaused = contentAutoScroll.isPaused || slideAutoAdvance.isPaused;
+  const isAutoPaused = contentAutoScroll.isPaused || slideAutoAdvance.isPaused || frameAnimation.isPaused;
 
   // Keyboard navigation for presentation mode
   useEffect(() => {
@@ -2032,9 +2072,9 @@ Generated with AI Query Hub
                       <h2 className="slide-title font-bold text-white mb-3" style={{ fontSize: 'calc(1.5rem + 1.5vh)' }}>
                         {pitchDeck.slides[currentSlideIndex - 1].title}
                       </h2>
-                      {pitchDeck.slides[currentSlideIndex - 1].imageData && (
+                      {getCurrentSlideImage() && (
                         <img
-                          src={`data:image/png;base64,${pitchDeck.slides[currentSlideIndex - 1].imageData}`}
+                          src={`data:image/png;base64,${getCurrentSlideImage()}`}
                           alt={pitchDeck.slides[currentSlideIndex - 1].visualPrompt || ''}
                           className="slide-image w-full max-h-[25vh] object-contain rounded-lg mb-3"
                         />
@@ -2077,9 +2117,9 @@ Generated with AI Query Hub
                     <h2 className="slide-title font-bold text-white mb-6" style={{ fontSize: 'calc(2rem + 2vh)' }}>
                       {pitchDeck.slides[currentSlideIndex - 1].title}
                     </h2>
-                    {pitchDeck.slides[currentSlideIndex - 1].imageData && (
+                    {getCurrentSlideImage() && (
                       <img
-                        src={`data:image/png;base64,${pitchDeck.slides[currentSlideIndex - 1].imageData}`}
+                        src={`data:image/png;base64,${getCurrentSlideImage()}`}
                         alt={pitchDeck.slides[currentSlideIndex - 1].visualPrompt || ''}
                         className="slide-image w-full max-h-[50vh] object-contain rounded-lg mb-4"
                       />

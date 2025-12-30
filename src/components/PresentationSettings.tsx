@@ -34,6 +34,9 @@ export interface PresentationSettingsData {
 
   // Animation style
   animationStyle: 'none' | 'minimal' | 'standard' | 'expressive';
+
+  // Frame count for expressive mode (2-5 frames per slide)
+  frameCount: number;
 }
 
 export const DEFAULT_SETTINGS: PresentationSettingsData = {
@@ -42,6 +45,7 @@ export const DEFAULT_SETTINGS: PresentationSettingsData = {
   slideAutoAdvanceEnabled: false,
   slideAutoAdvanceSpeed: 'medium',
   animationStyle: 'none',
+  frameCount: 3,
 };
 
 interface PresentationSettingsProps {
@@ -248,6 +252,33 @@ export function PresentationSettings({
                 )
               )}
             </RadioGroup>
+
+            {/* Frame Count Slider - only shown for expressive mode */}
+            {settings.animationStyle === 'expressive' && (
+              <div className="pl-4 pt-4 space-y-2 border-t border-border/50 mt-4">
+                <div className="flex items-center justify-between text-sm">
+                  <span>Animation Frames</span>
+                  <span className="text-muted-foreground font-mono">
+                    {settings.frameCount} frames per slide
+                  </span>
+                </div>
+                <Slider
+                  value={[settings.frameCount]}
+                  onValueChange={([value]) => updateSetting('frameCount', value)}
+                  min={2}
+                  max={5}
+                  step={1}
+                  className="w-full"
+                />
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>2 (faster)</span>
+                  <span>5 (detailed)</span>
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  More frames = smoother animation but longer generation time
+                </p>
+              </div>
+            )}
           </div>
         </div>
 
