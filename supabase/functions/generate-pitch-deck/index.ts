@@ -669,18 +669,45 @@ Make it compelling, data-driven where appropriate (especially if source document
         return { error: 'Max retries exceeded' };
       };
 
+      // Track media generation statistics for cost reporting
+      let videosGenerated = 0;
+      let videosPreserved = 0;
+      let imagesGenerated = 0;
+      let imagesPreserved = 0;
+
       // Generate all images in parallel to avoid timeout
       const imagePromises = pitchDeckStructure.slides.map(async (slide) => {
-        // For revisions, preserve existing images unless the slide was modified
+        // For revisions, preserve existing images/videos unless the slide was modified
         const shouldGenerateImage = slide.visualType && slide.visualType !== 'none' && slide.visualPrompt;
         const isRevisedSlide = isRevision && slideNumber ? slide.slideNumber === slideNumber : true;
 
-        // If revision and not the target slide, try to preserve existing image
+        // If revision and not the target slide, try to preserve existing media
         if (isRevision && !isRevisedSlide && currentDeck) {
           const existingSlide = currentDeck.slides.find(s => s.slideNumber === slide.slideNumber);
+
+          // Preserve video if it exists (expressive mode)
+          if (existingSlide?.videoUrl) {
+            slide.videoUrl = existingSlide.videoUrl;
+            slide.videoDuration = existingSlide.videoDuration;
+            slide.videoFileSizeMb = existingSlide.videoFileSizeMb;
+            videosPreserved++;
+            console.log(`✓ Preserved existing video for slide ${slide.slideNumber}`);
+            return;
+          }
+
+          // Preserve image if it exists (static modes)
           if (existingSlide?.imageData) {
             slide.imageData = existingSlide.imageData;
-            console.log(`Preserved existing image for slide ${slide.slideNumber}`);
+            imagesPreserved++;
+            console.log(`✓ Preserved existing image for slide ${slide.slideNumber}`);
+            return;
+          }
+
+          // Preserve animation frames if they exist (old expressive mode)
+          if (existingSlide?.frames && existingSlide.frames.length > 0) {
+            slide.frames = existingSlide.frames;
+            imagesPreserved++; // Count frame preservation as image preservation
+            console.log(`✓ Preserved existing animation frames for slide ${slide.slideNumber}`);
             return;
           }
         }
@@ -693,12 +720,14 @@ Make it compelling, data-driven where appropriate (especially if source document
               slide.videoUrl = videoResult.url;
               slide.videoDuration = videoResult.duration;
               slide.videoFileSizeMb = videoResult.sizeMb;
+              videosGenerated++;
               console.log(`✓ Video generated for slide ${slide.slideNumber}: ${videoResult.url}`);
             } else {
               console.warn(`⚠ Failed to generate video for slide ${slide.slideNumber} (${videoResult.error || 'unknown error'}), falling back to static image`);
               // Fallback to static image if video generation fails
               slide.imageData = await generateImage(slide.visualPrompt, slide.visualType || 'illustration');
               if (slide.imageData) {
+                imagesGenerated++;
                 console.log(`✓ Fallback image generated for slide ${slide.slideNumber}`);
               } else {
                 console.error(`✗ Both video and image generation failed for slide ${slide.slideNumber}`);
@@ -708,9 +737,10 @@ Make it compelling, data-driven where appropriate (especially if source document
             // Generate main slide image for non-expressive modes
             slide.imageData = await generateImage(slide.visualPrompt, slide.visualType || 'illustration');
             if (slide.imageData) {
-              console.log(`Image generated for slide ${slide.slideNumber}`);
+              imagesGenerated++;
+              console.log(`✓ Image generated for slide ${slide.slideNumber}`);
             } else {
-              console.warn(`Failed to generate image for slide ${slide.slideNumber}`);
+              console.warn(`⚠ Failed to generate image for slide ${slide.slideNumber}`);
             }
           }
 
@@ -736,7 +766,30 @@ Make it compelling, data-driven where appropriate (especially if source document
 
       // Wait for all images to complete
       await Promise.all(imagePromises);
-      console.log('All images generated');
+
+      // Log media generation summary with cost estimates
+      const totalSlides = pitchDeckStructure.slides.length;
+      const videoCostPerSlide = 0.20; // $0.20 per 4-second video
+      const imageCostPerSlide = 0.01; // $0.01 per static image
+
+      const videosCost = videosGenerated * videoCostPerSlide;
+      const imagesCost = imagesGenerated * imageCostPerSlide;
+      const totalCost = videosCost + imagesCost;
+
+      const videosSaved = videosPreserved * videoCostPerSlide;
+      const imagesSaved = imagesPreserved * imageCostPerSlide;
+      const totalSaved = videosSaved + imagesSaved;
+
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      console.log('Media Generation Summary:');
+      console.log(`  Total slides: ${totalSlides}`);
+      console.log(`  Videos: ${videosGenerated} generated, ${videosPreserved} preserved`);
+      console.log(`  Images: ${imagesGenerated} generated, ${imagesPreserved} preserved`);
+      if (isRevision) {
+        console.log(`  Progressive generation savings: $${totalSaved.toFixed(2)} (${videosPreserved + imagesPreserved}/${totalSlides} slides reused)`);
+      }
+      console.log(`  Estimated cost: $${totalCost.toFixed(2)}`);
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     }
 
     console.log('Pitch deck generated successfully');
