@@ -7,7 +7,7 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
-  signUp: (email: string, password: string, fullName: string) => Promise<{ error: any }>;
+  signUp: (email: string, password: string, fullName: string, inviteToken?: string) => Promise<{ error: any }>;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error: any }>;
@@ -40,14 +40,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
-  const signUp = async (email: string, password: string, fullName: string) => {
+  const signUp = async (email: string, password: string, fullName: string, inviteToken?: string) => {
     try {
       // Use the new registration Edge Function with backend validation
       const { data: registerData, error: registerError } = await supabase.functions.invoke('register-user', {
         body: {
           email,
           password,
-          fullName
+          fullName,
+          inviteToken
         }
       });
 
@@ -95,10 +96,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return { error: { message: registerData.error } };
       }
 
-      // Success
+      // If session was returned (invite token used), set it for auto-login
+      if (registerData?.session) {
+        const { error: sessionError } = await supabase.auth.setSession({
+          access_token: registerData.session.access_token,
+          refresh_token: registerData.session.refresh_token
+        });
+
+        if (!sessionError) {
+          toast({
+            title: "Welcome to AI Query Hub!",
+            description: registerData.message || "Your Executive account is ready.",
+            duration: 5000,
+          });
+          return { error: null };
+        }
+      }
+
+      // Success (regular signup with email confirmation)
       toast({
         title: "Account Created",
-        description: "We've sent a confirmation email to your inbox. Please check your email (and spam folder) to activate your account.",
+        description: registerData?.message || "We've sent a confirmation email to your inbox. Please check your email (and spam folder) to activate your account.",
         duration: 7000,
       });
 

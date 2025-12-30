@@ -835,6 +835,33 @@ export default function Admin() {
               </CardContent>
             </Card>
 
+            {/* Customer Invites */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Gift className="h-5 w-5" />
+                  Customer Invites
+                </CardTitle>
+                <CardDescription>
+                  Generate magic links for free Executive accounts
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  Create and manage invitation links that grant instant Executive account access to customers.
+                </p>
+
+                <Button
+                  onClick={() => navigate('/admin/invites')}
+                  className="w-full"
+                  variant="outline"
+                >
+                  <Gift className="h-4 w-4 mr-2" />
+                  Manage Invites
+                </Button>
+              </CardContent>
+            </Card>
+
             {/* Support Tickets */}
             <Card>
               <CardHeader>

@@ -1,17 +1,19 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Brain, Eye, EyeOff, AlertCircle, Mail, CheckCircle } from 'lucide-react';
+import { Brain, Eye, EyeOff, AlertCircle, Mail, CheckCircle, Gift } from 'lucide-react';
 import { validatePassword, validateEmail, validateFullName, getPasswordStrength } from '@/lib/validation';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { PasswordRequirements } from '@/components/PasswordRequirements';
 
 const Auth = () => {
   const { signIn, signUp, resetPassword } = useAuth();
+  const [searchParams] = useSearchParams();
   const [isLoading, setIsLoading] = useState(false);
   const [resetEmailSent, setResetEmailSent] = useState(false);
   const [signUpSuccess, setSignUpSuccess] = useState(false);
@@ -27,6 +29,9 @@ const Auth = () => {
     fullName?: string;
     confirmPassword?: string;
   }>({});
+
+  // Get invite token from URL
+  const inviteToken = searchParams.get('invite');
 
   const handleSignIn = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -80,7 +85,7 @@ const Auth = () => {
     }
 
     setIsLoading(true);
-    const result = await signUp(email, password, fullName);
+    const result = await signUp(email, password, fullName, inviteToken || undefined);
     setIsLoading(false);
 
     // Show success screen if signup succeeded
@@ -176,10 +181,22 @@ const Auth = () => {
                 <CardDescription>
                   {signUpSuccess
                     ? 'We\'ve sent you a confirmation email'
-                    : 'Sign up for your AI Query Hub account'
+                    : inviteToken
+                      ? 'You\'re invited to join AI Query Hub with a free Executive account!'
+                      : 'Sign up for your AI Query Hub account'
                   }
                 </CardDescription>
               </CardHeader>
+              {inviteToken && !signUpSuccess && (
+                <div className="px-6 -mt-2 mb-4">
+                  <Alert className="bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-800">
+                    <Gift className="h-4 w-4 text-green-600 dark:text-green-400" />
+                    <AlertDescription className="text-green-900 dark:text-green-100">
+                      <strong>Special Invite:</strong> Complete signup to activate your free Executive plan with unlimited features!
+                    </AlertDescription>
+                  </Alert>
+                </div>
+              )}
               <CardContent>
                 {signUpSuccess ? (
                   <div className="space-y-4 py-4">

@@ -27,6 +27,7 @@ import NotFound from "./pages/NotFound";
 import Footer from "./layout/Footer";
 import Landing from "./pages/Landing";
 import Admin from "./pages/Admin";
+import CustomerInvites from "./pages/Admin/CustomerInvites";
 import DocumentList from "./components/DocumentList";
 import Conversations from "./pages/Conversations";
 import MicrosoftCallback from "./pages/MicrosoftCallback";
@@ -196,6 +197,11 @@ const App = () => (
             <Route path="/admin" element={
               <ProtectedRoute>
                 <Admin />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/invites" element={
+              <ProtectedRoute>
+                <CustomerInvites />
               </ProtectedRoute>
             } />
             <Route path="/admin/support-tickets" element={

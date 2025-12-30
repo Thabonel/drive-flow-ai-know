@@ -167,7 +167,7 @@ serve(async (req) => {
   }
 
   try {
-    const { email, password, fullName } = await req.json();
+    const { email, password, fullName, inviteToken } = await req.json();
 
     // Validate all inputs on the backend
     const emailValidation = validateEmail(email);
@@ -212,11 +212,84 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
+    // Validate invite token if provided
+    let validInvite = null;
+    let skipEmailConfirmation = false;
+
+    if (inviteToken) {
+      // Check if invite exists and is valid
+      const { data: invite, error: inviteError } = await supabaseAdmin
+        .from('customer_invites')
+        .select('*')
+        .eq('invite_token', inviteToken)
+        .single();
+
+      if (inviteError || !invite) {
+        return new Response(
+          JSON.stringify({
+            error: 'Invalid or expired invite token'
+          }),
+          {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          }
+        );
+      }
+
+      // Check invite status
+      if (invite.status !== 'pending') {
+        return new Response(
+          JSON.stringify({
+            error: `Invite has already been ${invite.status}`
+          }),
+          {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          }
+        );
+      }
+
+      // Check expiration
+      if (new Date(invite.expires_at) < new Date()) {
+        // Auto-expire the invite
+        await supabaseAdmin
+          .from('customer_invites')
+          .update({ status: 'expired' })
+          .eq('invite_token', inviteToken);
+
+        return new Response(
+          JSON.stringify({
+            error: 'Invite has expired'
+          }),
+          {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          }
+        );
+      }
+
+      // Check if email matches assigned_email (if specified)
+      if (invite.assigned_email && invite.assigned_email.toLowerCase() !== email.toLowerCase()) {
+        return new Response(
+          JSON.stringify({
+            error: `This invite is assigned to ${invite.assigned_email}. Please use that email address.`
+          }),
+          {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          }
+        );
+      }
+
+      validInvite = invite;
+      skipEmailConfirmation = true;
+    }
+
     // Create the user
     const { data, error } = await supabaseAdmin.auth.admin.createUser({
       email,
       password,
-      email_confirm: false, // Will send confirmation email
+      email_confirm: skipEmailConfirmation, // Skip email confirmation for valid invites
       user_metadata: {
         full_name: fullName
       }
@@ -235,8 +308,57 @@ serve(async (req) => {
       );
     }
 
-    // Send confirmation email (optional - Supabase can handle this automatically)
-    // You can customize this part based on your email sending logic
+    const userId = data.user?.id;
+
+    // If valid invite, upgrade to Executive plan and mark invite as used
+    if (validInvite && userId) {
+      try {
+        // Update subscription to Executive tier (trigger creates 'free' by default)
+        const { error: subError } = await supabaseAdmin
+          .from('user_subscriptions')
+          .update({
+            plan_tier: 'executive',
+            status: 'active'
+          })
+          .eq('user_id', userId);
+
+        if (subError) {
+          console.error('Error upgrading subscription:', subError);
+        }
+
+        // Mark invite as used
+        const { error: inviteUpdateError } = await supabaseAdmin
+          .from('customer_invites')
+          .update({
+            status: 'used',
+            used_by: userId,
+            used_at: new Date().toISOString()
+          })
+          .eq('invite_token', inviteToken);
+
+        if (inviteUpdateError) {
+          console.error('Error marking invite as used:', inviteUpdateError);
+        }
+
+        console.log(`Customer invite ${validInvite.id} used by ${email} - upgraded to Executive`);
+      } catch (err) {
+        console.error('Error processing invite:', err);
+        // Don't fail the registration if invite processing fails
+      }
+    }
+
+    // If using invite, create a session for auto-login
+    let session = null;
+    if (skipEmailConfirmation && userId) {
+      // Generate session for auto-login
+      const { data: sessionData, error: sessionError } = await supabaseAdmin.auth.admin.createSession({
+        user_id: userId
+      });
+
+      if (!sessionError && sessionData) {
+        session = sessionData.session;
+      }
+    }
 
     return new Response(
       JSON.stringify({
@@ -245,7 +367,11 @@ serve(async (req) => {
           id: data.user?.id,
           email: data.user?.email,
         },
-        message: 'Registration successful. Please check your email to confirm your account.'
+        session: session, // Include session for auto-login if invite was used
+        skipEmailConfirmation: skipEmailConfirmation,
+        message: skipEmailConfirmation
+          ? 'Welcome! Your Executive account is ready.'
+          : 'Registration successful. Please check your email to confirm your account.'
       }),
       {
         status: 200,
