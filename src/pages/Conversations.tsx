@@ -83,7 +83,7 @@ export default function Conversations() {
 
   const handleDeleteConversation = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    
+
     if (!confirm('Are you sure you want to delete this conversation?')) return;
 
     const { error } = await supabase
@@ -97,6 +97,30 @@ export default function Conversations() {
     }
 
     toast.success('Conversation deleted');
+    if (selectedConversation === id) {
+      setSelectedConversation(null);
+      setIsCreating(false);
+    }
+    loadConversations();
+  };
+
+  const handleArchiveConversation = async (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+
+    const newStatus = activeTab === 'active' ? 'archived' : 'active';
+    const action = newStatus === 'archived' ? 'archive' : 'unarchive';
+
+    const { error } = await supabase
+      .from('conversations')
+      .update({ status: newStatus })
+      .eq('id', id);
+
+    if (error) {
+      toast.error(`Failed to ${action} conversation`);
+      return;
+    }
+
+    toast.success(`Conversation ${action}d`);
     if (selectedConversation === id) {
       setSelectedConversation(null);
       setIsCreating(false);
@@ -224,14 +248,26 @@ export default function Conversations() {
                           <CardContent className="p-4">
                             <div className="flex justify-between items-start mb-2">
                               <h3 className="font-semibold line-clamp-1">{conv.title || 'Untitled'}</h3>
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={(e) => handleDeleteConversation(conv.id, e)}
-                                className="h-6 w-6 p-0"
-                              >
-                                <Trash2 className="h-3 w-3" />
-                              </Button>
+                              <div className="flex gap-1">
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={(e) => handleArchiveConversation(conv.id, e)}
+                                  className="h-6 w-6 p-0"
+                                  title={activeTab === 'active' ? 'Archive conversation' : 'Unarchive conversation'}
+                                >
+                                  <Archive className="h-3 w-3" />
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={(e) => handleDeleteConversation(conv.id, e)}
+                                  className="h-6 w-6 p-0"
+                                  title="Delete conversation"
+                                >
+                                  <Trash2 className="h-3 w-3" />
+                                </Button>
+                              </div>
                             </div>
                             <p className="text-xs text-muted-foreground mb-2">
                               {conv.message_count} messages • {format(new Date(conv.updated_at), 'MMM d, yyyy')}
