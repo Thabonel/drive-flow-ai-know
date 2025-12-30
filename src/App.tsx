@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -11,6 +12,8 @@ import { ThemeProvider } from "@/components/ThemeProvider";
 import { AppSidebar } from "@/components/AppSidebar";
 import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
 import { PresentationModeProvider } from "@/contexts/PresentationModeContext";
+import { AgentRightPane } from "@/components/agent/AgentRightPane";
+import { supabase } from "@/integrations/supabase/client";
 import Header from "./layout/Header";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
@@ -59,7 +62,37 @@ const queryClient = new QueryClient();
 function AppLayout({ children }: { children: React.ReactNode }) {
   const offline = offlineEnabled();
   const location = useLocation();
+  const { user } = useAuth();
+  const [agentMode, setAgentMode] = useState(false);
+  const [loadingAgentMode, setLoadingAgentMode] = useState(true);
   useKeyboardShortcuts(globalShortcuts);
+
+  useEffect(() => {
+    const fetchAgentMode = async () => {
+      if (!user) {
+        setLoadingAgentMode(false);
+        return;
+      }
+
+      try {
+        const { data, error } = await supabase
+          .from('user_settings')
+          .select('agent_mode')
+          .eq('user_id', user.id)
+          .single();
+
+        if (error) throw error;
+        setAgentMode(data?.agent_mode || false);
+      } catch (error) {
+        console.error('Error fetching agent mode:', error);
+        setAgentMode(false);
+      } finally {
+        setLoadingAgentMode(false);
+      }
+    };
+
+    fetchAgentMode();
+  }, [user]);
 
   return (
     <SidebarProvider>
@@ -77,6 +110,9 @@ function AppLayout({ children }: { children: React.ReactNode }) {
               {children}
             </div>
           </main>
+          {!loadingAgentMode && agentMode && user && (
+            <AgentRightPane userId={user.id} />
+          )}
         </div>
       </div>
     </SidebarProvider>
