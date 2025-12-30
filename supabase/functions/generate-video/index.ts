@@ -23,6 +23,44 @@ interface VideoGenerationResponse {
   error?: string;
 }
 
+// Design system guidelines for human-crafted aesthetic
+const DESIGN_SYSTEM_PROMPT = `
+DESIGN GUIDELINES - STRICT REQUIREMENTS:
+
+COLORS - AVOID:
+- Purple, violet, indigo, lavender tones
+- Gold, metallic gold, champagne accents
+- Purple-to-blue or pink-to-purple gradients
+- Neon or glowing effects
+- Typical tech startup palette (indigo-500, violet gradients on dark)
+
+COLORS - USE:
+- Warm earth tones: terracotta, warm browns, sage greens, olive, rust, cream
+- Classic professional: navy blue, charcoal gray, forest green, burgundy
+- Natural palettes: stone, sand, moss, sky blue, coral
+- Monochromatic with one thoughtful accent
+- Muted, desaturated tones over bright saturated
+
+ANIMATION STYLE - AVOID:
+- Generic corporate motion graphics templates
+- Overly smooth/perfect animations (robotic feel)
+- Cookie-cutter transitions
+- Flashy effects for the sake of flash
+
+ANIMATION STYLE - USE:
+- Organic, purposeful motion that enhances understanding
+- Human-paced reveals (not too fast, not too slow)
+- Subtle imperfections that feel intentional
+- Motion that guides the eye naturally
+
+PRINCIPLES:
+- Design as if created by a skilled human designer, not AI
+- Prioritize warmth, authenticity, personality over "sleek modern"
+- Choose less obvious, less trendy options
+- Every choice should feel intentional, not default
+- Avoid template library aesthetics
+`;
+
 serve(async (req) => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
@@ -69,13 +107,22 @@ serve(async (req) => {
       throw new Error('RUNWAY_API_KEY not configured');
     }
 
+    // Enhance prompt with design system guidelines
+    const enhancedPrompt = DESIGN_SYSTEM_PROMPT + '\n\n' + prompt;
+
+    // Default negative prompt to enforce design system
+    const defaultNegativePrompt = 'purple colors, violet tones, gold accents, neon effects, glossy surfaces, generic corporate templates, blurry, low quality, distorted, watermark, text overlay';
+    const finalNegativePrompt = negativePrompt
+      ? `${negativePrompt}, ${defaultNegativePrompt}`
+      : defaultNegativePrompt;
+
     // Prepare video generation request
     const runwayRequest = {
-      prompt: prompt,
+      prompt: enhancedPrompt,
       duration: duration,
       aspect_ratio: aspectRatio,
       resolution: resolution === '4k' ? '2160p' : resolution,
-      negative_prompt: negativePrompt || 'blurry, low quality, distorted, watermark, text overlay',
+      negative_prompt: finalNegativePrompt,
     };
 
     console.log('Calling Runway Gen-3 API:', {
