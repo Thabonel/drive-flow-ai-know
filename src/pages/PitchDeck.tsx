@@ -51,6 +51,10 @@ interface Slide {
   notes?: string;
   // Animation frames for expressive mode (Phase 5)
   frames?: AnimationFrame[];
+  // Video support for expressive mode (Phase 6)
+  videoUrl?: string;
+  videoDuration?: number;
+  videoFileSizeMb?: number;
 }
 
 interface PitchDeck {
@@ -453,6 +457,7 @@ export default function PitchDeck() {
               imageUrl: slide.imageData
                 ? `data:image/png;base64,${slide.imageData}`
                 : undefined,
+              videoUrl: slide.videoUrl,
               speakerNotes: slide.notes,
             })),
           };
@@ -1986,13 +1991,22 @@ Generated with AI Query Hub
                       </div>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                      {slide.imageData && (
+                      {slide.videoUrl ? (
+                        <video
+                          src={slide.videoUrl}
+                          autoPlay
+                          loop
+                          muted
+                          className="w-full rounded-lg"
+                          playsInline
+                        />
+                      ) : slide.imageData ? (
                         <img
                           src={`data:image/png;base64,${slide.imageData}`}
                           alt={slide.visualPrompt || ''}
                           className="w-full rounded-lg"
                         />
-                      )}
+                      ) : null}
                       <div className="whitespace-pre-wrap text-sm">{slide.content}</div>
                       {slide.notes && (
                         <div className="bg-muted p-3 rounded text-sm italic text-muted-foreground">
@@ -2024,6 +2038,7 @@ Generated with AI Query Hub
               imageUrl: slide.imageData
                 ? `data:image/png;base64,${slide.imageData}`
                 : undefined,
+              videoUrl: slide.videoUrl,
               speakerNotes: slide.notes,
             })),
           }}
@@ -2067,13 +2082,22 @@ Generated with AI Query Hub
                   {pitchDeck.slides[currentSlideIndex - 1].title}
                 </h2>
 
-                {pitchDeck.slides[currentSlideIndex - 1].imageData && (
+                {pitchDeck.slides[currentSlideIndex - 1].videoUrl ? (
+                  <video
+                    src={pitchDeck.slides[currentSlideIndex - 1].videoUrl}
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                    className="w-full max-h-96 object-contain rounded-lg mb-6"
+                  />
+                ) : pitchDeck.slides[currentSlideIndex - 1].imageData ? (
                   <img
                     src={`data:image/png;base64,${pitchDeck.slides[currentSlideIndex - 1].imageData}`}
                     alt={pitchDeck.slides[currentSlideIndex - 1].visualPrompt || ''}
                     className="w-full max-h-96 object-contain rounded-lg mb-6"
                   />
-                )}
+                ) : null}
 
                 <div className="text-2xl text-white whitespace-pre-wrap leading-relaxed">
                   {pitchDeck.slides[currentSlideIndex - 1].content}
@@ -2164,13 +2188,22 @@ Generated with AI Query Hub
                       <h2 className="slide-title font-bold text-white mb-3" style={{ fontSize: 'calc(1.5rem + 1.5vh)' }}>
                         {pitchDeck.slides[currentSlideIndex - 1].title}
                       </h2>
-                      {getCurrentSlideImage() && (
+                      {pitchDeck.slides[currentSlideIndex - 1].videoUrl ? (
+                        <video
+                          src={pitchDeck.slides[currentSlideIndex - 1].videoUrl}
+                          autoPlay
+                          loop
+                          muted
+                          playsInline
+                          className="slide-image w-full max-h-[25vh] object-contain rounded-lg mb-3"
+                        />
+                      ) : getCurrentSlideImage() ? (
                         <img
                           src={`data:image/png;base64,${getCurrentSlideImage()}`}
                           alt={pitchDeck.slides[currentSlideIndex - 1].visualPrompt || ''}
                           className="slide-image w-full max-h-[25vh] object-contain rounded-lg mb-3"
                         />
-                      )}
+                      ) : null}
                       <div className="slide-text text-white whitespace-pre-wrap leading-relaxed overflow-y-auto max-h-[20vh] [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]" style={{ fontSize: 'calc(0.875rem + 0.5vh)' }}>
                         {pitchDeck.slides[currentSlideIndex - 1].content}
                       </div>
@@ -2209,13 +2242,22 @@ Generated with AI Query Hub
                     <h2 className="slide-title font-bold text-white mb-6" style={{ fontSize: 'calc(2rem + 2vh)' }}>
                       {pitchDeck.slides[currentSlideIndex - 1].title}
                     </h2>
-                    {getCurrentSlideImage() && (
+                    {pitchDeck.slides[currentSlideIndex - 1].videoUrl ? (
+                      <video
+                        src={pitchDeck.slides[currentSlideIndex - 1].videoUrl}
+                        autoPlay
+                        loop
+                        muted
+                        playsInline
+                        className="slide-image w-full max-h-[50vh] object-contain rounded-lg mb-4"
+                      />
+                    ) : getCurrentSlideImage() ? (
                       <img
                         src={`data:image/png;base64,${getCurrentSlideImage()}`}
                         alt={pitchDeck.slides[currentSlideIndex - 1].visualPrompt || ''}
                         className="slide-image w-full max-h-[50vh] object-contain rounded-lg mb-4"
                       />
-                    )}
+                    ) : null}
                     <div className="slide-text text-white whitespace-pre-wrap leading-relaxed overflow-y-auto max-h-[30vh] [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]" style={{ fontSize: 'calc(1rem + 0.75vh)' }}>
                       {pitchDeck.slides[currentSlideIndex - 1].content}
                     </div>

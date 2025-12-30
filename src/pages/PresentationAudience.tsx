@@ -235,8 +235,19 @@ export default function PresentationAudience() {
     <div className="fixed inset-0 bg-black overflow-hidden cursor-none">
       {currentSlide ? (
         <div className="w-full h-full flex flex-col items-center justify-center p-8">
-          {/* Slide Image */}
-          {currentSlide.imageUrl && (
+          {/* Slide Video or Image */}
+          {currentSlide.videoUrl ? (
+            <div className="w-full h-full flex items-center justify-center">
+              <video
+                src={currentSlide.videoUrl}
+                autoPlay
+                loop
+                muted
+                playsInline
+                className="max-w-full max-h-full object-contain"
+              />
+            </div>
+          ) : currentSlide.imageUrl ? (
             <div className="w-full h-full flex items-center justify-center">
               <img
                 src={currentSlide.imageUrl}
@@ -244,10 +255,8 @@ export default function PresentationAudience() {
                 className="max-w-full max-h-full object-contain"
               />
             </div>
-          )}
-
-          {/* Fallback: Text content if no image */}
-          {!currentSlide.imageUrl && (
+          ) : (
+            /* Fallback: Text content if no video or image */
             <div className="text-center text-white max-w-4xl">
               <h1 className="text-6xl font-bold mb-8">{currentSlide.title}</h1>
               <div className="text-2xl text-gray-300 whitespace-pre-wrap">

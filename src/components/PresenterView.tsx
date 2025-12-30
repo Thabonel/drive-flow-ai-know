@@ -174,7 +174,16 @@ export default function PresenterView({
             Current Slide
           </div>
           <div className="flex-1 flex items-center justify-center p-4">
-            {currentSlide?.imageUrl ? (
+            {currentSlide?.videoUrl ? (
+              <video
+                src={currentSlide.videoUrl}
+                autoPlay
+                loop
+                muted
+                playsInline
+                className="max-w-full max-h-full object-contain"
+              />
+            ) : currentSlide?.imageUrl ? (
               <img
                 src={currentSlide.imageUrl}
                 alt={currentSlide.title}
@@ -197,7 +206,16 @@ export default function PresenterView({
           <div className="flex-1 flex items-center justify-center p-4">
             {nextSlide ? (
               <>
-                {nextSlide.imageUrl ? (
+                {nextSlide.videoUrl ? (
+                  <video
+                    src={nextSlide.videoUrl}
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                    className="max-w-full max-h-full object-contain opacity-70"
+                  />
+                ) : nextSlide.imageUrl ? (
                   <img
                     src={nextSlide.imageUrl}
                     alt={nextSlide.title}
