@@ -161,6 +161,12 @@ As a **user starting my day**, I want the **Briefing Agent to automatically prep
 
 ### Core Functionality (Must-Have)
 
+✅ **SC-0: Sub-Agent Coordination (Resource Management)**
+- Resource locks prevent conflicting operations (max 1 calendar write at a time)
+- Priority queue implemented: P0 (user-initiated) > P1 (time-sensitive) > P2 (background)
+- Timeout/retry logic per agent type: Calendar (30s, 2 retries), Briefing (60s, 1 retry), Analysis (90s, 0 retries)
+- Task queue handles waiting gracefully (no crashes if resource locked)
+
 ✅ **SC-1: Mode Toggle Works**
 - User can switch between "Human Assistant" and "Agent Assistant" via Settings page
 - Mode preference persists in database (`user_settings.agent_mode`)
@@ -232,9 +238,16 @@ As a **user starting my day**, I want the **Briefing Agent to automatically prep
 - Agent tracks cumulative API token usage per session
 - Stops creating new tasks if budget exceeded (configurable, default 100k tokens/day)
 
+✅ **SC-15: Cost Efficiency (Always-On Economics)**
+- Idle mode activates after 5 minutes of inactivity (no API calls during idle)
+- Wake triggers: User activity OR scheduled task (e.g., 8am briefing)
+- Use Claude Haiku (CHEAP model) for "should I act?" decision checks
+- Estimated cost < $10/user/month in production
+- Cost breakdown logged per session (tokens used by agent type)
+
 ### Definition of Done
 
-✅ All 14 success criteria verified via tests or smoke test
+✅ All 15 success criteria verified via tests or smoke test
 ✅ No breaking changes to existing Human Assistant mode
 ✅ Documentation updated (user guide + architecture doc)
 ✅ Migration scripts run successfully on dev/staging
@@ -371,6 +384,34 @@ As a **user starting my day**, I want the **Briefing Agent to automatically prep
 
 ## 6) Implementation Plan (Small Slices)
 
+### Sub-Agent Coordination & Resource Management
+
+Before implementation, understand the coordination rules:
+
+**Resource Locks:**
+- **Calendar:** Max 1 write operation at a time (read operations unlimited)
+- **Files (via MCP):** Read-only in v1 (no write locks needed)
+- **Token Budget:** Shared pool with per-agent quotas (Calendar: 30%, Briefing: 40%, Analysis: 30%)
+
+**Priority Queue (3 Levels):**
+- **P0 (User-Initiated):** User explicitly triggers task (e.g., "schedule this now")
+- **P1 (Time-Sensitive):** Scheduled tasks with deadlines (e.g., daily briefing at 8am)
+- **P2 (Background):** Analysis, proactive insights (runs when idle)
+
+**Timeout/Retry per Agent Type:**
+| Agent Type | Timeout | Retries | Retry Delay | Failure Behavior |
+|------------|---------|---------|-------------|------------------|
+| Calendar   | 30s     | 2       | 1s, 2s      | Notify user, log error |
+| Briefing   | 60s     | 1       | 2s          | Skip briefing, retry tomorrow |
+| Analysis   | 90s     | 0       | N/A         | Defer to next idle period |
+
+**Conflict Resolution Example:**
+1. Calendar Agent starts: "Create meeting with Sarah" (acquires calendar lock)
+2. Analysis Agent tries: "Read calendar to analyze utilization" (waits - read is fine)
+3. User triggers: "Schedule urgent meeting" (P0 priority - Calendar Agent pauses current task)
+
+---
+
 ### Slice 1: Database Schema + User Settings Toggle
 
 **What Changes:**
@@ -438,6 +479,85 @@ npm test tests/hooks/useUserSettings.test.ts
 - No TypeScript errors
 
 **Commit:** `feat: Add agent mode toggle to Settings (Slice 2)`
+
+---
+
+### Slice 2.5: Approval Gates & Suggest Mode (User Trust/Control)
+
+**What Changes:**
+- Add `agent_approval_mode` enum to `user_settings`: 'suggest' | 'auto' (default: 'suggest')
+- Create `src/components/ai/ApprovalModal.tsx` - Modal for high-risk action approval
+- Define high-risk actions: calendar writes, email sends (future), file deletes (future)
+- Update agent orchestrator to check approval mode before executing
+
+**High-Risk Action Flow:**
+```typescript
+// In agent orchestrator
+if (isHighRiskAction(task) && user.approval_mode === 'suggest') {
+  // Show approval modal
+  const approved = await showApprovalModal({
+    agent: task.agent_type,
+    action: task.description,
+    details: task.task_data
+  });
+
+  if (!approved) {
+    // Log rejection, agent learns from it
+    await logRejection(task.id, 'user_rejected');
+    return;
+  }
+}
+
+// Execute task (auto mode or approved)
+await executeTask(task);
+```
+
+**Approval Modal UI:**
+```
+┌─────────────────────────────────────┐
+│ 🤖 Agent Approval Required          │
+├─────────────────────────────────────┤
+│ Calendar Agent wants to:            │
+│                                     │
+│ "Schedule meeting with Sarah        │
+│  tomorrow at 10am (30 minutes)"     │
+│                                     │
+│ Details:                            │
+│ • Attendees: sarah@example.com      │
+│ • Conflict: None                    │
+│ • Reason: User request              │
+│                                     │
+│ ☐ Always approve calendar events    │
+│                                     │
+│ [Reject]           [Approve] ✓      │
+└─────────────────────────────────────┘
+```
+
+**Tests to Add FIRST:**
+- Write unit test: `tests/approval-gates.test.ts`
+- Test: High-risk action in 'suggest' mode → modal appears
+- Test: User approves → task executes
+- Test: User rejects → task cancelled, logged
+- Test: 'auto' mode → no modal, immediate execution
+
+**Commands:**
+```bash
+# 1. Add approval_mode column to user_settings
+# 2. Create ApprovalModal component
+# 3. Update orchestrator to check approval
+npm run dev
+# 4. Test: Enable agent mode, trigger calendar task
+# 5. Verify modal appears before execution
+npm test tests/approval-gates.test.ts
+```
+
+**Expected Output:**
+- New column in database: `approval_mode TEXT DEFAULT 'suggest'`
+- Modal appears for high-risk actions in suggest mode
+- User can approve/reject with one click
+- "Always approve" checkbox updates user preference
+
+**Commit:** `feat: Add approval gates and suggest mode for user control (Slice 2.5)`
 
 ---
 
@@ -833,40 +953,163 @@ npm test tests/agent-token-budget.test.ts
 
 ---
 
-### Slice 15: MCP Integration (Read-Only File Access)
+### Slice 15: MCP Integration with Fallback Strategy
 
 **What Changes:**
 - Install MCP client library: `npm install @modelcontextprotocol/client`
-- Create `src/lib/mcpClient.ts` - MCP connection manager
+- Create `src/lib/mcpClient.ts` - MCP connection manager with fallback
 - Sub-agents can request file contents via MCP (read-only for v1)
+- Implement graceful degradation if MCP unavailable
+
+**MCP Fallback Strategy:**
+```typescript
+// src/lib/mcpClient.ts
+export async function getFileContents(path: string): Promise<string> {
+  try {
+    // Primary: MCP stdio connection
+    const mcpClient = await connectMCP();
+    return await mcpClient.readFile(path);
+  } catch (mcpError) {
+    console.warn('MCP unavailable, falling back to manual upload', mcpError);
+
+    // Fallback 1: Show file upload dialog
+    try {
+      return await showFileUploadDialog({
+        message: `Agent needs ${path}. Please upload or paste contents.`,
+        acceptedTypes: ['.csv', '.txt', '.json', '.md'],
+        maxSize: 10 * 1024 * 1024 // 10MB
+      });
+    } catch (uploadError) {
+      console.error('Manual upload failed', uploadError);
+
+      // Fallback 2: Agent logs limitation, continues without file
+      await logAgentEvent({
+        type: 'file_access_failed',
+        path,
+        error: uploadError,
+        fallback: 'continuing_without_file'
+      });
+
+      throw new Error(`Unable to access ${path}. MCP unavailable and manual upload failed.`);
+    }
+  }
+}
+```
+
+**Degraded Mode Behavior:**
+- Analysis Agent: Skip file-based analysis, use available data only
+- Briefing Agent: Continue without file context
+- User notified: "Agent couldn't access local files. Upload manually?"
 
 **Tests to Add FIRST:**
 - Write integration test: `tests/mcp-file-access.spec.ts`
-- Setup: Analysis agent needs to read local file `data.csv`
-- Action: Agent requests file via MCP
-- Assert: File contents returned
-- Assert: Write operations rejected
+- **Test 1:** MCP available → file contents returned
+- **Test 2:** MCP unavailable → fallback to manual upload
+- **Test 3:** Both fail → agent continues gracefully, logs error
+- Assert: Write operations rejected (read-only mode)
 
 **Commands:**
 ```bash
 # 1. Install MCP client
 npm install @modelcontextprotocol/client
 
-# 2. Implement MCP client
+# 2. Implement MCP client with fallback
 # 3. Test with sample file
 npm test tests/mcp-file-access.spec.ts
+
+# 4. Test fallback: Kill MCP server, verify manual upload works
+# 5. Test degraded mode: Reject upload, verify agent continues
 ```
 
 **Expected Output:**
-- Agents can read local files securely
+- Agents can read local files via MCP (primary)
+- Manual upload works if MCP fails (fallback 1)
+- Agent continues without file if both fail (fallback 2)
 - Write operations blocked (v1 limitation)
 - No file path traversal vulnerabilities
 
-**Commit:** `feat: Add MCP integration for file access (Slice 15)`
+**Commit:** `feat: Add MCP integration with fallback strategy (Slice 15)`
 
 ---
 
-### Slice 16: E2E Smoke Test
+### Slice 16: Cost Tracking & Idle Mode
+
+**What Changes:**
+- Add cost tracking to `agent_sessions` table
+- Implement idle detection (5 minutes inactivity)
+- Use Claude Haiku for "should I act?" checks (90% cheaper than Opus)
+- Add cost dashboard to right pane
+
+**Cost Tracking Schema:**
+```sql
+ALTER TABLE agent_sessions ADD COLUMN IF NOT EXISTS cost_tracking JSONB DEFAULT '{
+  "tokens_opus": 0,
+  "tokens_sonnet": 0,
+  "tokens_haiku": 0,
+  "estimated_cost_usd": 0.0,
+  "last_cost_update": null
+}'::jsonb;
+```
+
+**Idle Mode Logic:**
+```typescript
+// After 5 minutes of no user activity
+if (Date.now() - lastUserActivity > 5 * 60 * 1000) {
+  await setAgentMode('idle');
+  // Stop all background tasks, keep memory alive
+  pauseAllSubAgents();
+}
+
+// Wake triggers
+onUserActivity(() => setAgentMode('active'));
+onScheduledTask(() => setAgentMode('active')); // e.g., 8am briefing
+```
+
+**Smart Model Selection:**
+```typescript
+// Use CHEAP model for lightweight checks
+const shouldAct = await callLLM({
+  model: CLAUDE_MODELS.CHEAP, // Haiku
+  prompt: "Should I create a briefing based on these events? Yes/No",
+  maxTokens: 10
+});
+
+// Use PRIMARY model only for actual work
+if (shouldAct === 'Yes') {
+  const briefing = await callLLM({
+    model: CLAUDE_MODELS.PRIMARY, // Opus
+    prompt: "Generate detailed briefing...",
+    maxTokens: 2000
+  });
+}
+```
+
+**Tests to Add FIRST:**
+- Write unit test: `tests/cost-tracking.test.ts`
+- Test: Idle mode activates after 5 min
+- Test: Wake on user activity
+- Test: Cost tracked per model tier
+- Test: Monthly cost < $10/user (simulated 30 days)
+
+**Commands:**
+```bash
+# 1. Add cost tracking schema
+# 2. Implement idle detection
+# 3. Add model-tier selection logic
+npm test tests/cost-tracking.test.ts
+```
+
+**Expected Output:**
+- Idle mode reduces API calls to 0 during inactivity
+- Wake on user activity or scheduled tasks
+- Estimated monthly cost: $5-10/user (not $130/month)
+- Cost breakdown visible in right pane
+
+**Commit:** `feat: Add cost tracking and idle mode for economic viability (Slice 16)`
+
+---
+
+### Slice 17: E2E Smoke Test
 
 **What Changes:**
 - Create comprehensive E2E test: `tests/mini-me-smoke-test.spec.ts`
@@ -883,15 +1126,16 @@ npm test tests/mini-me-smoke-test.spec.ts
 ```
 
 **Expected Output:**
-- All 14 success criteria verified
+- All 15+ success criteria verified
 - Test passes in < 2 minutes
 - No errors in console
+- Cost under target ($10/user/month simulated)
 
-**Commit:** `test: Add Mini-Me E2E smoke test (Slice 16)`
+**Commit:** `test: Add Mini-Me E2E smoke test (Slice 17)`
 
 ---
 
-### Slice 17: Documentation & User Guide
+### Slice 18: Documentation & User Guide
 
 **What Changes:**
 - Create `docs/MINI_ME_USER_GUIDE.md` - User-facing documentation
@@ -912,7 +1156,7 @@ git commit -m "docs: Add Mini-Me Agent Mode documentation (Slice 17)"
 - Architecture doc covers: data flow, Edge Functions, database schema
 - No broken links in docs
 
-**Commit:** `docs: Add Mini-Me Agent Mode documentation (Slice 17)`
+**Commit:** `docs: Add Mini-Me Agent Mode documentation (Slice 18)`
 
 ---
 
@@ -923,7 +1167,7 @@ git commit -m "docs: Add Mini-Me Agent Mode documentation (Slice 17)"
 - **Slice branches:** `feature/mini-me-slice-{number}-{name}` (e.g., `feature/mini-me-slice-1-database-schema`)
 
 ### Commit Cadence
-- **Commit after every slice** (17 total commits expected)
+- **Commit after every slice** (18 total commits expected)
 - **Never skip tests** - tests must pass before commit
 - **Atomic commits** - each commit fully functional, no partial slices
 
@@ -1208,12 +1452,25 @@ npm run types:generate
   1. **Revert migration:**
      ```sql
      DROP TABLE IF EXISTS agent_sessions, agent_memory, sub_agents, agent_tasks;
-     ALTER TABLE user_settings DROP COLUMN agent_mode;
+     ALTER TABLE user_settings DROP COLUMN agent_mode, DROP COLUMN approval_mode;
      ```
   2. **Restore from backup if needed:**
      ```bash
      npx supabase db restore --project-ref prod-id --backup-id {backup-id}
      ```
+
+- **If costs exceed targets ($10/user/month):**
+  1. **Force all users to idle mode:**
+     ```sql
+     UPDATE agent_sessions SET status = 'paused' WHERE status = 'active';
+     ```
+  2. **Reduce token budgets:**
+     ```sql
+     -- Lower daily budget from 100k to 50k tokens
+     UPDATE agent_sessions SET tokens_budget = 50000;
+     ```
+  3. **Analyze cost drivers, optimize prompts**
+  4. **Re-enable gradually once optimized**
 
 ---
 
