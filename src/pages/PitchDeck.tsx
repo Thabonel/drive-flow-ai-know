@@ -21,6 +21,8 @@ import PresenterView from '@/components/PresenterView';
 import PresentationSettings from '@/components/PresentationSettings';
 import KeyboardShortcutsHelp from '@/components/KeyboardShortcutsHelp';
 import { usePresentationSettings } from '@/hooks/usePresentationSettings';
+import { useContentAutoScroll } from '@/hooks/useContentAutoScroll';
+import { useSlideAutoAdvance } from '@/hooks/useSlideAutoAdvance';
 import {
   createPresentationSync,
   generateSessionId,
@@ -160,6 +162,62 @@ export default function PitchDeck() {
     },
     enabled: !!user,
   });
+
+  // Determine if we can advance to next slide
+  const canAdvanceSlide = pitchDeck ? currentSlideIndex < (pitchDeck.slides?.length || 0) : false;
+
+  // Auto-scroll hooks - only active during actual presentation (not preview)
+  const contentAutoScroll = useContentAutoScroll({
+    containerRef: fullSlideContainerRef,
+    enabled: isPresentationMode && presentationStarted && presentationSettings.contentAutoScrollEnabled,
+    speed: presentationSettings.contentAutoScrollSpeed,
+    onScrollComplete: () => {
+      // When content scroll completes, check if slide auto-advance is disabled
+      // If so, we could optionally advance the slide here
+      // For now, just let slide auto-advance handle it if enabled
+    },
+    bottomWaitDelay: 2000,
+  });
+
+  const slideAutoAdvance = useSlideAutoAdvance({
+    enabled: isPresentationMode && presentationStarted && presentationSettings.slideAutoAdvanceEnabled,
+    speed: presentationSettings.slideAutoAdvanceSpeed,
+    onAdvance: () => {
+      // Use the existing handleNextSlide function
+      if (canAdvanceSlide) {
+        // Reset content scroll first
+        contentAutoScroll.resetScroll();
+        // Then advance slide
+        setCurrentSlideIndex((prev) => {
+          const newIndex = prev + 1;
+          // Broadcast if in presenter mode
+          if (presenterSessionId && presentationSync) {
+            presentationSync.send({
+              type: 'SLIDE_CHANGE',
+              index: newIndex,
+            });
+          }
+          return newIndex;
+        });
+      }
+    },
+    canAdvance: canAdvanceSlide,
+    resetDependency: currentSlideIndex,
+  });
+
+  // Combined pause/resume for hover interactions
+  const handlePresentationMouseEnter = () => {
+    contentAutoScroll.pause();
+    slideAutoAdvance.pause();
+  };
+
+  const handlePresentationMouseLeave = () => {
+    contentAutoScroll.resume();
+    slideAutoAdvance.resume();
+  };
+
+  // Check if any auto-feature is paused
+  const isAutoPaused = contentAutoScroll.isPaused || slideAutoAdvance.isPaused;
 
   // Keyboard navigation for presentation mode
   useEffect(() => {
@@ -1949,7 +2007,11 @@ Generated with AI Query Hub
 
       {/* Presentation Mode - Fullscreen with hidden controls */}
       {isPresentationMode && pitchDeck && !presenterSessionId && presentationStarted && (
-        <div className="fixed inset-0 bg-black z-50 flex flex-col">
+        <div
+          className="fixed inset-0 bg-black z-50 flex flex-col"
+          onMouseEnter={handlePresentationMouseEnter}
+          onMouseLeave={handlePresentationMouseLeave}
+        >
           {showSplitScreenNotes ? (
             // Split-Screen Mode: 70% Slide / 30% Notes
             <>
