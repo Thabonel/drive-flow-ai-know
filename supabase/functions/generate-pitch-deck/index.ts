@@ -594,6 +594,37 @@ Make it compelling, data-driven where appropriate (especially if source document
         return undefined;
       };
 
+      // Helper function to generate a single video
+      const generateVideo = async (visualPrompt: string, visualType: string): Promise<{ url?: string; duration?: number; sizeMb?: number }> => {
+        try {
+          const videoResponse = await fetch(`${supabaseUrl}/functions/v1/generate-video`, {
+            method: 'POST',
+            headers: {
+              'Authorization': authHeader!,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              prompt: visualPrompt,
+              duration: 4, // 4 seconds default
+              aspectRatio: '16:9',
+              resolution: '1080p',
+            })
+          });
+
+          if (videoResponse.ok) {
+            const videoResult = await videoResponse.json();
+            return {
+              url: videoResult.videoUrl,
+              duration: videoResult.duration,
+              sizeMb: videoResult.fileSizeMb
+            };
+          }
+        } catch (error) {
+          console.error('Video generation error:', error);
+        }
+        return {};
+      };
+
       // Generate all images in parallel to avoid timeout
       const imagePromises = pitchDeckStructure.slides.map(async (slide) => {
         // For revisions, preserve existing images unless the slide was modified
@@ -611,12 +642,27 @@ Make it compelling, data-driven where appropriate (especially if source document
         }
 
         if (shouldGenerateImage && slide.visualPrompt) {
-          // Generate main slide image
-          slide.imageData = await generateImage(slide.visualPrompt, slide.visualType || 'illustration');
-          if (slide.imageData) {
-            console.log(`Image generated for slide ${slide.slideNumber}`);
+          // Generate video for expressive mode, otherwise generate image
+          if (animationStyle === 'expressive') {
+            const videoResult = await generateVideo(slide.visualPrompt, slide.visualType || 'illustration');
+            if (videoResult.url) {
+              slide.videoUrl = videoResult.url;
+              slide.videoDuration = videoResult.duration;
+              slide.videoFileSizeMb = videoResult.sizeMb;
+              console.log(`Video generated for slide ${slide.slideNumber}: ${videoResult.url}`);
+            } else {
+              console.warn(`Failed to generate video for slide ${slide.slideNumber}, falling back to image`);
+              // Fallback to static image if video generation fails
+              slide.imageData = await generateImage(slide.visualPrompt, slide.visualType || 'illustration');
+            }
           } else {
-            console.warn(`Failed to generate image for slide ${slide.slideNumber}`);
+            // Generate main slide image for non-expressive modes
+            slide.imageData = await generateImage(slide.visualPrompt, slide.visualType || 'illustration');
+            if (slide.imageData) {
+              console.log(`Image generated for slide ${slide.slideNumber}`);
+            } else {
+              console.warn(`Failed to generate image for slide ${slide.slideNumber}`);
+            }
           }
 
           // Generate frame images if expressive mode is enabled and frames exist
