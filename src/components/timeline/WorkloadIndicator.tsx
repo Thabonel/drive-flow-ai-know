@@ -1,6 +1,7 @@
+import { useState } from 'react';
 import { TimelineItem } from '@/lib/timelineUtils';
 import { useWorkload } from '@/hooks/useWorkload';
-import { AlertCircle, Clock, Calendar } from 'lucide-react';
+import { AlertCircle, Clock, Calendar, ChevronDown, ChevronUp } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Progress } from '@/components/ui/progress';
 
@@ -12,6 +13,15 @@ interface WorkloadIndicatorProps {
 
 export function WorkloadIndicator({ items, targetDate, compact = false }: WorkloadIndicatorProps) {
   const { stats } = useWorkload(items, targetDate);
+  const [isCollapsed, setIsCollapsed] = useState(() => {
+    return localStorage.getItem('timeline-workload-collapsed') !== 'false';
+  });
+
+  const toggleCollapsed = () => {
+    const newState = !isCollapsed;
+    setIsCollapsed(newState);
+    localStorage.setItem('timeline-workload-collapsed', String(newState));
+  };
 
   // Determine color based on workload
   const getWorkloadColor = () => {
@@ -56,65 +66,80 @@ export function WorkloadIndicator({ items, targetDate, compact = false }: Worklo
   }
 
   return (
-    <div className="space-y-3 p-4 bg-card border rounded-lg shadow-card">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+    <div className="bg-card border rounded-lg shadow-card">
+      {/* Clickable Header - Always Visible */}
+      <button
+        onClick={toggleCollapsed}
+        className="w-full flex items-center justify-between p-4 hover:bg-accent transition-colors rounded-lg"
+      >
         <div className="flex items-center gap-2">
           <Calendar className="h-5 w-5 text-muted-foreground" />
           <h3 className="font-semibold text-sm">Daily Workload</h3>
         </div>
-        <div className={`text-sm font-medium ${getWorkloadColor()}`}>
-          {stats.utilizationPercent}%
-        </div>
-      </div>
-
-      {/* Progress Bar */}
-      <div className="space-y-2">
-        <Progress
-          value={Math.min(stats.utilizationPercent, 100)}
-          className="h-3"
-          indicatorClassName={getProgressColor()}
-        />
-        <div className="flex items-center justify-between text-sm">
-          <span className={getWorkloadColor()}>
-            {formatHours(stats.totalPlannedMinutes)} planned
-          </span>
-          <span className="text-muted-foreground">
-            / 8 hour day
-          </span>
-        </div>
-      </div>
-
-      {/* Breakdown */}
-      <div className="grid grid-cols-2 gap-2 text-sm">
         <div className="flex items-center gap-2">
-          <div className="h-2 w-2 rounded-full bg-blue-500" />
-          <span className="text-muted-foreground">Meetings:</span>
-          <span className="font-medium">{formatHours(stats.meetingMinutes)}</span>
+          <div className={`text-sm font-medium ${getWorkloadColor()}`}>
+            {stats.utilizationPercent}%
+          </div>
+          {isCollapsed ? (
+            <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform" />
+          ) : (
+            <ChevronUp className="h-4 w-4 text-muted-foreground transition-transform" />
+          )}
         </div>
-        <div className="flex items-center gap-2">
-          <div className="h-2 w-2 rounded-full bg-purple-500" />
-          <span className="text-muted-foreground">Available:</span>
-          <span className="font-medium">{formatHours(stats.availableMinutes)}</span>
+      </button>
+
+      {/* Collapsible Content */}
+      {!isCollapsed && (
+        <div className="px-4 pb-4 space-y-3">
+          {/* Progress Bar */}
+          <div className="space-y-2">
+            <Progress
+              value={Math.min(stats.utilizationPercent, 100)}
+              className="h-3"
+              indicatorClassName={getProgressColor()}
+            />
+            <div className="flex items-center justify-between text-sm">
+              <span className={getWorkloadColor()}>
+                {formatHours(stats.totalPlannedMinutes)} planned
+              </span>
+              <span className="text-muted-foreground">
+                / 8 hour day
+              </span>
+            </div>
+          </div>
+
+          {/* Breakdown */}
+          <div className="grid grid-cols-2 gap-2 text-sm">
+            <div className="flex items-center gap-2">
+              <div className="h-2 w-2 rounded-full bg-blue-500" />
+              <span className="text-muted-foreground">Meetings:</span>
+              <span className="font-medium">{formatHours(stats.meetingMinutes)}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="h-2 w-2 rounded-full bg-amber-500" />
+              <span className="text-muted-foreground">Available:</span>
+              <span className="font-medium">{formatHours(stats.availableMinutes)}</span>
+            </div>
+          </div>
+
+          {/* Warning Message */}
+          {stats.warningMessage && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                {stats.warningMessage}
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {/* Positive feedback */}
+          {!stats.isOvercommitted && stats.totalPlannedMinutes > 0 && (
+            <p className="text-xs text-muted-foreground">
+              {stats.totalPlannedHours < 6 && 'Light workload - room for more tasks'}
+              {stats.totalPlannedHours >= 6 && stats.totalPlannedHours <= 8 && 'Healthy workload'}
+            </p>
+          )}
         </div>
-      </div>
-
-      {/* Warning Message */}
-      {stats.warningMessage && (
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            {stats.warningMessage}
-          </AlertDescription>
-        </Alert>
-      )}
-
-      {/* Positive feedback */}
-      {!stats.isOvercommitted && stats.totalPlannedMinutes > 0 && (
-        <p className="text-xs text-muted-foreground">
-          {stats.totalPlannedHours < 6 && 'Light workload - room for more tasks'}
-          {stats.totalPlannedHours >= 6 && stats.totalPlannedHours <= 8 && 'Healthy workload'}
-        </p>
       )}
     </div>
   );
