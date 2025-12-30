@@ -21,6 +21,7 @@ import PresenterView from '@/components/PresenterView';
 import PresentationSettings from '@/components/PresentationSettings';
 import KeyboardShortcutsHelp from '@/components/KeyboardShortcutsHelp';
 import PresentationProgressIndicators from '@/components/PresentationProgressIndicators';
+import PausedIndicator from '@/components/PausedIndicator';
 import { usePresentationSettings } from '@/hooks/usePresentationSettings';
 import { useContentAutoScroll } from '@/hooks/useContentAutoScroll';
 import { useSlideAutoAdvance } from '@/hooks/useSlideAutoAdvance';
@@ -2101,6 +2102,13 @@ Generated with AI Query Hub
             isAdvanceActive={slideAutoAdvance.isActive}
             isPaused={isAutoPaused}
           />
+
+          {/* Paused Indicator (top-center) */}
+          {(presentationSettings.contentAutoScrollEnabled || presentationSettings.slideAutoAdvanceEnabled) && (
+            <div className="absolute top-4 left-1/2 -translate-x-1/2">
+              <PausedIndicator isPaused={isAutoPaused} />
+            </div>
+          )}
 
           {/* Minimal keyboard hints with settings button */}
           <div className="absolute top-4 right-4 flex items-center gap-2">
