@@ -1,5 +1,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { updateTokenUsage, extractTokensFromClaudeResponse } from '../_shared/token-tracking.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -131,6 +132,36 @@ Output ONLY valid JSON array, no commentary.`;
     const data = await response.json();
     const translationDuration = Date.now() - startTime;
 
+    // Get session ID for token tracking (before processing tasks)
+    const { data: sessionData } = await supabase
+      .from('agent_sessions')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('status', 'active')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    // Track token usage
+    if (sessionData) {
+      const tokensUsed = extractTokensFromClaudeResponse(data);
+      const tokenUpdate = await updateTokenUsage(sessionData.id, tokensUsed);
+
+      if (tokenUpdate.budgetExceeded) {
+        console.warn(`Token budget exceeded. Session paused. Tokens remaining: ${tokenUpdate.tokensRemaining}`);
+        return new Response(
+          JSON.stringify({
+            error: 'Token budget exceeded. Session has been paused.',
+            budget_exceeded: true,
+          }),
+          {
+            status: 429,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          }
+        );
+      }
+    }
+
     // Extract tasks from Claude's response
     const content = data.content[0].text;
     let tasks: Task[];
@@ -147,16 +178,7 @@ Output ONLY valid JSON array, no commentary.`;
       throw new Error('Invalid response format: expected array of tasks');
     }
 
-    // Store tasks in agent_tasks table
-    const { data: sessionData } = await supabase
-      .from('agent_sessions')
-      .select('id')
-      .eq('user_id', user.id)
-      .eq('status', 'active')
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
-
+    // Store tasks in agent_tasks table (sessionData already fetched above for token tracking)
     if (sessionData) {
       // Store each task
       const taskInserts = tasks.map(task => ({
