@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { AIProgressIndicator } from '@/components/ai/AIProgressIndicator';
-import { Sparkles, Archive, Download, Printer } from 'lucide-react';
+import { Cpu, Archive, Download, Printer } from 'lucide-react';
 import { toast } from 'sonner';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -161,7 +161,7 @@ export function AgentChat({ session, userId }: AgentChatProps) {
         <Card className="max-w-md w-full">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Sparkles className="h-5 w-5 text-accent" />
+              <Cpu className="h-5 w-5 text-accent" />
               Agent Mode
             </CardTitle>
           </CardHeader>
@@ -184,7 +184,7 @@ export function AgentChat({ session, userId }: AgentChatProps) {
       <div className="flex-shrink-0 p-4 border-b">
         <div className="flex items-center justify-between mb-2">
           <h2 className="text-lg font-semibold flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-accent" />
+            <Cpu className="h-5 w-5 text-accent" />
             {conversation?.title || 'Agent Conversation'}
           </h2>
           <Badge
@@ -224,7 +224,7 @@ export function AgentChat({ session, userId }: AgentChatProps) {
         {messages.length === 0 ? (
           <div className="h-full flex items-center justify-center">
             <div className="text-center text-muted-foreground max-w-md">
-              <Sparkles className="h-12 w-12 mx-auto mb-4 text-accent" />
+              <Cpu className="h-12 w-12 mx-auto mb-4 text-accent" />
               <h3 className="text-lg font-semibold mb-2">Welcome to Agent Mode</h3>
               <p className="text-sm mb-4">
                 Give me natural language commands and I'll execute them for you.

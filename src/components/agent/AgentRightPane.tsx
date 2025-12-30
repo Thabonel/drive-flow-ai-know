@@ -11,7 +11,7 @@ import {
   Clock,
   CheckCircle2,
   AlertCircle,
-  Sparkles,
+  Cpu,
   Calendar,
   FileText,
   BarChart3
@@ -195,7 +195,7 @@ export function AgentRightPane({ userId }: { userId: string }) {
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-base flex items-center gap-2">
-                  <Sparkles className="h-4 w-4 text-accent" />
+                  <Cpu className="h-4 w-4 text-accent" />
                   Agent Status
                 </CardTitle>
                 {getStatusBadge()}
