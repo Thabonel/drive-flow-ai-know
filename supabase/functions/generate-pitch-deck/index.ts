@@ -18,6 +18,16 @@ interface PitchDeckRequest {
   revisionRequest?: string;
   currentDeck?: PitchDeckResponse;
   slideNumber?: number;
+  // Animation frame generation options (Phase 5)
+  animationStyle?: 'none' | 'minimal' | 'standard' | 'expressive';
+  frameCount?: number;  // 2-5 frames per slide for expressive mode
+}
+
+interface AnimationFrame {
+  frameNumber: number;
+  description: string;
+  visualPrompt: string;
+  imageData?: string;
 }
 
 interface Slide {
@@ -28,6 +38,8 @@ interface Slide {
   visualPrompt?: string;
   imageData?: string;
   notes?: string;
+  // Animation frames for expressive mode (Phase 5)
+  frames?: AnimationFrame[];
 }
 
 interface PitchDeckResponse {
@@ -220,10 +232,15 @@ serve(async (req) => {
       selectedDocumentIds,
       revisionRequest,
       currentDeck,
-      slideNumber
+      slideNumber,
+      animationStyle = 'none',
+      frameCount = 3
     }: PitchDeckRequest = await req.json();
 
     const isRevision = !!revisionRequest && !!currentDeck;
+    const generateFrames = animationStyle === 'expressive' && frameCount >= 2 && frameCount <= 5;
+    const effectiveFrameCount = Math.max(2, Math.min(5, frameCount)); // Enforce 2-5 range
+
     console.log('Generating pitch deck:', {
       topic,
       numberOfSlides,
@@ -231,7 +248,10 @@ serve(async (req) => {
       style,
       selectedDocs: selectedDocumentIds?.length || 0,
       isRevision,
-      targetSlide: slideNumber
+      targetSlide: slideNumber,
+      animationStyle,
+      generateFrames,
+      frameCount: generateFrames ? effectiveFrameCount : 0
     });
 
     // Fetch selected documents if provided
@@ -448,6 +468,44 @@ ${documentContext
 }`;
     }
 
+    // Add animation frame generation instructions if expressive mode
+    const frameInstructions = generateFrames ? `
+
+## ANIMATION FRAME GENERATION (Expressive Mode)
+
+For slides with visual content, generate ${effectiveFrameCount} animation frames that show progressive build-up:
+- Frame 1: Initial state (empty or minimal)
+- Frames 2-${effectiveFrameCount - 1}: Progressive reveals (elements appearing, bars growing, etc.)
+- Frame ${effectiveFrameCount}: Final complete state
+
+**Frame Examples:**
+- Chart: Bars grow from 0 to final height across frames
+- Diagram: Components appear one-by-one
+- Illustration: Scene builds layer by layer
+- Photo: Gradual reveal (blur → clear, or zoom in)
+
+Each frame needs a unique visual prompt describing that specific moment in the animation.
+` : '';
+
+    const frameJsonExample = generateFrames ? `,
+      "frames": [
+        {
+          "frameNumber": 1,
+          "description": "Initial empty state",
+          "visualPrompt": "Description for frame 1 visual"
+        },
+        {
+          "frameNumber": 2,
+          "description": "Partial build-up",
+          "visualPrompt": "Description for frame 2 visual"
+        },
+        {
+          "frameNumber": ${effectiveFrameCount},
+          "description": "Final complete state",
+          "visualPrompt": "Description for final frame visual"
+        }
+      ]` : '';
+
     structurePrompt += `
 
 For each slide, provide:
@@ -456,8 +514,9 @@ For each slide, provide:
 3. Content (bullet points, key messages${documentContext ? ' - use information from source documents' : ''})
 4. Visual recommendation (what type of visual would enhance this slide: chart, diagram, illustration, icon, photo, or none)
 5. Visual prompt (if a visual is needed, describe what should be shown)
-6. Speaker notes (what the presenter should say${documentContext ? ' - reference source documents where relevant' : ''})
-
+6. Speaker notes (what the presenter should say${documentContext ? ' - reference source documents where relevant' : ''})${generateFrames ? `
+7. Animation frames (${effectiveFrameCount} frames showing progressive build-up of the visual)` : ''}
+${frameInstructions}
 Return the response in this exact JSON format:
 {
   "title": "Main pitch deck title",
@@ -469,7 +528,7 @@ Return the response in this exact JSON format:
       "content": "Bullet points and key messages",
       "visualType": "illustration",
       "visualPrompt": "Description of what to illustrate",
-      "notes": "Speaker notes"
+      "notes": "Speaker notes"${frameJsonExample}
     }
   ]
 }
@@ -513,6 +572,28 @@ Make it compelling, data-driven where appropriate (especially if source document
     if (includeImages) {
       console.log('Generating images for slides in parallel...');
 
+      // Helper function to generate a single image
+      const generateImage = async (visualPrompt: string, visualType: string): Promise<string | undefined> => {
+        try {
+          const imageResponse = await fetch(`${supabaseUrl}/functions/v1/generate-image`, {
+            method: 'POST',
+            headers: {
+              'Authorization': authHeader!,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(getStandardImageParams(visualPrompt, visualType))
+          });
+
+          if (imageResponse.ok) {
+            const imageResult = await imageResponse.json();
+            return imageResult.imageData;
+          }
+        } catch (error) {
+          console.error('Image generation error:', error);
+        }
+        return undefined;
+      };
+
       // Generate all images in parallel to avoid timeout
       const imagePromises = pitchDeckStructure.slides.map(async (slide) => {
         // For revisions, preserve existing images unless the slide was modified
@@ -529,28 +610,31 @@ Make it compelling, data-driven where appropriate (especially if source document
           }
         }
 
-        if (shouldGenerateImage) {
-          try {
-            // Call the generate-image function with standardized 16:9 parameters
-            const imageResponse = await fetch(`${supabaseUrl}/functions/v1/generate-image`, {
-              method: 'POST',
-              headers: {
-                'Authorization': authHeader,
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify(getStandardImageParams(slide.visualPrompt, slide.visualType))
+        if (shouldGenerateImage && slide.visualPrompt) {
+          // Generate main slide image
+          slide.imageData = await generateImage(slide.visualPrompt, slide.visualType || 'illustration');
+          if (slide.imageData) {
+            console.log(`Image generated for slide ${slide.slideNumber}`);
+          } else {
+            console.warn(`Failed to generate image for slide ${slide.slideNumber}`);
+          }
+
+          // Generate frame images if expressive mode is enabled and frames exist
+          if (generateFrames && slide.frames && slide.frames.length > 0) {
+            console.log(`Generating ${slide.frames.length} frame images for slide ${slide.slideNumber}...`);
+
+            // Generate frame images in parallel
+            const frameImagePromises = slide.frames.map(async (frame) => {
+              if (frame.visualPrompt) {
+                frame.imageData = await generateImage(frame.visualPrompt, slide.visualType || 'illustration');
+                if (frame.imageData) {
+                  console.log(`Frame ${frame.frameNumber} image generated for slide ${slide.slideNumber}`);
+                }
+              }
             });
 
-            if (imageResponse.ok) {
-              const imageResult = await imageResponse.json();
-              slide.imageData = imageResult.imageData;
-              console.log(`Image generated for slide ${slide.slideNumber}`);
-            } else {
-              console.warn(`Failed to generate image for slide ${slide.slideNumber}`);
-            }
-          } catch (imageError) {
-            console.error(`Error generating image for slide ${slide.slideNumber}:`, imageError);
-            // Continue without the image
+            await Promise.all(frameImagePromises);
+            console.log(`All frame images generated for slide ${slide.slideNumber}`);
           }
         }
       });
