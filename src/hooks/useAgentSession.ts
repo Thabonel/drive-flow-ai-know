@@ -29,6 +29,8 @@ export function useAgentSession({ userId, enabled, tokensBudget = 100000 }: UseA
   const { toast } = useToast();
   const heartbeatIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const checkpointIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const idleTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lastActivityRef = useRef<Date>(new Date());
 
   // Create or resume session when agent mode is enabled
   const createOrResumeSession = useCallback(async () => {
@@ -124,9 +126,35 @@ export function useAgentSession({ userId, enabled, tokensBudget = 100000 }: UseA
     }
   }, [enabled, userId, tokensBudget, toast]);
 
+  // Reset idle timer (called when user activity detected)
+  const resetIdleTimer = useCallback(() => {
+    lastActivityRef.current = new Date();
+
+    // Clear existing idle timeout
+    if (idleTimeoutRef.current) {
+      clearTimeout(idleTimeoutRef.current);
+      idleTimeoutRef.current = null;
+    }
+
+    // Set new idle timeout (30 minutes)
+    if (session && enabled) {
+      idleTimeoutRef.current = setTimeout(() => {
+        console.log('Session idle for 30 minutes, pausing...');
+        pauseSession();
+        toast({
+          title: 'Agent on Standby',
+          description: 'Session paused due to inactivity',
+        });
+      }, 30 * 60 * 1000); // 30 minutes in milliseconds
+    }
+  }, [session, enabled, toast]);
+
   // Update session heartbeat
   const updateHeartbeat = useCallback(async () => {
     if (!session) return;
+
+    // Reset idle timer on heartbeat
+    resetIdleTimer();
 
     try {
       const { error: updateError } = await supabase
@@ -140,7 +168,7 @@ export function useAgentSession({ userId, enabled, tokensBudget = 100000 }: UseA
     } catch (err) {
       console.error('Heartbeat update failed:', err);
     }
-  }, [session]);
+  }, [session, resetIdleTimer]);
 
   // Save checkpoint with current session state
   const saveCheckpoint = useCallback(async () => {
@@ -327,6 +355,22 @@ export function useAgentSession({ userId, enabled, tokensBudget = 100000 }: UseA
     }
   }, [session, enabled, saveCheckpoint]);
 
+  // Set up idle detection
+  useEffect(() => {
+    if (session && enabled) {
+      // Initialize idle timer
+      resetIdleTimer();
+
+      // Cleanup timeout on unmount or session change
+      return () => {
+        if (idleTimeoutRef.current) {
+          clearTimeout(idleTimeoutRef.current);
+          idleTimeoutRef.current = null;
+        }
+      };
+    }
+  }, [session, enabled, resetIdleTimer]);
+
   // Pause session on unmount
   useEffect(() => {
     return () => {
@@ -345,5 +389,6 @@ export function useAgentSession({ userId, enabled, tokensBudget = 100000 }: UseA
     completeSession,
     updateHeartbeat,
     saveCheckpoint,
+    resetIdleTimer,
   };
 }
