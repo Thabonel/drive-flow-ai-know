@@ -13,8 +13,9 @@
 
 import { useEffect, useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, X, Settings } from 'lucide-react';
 import type { PitchDeck } from '@/lib/presentationStorage';
+import type { PresentationSettingsData } from '@/components/PresentationSettings';
 
 interface PresenterViewProps {
   pitchDeck: PitchDeck;
@@ -22,6 +23,8 @@ interface PresenterViewProps {
   onSlideChange: (index: number) => void;
   onExit: () => void;
   presentationStartTime: number;
+  settings: PresentationSettingsData;
+  onOpenSettings: () => void;
 }
 
 /**
@@ -39,6 +42,8 @@ export default function PresenterView({
   onSlideChange,
   onExit,
   presentationStartTime,
+  settings,
+  onOpenSettings,
 }: PresenterViewProps) {
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
 
@@ -88,6 +93,11 @@ export default function PresenterView({
           e.preventDefault();
           exitButtonRef.current?.click();
           break;
+        case 's':
+        case 'S':
+          e.preventDefault();
+          onOpenSettings();
+          break;
         default:
           break;
       }
@@ -95,7 +105,7 @@ export default function PresenterView({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [pitchDeck.slides.length, onSlideChange]);
+  }, [pitchDeck.slides.length, onSlideChange, onOpenSettings]);
 
   const currentSlide = pitchDeck.slides[currentSlideIndex];
   const nextSlide = pitchDeck.slides[currentSlideIndex + 1];
@@ -116,16 +126,28 @@ export default function PresenterView({
             Slide {currentSlideIndex + 1} of {totalSlides}
           </div>
         </div>
-        <Button
-          ref={exitButtonRef}
-          onClick={onExit}
-          variant="ghost"
-          size="sm"
-          className="text-white hover:bg-gray-700"
-        >
-          <X className="h-5 w-5 mr-2" />
-          Exit Presenter View
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            onClick={onOpenSettings}
+            variant="ghost"
+            size="sm"
+            className="text-white hover:bg-gray-700"
+            title="Presentation Settings (S)"
+          >
+            <Settings className="h-5 w-5 mr-2" />
+            Settings
+          </Button>
+          <Button
+            ref={exitButtonRef}
+            onClick={onExit}
+            variant="ghost"
+            size="sm"
+            className="text-white hover:bg-gray-700"
+          >
+            <X className="h-5 w-5 mr-2" />
+            Exit Presenter View
+          </Button>
+        </div>
       </div>
 
       {/* Main Content: Current Slide + Next Preview */}
@@ -221,7 +243,7 @@ export default function PresenterView({
 
       {/* Keyboard Shortcuts Hint */}
       <div className="bg-gray-900 px-6 py-2 text-xs text-gray-500 text-center border-t border-gray-800">
-        Keyboard: ← → (arrows) | Space (next) | Home/End | ESC (exit)
+        Keyboard: ← → (arrows) | Space (next) | Home/End | S (settings) | ESC (exit)
       </div>
     </div>
   );

@@ -1842,6 +1842,8 @@ Generated with AI Query Hub
           }}
           onExit={handleExitPresentation}
           presentationStartTime={presentationStartTime || Date.now()}
+          settings={presentationSettings}
+          onOpenSettings={() => setSettingsOpen(true)}
         />
       )}
 
