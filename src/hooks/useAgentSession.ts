@@ -28,6 +28,7 @@ export function useAgentSession({ userId, enabled, tokensBudget = 100000 }: UseA
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
   const heartbeatIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const checkpointIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // Create or resume session when agent mode is enabled
   const createOrResumeSession = useCallback(async () => {
@@ -52,6 +53,22 @@ export function useAgentSession({ userId, enabled, tokensBudget = 100000 }: UseA
       if (existingSession) {
         // Resume existing session
         setSession(existingSession);
+
+        // Load last checkpoint if available
+        const { data: lastCheckpoint } = await supabase
+          .from('agent_memory')
+          .select('*')
+          .eq('session_id', existingSession.id)
+          .eq('memory_type', 'checkpoint')
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (lastCheckpoint) {
+          console.log('Loaded checkpoint from:', lastCheckpoint.created_at);
+          // Checkpoint data available in lastCheckpoint.content for future use
+        }
+
         toast({
           title: 'Agent Session Resumed',
           description: `Resuming session from ${new Date(existingSession.started_at).toLocaleTimeString()}`,
@@ -124,6 +141,64 @@ export function useAgentSession({ userId, enabled, tokensBudget = 100000 }: UseA
       console.error('Heartbeat update failed:', err);
     }
   }, [session]);
+
+  // Save checkpoint with current session state
+  const saveCheckpoint = useCallback(async () => {
+    if (!session) return;
+
+    try {
+      // Fetch current agent tasks for this session
+      const { data: agentTasks } = await supabase
+        .from('agent_tasks')
+        .select('*')
+        .eq('session_id', session.id)
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      // Fetch recent sub-agents
+      const { data: subAgents } = await supabase
+        .from('sub_agents')
+        .select('*')
+        .eq('session_id', session.id)
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      // Fetch recent goals
+      const { data: goals } = await supabase
+        .from('agent_memory')
+        .select('*')
+        .eq('session_id', session.id)
+        .eq('memory_type', 'goal')
+        .order('created_at', { ascending: false })
+        .limit(5);
+
+      // Save checkpoint to agent_memory
+      await supabase
+        .from('agent_memory')
+        .insert({
+          session_id: session.id,
+          user_id: userId,
+          memory_type: 'checkpoint',
+          content: {
+            event: 'checkpoint_saved',
+            timestamp: new Date().toISOString(),
+            session_stats: {
+              tasks_completed: session.tasks_completed,
+              tokens_used: session.tokens_used,
+              sub_agents_spawned: session.sub_agents_spawned,
+            },
+            recent_tasks: agentTasks || [],
+            active_sub_agents: subAgents?.filter(a => a.status === 'active' || a.status === 'pending') || [],
+            recent_goals: goals || [],
+          },
+          importance: 3,
+        });
+
+      console.log('Checkpoint saved successfully');
+    } catch (err) {
+      console.error('Failed to save checkpoint:', err);
+    }
+  }, [session, userId]);
 
   // Pause session
   const pauseSession = useCallback(async () => {
@@ -231,6 +306,27 @@ export function useAgentSession({ userId, enabled, tokensBudget = 100000 }: UseA
     }
   }, [session, enabled, updateHeartbeat]);
 
+  // Set up checkpoint interval
+  useEffect(() => {
+    if (session && enabled) {
+      // Save checkpoint every 5 minutes
+      checkpointIntervalRef.current = setInterval(() => {
+        saveCheckpoint();
+      }, 5 * 60 * 1000); // 5 minutes in milliseconds
+
+      // Save initial checkpoint immediately
+      saveCheckpoint();
+
+      // Cleanup interval on unmount or session change
+      return () => {
+        if (checkpointIntervalRef.current) {
+          clearInterval(checkpointIntervalRef.current);
+          checkpointIntervalRef.current = null;
+        }
+      };
+    }
+  }, [session, enabled, saveCheckpoint]);
+
   // Pause session on unmount
   useEffect(() => {
     return () => {
@@ -248,5 +344,6 @@ export function useAgentSession({ userId, enabled, tokensBudget = 100000 }: UseA
     pauseSession,
     completeSession,
     updateHeartbeat,
+    saveCheckpoint,
   };
 }
