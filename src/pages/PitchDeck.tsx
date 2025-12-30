@@ -18,10 +18,8 @@ import pptxgen from 'pptxgenjs';
 import JSZip from 'jszip';
 import { PageHelp } from '@/components/PageHelp';
 import PresenterView from '@/components/PresenterView';
-import PresentationSettings, {
-  type PresentationSettingsData,
-  DEFAULT_SETTINGS,
-} from '@/components/PresentationSettings';
+import PresentationSettings from '@/components/PresentationSettings';
+import { usePresentationSettings } from '@/hooks/usePresentationSettings';
 import {
   createPresentationSync,
   generateSessionId,
@@ -82,9 +80,9 @@ export default function PitchDeck() {
   const [presentationStarted, setPresentationStarted] = useState(false);
   const [showSplitScreenNotes, setShowSplitScreenNotes] = useState(false);
 
-  // Presentation settings state
+  // Presentation settings state with localStorage persistence
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [presentationSettings, setPresentationSettings] = useState<PresentationSettingsData>(DEFAULT_SETTINGS);
+  const { settings: presentationSettings, setSettings: setPresentationSettings } = usePresentationSettings();
 
   // Refs for presentation mode focus management and keyboard navigation
   const presentationRef = useRef<HTMLDivElement>(null);
