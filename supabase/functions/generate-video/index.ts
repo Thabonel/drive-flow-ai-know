@@ -20,6 +20,7 @@ interface VideoGenerationResponse {
   duration?: number;
   resolution?: string;
   fileSizeMb?: number;
+  cached?: boolean; // Whether video was served from cache
   error?: string;
 }
 
@@ -116,6 +117,50 @@ serve(async (req) => {
       ? `${negativePrompt}, ${defaultNegativePrompt}`
       : defaultNegativePrompt;
 
+    // Create cache key from prompt hash (include duration, aspectRatio, resolution for uniqueness)
+    const cacheKey = `${enhancedPrompt}|${duration}|${aspectRatio}|${resolution}`;
+    const encoder = new TextEncoder();
+    const data = encoder.encode(cacheKey);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const promptHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+
+    console.log('Checking video cache:', { prompt_hash: promptHash });
+
+    // Check cache for existing video
+    const { data: cachedVideo, error: cacheError } = await supabase
+      .from('video_cache')
+      .select('*')
+      .eq('prompt_hash', promptHash)
+      .maybeSingle();
+
+    if (cachedVideo && !cacheError) {
+      console.log('Cache HIT - returning cached video:', {
+        video_url: cachedVideo.video_url,
+        use_count: cachedVideo.use_count + 1,
+        age_days: Math.floor((Date.now() - new Date(cachedVideo.created_at).getTime()) / (1000 * 60 * 60 * 24))
+      });
+
+      // Update cache usage statistics
+      await supabase.rpc('update_video_cache_usage', { cache_id: cachedVideo.id });
+
+      return new Response(
+        JSON.stringify({
+          videoUrl: cachedVideo.video_url,
+          duration: cachedVideo.duration_seconds || duration,
+          resolution: cachedVideo.resolution || resolution,
+          fileSizeMb: cachedVideo.file_size_mb,
+          cached: true,
+        } as VideoGenerationResponse),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200,
+        }
+      );
+    }
+
+    console.log('Cache MISS - generating new video');
+
     // Prepare video generation request
     const runwayRequest = {
       prompt: enhancedPrompt,
@@ -195,12 +240,33 @@ serve(async (req) => {
       throw new Error('Video generation timed out after 5 minutes');
     }
 
+    // Store in cache for future reuse
+    console.log('Storing video in cache:', { prompt_hash: promptHash });
+    const { error: cacheInsertError } = await supabase
+      .from('video_cache')
+      .insert({
+        prompt_hash: promptHash,
+        prompt_text: prompt.substring(0, 500), // Store first 500 chars for debugging
+        video_url: videoUrl,
+        duration_seconds: runwayResult.duration || duration,
+        file_size_mb: runwayResult.file_size_mb,
+        resolution: resolution,
+      });
+
+    if (cacheInsertError) {
+      console.error('Failed to cache video (non-fatal):', cacheInsertError);
+      // Don't throw - caching is optional
+    } else {
+      console.log('Video cached successfully');
+    }
+
     return new Response(
       JSON.stringify({
         videoUrl: videoUrl,
         duration: runwayResult.duration || duration,
         resolution: resolution,
         fileSizeMb: runwayResult.file_size_mb,
+        cached: false,
       } as VideoGenerationResponse),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
