@@ -22,6 +22,7 @@ import PresentationSettings from '@/components/PresentationSettings';
 import KeyboardShortcutsHelp from '@/components/KeyboardShortcutsHelp';
 import PresentationProgressIndicators from '@/components/PresentationProgressIndicators';
 import PausedIndicator from '@/components/PausedIndicator';
+import CostEstimationModal from '@/components/CostEstimationModal';
 import { usePresentationSettings } from '@/hooks/usePresentationSettings';
 import { useContentAutoScroll } from '@/hooks/useContentAutoScroll';
 import { useSlideAutoAdvance } from '@/hooks/useSlideAutoAdvance';
@@ -91,6 +92,7 @@ export default function PitchDeck() {
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [shareToken, setShareToken] = useState<string | null>(null);
   const [isGeneratingShareLink, setIsGeneratingShareLink] = useState(false);
+  const [showCostModal, setShowCostModal] = useState(false);
 
   // Presenter view state
   const [presenterSessionId, setPresenterSessionId] = useState<string | null>(null);
@@ -570,7 +572,7 @@ export default function PitchDeck() {
     }
   };
 
-  const handleGenerate = async () => {
+  const handleGenerate = () => {
     if (!user) {
       toast.error('Please sign in to generate pitch decks');
       return;
@@ -581,6 +583,16 @@ export default function PitchDeck() {
       return;
     }
 
+    // Show cost modal if images are enabled
+    if (includeImages) {
+      setShowCostModal(true);
+    } else {
+      // No images = no cost, proceed directly
+      handleGenerateConfirmed();
+    }
+  };
+
+  const handleGenerateConfirmed = async () => {
     setGenerating(true);
     try {
       const { data, error } = await supabase.functions.invoke('generate-pitch-deck', {
@@ -2315,6 +2327,17 @@ Generated with AI Query Hub
         open={helpOpen}
         onOpenChange={setHelpOpen}
         mode="presentation"
+      />
+
+      {/* Cost Estimation Modal */}
+      <CostEstimationModal
+        open={showCostModal}
+        onOpenChange={setShowCostModal}
+        numberOfSlides={autoSlideCount ? 10 : parseInt(numberOfSlides) || 10}
+        animationStyle={animationStyle}
+        includeImages={includeImages}
+        onConfirm={handleGenerateConfirmed}
+        onCancel={() => setShowCostModal(false)}
       />
     </div>
   );
