@@ -68,6 +68,7 @@ export default function PitchDeck() {
   const [numberOfSlides, setNumberOfSlides] = useState('10');
   const [autoSlideCount, setAutoSlideCount] = useState(false);
   const [style, setStyle] = useState('professional');
+  const [animationStyle, setAnimationStyle] = useState<'none' | 'minimal' | 'standard' | 'expressive'>('none');
   const [includeImages, setIncludeImages] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [pitchDeck, setPitchDeck] = useState<PitchDeck | null>(null);
@@ -584,6 +585,7 @@ export default function PitchDeck() {
           numberOfSlides: autoSlideCount ? undefined : parseInt(numberOfSlides) || 10,
           autoSlideCount: autoSlideCount,
           style,
+          animationStyle,
           includeImages,
           selectedDocumentIds: selectedDocIds.length > 0 ? selectedDocIds : undefined
         }
@@ -623,6 +625,7 @@ export default function PitchDeck() {
           numberOfSlides: autoSlideCount ? undefined : parseInt(numberOfSlides) || 10,
           autoSlideCount: autoSlideCount,
           style,
+          animationStyle,
           includeImages,
           selectedDocumentIds: selectedDocIds.length > 0 ? selectedDocIds : undefined,
           revisionRequest,
@@ -1027,6 +1030,7 @@ export default function PitchDeck() {
             topic,
             target_audience: targetAudience,
             style,
+            animation_style: animationStyle,
             number_of_slides: pitchDeck.totalSlides,
             source_document_ids: selectedDocIds.length > 0 ? selectedDocIds : null,
             updated_at: new Date().toISOString(),
@@ -1047,6 +1051,7 @@ export default function PitchDeck() {
             topic,
             target_audience: targetAudience,
             style,
+            animation_style: animationStyle,
             number_of_slides: pitchDeck.totalSlides,
             source_document_ids: selectedDocIds.length > 0 ? selectedDocIds : null,
           })
@@ -1087,6 +1092,7 @@ export default function PitchDeck() {
       setTargetAudience(data.target_audience || 'general business audience');
       setNumberOfSlides(data.number_of_slides?.toString() || '10');
       setStyle(data.style || 'professional');
+      setAnimationStyle(data.animation_style || 'none');
       setSelectedDocIds(data.source_document_ids || []);
       setSavedDeckId(data.id);
       setShareToken(data.share_token || null);
@@ -1704,6 +1710,28 @@ Generated with AI Query Hub
                   <SelectItem value="bold">Bold</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+
+            <div>
+              <Label htmlFor="animationStyle">Animation Style</Label>
+              <Select value={animationStyle} onValueChange={(value: any) => setAnimationStyle(value)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">None (Static slides)</SelectItem>
+                  <SelectItem value="minimal">Minimal (Fade transitions)</SelectItem>
+                  <SelectItem value="standard">Standard (Slide transitions)</SelectItem>
+                  <SelectItem value="expressive">Expressive (AI animation frames)</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground mt-1">
+                {animationStyle === 'expressive'
+                  ? 'AI will generate multiple animation frames per slide (slower generation)'
+                  : animationStyle === 'none'
+                  ? 'No animations or transitions'
+                  : 'Transitions applied during presentation only'}
+              </p>
             </div>
 
             <div>
