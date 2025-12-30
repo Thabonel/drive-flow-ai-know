@@ -79,6 +79,7 @@ export default function PitchDeck() {
   const [savedDeckId, setSavedDeckId] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [showSavedDecks, setShowSavedDecks] = useState(false);
+  const [showArchivedDecks, setShowArchivedDecks] = useState(false);
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
   const [showPresenterNotes, setShowPresenterNotes] = useState(false);
   const [presentationStartTime, setPresentationStartTime] = useState<number | null>(null);
@@ -156,9 +157,9 @@ export default function PitchDeck() {
 
   const suggestedSlides = suggestSlideCount();
 
-  // Fetch saved pitch decks
+  // Fetch saved pitch decks (active or archived based on toggle)
   const { data: savedDecks, refetch: refetchSavedDecks } = useQuery({
-    queryKey: ['saved-pitch-decks', user?.id],
+    queryKey: ['saved-pitch-decks', user?.id, showArchivedDecks],
     queryFn: async () => {
       if (!user) return null;
 
@@ -166,7 +167,7 @@ export default function PitchDeck() {
         .from('pitch_decks')
         .select('*')
         .eq('user_id', user.id)
-        .eq('is_archived', false)
+        .eq('is_archived', showArchivedDecks)
         .order('updated_at', { ascending: false });
 
       if (error) throw error;
@@ -1104,6 +1105,30 @@ export default function PitchDeck() {
     }
   };
 
+  const handleArchiveDeck = async (deckId: string, archive: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('pitch_decks')
+        .update({ is_archived: archive })
+        .eq('id', deckId);
+
+      if (error) throw error;
+
+      // If we're archiving the currently loaded deck, clear it
+      if (archive && savedDeckId === deckId) {
+        setPitchDeck(null);
+        setSavedDeckId(null);
+        setShareToken(null);
+      }
+
+      toast.success(archive ? 'Pitch deck archived' : 'Pitch deck restored');
+      refetchSavedDecks();
+    } catch (error) {
+      console.error('Archive error:', error);
+      toast.error(archive ? 'Failed to archive pitch deck' : 'Failed to restore pitch deck');
+    }
+  };
+
   const handleGenerateShareLink = async () => {
     if (!user || !savedDeckId) {
       toast.error('Please save your pitch deck first');
@@ -1359,11 +1384,24 @@ Generated with AI Query Hub
       </div>
 
       {/* Saved Decks Section */}
-      {savedDecks && savedDecks.length > 0 && (
+      {savedDecks && (savedDecks.length > 0 || showArchivedDecks) && (
         <Card className="mb-6">
           <CardHeader>
             <div className="flex items-center justify-between">
-              <CardTitle>Saved Pitch Decks ({savedDecks.length})</CardTitle>
+              <div className="flex items-center gap-3">
+                <CardTitle>
+                  {showArchivedDecks ? 'Archived' : 'Saved'} Pitch Decks ({savedDecks.length})
+                </CardTitle>
+                <Button
+                  variant={showArchivedDecks ? 'secondary' : 'ghost'}
+                  size="sm"
+                  onClick={() => setShowArchivedDecks(!showArchivedDecks)}
+                  className="flex items-center gap-1"
+                >
+                  <Archive className="h-4 w-4" />
+                  {showArchivedDecks ? 'View Active' : 'View Archived'}
+                </Button>
+              </div>
               <Button
                 variant="ghost"
                 size="sm"
@@ -1375,38 +1413,61 @@ Generated with AI Query Hub
           </CardHeader>
           {showSavedDecks && (
             <CardContent>
-              <div className="space-y-2 max-h-96 overflow-y-auto">
-                {savedDecks.map((deck) => (
-                  <div
-                    key={deck.id}
-                    className="flex items-center justify-between p-3 border rounded hover:bg-muted cursor-pointer"
-                    onClick={() => handleLoadDeck(deck.id)}
-                  >
-                    <div className="flex-1">
-                      <h3 className="font-medium">{deck.title}</h3>
-                      {deck.subtitle && (
-                        <p className="text-sm text-muted-foreground">{deck.subtitle}</p>
-                      )}
-                      <div className="flex gap-2 mt-1">
-                        <Badge variant="secondary" className="text-xs">
-                          {deck.number_of_slides} slides
-                        </Badge>
-                        {deck.style && (
-                          <Badge variant="outline" className="text-xs">
-                            {deck.style}
-                          </Badge>
+              {savedDecks.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  {showArchivedDecks
+                    ? 'No archived pitch decks'
+                    : 'No saved pitch decks yet'}
+                </p>
+              ) : (
+                <div className="space-y-2 max-h-96 overflow-y-auto">
+                  {savedDecks.map((deck) => (
+                    <div
+                      key={deck.id}
+                      className="flex items-center justify-between p-3 border rounded hover:bg-muted"
+                    >
+                      <div
+                        className="flex-1 cursor-pointer"
+                        onClick={() => handleLoadDeck(deck.id)}
+                      >
+                        <h3 className="font-medium">{deck.title}</h3>
+                        {deck.subtitle && (
+                          <p className="text-sm text-muted-foreground">{deck.subtitle}</p>
                         )}
-                        <span className="text-xs text-muted-foreground">
-                          Updated: {new Date(deck.updated_at).toLocaleDateString()}
-                        </span>
+                        <div className="flex gap-2 mt-1">
+                          <Badge variant="secondary" className="text-xs">
+                            {deck.number_of_slides} slides
+                          </Badge>
+                          {deck.style && (
+                            <Badge variant="outline" className="text-xs">
+                              {deck.style}
+                            </Badge>
+                          )}
+                          <span className="text-xs text-muted-foreground">
+                            Updated: {new Date(deck.updated_at).toLocaleDateString()}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 ml-2">
+                        {savedDeckId === deck.id && (
+                          <Badge>Current</Badge>
+                        )}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleArchiveDeck(deck.id, !showArchivedDecks);
+                          }}
+                          title={showArchivedDecks ? 'Restore deck' : 'Archive deck'}
+                        >
+                          <Archive className="h-4 w-4" />
+                        </Button>
                       </div>
                     </div>
-                    {savedDeckId === deck.id && (
-                      <Badge className="ml-2">Current</Badge>
-                    )}
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           )}
         </Card>
