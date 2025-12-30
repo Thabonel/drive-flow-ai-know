@@ -19,6 +19,146 @@ interface CalendarEvent {
   status: string;
 }
 
+// Helper function to create a calendar event
+async function handleCreateEvent(
+  supabase: any,
+  googleToken: string,
+  calendarId: string,
+  userId: string,
+  subAgent: any,
+  subAgentId: string,
+  startTime: number
+) {
+  try {
+    // Extract event details from task_data
+    const taskData = subAgent.task_data;
+    const eventTitle = taskData.title || 'New Event';
+    const eventDescription = taskData.description || '';
+
+    // Parse time from description or use defaults
+    // Expected format: "Schedule meeting with Sarah tomorrow at 10am"
+    // For now, create event 1 hour from now (will be enhanced with NLP later)
+    const eventStart = new Date(Date.now() + 60 * 60 * 1000); // 1 hour from now
+    const eventEnd = new Date(eventStart.getTime() + 30 * 60 * 1000); // 30 minutes duration
+
+    // Extract attendee emails from description if present
+    const attendees = [];
+    const emailRegex = /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g;
+    const emails = eventDescription.match(emailRegex);
+    if (emails) {
+      attendees.push(...emails.map(email => ({ email })));
+    }
+
+    // Create event object
+    const eventBody = {
+      summary: eventTitle,
+      description: eventDescription,
+      start: {
+        dateTime: eventStart.toISOString(),
+        timeZone: 'UTC',
+      },
+      end: {
+        dateTime: eventEnd.toISOString(),
+        timeZone: 'UTC',
+      },
+      attendees: attendees.length > 0 ? attendees : undefined,
+    };
+
+    // Create event via Google Calendar API
+    const createUrl = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events`;
+
+    const createRes = await fetch(createUrl, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${googleToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(eventBody),
+    });
+
+    if (!createRes.ok) {
+      const errorText = await createRes.text();
+      console.error('Google Calendar API error:', errorText);
+      throw new Error(`Failed to create event: ${createRes.status}`);
+    }
+
+    const createdEvent = await createRes.json();
+
+    console.log(`Created calendar event: ${createdEvent.id}`);
+
+    // Store event creation in agent_memory
+    await supabase
+      .from('agent_memory')
+      .insert({
+        session_id: subAgent.session_id,
+        user_id: userId,
+        memory_type: 'action_log',
+        content: {
+          source: 'calendar_agent',
+          action: 'event_created',
+          event_id: createdEvent.id,
+          event_summary: createdEvent.summary,
+          event_start: createdEvent.start.dateTime || createdEvent.start.date,
+          event_end: createdEvent.end.dateTime || createdEvent.end.date,
+          attendees: attendees,
+          created_at: new Date().toISOString(),
+        },
+        importance: 5,
+      });
+
+    // Update sub-agent to completed
+    await supabase
+      .from('sub_agents')
+      .update({
+        status: 'completed',
+        result_data: {
+          event_id: createdEvent.id,
+          event_link: createdEvent.htmlLink,
+          event_summary: createdEvent.summary,
+          event_start: createdEvent.start.dateTime || createdEvent.start.date,
+          calendar_id: calendarId,
+        },
+        completed_at: new Date().toISOString(),
+        duration_ms: Date.now() - startTime,
+      })
+      .eq('id', subAgentId);
+
+    // Update task status to completed
+    if (taskData?.task_id) {
+      await supabase
+        .from('agent_tasks')
+        .update({ status: 'completed' })
+        .eq('id', taskData.task_id);
+    }
+
+    return new Response(
+      JSON.stringify({
+        message: 'Calendar event created successfully',
+        event_id: createdEvent.id,
+        event_link: createdEvent.htmlLink,
+        event_summary: createdEvent.summary,
+        status: 'completed',
+      }),
+      {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      }
+    );
+  } catch (error) {
+    // Update sub-agent to failed
+    await supabase
+      .from('sub_agents')
+      .update({
+        status: 'failed',
+        error_message: error.message,
+        completed_at: new Date().toISOString(),
+        duration_ms: Date.now() - startTime,
+      })
+      .eq('id', subAgentId);
+
+    throw error;
+  }
+}
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -125,7 +265,20 @@ serve(async (req) => {
 
     const calendarId = syncSettings?.selected_calendar_id || 'primary';
 
-    // Fetch upcoming events (next 7 days)
+    // Route to appropriate action handler
+    if (action === 'create_event') {
+      return await handleCreateEvent(
+        supabase,
+        googleToken,
+        calendarId,
+        user.id,
+        subAgent,
+        sub_agent_id,
+        startTime
+      );
+    }
+
+    // Default: Read events (next 7 days)
     const now = new Date();
     const timeMin = now.toISOString();
     const timeMax = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString();
