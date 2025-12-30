@@ -405,14 +405,14 @@ export function TimelineManager({ onCanvasReady }: TimelineManagerProps = {}) {
   const logjamCount = items.filter(i => i.status === 'logjam').length;
 
   return (
-    <div className={isCompactMode ? 'space-y-3' : 'space-y-6'}>
+    <div className={isCompactMode ? 'space-y-1' : 'space-y-6'}>
       {/* Header */}
-      <div className={isCompactMode ? 'space-y-2' : 'space-y-4'}>
+      <div className={isCompactMode ? 'space-y-1' : 'space-y-4'}>
         {/* Combined Header Row - Title and Action Buttons on Same Line */}
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <div className="flex items-center gap-2">
-            <Clock className="h-8 w-8" />
-            <h1 className="text-3xl font-bold">Timeline Manager</h1>
+            <Clock className={isCompactMode ? 'h-6 w-6' : 'h-8 w-8'} />
+            <h1 className={isCompactMode ? 'text-2xl font-bold' : 'text-3xl font-bold'}>Timeline Manager</h1>
             <TimelinePhilosophy mode="dialog" trigger="icon" />
             <PageHelp
               title="Timeline Manager Help"
@@ -454,11 +454,14 @@ export function TimelineManager({ onCanvasReady }: TimelineManagerProps = {}) {
         )}
 
         {/* Action Buttons Row - Simplified to 5 Primary Actions */}
-        <div className="flex items-center gap-3 flex-wrap">
+        <div className={isCompactMode ? 'flex items-center gap-2 flex-wrap' : 'flex items-center gap-3 flex-wrap'}>
           {/* Primary Add Item Button */}
           <button
             onClick={() => setShowAddItemForm(true)}
-            className="px-6 py-3 bg-primary text-primary-foreground rounded-lg font-semibold hover:bg-primary/90 transition-colors shadow-sm"
+            className={isCompactMode
+              ? 'px-4 py-2 bg-primary text-primary-foreground rounded-lg font-semibold hover:bg-primary/90 transition-colors shadow-sm text-sm'
+              : 'px-6 py-3 bg-primary text-primary-foreground rounded-lg font-semibold hover:bg-primary/90 transition-colors shadow-sm'
+            }
             disabled={layers.length === 0}
           >
             {layers.length === 0 ? 'Create a Layer First' : '+ Add Item'}
@@ -467,7 +470,7 @@ export function TimelineManager({ onCanvasReady }: TimelineManagerProps = {}) {
           {/* Unified Planning Button */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="default" className="gap-2">
+              <Button variant="default" size={isCompactMode ? 'sm' : 'default'} className="gap-2">
                 <Sparkles className="h-4 w-4" />
                 Plan Day
               </Button>
@@ -504,17 +507,18 @@ export function TimelineManager({ onCanvasReady }: TimelineManagerProps = {}) {
           <Button
             onClick={handleToggleLock}
             variant={settings?.is_locked ? 'default' : 'outline'}
+            size={isCompactMode ? 'sm' : 'default'}
             className="gap-2"
           >
             {settings?.is_locked ? (
               <>
                 <Lock className="h-4 w-4" />
-                Locked
+                {!isCompactMode && 'Locked'}
               </>
             ) : (
               <>
                 <Unlock className="h-4 w-4" />
-                Unlocked
+                {!isCompactMode && 'Unlocked'}
               </>
             )}
           </Button>
@@ -562,9 +566,9 @@ export function TimelineManager({ onCanvasReady }: TimelineManagerProps = {}) {
             {/* Jump to Date Popover */}
             <Popover>
               <PopoverTrigger asChild>
-                <Button variant="outline" className="gap-2 px-3">
+                <Button variant="outline" size={isCompactMode ? 'sm' : 'default'} className="gap-2 px-3">
                   <Navigation className="h-4 w-4" />
-                  <span className="hidden sm:inline">{getJumpLabel()}</span>
+                  <span className="hidden sm:inline">{!isCompactMode && getJumpLabel()}</span>
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-64" align="start">
@@ -618,9 +622,9 @@ export function TimelineManager({ onCanvasReady }: TimelineManagerProps = {}) {
           {/* More Actions Dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="gap-2">
+              <Button variant="outline" size={isCompactMode ? 'sm' : 'default'} className="gap-2">
                 <MoreHorizontal className="h-4 w-4" />
-                More
+                {!isCompactMode && 'More'}
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="w-56">
