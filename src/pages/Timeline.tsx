@@ -1,7 +1,7 @@
 // Timeline page component
 // Wrapped with TimelineProvider to ensure all child components share the same state
 
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { TimelineWithDnd } from '@/components/timeline/TimelineWithDnd';
 import { useDailyPlanning } from '@/hooks/useDailyPlanning';
 import { useAuth } from '@/hooks/useAuth';
@@ -11,7 +11,7 @@ import { DailyPlanningFlow } from '@/components/planning/DailyPlanningFlow';
 import { EndOfDayShutdown } from '@/components/planning/EndOfDayShutdown';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import { X, Moon, Clock } from 'lucide-react';
+import { X, Clock } from 'lucide-react';
 import { TimelineProvider } from '@/contexts/TimelineContext';
 
 // Wrapper component that provides the TimelineContext
@@ -39,7 +39,9 @@ function TimelineContent() {
   const [showPlanning, setShowPlanning] = useState(false);
   const [showQuickPlanning, setShowQuickPlanning] = useState(false);
   const [showShutdown, setShowShutdown] = useState(false);
-  const [promptDismissed, setPromptDismissed] = useState(false);
+  const [promptDismissed, setPromptDismissed] = useState(() => {
+    return localStorage.getItem('timeline-planning-prompt-dismissed') === 'true';
+  });
 
   // Check if planning is needed on mount and at intervals
   useEffect(() => {
@@ -91,6 +93,7 @@ function TimelineContent() {
   const handleDismiss = () => {
     setShowPrompt(false);
     setPromptDismissed(true);
+    localStorage.setItem('timeline-planning-prompt-dismissed', 'true');
   };
 
   const handleStartPlanning = () => {
@@ -114,7 +117,7 @@ function TimelineContent() {
 
       {/* Combined Planning & Shutdown Prompt */}
       {(showPrompt && !todaySession?.completed_at) || (shutdownNeeded && settings?.enable_shutdown_ritual) ? (
-        <Alert className="border-2 border-blue-500 shadow-lg bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-950/50 dark:to-purple-950/50 p-1">
+        <Alert className="border-2 border-blue-500 shadow-lg bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/50 dark:to-orange-950/50 p-1">
           <div className="flex items-start gap-2">
             {/* Left side: Shutdown content or Planning prompt */}
             <div className="flex-1 space-y-1">

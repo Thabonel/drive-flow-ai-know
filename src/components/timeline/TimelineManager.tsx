@@ -1,6 +1,6 @@
 // Main Timeline Manager Component
 
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { TimelineCanvas } from './TimelineCanvas';
 import { TimelineControls } from './TimelineControls';
 import { TimelineLayerManager } from './TimelineLayerManager';
@@ -26,6 +26,7 @@ import { useLayers } from '@/hooks/useLayers';
 import { useRoutines } from '@/hooks/useRoutines';
 import { useTimelineSync } from '@/hooks/useTimelineSync';
 import { useTasks } from '@/hooks/useTasks';
+import { useCompactMode } from '@/hooks/useCompactMode';
 import { TimelineItem, clamp } from '@/lib/timelineUtils';
 import {
   DEFAULT_PIXELS_PER_HOUR,
@@ -38,7 +39,7 @@ import {
   VIEW_MODE_CONFIG,
 } from '@/lib/timelineConstants';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, Clock, Settings, Layers, Lock, Unlock, Archive, LayoutTemplate, Sparkles, RefreshCw, Calendar as CalIcon, Brain, Sunrise, Moon, Link as LinkIcon, MoreHorizontal, ZoomIn, ZoomOut, Navigation, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Loader2, Clock, Settings, Layers, Lock, Unlock, Archive, LayoutTemplate, Sparkles, RefreshCw, Calendar as CalIcon, Brain, Sunrise, Moon, Link as LinkIcon, MoreHorizontal, ZoomIn, ZoomOut, Navigation, ChevronLeft, ChevronRight, Eye, EyeOff } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuLabel } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
@@ -116,6 +117,7 @@ export function TimelineManager({ onCanvasReady }: TimelineManagerProps = {}) {
   const [jumpToDate, setJumpToDate] = useState<string>('');
 
   const { populateRoutinesForDay } = useRoutines();
+  const { isCompactMode, setIsCompactMode } = useCompactMode();
 
   const animationFrameRef = useRef<number>();
   const lastTickRef = useRef<number>(Date.now());
@@ -403,13 +405,14 @@ export function TimelineManager({ onCanvasReady }: TimelineManagerProps = {}) {
   const logjamCount = items.filter(i => i.status === 'logjam').length;
 
   return (
-    <div className="space-y-6">
+    <div className={isCompactMode ? 'space-y-3' : 'space-y-6'}>
       {/* Header */}
-      <div className="space-y-4">
-        <div>
-          <h1 className="text-3xl font-bold flex items-center gap-2">
+      <div className={isCompactMode ? 'space-y-2' : 'space-y-4'}>
+        {/* Combined Header Row - Title and Action Buttons on Same Line */}
+        <div className="flex items-center justify-between gap-4 flex-wrap">
+          <div className="flex items-center gap-2">
             <Clock className="h-8 w-8" />
-            Timeline Manager
+            <h1 className="text-3xl font-bold">Timeline Manager</h1>
             <TimelinePhilosophy mode="dialog" trigger="icon" />
             <PageHelp
               title="Timeline Manager Help"
@@ -429,11 +432,26 @@ export function TimelineManager({ onCanvasReady }: TimelineManagerProps = {}) {
                 "Switch view modes (Day/Week/Month) for different perspectives"
               ]}
             />
-          </h1>
-          <p className="text-muted-foreground mt-2">
+          </div>
+
+          {/* Compact Mode Toggle */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setIsCompactMode(!isCompactMode)}
+            className="gap-2"
+            title={isCompactMode ? "Expand layout" : "Compact layout"}
+          >
+            {isCompactMode ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+            <span className="hidden sm:inline">{isCompactMode ? 'Expand' : 'Compact'}</span>
+          </Button>
+        </div>
+
+        {!isCompactMode && (
+          <p className="text-muted-foreground">
             Manage your time with a flowing timeline. Items move toward NOW and logjam when overdue.
           </p>
-        </div>
+        )}
 
         {/* Action Buttons Row - Simplified to 5 Primary Actions */}
         <div className="flex items-center gap-3 flex-wrap">
