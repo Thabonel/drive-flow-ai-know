@@ -19,6 +19,7 @@ import JSZip from 'jszip';
 import { PageHelp } from '@/components/PageHelp';
 import PresenterView from '@/components/PresenterView';
 import PresentationSettings from '@/components/PresentationSettings';
+import KeyboardShortcutsHelp from '@/components/KeyboardShortcutsHelp';
 import { usePresentationSettings } from '@/hooks/usePresentationSettings';
 import {
   createPresentationSync,
@@ -82,6 +83,7 @@ export default function PitchDeck() {
 
   // Presentation settings state with localStorage persistence
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
   const { settings: presentationSettings, setSettings: setPresentationSettings } = usePresentationSettings();
 
   // Refs for presentation mode focus management and keyboard navigation
@@ -165,7 +167,7 @@ export default function PitchDeck() {
 
     const handleKeyPress = (e: KeyboardEvent) => {
       // Only handle presentation keys
-      const presentationKeys = ['ArrowRight', 'ArrowLeft', ' ', 'Enter', 'Home', 'End', 'Escape', 'n', 'N', 's', 'S'];
+      const presentationKeys = ['ArrowRight', 'ArrowLeft', ' ', 'Enter', 'Home', 'End', 'Escape', 'n', 'N', 's', 'S', '?'];
       if (!presentationKeys.includes(e.key)) return;
 
       e.preventDefault();
@@ -220,6 +222,10 @@ export default function PitchDeck() {
         case 'S':
           // Open presentation settings dialog
           setSettingsOpen(true);
+          break;
+        case '?':
+          // Show keyboard shortcuts help
+          setHelpOpen(true);
           break;
       }
     };
@@ -2026,7 +2032,7 @@ Generated with AI Query Hub
           {/* Minimal keyboard hints with settings button */}
           <div className="absolute top-4 right-4 flex items-center gap-2">
             <div className="text-xs text-gray-500 bg-black/50 px-3 py-2 rounded">
-              ← → Navigate | N Notes | S Settings | ESC Exit
+              ← → Navigate | N Notes | S Settings | ? Help | ESC Exit
             </div>
             <Button
               variant="ghost"
@@ -2047,6 +2053,13 @@ Generated with AI Query Hub
         onOpenChange={setSettingsOpen}
         settings={presentationSettings}
         onSettingsChange={setPresentationSettings}
+      />
+
+      {/* Keyboard Shortcuts Help Overlay */}
+      <KeyboardShortcutsHelp
+        open={helpOpen}
+        onOpenChange={setHelpOpen}
+        mode="presentation"
       />
     </div>
   );

@@ -1,104 +1,138 @@
-import { useState } from 'react';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Keyboard, HelpCircle } from 'lucide-react';
+/**
+ * Keyboard Shortcuts Help Overlay
+ *
+ * Displays available keyboard shortcuts during presentation mode.
+ * Triggered by pressing '?' key.
+ */
 
-interface Shortcut {
-  keys: string[];
-  description: string;
-  category: string;
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+
+interface KeyboardShortcutsHelpProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  mode: 'presentation' | 'presenter';
 }
 
-const shortcuts: Shortcut[] = [
-  { keys: ['/'], description: 'Focus search input', category: 'Navigation' },
-  { keys: ['Ctrl', 'K'], description: 'Focus AI query input', category: 'AI' },
-  { keys: ['Ctrl', 'N'], description: 'Create new document', category: 'Documents' },
-  { keys: ['Ctrl', 'Enter'], description: 'Submit AI query', category: 'AI' },
-  { keys: ['Esc'], description: 'Close modals and dialogs', category: 'Navigation' },
+interface ShortcutGroup {
+  title: string;
+  shortcuts: Array<{
+    keys: string[];
+    description: string;
+  }>;
+}
+
+const PRESENTATION_SHORTCUTS: ShortcutGroup[] = [
+  {
+    title: 'Navigation',
+    shortcuts: [
+      { keys: ['→', 'Space', 'Enter'], description: 'Next slide' },
+      { keys: ['←'], description: 'Previous slide' },
+      { keys: ['Home'], description: 'First slide' },
+      { keys: ['End'], description: 'Last slide' },
+    ],
+  },
+  {
+    title: 'Display',
+    shortcuts: [
+      { keys: ['N'], description: 'Toggle speaker notes' },
+      { keys: ['S'], description: 'Open settings' },
+      { keys: ['?'], description: 'Show this help' },
+    ],
+  },
+  {
+    title: 'Control',
+    shortcuts: [
+      { keys: ['Esc'], description: 'Exit presentation' },
+    ],
+  },
 ];
 
-const categories = Array.from(new Set(shortcuts.map(s => s.category)));
+const PRESENTER_SHORTCUTS: ShortcutGroup[] = [
+  {
+    title: 'Navigation',
+    shortcuts: [
+      { keys: ['→', 'Space', 'PageDown'], description: 'Next slide' },
+      { keys: ['←', 'PageUp'], description: 'Previous slide' },
+      { keys: ['Home'], description: 'First slide' },
+      { keys: ['End'], description: 'Last slide' },
+    ],
+  },
+  {
+    title: 'Display',
+    shortcuts: [
+      { keys: ['S'], description: 'Open settings' },
+      { keys: ['?'], description: 'Show this help' },
+    ],
+  },
+  {
+    title: 'Control',
+    shortcuts: [
+      { keys: ['Esc'], description: 'Exit presenter view' },
+    ],
+  },
+];
 
-export const KeyboardShortcutsHelp = () => {
-  const [isOpen, setIsOpen] = useState(false);
-
-  const formatKey = (key: string) => {
-    const keyMap: Record<string, string> = {
-      'Ctrl': '⌃',
-      'Cmd': '⌘',
-      'Alt': '⌥',
-      'Shift': '⇧',
-      'Enter': '↵',
-      'Esc': '⎋',
-    };
-    
-    return keyMap[key] || key;
-  };
+export function KeyboardShortcutsHelp({
+  open,
+  onOpenChange,
+  mode,
+}: KeyboardShortcutsHelpProps) {
+  const shortcuts = mode === 'presenter' ? PRESENTER_SHORTCUTS : PRESENTATION_SHORTCUTS;
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger asChild>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="flex items-center gap-2"
-          aria-label="View keyboard shortcuts"
-        >
-          <Keyboard className="h-4 w-4" />
-          <span className="hidden sm:inline">Shortcuts</span>
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="max-w-md">
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Keyboard className="h-5 w-5" />
-            Keyboard Shortcuts
-          </DialogTitle>
+          <DialogTitle>Keyboard Shortcuts</DialogTitle>
           <DialogDescription>
-            Speed up your workflow with these keyboard shortcuts
+            Quick reference for presentation controls
           </DialogDescription>
         </DialogHeader>
-        
-        <div className="space-y-6">
-          {categories.map(category => (
-            <div key={category}>
-              <h3 className="font-semibold text-sm text-muted-foreground mb-3">
-                {category}
+
+        <div className="space-y-6 py-4">
+          {shortcuts.map((group) => (
+            <div key={group.title} className="space-y-3">
+              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+                {group.title}
               </h3>
               <div className="space-y-2">
-                {shortcuts
-                  .filter(s => s.category === category)
-                  .map((shortcut, index) => (
-                    <div key={index} className="flex items-center justify-between">
-                      <span className="text-sm">{shortcut.description}</span>
-                      <div className="flex items-center gap-1">
-                        {shortcut.keys.map((key, keyIndex) => (
-                          <Badge
-                            key={keyIndex}
-                            variant="outline"
-                            className="text-xs px-2 py-1 font-mono"
-                          >
-                            {formatKey(key)}
-                          </Badge>
-                        ))}
-                      </div>
+                {group.shortcuts.map((shortcut, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center justify-between gap-4"
+                  >
+                    <span className="text-sm">{shortcut.description}</span>
+                    <div className="flex items-center gap-1.5">
+                      {shortcut.keys.map((key, keyIndex) => (
+                        <span key={keyIndex}>
+                          {keyIndex > 0 && (
+                            <span className="text-xs text-muted-foreground mx-1">or</span>
+                          )}
+                          <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono font-medium">
+                            {key}
+                          </kbd>
+                        </span>
+                      ))}
                     </div>
-                  ))}
+                  </div>
+                ))}
               </div>
             </div>
           ))}
-          
-          <div className="pt-4 border-t">
-            <div className="flex items-start gap-2 text-xs text-muted-foreground">
-              <HelpCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
-              <p>
-                Shortcuts work when not focused on input fields. Press <kbd className="px-1 py-0.5 bg-muted rounded">?</kbd> to show this help.
-              </p>
-            </div>
-          </div>
+        </div>
+
+        <div className="text-xs text-muted-foreground text-center pt-2 border-t">
+          Press <kbd className="px-1.5 py-0.5 bg-muted rounded text-xs font-mono">Esc</kbd> or click outside to close
         </div>
       </DialogContent>
     </Dialog>
   );
-};
+}
+
+export default KeyboardShortcutsHelp;
