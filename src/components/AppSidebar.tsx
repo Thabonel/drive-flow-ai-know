@@ -1,4 +1,4 @@
-import { Home, FileText, Brain, Settings, LogOut, HelpCircle, Clock, Users, UserCog, Building2, Calendar, Bot, MessageSquare, Presentation, Plus } from 'lucide-react';
+import { Home, FileText, BookOpen, Settings, LogOut, HelpCircle, Clock, Users, UserCog, Building2, Calendar, Bot, MessageSquare, Presentation, Plus } from 'lucide-react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { usePresentationMode } from '@/contexts/PresentationModeContext';
@@ -41,7 +41,7 @@ const navigationItems = [
   {
     title: 'Dashboard',
     url: '/dashboard',
-    icon: Brain,
+    icon: BookOpen,
     description: 'Overview & quick actions'
   },
   {
@@ -89,7 +89,7 @@ export function AppSidebar() {
       <Sidebar className={collapsed ? 'w-14' : 'w-60'} collapsible="icon">
         <SidebarHeader className="border-b border-sidebar-border p-4">
           <div className="flex items-center space-x-2">
-            <Brain className="h-6 w-6 text-sidebar-primary" />
+            <BookOpen className="h-6 w-6 text-sidebar-primary" />
             {!collapsed && (
               <span className="font-semibold text-sidebar-foreground">
                 AI Query Hub

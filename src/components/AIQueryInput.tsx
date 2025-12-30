@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Brain, Send, Sparkles, Loader2, Save, FileText, PlusCircle, Calendar } from 'lucide-react';
+import { MessageSquare, Send, Loader2, Save, FileText, PlusCircle, Calendar } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -330,7 +330,7 @@ export const AIQueryInput = ({ selectedKnowledgeBase, onClearSelection }: AIQuer
       <CardHeader className="pb-4">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <CardTitle className="flex items-center text-xl">
-            <Brain className="h-6 w-6 mr-3 text-primary" />
+            <MessageSquare className="h-6 w-6 mr-3 text-primary" />
             Dashboard
           </CardTitle>
 
@@ -338,7 +338,6 @@ export const AIQueryInput = ({ selectedKnowledgeBase, onClearSelection }: AIQuer
             {selectedKnowledgeBase && (
               <div className="flex items-center space-x-2">
                 <Badge variant="secondary" className="flex items-center py-1 px-3">
-                  <Sparkles className="h-3 w-3 mr-1" />
                   {selectedKnowledgeBase.name}
                 </Badge>
                 <Button variant="ghost" size="sm" onClick={onClearSelection}>
@@ -394,7 +393,7 @@ export const AIQueryInput = ({ selectedKnowledgeBase, onClearSelection }: AIQuer
                   >
                     {message.role === 'assistant' ? (
                       <div className="flex items-start space-x-2">
-                        <Brain className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                        <MessageSquare className="h-4 w-4 mt-0.5 flex-shrink-0" />
                         <div className="prose prose-sm max-w-none dark:prose-invert prose-headings:mt-3 prose-headings:mb-2 prose-p:my-2 prose-pre:my-2 prose-ul:my-2 prose-ol:my-2 prose-li:my-0">
                           <ReactMarkdown remarkPlugins={[remarkGfm]}>
                             {message.content}
