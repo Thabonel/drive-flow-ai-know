@@ -2010,7 +2010,7 @@ Generated with AI Query Hub
       {/* Presentation Mode - Fullscreen with hidden controls */}
       {isPresentationMode && pitchDeck && !presenterSessionId && presentationStarted && (
         <div
-          className="fixed inset-0 bg-black z-50 flex flex-col"
+          className={`fixed inset-0 bg-black z-50 flex flex-col animation-${presentationSettings.animationStyle}`}
           onMouseEnter={handlePresentationMouseEnter}
           onMouseLeave={handlePresentationMouseLeave}
         >
@@ -2019,27 +2019,27 @@ Generated with AI Query Hub
             <>
               {/* Slide Area - 70% height */}
               <div ref={splitSlideContainerRef} className="flex-[7] flex items-center justify-center p-4 overflow-y-auto min-h-0 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-                <div className="max-h-full w-full flex items-center justify-center">
+                <div key={`split-slide-${currentSlideIndex}`} className="max-h-full w-full flex items-center justify-center slide-content">
                   {currentSlideIndex === 0 ? (
                     // Title slide
                     <div className="text-center max-w-4xl">
-                      <h1 className="font-bold text-accent mb-4" style={{ fontSize: 'calc(1.75rem + 1.5vh)' }}>{pitchDeck.title}</h1>
-                      <p className="text-white opacity-90" style={{ fontSize: 'calc(1rem + 0.75vh)' }}>{pitchDeck.subtitle}</p>
+                      <h1 className="slide-title font-bold text-accent mb-4" style={{ fontSize: 'calc(1.75rem + 1.5vh)' }}>{pitchDeck.title}</h1>
+                      <p className="slide-text text-white opacity-90" style={{ fontSize: 'calc(1rem + 0.75vh)' }}>{pitchDeck.subtitle}</p>
                     </div>
                   ) : (
                     // Content slide
                     <div className="w-full max-w-6xl">
-                      <h2 className="font-bold text-white mb-3" style={{ fontSize: 'calc(1.5rem + 1.5vh)' }}>
+                      <h2 className="slide-title font-bold text-white mb-3" style={{ fontSize: 'calc(1.5rem + 1.5vh)' }}>
                         {pitchDeck.slides[currentSlideIndex - 1].title}
                       </h2>
                       {pitchDeck.slides[currentSlideIndex - 1].imageData && (
                         <img
                           src={`data:image/png;base64,${pitchDeck.slides[currentSlideIndex - 1].imageData}`}
                           alt={pitchDeck.slides[currentSlideIndex - 1].visualPrompt || ''}
-                          className="w-full max-h-[25vh] object-contain rounded-lg mb-3"
+                          className="slide-image w-full max-h-[25vh] object-contain rounded-lg mb-3"
                         />
                       )}
-                      <div className="text-white whitespace-pre-wrap leading-relaxed overflow-y-auto max-h-[20vh] [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]" style={{ fontSize: 'calc(0.875rem + 0.5vh)' }}>
+                      <div className="slide-text text-white whitespace-pre-wrap leading-relaxed overflow-y-auto max-h-[20vh] [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]" style={{ fontSize: 'calc(0.875rem + 0.5vh)' }}>
                         {pitchDeck.slides[currentSlideIndex - 1].content}
                       </div>
                     </div>
@@ -2064,27 +2064,27 @@ Generated with AI Query Hub
           ) : (
             // Full-Slide Mode: 100% Slide (no controls visible)
             <div ref={fullSlideContainerRef} className="flex-1 flex items-center justify-center p-8 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-              <div className="max-h-[90vh] w-full flex items-center justify-center">
+              <div key={`full-slide-${currentSlideIndex}`} className="max-h-[90vh] w-full flex items-center justify-center slide-content">
                 {currentSlideIndex === 0 ? (
                   // Title slide
                   <div className="text-center max-w-4xl">
-                    <h1 className="font-bold text-accent mb-6" style={{ fontSize: 'calc(2.5rem + 2vh)' }}>{pitchDeck.title}</h1>
-                    <p className="text-white opacity-90" style={{ fontSize: 'calc(1.5rem + 1vh)' }}>{pitchDeck.subtitle}</p>
+                    <h1 className="slide-title font-bold text-accent mb-6" style={{ fontSize: 'calc(2.5rem + 2vh)' }}>{pitchDeck.title}</h1>
+                    <p className="slide-text text-white opacity-90" style={{ fontSize: 'calc(1.5rem + 1vh)' }}>{pitchDeck.subtitle}</p>
                   </div>
                 ) : (
                   // Content slide
                   <div className="w-full max-w-6xl">
-                    <h2 className="font-bold text-white mb-6" style={{ fontSize: 'calc(2rem + 2vh)' }}>
+                    <h2 className="slide-title font-bold text-white mb-6" style={{ fontSize: 'calc(2rem + 2vh)' }}>
                       {pitchDeck.slides[currentSlideIndex - 1].title}
                     </h2>
                     {pitchDeck.slides[currentSlideIndex - 1].imageData && (
                       <img
                         src={`data:image/png;base64,${pitchDeck.slides[currentSlideIndex - 1].imageData}`}
                         alt={pitchDeck.slides[currentSlideIndex - 1].visualPrompt || ''}
-                        className="w-full max-h-[50vh] object-contain rounded-lg mb-4"
+                        className="slide-image w-full max-h-[50vh] object-contain rounded-lg mb-4"
                       />
                     )}
-                    <div className="text-white whitespace-pre-wrap leading-relaxed overflow-y-auto max-h-[30vh] [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]" style={{ fontSize: 'calc(1rem + 0.75vh)' }}>
+                    <div className="slide-text text-white whitespace-pre-wrap leading-relaxed overflow-y-auto max-h-[30vh] [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]" style={{ fontSize: 'calc(1rem + 0.75vh)' }}>
                       {pitchDeck.slides[currentSlideIndex - 1].content}
                     </div>
                   </div>
