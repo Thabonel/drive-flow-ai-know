@@ -21,6 +21,7 @@ import { PageHelp } from "@/components/PageHelp";
 import { supabase } from "@/integrations/supabase/client";
 import { useTheme } from "@/components/ThemeProvider";
 import { AIQueryInput } from "@/components/AIQueryInput";
+import { AgentModeToggle } from "@/components/settings/AgentModeToggle";
 import {
   User,
   Bell,
@@ -282,6 +283,21 @@ const Settings = () => {
               </TabsContent>
 
               <TabsContent value="ai" className="space-y-6 w-full">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Brain className="h-5 w-5" />
+                      Agent Mode
+                    </CardTitle>
+                    <CardDescription>
+                      Enable autonomous AI assistance for proactive task management
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {user && <AgentModeToggle userId={user.id} />}
+                  </CardContent>
+                </Card>
+
                 <PersonalPrompt />
               </TabsContent>
 
