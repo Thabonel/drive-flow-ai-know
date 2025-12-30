@@ -21,12 +21,25 @@ export interface PitchDeck {
   updated_at?: string;
 }
 
+/**
+ * Animation frame for expressive mode
+ * Represents one step in a progressive visual build-up
+ */
+export interface AnimationFrame {
+  frameNumber: number;
+  description: string;
+  visualPrompt: string;
+  imageData?: string;
+}
+
 export interface Slide {
   slideNumber: number;
   title: string;
   content: string;
   imageUrl?: string;
   speakerNotes?: string;
+  // Animation frames for expressive mode (Phase 5)
+  frames?: AnimationFrame[];
 }
 
 /**
