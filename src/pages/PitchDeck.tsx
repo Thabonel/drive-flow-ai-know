@@ -11,13 +11,17 @@ import { useAuth } from '@/hooks/useAuth';
 import { usePresentationMode } from '@/contexts/PresentationModeContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Loader2, Presentation, Download, Eye, FileText, Layers, Share2, X, Archive, Monitor } from 'lucide-react';
+import { Loader2, Presentation, Download, Eye, FileText, Layers, Share2, X, Archive, Monitor, Settings } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import jsPDF from 'jspdf';
 import pptxgen from 'pptxgenjs';
 import JSZip from 'jszip';
 import { PageHelp } from '@/components/PageHelp';
 import PresenterView from '@/components/PresenterView';
+import PresentationSettings, {
+  type PresentationSettingsData,
+  DEFAULT_SETTINGS,
+} from '@/components/PresentationSettings';
 import {
   createPresentationSync,
   generateSessionId,
@@ -77,6 +81,10 @@ export default function PitchDeck() {
   // Single-screen presentation enhancement state
   const [presentationStarted, setPresentationStarted] = useState(false);
   const [showSplitScreenNotes, setShowSplitScreenNotes] = useState(false);
+
+  // Presentation settings state
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [presentationSettings, setPresentationSettings] = useState<PresentationSettingsData>(DEFAULT_SETTINGS);
 
   // Refs for presentation mode focus management and keyboard navigation
   const presentationRef = useRef<HTMLDivElement>(null);
@@ -159,7 +167,7 @@ export default function PitchDeck() {
 
     const handleKeyPress = (e: KeyboardEvent) => {
       // Only handle presentation keys
-      const presentationKeys = ['ArrowRight', 'ArrowLeft', ' ', 'Enter', 'Home', 'End', 'Escape', 'n', 'N'];
+      const presentationKeys = ['ArrowRight', 'ArrowLeft', ' ', 'Enter', 'Home', 'End', 'Escape', 'n', 'N', 's', 'S'];
       if (!presentationKeys.includes(e.key)) return;
 
       e.preventDefault();
@@ -209,6 +217,11 @@ export default function PitchDeck() {
         case 'N':
           // Toggle split-screen notes view
           setShowSplitScreenNotes(prev => !prev);
+          break;
+        case 's':
+        case 'S':
+          // Open presentation settings dialog
+          setSettingsOpen(true);
           break;
       }
     };
@@ -2010,12 +2023,31 @@ Generated with AI Query Hub
             </div>
           )}
 
-          {/* Minimal keyboard hints */}
-          <div className="absolute top-4 right-4 text-xs text-gray-500 bg-black/50 px-3 py-2 rounded">
-            ← → Navigate | N Notes | ESC Exit
+          {/* Minimal keyboard hints with settings button */}
+          <div className="absolute top-4 right-4 flex items-center gap-2">
+            <div className="text-xs text-gray-500 bg-black/50 px-3 py-2 rounded">
+              ← → Navigate | N Notes | S Settings | ESC Exit
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setSettingsOpen(true)}
+              className="bg-black/50 text-gray-400 hover:text-white hover:bg-black/70 p-2 h-auto"
+              title="Presentation Settings (S)"
+            >
+              <Settings className="h-4 w-4" />
+            </Button>
           </div>
         </div>
       )}
+
+      {/* Presentation Settings Dialog */}
+      <PresentationSettings
+        open={settingsOpen}
+        onOpenChange={setSettingsOpen}
+        settings={presentationSettings}
+        onSettingsChange={setPresentationSettings}
+      />
     </div>
   );
 }
