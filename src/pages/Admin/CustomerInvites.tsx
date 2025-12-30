@@ -19,7 +19,8 @@ import {
   Clock,
   Ban,
   Loader2,
-  Link as LinkIcon
+  Link as LinkIcon,
+  Archive
 } from 'lucide-react';
 import {
   Table,
@@ -34,13 +35,14 @@ interface CustomerInvite {
   id: string;
   invite_token: string;
   assigned_email: string | null;
-  status: 'pending' | 'used' | 'expired' | 'cancelled';
+  status: 'pending' | 'used' | 'expired' | 'cancelled' | 'archived';
   used_by: string | null;
   used_at: string | null;
   expires_at: string;
   created_at: string;
   metadata: {
     created_by_email?: string;
+    archived_at?: string;
   };
 }
 
@@ -50,15 +52,23 @@ export default function CustomerInvites() {
   const [assignedEmail, setAssignedEmail] = useState('');
   const [expiresInDays, setExpiresInDays] = useState(30);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [showArchived, setShowArchived] = useState(false);
 
   // Fetch all invites
   const { data: invites, isLoading } = useQuery({
-    queryKey: ['customer-invites'],
+    queryKey: ['customer-invites', showArchived],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from('customer_invites')
         .select('*')
         .order('created_at', { ascending: false });
+
+      // Filter out archived invites by default
+      if (!showArchived) {
+        query = query.neq('status', 'archived');
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
       return data as CustomerInvite[];
@@ -140,6 +150,37 @@ export default function CustomerInvites() {
     },
   });
 
+  // Archive invite mutation
+  const archiveInvite = useMutation({
+    mutationFn: async (inviteId: string) => {
+      const { error } = await supabase
+        .from('customer_invites')
+        .update({
+          status: 'archived',
+          metadata: {
+            archived_at: new Date().toISOString()
+          }
+        })
+        .eq('id', inviteId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Invite Archived',
+        description: 'The invite has been archived successfully',
+      });
+      queryClient.invalidateQueries({ queryKey: ['customer-invites'] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to archive invite',
+        variant: 'destructive',
+      });
+    },
+  });
+
   const copyMagicLink = async (token: string) => {
     const frontendUrl = window.location.origin;
     const magicLink = `${frontendUrl}/signup?invite=${token}`;
@@ -157,6 +198,7 @@ export default function CustomerInvites() {
       used: { color: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400', icon: CheckCircle },
       expired: { color: 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400', icon: XCircle },
       cancelled: { color: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400', icon: Ban },
+      archived: { color: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400', icon: Archive },
     };
 
     const { color, icon: Icon } = variants[status];
@@ -266,10 +308,26 @@ export default function CustomerInvites() {
         {/* Invites List */}
         <Card>
           <CardHeader>
-            <CardTitle>All Invites</CardTitle>
-            <CardDescription>
-              View and manage all customer invites
-            </CardDescription>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>All Invites</CardTitle>
+                <CardDescription>
+                  View and manage all customer invites
+                </CardDescription>
+              </div>
+              <div className="flex items-center gap-2">
+                <Label htmlFor="show-archived" className="text-sm text-muted-foreground cursor-pointer">
+                  Show Archived
+                </Label>
+                <input
+                  id="show-archived"
+                  type="checkbox"
+                  checked={showArchived}
+                  onChange={(e) => setShowArchived(e.target.checked)}
+                  className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer"
+                />
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
             {isLoading ? (
@@ -354,15 +412,31 @@ export default function CustomerInvites() {
                                 </Button>
                               </>
                             )}
-                            {invite.status !== 'pending' && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => copyMagicLink(invite.invite_token)}
-                              >
-                                <LinkIcon className="h-3 w-3 mr-1" />
-                                View Link
-                              </Button>
+                            {(invite.status === 'used' || invite.status === 'expired' || invite.status === 'cancelled') && (
+                              <>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => copyMagicLink(invite.invite_token)}
+                                >
+                                  <LinkIcon className="h-3 w-3 mr-1" />
+                                  View Link
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => archiveInvite.mutate(invite.id)}
+                                  disabled={archiveInvite.isPending}
+                                >
+                                  <Archive className="h-3 w-3 mr-1" />
+                                  Archive
+                                </Button>
+                              </>
+                            )}
+                            {invite.status === 'archived' && (
+                              <span className="text-xs text-muted-foreground italic">
+                                Archived
+                              </span>
                             )}
                           </div>
                         </TableCell>
