@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, Building2, Users, FileText, Calendar, Sparkles } from 'lucide-react';
+import { Loader2, Building2, Users, FileText, Calendar, Link } from 'lucide-react';
 import { PageHelp } from '@/components/PageHelp';
 
 /**
@@ -113,7 +113,7 @@ export default function CreateTeam() {
           <Card>
             <CardHeader>
               <div className="h-12 w-12 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center mb-2">
-                <Sparkles className="h-6 w-6 text-purple-600 dark:text-purple-400" />
+                <Link className="h-6 w-6 text-purple-600 dark:text-purple-400" />
               </div>
               <CardTitle className="text-lg">Context Fluency</CardTitle>
             </CardHeader>
