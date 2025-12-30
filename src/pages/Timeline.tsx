@@ -116,31 +116,31 @@ function TimelineContent() {
   };
 
   return (
-    <div className="container mx-auto py-2 space-y-2">
+    <div className="container mx-auto py-1 space-y-1">
       {/* User Greeting */}
-      <p className="text-muted-foreground text-sm">Hey {user?.user_metadata?.full_name || user?.email?.split('@')[0]}</p>
+      <p className="text-muted-foreground text-xs">Hey {user?.user_metadata?.full_name || user?.email?.split('@')[0]}</p>
 
       {/* Combined Planning & Shutdown Prompt */}
       {(showPrompt && !todaySession?.completed_at) || (shutdownNeeded && settings?.enable_shutdown_ritual && !shutdownPromptDismissed) ? (
-        <Alert className="border-2 border-blue-500 shadow-lg bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/50 dark:to-orange-950/50 p-1">
+        <Alert className="border border-blue-500 shadow-sm bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/50 dark:to-orange-950/50 p-2">
           <div className="flex items-start gap-2">
             {/* Left side: Shutdown content or Planning prompt */}
-            <div className="flex-1 space-y-1">
+            <div className="flex-1 space-y-0">
               {shutdownNeeded && settings?.enable_shutdown_ritual ? (
                 <>
                   <div>
-                    <h4 className="font-semibold mb-1 text-black dark:text-slate-50">Time to wrap up!</h4>
-                    <AlertDescription className="text-sm text-gray-800 dark:text-slate-300">
+                    <h4 className="font-semibold text-sm text-black dark:text-slate-50">Time to wrap up!</h4>
+                    <AlertDescription className="text-xs text-gray-800 dark:text-slate-300">
                       Reflect on today and prepare for tomorrow.
                     </AlertDescription>
                   </div>
-                  <Button onClick={handleStartShutdown} size="sm">
+                  <Button onClick={handleStartShutdown} size="sm" className="mt-1">
                     Start Shutdown Ritual
                   </Button>
                 </>
               ) : (
                 <div className="flex-shrink-0">
-                  <h4 className="font-semibold text-sm text-slate-900 dark:text-slate-50">Ready to plan your day?</h4>
+                  <h4 className="font-semibold text-xs text-slate-900 dark:text-slate-50">Ready to plan your day?</h4>
                 </div>
               )}
             </div>
