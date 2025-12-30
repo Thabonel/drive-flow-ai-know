@@ -43,7 +43,9 @@ CREATE POLICY "Users can view teams they belong to or open teams"
 -- Ensure team_members policies are optimal (from previous fix)
 DROP POLICY IF EXISTS "Users can view their own team memberships" ON team_members;
 DROP POLICY IF EXISTS "Users can view members in their teams" ON team_members;
+DROP POLICY IF EXISTS "Users can view members in their teams via ownership" ON team_members;
 DROP POLICY IF EXISTS "Team owners can manage members" ON team_members;
+DROP POLICY IF EXISTS "Team owners can manage all members" ON team_members;
 DROP POLICY IF EXISTS "Team admins can insert members" ON team_members;
 DROP POLICY IF EXISTS "Team admins can update members" ON team_members;
 DROP POLICY IF EXISTS "Team admins can delete members" ON team_members;
