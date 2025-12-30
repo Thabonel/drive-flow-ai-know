@@ -76,19 +76,19 @@ const SLIDE_ADVANCE_SPEEDS = {
 const ANIMATION_STYLES = {
   none: {
     label: 'None',
-    description: 'Static slides, no transitions',
+    description: 'Static slides with no animation effects',
   },
   minimal: {
     label: 'Minimal',
-    description: 'Subtle fade-in transitions',
+    description: 'Subtle 400ms fade-in transitions for a clean, professional look',
   },
   standard: {
     label: 'Standard',
-    description: 'Scroll-synchronized reveals',
+    description: 'Slide and scale effects with staggered timing for dynamic reveals',
   },
   expressive: {
     label: 'Expressive',
-    description: 'Multi-frame animations',
+    description: 'AI-generated multi-frame animations that cycle automatically',
   },
 };
 
@@ -123,6 +123,9 @@ export function PresentationSettings({
           <DialogTitle>Presentation Settings</DialogTitle>
           <DialogDescription>
             Configure auto-scroll, animations, and playback options for your presentation.
+            <span className="block mt-2 text-xs">
+              Tip: Hover your mouse during presentation to pause all auto features.
+            </span>
           </DialogDescription>
         </DialogHeader>
 
