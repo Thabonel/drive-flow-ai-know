@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
+import { useAgentSession } from '@/hooks/useAgentSession';
 import {
   Activity,
   Target,
@@ -15,16 +16,6 @@ import {
   FileText,
   BarChart3
 } from 'lucide-react';
-
-interface AgentSession {
-  id: string;
-  status: string;
-  tokens_used: number;
-  tokens_budget: number;
-  tasks_completed: number;
-  sub_agents_spawned: number;
-  last_active_at: string;
-}
 
 interface AgentMemory {
   id: string;
@@ -41,39 +32,27 @@ interface SubAgent {
 }
 
 export function AgentRightPane({ userId }: { userId: string }) {
-  const [session, setSession] = useState<AgentSession | null>(null);
+  const { session, loading: sessionLoading } = useAgentSession({
+    userId,
+    enabled: true, // This component only renders when agent mode is enabled
+  });
   const [recentGoals, setRecentGoals] = useState<AgentMemory[]>([]);
   const [activeAgents, setActiveAgents] = useState<SubAgent[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchAgentData();
+    const fetchAgentData = async () => {
+      if (!session) {
+        setLoading(false);
+        return;
+      }
 
-    // Refresh every 30 seconds
-    const interval = setInterval(fetchAgentData, 30000);
-    return () => clearInterval(interval);
-  }, [userId]);
-
-  const fetchAgentData = async () => {
-    try {
-      // Fetch active session
-      const { data: sessionData } = await supabase
-        .from('agent_sessions')
-        .select('*')
-        .eq('user_id', userId)
-        .eq('status', 'active')
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      setSession(sessionData);
-
-      if (sessionData) {
+      try {
         // Fetch recent goals
         const { data: goalsData } = await supabase
           .from('agent_memory')
           .select('*')
-          .eq('session_id', sessionData.id)
+          .eq('session_id', session.id)
           .eq('memory_type', 'goal')
           .order('created_at', { ascending: false })
           .limit(3);
@@ -84,19 +63,25 @@ export function AgentRightPane({ userId }: { userId: string }) {
         const { data: agentsData } = await supabase
           .from('sub_agents')
           .select('*')
-          .eq('session_id', sessionData.id)
+          .eq('session_id', session.id)
           .in('status', ['active', 'pending'])
           .order('created_at', { ascending: false })
           .limit(5);
 
         setActiveAgents(agentsData || []);
+      } catch (error) {
+        console.error('Error fetching agent data:', error);
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      console.error('Error fetching agent data:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
+
+    fetchAgentData();
+
+    // Refresh every 30 seconds
+    const interval = setInterval(fetchAgentData, 30000);
+    return () => clearInterval(interval);
+  }, [session]);
 
   const getStatusBadge = () => {
     if (!session) return <Badge variant="secondary">Inactive</Badge>;
@@ -104,10 +89,10 @@ export function AgentRightPane({ userId }: { userId: string }) {
     switch (session.status) {
       case 'active':
         return <Badge className="bg-success text-success-foreground">Active</Badge>;
-      case 'idle':
-        return <Badge variant="outline">Idle</Badge>;
       case 'paused':
         return <Badge variant="secondary">Paused</Badge>;
+      case 'completed':
+        return <Badge variant="outline">Completed</Badge>;
       default:
         return <Badge variant="secondary">{session.status}</Badge>;
     }
@@ -148,7 +133,7 @@ export function AgentRightPane({ userId }: { userId: string }) {
     return `${hours}h ago`;
   };
 
-  if (loading) {
+  if (loading || sessionLoading) {
     return (
       <div className="w-80 border-l bg-background p-4 flex items-center justify-center">
         <div className="text-center text-muted-foreground">
