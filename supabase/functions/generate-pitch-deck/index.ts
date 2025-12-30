@@ -40,6 +40,10 @@ interface Slide {
   notes?: string;
   // Animation frames for expressive mode (Phase 5)
   frames?: AnimationFrame[];
+  // Video support for expressive mode (Phase 6)
+  videoUrl?: string;
+  videoDuration?: number;
+  videoFileSizeMb?: number;
 }
 
 interface PitchDeckResponse {
@@ -594,35 +598,75 @@ Make it compelling, data-driven where appropriate (especially if source document
         return undefined;
       };
 
-      // Helper function to generate a single video
-      const generateVideo = async (visualPrompt: string, visualType: string): Promise<{ url?: string; duration?: number; sizeMb?: number }> => {
-        try {
-          const videoResponse = await fetch(`${supabaseUrl}/functions/v1/generate-video`, {
-            method: 'POST',
-            headers: {
-              'Authorization': authHeader!,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              prompt: visualPrompt,
-              duration: 4, // 4 seconds default
-              aspectRatio: '16:9',
-              resolution: '1080p',
-            })
-          });
+      // Helper function to generate a single video with retry logic
+      const generateVideo = async (visualPrompt: string, visualType: string, retries = 2): Promise<{ url?: string; duration?: number; sizeMb?: number; error?: string }> => {
+        for (let attempt = 0; attempt <= retries; attempt++) {
+          try {
+            console.log(`Video generation attempt ${attempt + 1}/${retries + 1} for prompt: "${visualPrompt.substring(0, 50)}..."`);
 
-          if (videoResponse.ok) {
-            const videoResult = await videoResponse.json();
-            return {
-              url: videoResult.videoUrl,
-              duration: videoResult.duration,
-              sizeMb: videoResult.fileSizeMb
-            };
+            const controller = new AbortController();
+            const timeout = setTimeout(() => controller.abort(), 90000); // 90s timeout for video API
+
+            const videoResponse = await fetch(`${supabaseUrl}/functions/v1/generate-video`, {
+              method: 'POST',
+              headers: {
+                'Authorization': authHeader!,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                prompt: visualPrompt,
+                duration: 4, // 4 seconds default
+                aspectRatio: '16:9',
+                resolution: '1080p',
+              }),
+              signal: controller.signal
+            });
+
+            clearTimeout(timeout);
+
+            if (videoResponse.ok) {
+              const videoResult = await videoResponse.json();
+              if (videoResult.videoUrl) {
+                console.log(`✓ Video generated successfully (attempt ${attempt + 1}, cached: ${videoResult.cached || false})`);
+                return {
+                  url: videoResult.videoUrl,
+                  duration: videoResult.duration,
+                  sizeMb: videoResult.fileSizeMb
+                };
+              } else if (videoResult.error) {
+                console.error(`✗ Video API returned error: ${videoResult.error}`);
+                // Don't retry if API explicitly returned an error
+                return { error: videoResult.error };
+              }
+            } else {
+              const errorText = await videoResponse.text();
+              console.error(`✗ Video API HTTP ${videoResponse.status}: ${errorText}`);
+
+              // Retry on 5xx errors (server-side issues)
+              if (videoResponse.status >= 500 && attempt < retries) {
+                console.log(`Retrying after ${2 ** attempt}s backoff...`);
+                await new Promise(resolve => setTimeout(resolve, 1000 * (2 ** attempt)));
+                continue;
+              }
+
+              return { error: `HTTP ${videoResponse.status}` };
+            }
+          } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+            console.error(`✗ Video generation exception (attempt ${attempt + 1}):`, errorMessage);
+
+            // Retry on network errors or timeouts
+            if (attempt < retries) {
+              console.log(`Retrying after ${2 ** attempt}s backoff...`);
+              await new Promise(resolve => setTimeout(resolve, 1000 * (2 ** attempt)));
+              continue;
+            }
+
+            return { error: errorMessage };
           }
-        } catch (error) {
-          console.error('Video generation error:', error);
         }
-        return {};
+
+        return { error: 'Max retries exceeded' };
       };
 
       // Generate all images in parallel to avoid timeout
@@ -649,11 +693,16 @@ Make it compelling, data-driven where appropriate (especially if source document
               slide.videoUrl = videoResult.url;
               slide.videoDuration = videoResult.duration;
               slide.videoFileSizeMb = videoResult.sizeMb;
-              console.log(`Video generated for slide ${slide.slideNumber}: ${videoResult.url}`);
+              console.log(`✓ Video generated for slide ${slide.slideNumber}: ${videoResult.url}`);
             } else {
-              console.warn(`Failed to generate video for slide ${slide.slideNumber}, falling back to image`);
+              console.warn(`⚠ Failed to generate video for slide ${slide.slideNumber} (${videoResult.error || 'unknown error'}), falling back to static image`);
               // Fallback to static image if video generation fails
               slide.imageData = await generateImage(slide.visualPrompt, slide.visualType || 'illustration');
+              if (slide.imageData) {
+                console.log(`✓ Fallback image generated for slide ${slide.slideNumber}`);
+              } else {
+                console.error(`✗ Both video and image generation failed for slide ${slide.slideNumber}`);
+              }
             }
           } else {
             // Generate main slide image for non-expressive modes
