@@ -366,3 +366,155 @@ All colors MUST be HSL.
     pointer-events: none;
   }
 }
+
+/* ============================================
+   PRESENTATION ANIMATION STYLES
+   Four animation styles for pitch deck presentations:
+   - none: No animations (static slides)
+   - minimal: Subtle fade-in transitions (300-500ms)
+   - standard: Scroll-synchronized reveals
+   - expressive: Multi-frame sequential animations
+
+   Performance: All animations use GPU-accelerated properties (opacity, transform)
+   ============================================ */
+
+/* ANIMATION STYLE: NONE - No animations */
+.animation-none .slide-animate {
+  opacity: 1;
+  transform: none;
+}
+
+/* ANIMATION STYLE: MINIMAL - Subtle fade-in */
+.animation-minimal .slide-content {
+  animation: minimal-fade-in 400ms ease-out forwards;
+}
+
+.animation-minimal .slide-title {
+  animation: minimal-fade-in 400ms ease-out 100ms forwards;
+  opacity: 0;
+}
+
+.animation-minimal .slide-image {
+  animation: minimal-fade-in 500ms ease-out 200ms forwards;
+  opacity: 0;
+}
+
+.animation-minimal .slide-text {
+  animation: minimal-fade-in 400ms ease-out 300ms forwards;
+  opacity: 0;
+}
+
+@keyframes minimal-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* ANIMATION STYLE: STANDARD - Scroll-synchronized reveals */
+.animation-standard .slide-content {
+  animation: standard-slide-up 500ms ease-out forwards;
+}
+
+.animation-standard .slide-title {
+  animation: standard-slide-left 400ms ease-out 100ms forwards;
+  opacity: 0;
+  transform: translateX(-20px);
+}
+
+.animation-standard .slide-image {
+  animation: standard-scale-in 600ms cubic-bezier(0.34, 1.56, 0.64, 1) 200ms forwards;
+  opacity: 0;
+  transform: scale(0.95);
+}
+
+.animation-standard .slide-text {
+  animation: standard-slide-up 500ms ease-out 300ms forwards;
+  opacity: 0;
+  transform: translateY(20px);
+}
+
+@keyframes standard-slide-up {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes standard-slide-left {
+  from { opacity: 0; transform: translateX(-20px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes standard-scale-in {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* ANIMATION STYLE: EXPRESSIVE - Multi-frame animations */
+.animation-expressive .slide-content {
+  animation: expressive-zoom-in 700ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.animation-expressive .slide-title {
+  animation: expressive-title-reveal 600ms cubic-bezier(0.34, 1.56, 0.64, 1) 100ms forwards;
+  opacity: 0;
+  transform: translateY(-30px) scale(0.9);
+}
+
+.animation-expressive .slide-image {
+  animation: expressive-image-pop 800ms cubic-bezier(0.34, 1.56, 0.64, 1) 250ms forwards;
+  opacity: 0;
+  transform: scale(0.8) rotate(-2deg);
+}
+
+.animation-expressive .slide-text {
+  animation: expressive-text-reveal 600ms ease-out 400ms forwards;
+  opacity: 0;
+  transform: translateY(30px);
+}
+
+@keyframes expressive-zoom-in {
+  from { opacity: 0; transform: scale(0.9); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes expressive-title-reveal {
+  from { opacity: 0; transform: translateY(-30px) scale(0.9); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes expressive-image-pop {
+  from { opacity: 0; transform: scale(0.8) rotate(-2deg); }
+  to { opacity: 1; transform: scale(1) rotate(0deg); }
+}
+
+@keyframes expressive-text-reveal {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* GPU ACCELERATION for smooth 60fps animations */
+.animation-minimal .slide-content,
+.animation-minimal .slide-title,
+.animation-minimal .slide-image,
+.animation-minimal .slide-text,
+.animation-standard .slide-content,
+.animation-standard .slide-title,
+.animation-standard .slide-image,
+.animation-standard .slide-text,
+.animation-expressive .slide-content,
+.animation-expressive .slide-title,
+.animation-expressive .slide-image,
+.animation-expressive .slide-text {
+  will-change: opacity, transform;
+  backface-visibility: hidden;
+}
+
+/* REDUCED MOTION - Respect user's motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  .animation-minimal *,
+  .animation-standard *,
+  .animation-expressive * {
+    animation: none !important;
+    transition: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
