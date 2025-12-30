@@ -20,6 +20,7 @@ import { PageHelp } from '@/components/PageHelp';
 import PresenterView from '@/components/PresenterView';
 import PresentationSettings from '@/components/PresentationSettings';
 import KeyboardShortcutsHelp from '@/components/KeyboardShortcutsHelp';
+import PresentationProgressIndicators from '@/components/PresentationProgressIndicators';
 import { usePresentationSettings } from '@/hooks/usePresentationSettings';
 import { useContentAutoScroll } from '@/hooks/useContentAutoScroll';
 import { useSlideAutoAdvance } from '@/hooks/useSlideAutoAdvance';
@@ -2090,6 +2091,16 @@ Generated with AI Query Hub
               </div>
             </div>
           )}
+
+          {/* Progress Indicators for auto-scroll/auto-advance */}
+          <PresentationProgressIndicators
+            scrollProgress={contentAutoScroll.progress}
+            isScrollActive={contentAutoScroll.isScrolling}
+            advanceProgress={slideAutoAdvance.progress}
+            advanceTimeRemaining={slideAutoAdvance.timeRemaining}
+            isAdvanceActive={slideAutoAdvance.isActive}
+            isPaused={isAutoPaused}
+          />
 
           {/* Minimal keyboard hints with settings button */}
           <div className="absolute top-4 right-4 flex items-center gap-2">
