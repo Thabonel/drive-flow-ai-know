@@ -59,6 +59,7 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
   const [timelineContent, setTimelineContent] = useState('');
   const scrollRef = useRef<HTMLDivElement>(null);
   const isSubmittingRef = useRef(false);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     // Don't load messages if we're actively submitting (prevents race condition)
@@ -206,6 +207,16 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
 
     console.log('Message saved successfully:', data.id, 'sequence:', data.sequence_number);
     return data;
+  };
+
+  // Stop AI generation
+  const handleStopGeneration = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+      setIsLoading(false);
+      toast.info('Generation stopped');
+    }
   };
 
   // Auto-save long content as a document and return the doc ID
@@ -358,17 +369,51 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
         content: msg.content,
       }));
 
-      const { data, error } = await supabase.functions.invoke('ai-query', {
-        body: {
-          query: userMessage,
-          conversationContext,
-          use_documents: forceUseDocuments,
-        },
-      });
+      // Create AbortController for cancelling the request
+      abortControllerRef.current = new AbortController();
+
+      // Get auth session for the request
+      const { data: { session } } = await supabase.auth.getSession();
+      const authToken = session?.access_token;
+
+      if (!authToken) {
+        throw new Error('No authentication token available');
+      }
+
+      // Use fetch directly to support AbortController
+      const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+      const response = await fetch(
+        `${SUPABASE_URL}/functions/v1/ai-query`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`,
+          },
+          body: JSON.stringify({
+            query: userMessage,
+            conversationContext,
+            use_documents: forceUseDocuments,
+          }),
+          signal: abortControllerRef.current.signal,
+        }
+      );
+
+      const data = response.ok ? await response.json() : null;
+      const error = !response.ok ? new Error(await response.text()) : null;
+
+      // Clear abort controller after request completes
+      abortControllerRef.current = null;
 
       // Handle errors with specific user-friendly messages
       if (error) {
         console.error('AI query error:', error);
+
+        // Check if request was aborted
+        if (error.name === 'AbortError' || error.message?.includes('aborted')) {
+          console.log('Request was aborted by user');
+          return; // Exit silently, user already got toast notification
+        }
 
         // Check for specific error types
         const errorMessage = error.message || '';
@@ -893,9 +938,20 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
           <DictationButton
             onTranscription={(text) => setInput(prev => prev ? prev + ' ' + text : text)}
           />
-          <Button type="submit" disabled={isLoading || !input.trim()}>
-            <Send className="h-4 w-4" />
-          </Button>
+          {isLoading ? (
+            <Button
+              type="button"
+              onClick={handleStopGeneration}
+              variant="destructive"
+              className="bg-red-600 hover:bg-red-700"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          ) : (
+            <Button type="submit" disabled={!input.trim()}>
+              <Send className="h-4 w-4" />
+            </Button>
+          )}
         </div>
       </div>
     </form>

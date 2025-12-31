@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { MessageSquare, Send, Loader2, Save, FileText, PlusCircle, Calendar } from 'lucide-react';
+import { MessageSquare, Send, Loader2, Save, FileText, PlusCircle, Calendar, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -40,6 +40,7 @@ export const AIQueryInput = ({ selectedKnowledgeBase, onClearSelection }: AIQuer
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const scrollRef = useRef<HTMLDivElement>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   const savePrompt = useMutation({
     mutationFn: async (text: string) => {
@@ -163,6 +164,19 @@ export const AIQueryInput = ({ selectedKnowledgeBase, onClearSelection }: AIQuer
 
   const LONG_MESSAGE_THRESHOLD = 10000;
 
+  // Stop AI generation
+  const handleStopGeneration = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+      setIsLoading(false);
+      toast({
+        title: 'Stopped',
+        description: 'Generation stopped',
+      });
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!query.trim() || !user) return;
@@ -215,16 +229,50 @@ export const AIQueryInput = ({ selectedKnowledgeBase, onClearSelection }: AIQuer
         content: msg.content
       }));
 
-      const { data, error } = await supabase.functions.invoke('ai-query', {
-        body: {
-          query: userMessage,
-          knowledge_base_id: selectedKnowledgeBase?.id,
-          use_documents: true || forceUseDocuments,
-          conversationContext
+      // Create AbortController for cancelling the request
+      abortControllerRef.current = new AbortController();
+
+      // Get auth session for the request
+      const { data: { session } } = await supabase.auth.getSession();
+      const authToken = session?.access_token;
+
+      if (!authToken) {
+        throw new Error('No authentication token available');
+      }
+
+      // Use fetch directly to support AbortController
+      const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+      const response = await fetch(
+        `${SUPABASE_URL}/functions/v1/ai-query`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`,
+          },
+          body: JSON.stringify({
+            query: userMessage,
+            knowledge_base_id: selectedKnowledgeBase?.id,
+            use_documents: true || forceUseDocuments,
+            conversationContext
+          }),
+          signal: abortControllerRef.current.signal,
         }
-      });
+      );
+
+      const data = response.ok ? await response.json() : null;
+      const error = !response.ok ? new Error(await response.text()) : null;
+
+      // Clear abort controller after request completes
+      abortControllerRef.current = null;
 
       console.log('AI query response:', { data, error });
+
+      // Check if request was aborted
+      if (error?.name === 'AbortError' || error?.message?.includes('aborted')) {
+        console.log('Request was aborted by user');
+        return; // Exit silently, user already got toast notification
+      }
 
       if (error) throw error;
 
@@ -455,13 +503,20 @@ export const AIQueryInput = ({ selectedKnowledgeBase, onClearSelection }: AIQuer
             <DictationButton
               onTranscription={(text) => setQuery(prev => prev ? prev + ' ' + text : text)}
             />
-            <Button type="submit" disabled={isLoading || !query.trim() || query.length < 3} className="h-auto px-6">
-              {isLoading ? (
-                <Loader2 className="h-5 w-5 animate-spin" />
-              ) : (
+            {isLoading ? (
+              <Button
+                type="button"
+                onClick={handleStopGeneration}
+                variant="destructive"
+                className="bg-red-600 hover:bg-red-700 h-auto px-6"
+              >
+                <X className="h-5 w-5" />
+              </Button>
+            ) : (
+              <Button type="submit" disabled={!query.trim() || query.length < 3} className="h-auto px-6">
                 <Send className="h-5 w-5" />
-              )}
-            </Button>
+              </Button>
+            )}
           </div>
         </form>
 
