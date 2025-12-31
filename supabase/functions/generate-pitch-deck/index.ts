@@ -733,6 +733,64 @@ The code should be production-ready and immediately renderable by Remotion.`;
 
       const scriptsGenerated = pitchDeckStructure.slides.filter(s => s.animationScript).length;
       console.log(`Remotion animation scripts: ${scriptsGenerated}/${pitchDeckStructure.slides.length} slides`);
+
+      // Trigger video rendering for slides with animation scripts
+      if (scriptsGenerated > 0) {
+        console.log('Triggering video rendering for animation scripts...');
+
+        const renderPromises = pitchDeckStructure.slides.map(async (slide) => {
+          if (!slide.animationScript) return;
+
+          try {
+            // Generate unique slide ID
+            const slideId = `${user.id}-slide-${slide.slideNumber}-${Date.now()}`;
+
+            // Call render-remotion-video Edge Function
+            const renderResponse = await fetch(`${supabaseUrl}/functions/v1/render-remotion-video`, {
+              method: 'POST',
+              headers: {
+                'Authorization': authHeader!,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                animationScript: slide.animationScript,
+                slideId,
+                compositionConfig: {
+                  id: `slide-${slide.slideNumber}`,
+                  fps: 30,
+                  durationInFrames: 240, // 8 seconds @ 30fps
+                  width: 1920,
+                  height: 1080,
+                },
+              }),
+            });
+
+            if (renderResponse.ok) {
+              const renderResult = await renderResponse.json();
+
+              // Store video URL if rendering succeeded
+              if (renderResult.videoUrl) {
+                slide.videoUrl = renderResult.videoUrl;
+                slide.videoDuration = renderResult.duration;
+                slide.videoFileSizeMb = renderResult.fileSizeMb;
+                console.log(`✓ Video rendered for slide ${slide.slideNumber}: ${renderResult.videoUrl}`);
+              } else {
+                // Rendering not yet implemented or failed
+                console.log(`⚠ Video rendering not available for slide ${slide.slideNumber}: ${renderResult.error || 'Unknown error'}`);
+              }
+            } else {
+              console.error(`✗ Failed to render video for slide ${slide.slideNumber}: HTTP ${renderResponse.status}`);
+            }
+          } catch (error) {
+            console.error(`Error rendering video for slide ${slide.slideNumber}:`, error);
+          }
+        });
+
+        await Promise.all(renderPromises);
+
+        const videosRendered = pitchDeckStructure.slides.filter(s => s.videoUrl).length;
+        console.log(`Video rendering complete: ${videosRendered}/${scriptsGenerated} videos rendered`);
+      }
     }
 
     // Step 3: Generate images for slides that need them (if requested)
