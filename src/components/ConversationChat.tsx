@@ -51,7 +51,7 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSummarizing, setIsSummarizing] = useState(false);
-  const [conversationTitle, setConversationTitle] = useState('AI Assistant');
+  const [conversationTitle, setConversationTitle] = useState('AI Chat');
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [editedTitle, setEditedTitle] = useState('');
   const [useDocuments, setUseDocuments] = useState(true); // Toggle for document access
@@ -75,7 +75,7 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
       setConversationId(null);
       setMessages([]);
       setInput('');
-      setConversationTitle('AI Assistant');
+      setConversationTitle('AI Chat');
       setIsEditingTitle(false);
       setEditedTitle('');
       return;
@@ -88,7 +88,7 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
       setConversationId(initialConversationId);
       setMessages([]);
       setInput('');
-      setConversationTitle('AI Assistant');
+      setConversationTitle('AI Chat');
       setIsEditingTitle(false);
       setEditedTitle('');
 
@@ -121,7 +121,7 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
       .single();
 
     if (!convError && conversation) {
-      setConversationTitle(conversation.title || 'AI Assistant');
+      setConversationTitle(conversation.title || 'AI Chat');
     }
 
     const { data, error } = await supabase
