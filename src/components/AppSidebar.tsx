@@ -57,7 +57,7 @@ const navigationItems = [
     description: 'Create presentations'
   },
   {
-    title: 'Agent Mode',
+    title: 'AI Assistant',
     url: '/agent',
     icon: Bot,
     description: 'Autonomous AI tasks'
@@ -66,7 +66,7 @@ const navigationItems = [
 
 
 const executiveNavigationItems = [
-  { title: 'Assistant Setup', url: '/assistants', icon: Bot },
+  { title: 'Human Assistant', url: '/assistants', icon: Bot },
 ];
 
 export function AppSidebar() {
