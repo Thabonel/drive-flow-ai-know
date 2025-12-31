@@ -113,7 +113,7 @@ function AppLayout({ children }: { children: React.ReactNode }) {
               {children}
             </div>
           </main>
-          {user && (
+          {user && location.pathname === '/dashboard' && (
             <FeatureGate requiredTier="enterprise">
               {!loadingAgentMode && agentMode ? (
                 <AgentRightPane userId={user.id} />
