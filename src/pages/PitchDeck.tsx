@@ -287,19 +287,31 @@ export default function PitchDeck() {
         return;
       }
 
-      // Don't allow navigation in preview mode
-      if (!presentationStarted) return;
-
       switch (e.key) {
         case 'ArrowRight':
-        case ' ':
         case 'Enter':
-          // Navigate to next slide (scroll reset handled in handleNextSlide)
-          handleNextSlide();
+          // Navigate to next slide
+          if (presentationStarted) {
+            handleNextSlide();
+          } else {
+            // In preview mode, trigger button click
+            nextButtonRef.current?.click();
+          }
+          break;
+        case ' ':
+          // Only advance slide if presentation started (Space starts in preview)
+          if (presentationStarted) {
+            handleNextSlide();
+          }
           break;
         case 'ArrowLeft':
-          // Navigate to previous slide (scroll reset handled in handlePreviousSlide)
-          handlePreviousSlide();
+          // Navigate to previous slide
+          if (presentationStarted) {
+            handlePreviousSlide();
+          } else {
+            // In preview mode, trigger button click
+            prevButtonRef.current?.click();
+          }
           break;
         case 'Home':
           // First slide
