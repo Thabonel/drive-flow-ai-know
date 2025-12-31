@@ -56,16 +56,14 @@ const navigationItems = [
     icon: Presentation,
     description: 'Create presentations'
   },
-];
-
-const assistantNavigationItems = [
   {
     title: 'Agent Mode',
     url: '/agent',
     icon: Bot,
-    description: 'Autonomous AI assistant'
+    description: 'Autonomous AI tasks'
   },
 ];
+
 
 const executiveNavigationItems = [
   { title: 'Assistant Setup', url: '/assistants', icon: Bot },
@@ -145,43 +143,6 @@ export function AppSidebar() {
             </SidebarGroupContent>
           </SidebarGroup>
 
-          {/* Assistant Section */}
-          <SidebarGroup>
-            <SidebarGroupLabel>Assistant</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {assistantNavigationItems.map((item) => (
-                  <SidebarMenuItem key={item.title}>
-                    {collapsed ? (
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <SidebarMenuButton asChild>
-                            <NavLink to={item.url} end className={getNavCls}>
-                              <item.icon className="h-4 w-4" />
-                            </NavLink>
-                          </SidebarMenuButton>
-                        </TooltipTrigger>
-                        <TooltipContent side="right">
-                          <div className="font-medium">{item.title}</div>
-                          <div className="text-xs text-muted-foreground">{item.description}</div>
-                        </TooltipContent>
-                      </Tooltip>
-                    ) : (
-                      <SidebarMenuButton asChild>
-                        <NavLink to={item.url} end className={getNavCls}>
-                          <item.icon className="h-4 w-4" />
-                          <div className="flex flex-col gap-0.5">
-                            <span className="font-medium text-sm">{item.title}</span>
-                            <span className="text-xs text-muted-foreground">{item.description}</span>
-                          </div>
-                        </NavLink>
-                      </SidebarMenuButton>
-                    )}
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
 
         {/* Team Navigation - Only visible for Business tier and above */}
         <FeatureGate requiredTier="business">
@@ -308,8 +269,8 @@ export function AppSidebar() {
           </SidebarGroup>
         </FeatureGate>
 
-        {/* Executive Navigation - Only visible for Executive tier */}
-        <FeatureGate requiredTier="executive">
+        {/* Executive Navigation - Only visible for Enterprise tier */}
+        <FeatureGate requiredTier="enterprise">
           <SidebarGroup>
             <SidebarGroupLabel>Executive</SidebarGroupLabel>
             <SidebarGroupContent>
