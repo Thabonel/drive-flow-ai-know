@@ -350,7 +350,7 @@ export default function PitchDeck() {
 
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [isPresentationMode, pitchDeck, presentationStarted]);
+  }, [isPresentationMode, pitchDeck, presentationStarted, currentSlideIndex]);
 
   // Presentation timer
   useEffect(() => {
