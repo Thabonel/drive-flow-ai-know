@@ -2130,20 +2130,17 @@ Generated with AI Query Hub
             )}
           </div>
 
-          {/* START Button Overlay */}
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <Button
-              onClick={handleStartActualPresentation}
-              className="pointer-events-auto text-4xl py-12 px-24 bg-accent hover:bg-accent/90 text-accent-foreground animate-pulse"
-              size="lg"
-            >
-              START
-            </Button>
-          </div>
-
           {/* Navigation Controls */}
           <div className="bg-black/80 border-t border-white/10 p-4 flex items-center justify-between">
             <div className="flex gap-2">
+              <Button
+                onClick={handleStartActualPresentation}
+                size="sm"
+                variant={null as any}
+                className="!bg-accent !text-accent-foreground hover:!bg-accent/90 !shadow-none"
+              >
+                Start
+              </Button>
               <Button
                 ref={prevButtonRef}
                 onClick={handlePreviousSlide}
