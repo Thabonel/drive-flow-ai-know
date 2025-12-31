@@ -208,6 +208,104 @@ function getStandardImageParams(visualPrompt: string, visualType: string) {
   };
 }
 
+/**
+ * Create narrative animation prompt for video generation
+ * Transforms static visual descriptions into animated sequences
+ */
+function createNarrativeAnimationPrompt(slide: Slide): string {
+  const basePrompt = slide.visualPrompt || '';
+
+  // Parse the slide content to identify animatable elements
+  const hasCharacter = basePrompt.toLowerCase().includes('person') ||
+                      basePrompt.toLowerCase().includes('people') ||
+                      basePrompt.toLowerCase().includes('character') ||
+                      basePrompt.toLowerCase().includes('team');
+
+  const hasObjects = basePrompt.toLowerCase().includes('box') ||
+                    basePrompt.toLowerCase().includes('stack') ||
+                    basePrompt.toLowerCase().includes('paper') ||
+                    basePrompt.toLowerCase().includes('document') ||
+                    basePrompt.toLowerCase().includes('block');
+
+  const hasGrowth = basePrompt.toLowerCase().includes('growth') ||
+                   basePrompt.toLowerCase().includes('increase') ||
+                   basePrompt.toLowerCase().includes('rise') ||
+                   basePrompt.toLowerCase().includes('money') ||
+                   basePrompt.toLowerCase().includes('revenue');
+
+  const hasTransformation = basePrompt.toLowerCase().includes('before') && basePrompt.toLowerCase().includes('after') ||
+                           basePrompt.toLowerCase().includes('transform') ||
+                           basePrompt.toLowerCase().includes('change');
+
+  // Build narrative animation instructions
+  let animationInstructions = '';
+
+  if (hasTransformation) {
+    animationInstructions = `
+NARRATIVE ANIMATION SEQUENCE (5-8 seconds):
+- Start: Show the "before" state clearly established
+- Middle (2-4s): Gradual transformation with visible progression
+- End: "After" state fully realized
+- Motion: Smooth, organic transition that tells the story of change
+- NO quick cuts or instant changes - show the evolution`;
+  } else if (hasCharacter && hasObjects) {
+    animationInstructions = `
+NARRATIVE ANIMATION SEQUENCE (5-8 seconds):
+- Start: Character in initial state, objects begin appearing
+- Progressive action: Objects accumulate/stack/pile up around character
+- Character reacts: Body language changes in response (slouching, leaning, gesturing)
+- Continuous motion: Objects and character moving throughout, not static poses
+- Story: Visual narrative of interaction between character and environment`;
+  } else if (hasGrowth) {
+    animationInstructions = `
+NARRATIVE ANIMATION SEQUENCE (5-8 seconds):
+- Start: Small initial state or seed
+- Organic growth: Elements sprouting, expanding, multiplying like plants growing
+- Progressive scaling: Start small, gradually grow larger
+- Natural motion: Spring-like emergence, not linear scaling
+- Final state: Fully grown/expanded visualization
+- NO instant appearances - show the growth process`;
+  } else if (hasObjects) {
+    animationInstructions = `
+NARRATIVE ANIMATION SEQUENCE (5-8 seconds):
+- Objects appear sequentially, one by one (not all at once)
+- Each object enters with momentum (falling, sliding, placing)
+- Stacking or positioning with physics (slight bounce, settle)
+- Progressive build-up of the scene
+- Continuous subtle motion throughout
+- Final composition assembled piece by piece`;
+  } else {
+    // Generic narrative animation for other scenes
+    animationInstructions = `
+NARRATIVE ANIMATION SEQUENCE (5-8 seconds):
+- Start: Establish initial scene state
+- Progressive reveal: Elements appear and arrange over time
+- Continuous motion: Subtle movements throughout (not static freeze frames)
+- Build to completion: Scene fully forms by the end
+- Story-driven: Animation serves the narrative, not just decoration`;
+  }
+
+  const narrativePrompt = `${basePrompt}
+
+${animationInstructions}
+
+VISUAL STYLE REQUIREMENTS:
+- Warm earth tones: terracotta (#e8b4a0), warm browns (#d4a574), sage greens, olive, rust, cream
+- NO purple, violet, gold, or neon colors
+- Natural, human-crafted aesthetic (not slick corporate)
+- 16:9 aspect ratio, 1080p resolution
+- Clear, readable visuals that support the narrative
+
+ANIMATION PRINCIPLES:
+- Tell a story through motion (not just transitions)
+- Characters and objects should react and interact
+- Organic, purposeful movement (not robotic)
+- Progressive change over time (show the process, not just before/after)
+- Motion that enhances understanding of the concept`;
+
+  return narrativePrompt;
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -936,7 +1034,11 @@ The code should be production-ready and immediately renderable by Remotion.`;
         if (shouldGenerateImage && slide.visualPrompt) {
           // Generate video for expressive mode, otherwise generate image
           if (animationStyle === 'expressive') {
-            const videoResult = await generateVideo(slide.visualPrompt, slide.visualType || 'illustration');
+            // Create narrative animation prompt for video generation
+            const narrativePrompt = createNarrativeAnimationPrompt(slide);
+            console.log(`Generating narrative video for slide ${slide.slideNumber}...`);
+
+            const videoResult = await generateVideo(narrativePrompt, slide.visualType || 'illustration');
             if (videoResult.url) {
               slide.videoUrl = videoResult.url;
               slide.videoDuration = videoResult.duration;
