@@ -5,6 +5,8 @@ import { CLAUDE_MODELS } from '../_shared/models.ts';
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Max-Age': '86400',
 };
 
 interface PitchDeckRequest {
@@ -46,6 +48,7 @@ interface Slide {
   videoUrl?: string;
   videoDuration?: number;
   videoFileSizeMb?: number;
+  videoPrompt?: string;  // Narrative prompt for async video generation
   // Remotion narrative animation (Phase 7)
   animationScript?: string;  // React TSX code for Remotion video generation
 }
@@ -1032,39 +1035,21 @@ The code should be production-ready and immediately renderable by Remotion.`;
         }
 
         if (shouldGenerateImage && slide.visualPrompt) {
-          // Generate video for expressive mode, otherwise generate image
-          if (animationStyle === 'expressive') {
-            // Create narrative animation prompt for video generation
-            const narrativePrompt = createNarrativeAnimationPrompt(slide);
-            console.log(`Generating narrative video for slide ${slide.slideNumber}...`);
-
-            const videoResult = await generateVideo(narrativePrompt, slide.visualType || 'illustration');
-            if (videoResult.url) {
-              slide.videoUrl = videoResult.url;
-              slide.videoDuration = videoResult.duration;
-              slide.videoFileSizeMb = videoResult.sizeMb;
-              videosGenerated++;
-              console.log(`✓ Video generated for slide ${slide.slideNumber}: ${videoResult.url}`);
-            } else {
-              console.warn(`⚠ Failed to generate video for slide ${slide.slideNumber} (${videoResult.error || 'unknown error'}), falling back to static image`);
-              // Fallback to static image if video generation fails
-              slide.imageData = await generateImage(slide.visualPrompt, slide.visualType || 'illustration');
-              if (slide.imageData) {
-                imagesGenerated++;
-                console.log(`✓ Fallback image generated for slide ${slide.slideNumber}`);
-              } else {
-                console.error(`✗ Both video and image generation failed for slide ${slide.slideNumber}`);
-              }
-            }
+          // Generate static image (videos will be generated asynchronously after deck is returned)
+          slide.imageData = await generateImage(slide.visualPrompt, slide.visualType || 'illustration');
+          if (slide.imageData) {
+            imagesGenerated++;
+            console.log(`✓ Image generated for slide ${slide.slideNumber}`);
           } else {
-            // Generate main slide image for non-expressive modes
-            slide.imageData = await generateImage(slide.visualPrompt, slide.visualType || 'illustration');
-            if (slide.imageData) {
-              imagesGenerated++;
-              console.log(`✓ Image generated for slide ${slide.slideNumber}`);
-            } else {
-              console.warn(`⚠ Failed to generate image for slide ${slide.slideNumber}`);
-            }
+            console.warn(`⚠ Failed to generate image for slide ${slide.slideNumber}`);
+          }
+
+          // Store narrative prompt for async video generation
+          if (animationStyle === 'expressive') {
+            const narrativePrompt = createNarrativeAnimationPrompt(slide);
+            // Store prompt in slide metadata for later video generation
+            slide.videoPrompt = narrativePrompt;
+            console.log(`✓ Video prompt prepared for slide ${slide.slideNumber} (will generate async)`);
           }
 
           // Generate frame images if expressive mode is enabled and frames exist
