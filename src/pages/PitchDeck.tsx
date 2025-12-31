@@ -290,28 +290,13 @@ export default function PitchDeck() {
       switch (e.key) {
         case 'ArrowRight':
         case 'Enter':
-          // Navigate to next slide
-          if (presentationStarted) {
-            handleNextSlide();
-          } else {
-            // In preview mode, trigger button click
-            nextButtonRef.current?.click();
-          }
-          break;
         case ' ':
-          // Only advance slide if presentation started (Space starts in preview)
-          if (presentationStarted) {
-            handleNextSlide();
-          }
+          // Always delegate to Next button (button handles logic)
+          nextButtonRef.current?.click();
           break;
         case 'ArrowLeft':
-          // Navigate to previous slide
-          if (presentationStarted) {
-            handlePreviousSlide();
-          } else {
-            // In preview mode, trigger button click
-            prevButtonRef.current?.click();
-          }
+          // Always delegate to Previous button (button handles logic)
+          prevButtonRef.current?.click();
           break;
         case 'Home':
           // First slide
