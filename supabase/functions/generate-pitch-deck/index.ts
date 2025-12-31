@@ -21,6 +21,8 @@ interface PitchDeckRequest {
   // Animation frame generation options (Phase 5)
   animationStyle?: 'none' | 'minimal' | 'standard' | 'expressive';
   frameCount?: number;  // 2-5 frames per slide for expressive mode
+  // Remotion narrative animation (Phase 7)
+  enableRemotionAnimation?: boolean;  // Generate Remotion TSX code for animated videos
 }
 
 interface AnimationFrame {
@@ -44,6 +46,8 @@ interface Slide {
   videoUrl?: string;
   videoDuration?: number;
   videoFileSizeMb?: number;
+  // Remotion narrative animation (Phase 7)
+  animationScript?: string;  // React TSX code for Remotion video generation
 }
 
 interface PitchDeckResponse {
@@ -238,7 +242,8 @@ serve(async (req) => {
       currentDeck,
       slideNumber,
       animationStyle = 'none',
-      frameCount = 3
+      frameCount = 3,
+      enableRemotionAnimation = false
     }: PitchDeckRequest = await req.json();
 
     const isRevision = !!revisionRequest && !!currentDeck;
@@ -255,7 +260,8 @@ serve(async (req) => {
       targetSlide: slideNumber,
       animationStyle,
       generateFrames,
-      frameCount: generateFrames ? effectiveFrameCount : 0
+      frameCount: generateFrames ? effectiveFrameCount : 0,
+      enableRemotionAnimation
     });
 
     // Fetch selected documents if provided
@@ -572,7 +578,164 @@ Make it compelling, data-driven where appropriate (especially if source document
 
     const pitchDeckStructure: PitchDeckResponse = JSON.parse(jsonMatch[0]);
 
-    // Step 2: Generate images for slides that need them (if requested)
+    // Step 2: Generate Remotion animation scripts (Phase 7 - Narrative Animation)
+    if (enableRemotionAnimation) {
+      console.log('Generating Remotion animation scripts for narrative video...');
+
+      // Helper function to generate Remotion TSX code for a single slide
+      const generateRemotionScript = async (slide: Slide): Promise<string | undefined> => {
+        try {
+          const animationPrompt = `You are an expert motion graphics designer using Remotion (React for video).
+
+Generate a Remotion composition component for this slide that creates a narrative animation.
+
+## Slide Content
+**Title**: ${slide.title}
+**Content**: ${slide.content}
+**Visual Description**: ${slide.visualPrompt || 'No specific visual description provided'}
+**Speaker Notes**: ${slide.notes || 'No notes provided'}
+
+## Requirements
+1. Export a React component that uses Remotion's API
+2. Use useCurrentFrame(), interpolate(), spring() for timing
+3. Duration: 5-10 seconds @ 30fps (150-300 frames total)
+4. Include character animation, object movement, organic growth as needed
+5. Tell a visual story that unfolds over time - NOT just transitions or bounces
+
+## Animation Style Guidelines
+**DO** create narrative animations where:
+- Characters move and react (person slumping as work piles up)
+- Objects have physics (papers stacking, boxes moving into position)
+- Elements grow organically (money sprouting from blocks like plants)
+- Story progresses over time (visual narrative that unfolds)
+
+**DON'T** use:
+- Simple bounce/spring entrance effects
+- Generic stagger animations
+- CSS transition-style effects
+- Slide-in/fade-in patterns
+
+## Visual Design Constraints (ANTI-AI AESTHETIC)
+**Colors to AVOID**:
+- NO purple, violet, indigo, or lavender tones
+- NO gold, metallic gold, or champagne accents
+- NO purple-to-blue gradients or pink-to-purple gradients
+- NO neon or glowing color effects
+- NO typical "tech startup" colors (indigo-500, violet gradients on dark)
+
+**Colors to USE**:
+- Warm earth tones: terracotta (#e8b4a0), warm browns (#d4a574), sage greens, olive, rust, cream
+- Classic professional: navy blue (#0a2342), charcoal gray, forest green, burgundy
+- Natural palettes: stone, sand, moss, sky blue, coral
+- Muted, desaturated tones rather than oversaturated bright colors
+
+## Technical Requirements
+- Import: \`import { AbsoluteFill, useCurrentFrame, interpolate, spring } from 'remotion';\`
+- Component name: Use slide title in PascalCase (e.g., "Problem Statement" → "ProblemStatement")
+- Export: \`export const ComponentName: React.FC = () => { ... }\`
+- Resolution: 1920x1080 (16:9 aspect ratio)
+- Frame rate: 30fps
+- Use frame-based timing: \`const frame = useCurrentFrame();\`
+
+## Example Animation Patterns
+
+**Character Movement**:
+\`\`\`tsx
+const personY = interpolate(frame, [0, 150], [0, 30], { extrapolateRight: 'clamp' });
+const personRotation = interpolate(frame, [0, 150], [0, 15], { extrapolateRight: 'clamp' });
+<div style={{ transform: \`translate(-50%, \${personY}px) rotate(\${personRotation}deg)\` }}>
+  {/* SVG person */}
+</div>
+\`\`\`
+
+**Object Stacking**:
+\`\`\`tsx
+const boxCount = Math.min(Math.floor(frame / 30), 5); // New box every second
+{Array.from({ length: boxCount }).map((_, i) => {
+  const scale = spring({ frame: frame - (i * 30), fps: 30 });
+  return <div key={i} style={{ transform: \`scale(\${scale})\` }}>{/* Box */}</div>
+})}
+\`\`\`
+
+**Organic Growth**:
+\`\`\`tsx
+const growthScale = spring({
+  frame: frame - 90,
+  fps: 30,
+  config: { damping: 8, stiffness: 150 }
+});
+<span style={{
+  transform: \`scale(\${growthScale}) rotate(\${interpolate(growthScale, [0, 1], [0, 360])})\`,
+  transformOrigin: 'bottom center'
+}}>$</span>
+\`\`\`
+
+## Output Format
+Return ONLY the complete TSX code for the Remotion component, starting with imports and ending with the component export.
+Do NOT include explanations, markdown formatting, or additional text.
+The code should be production-ready and immediately renderable by Remotion.`;
+
+          const response = await fetch('https://api.anthropic.com/v1/messages', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-api-key': anthropicKey,
+              'anthropic-version': '2023-06-01'
+            },
+            body: JSON.stringify({
+              model: CLAUDE_MODELS.PRIMARY, // Use primary model for complex code generation
+              max_tokens: 4096,
+              messages: [{
+                role: 'user',
+                content: animationPrompt
+              }]
+            })
+          });
+
+          if (!response.ok) {
+            console.error(`Failed to generate Remotion script for slide ${slide.slideNumber}: ${response.status}`);
+            return undefined;
+          }
+
+          const result = await response.json();
+          let tsxCode = result.content[0].text;
+
+          // Extract TSX code from markdown code blocks if present
+          const codeBlockMatch = tsxCode.match(/```(?:tsx|typescript|ts)?\n?([\s\S]*?)\n?```/);
+          if (codeBlockMatch) {
+            tsxCode = codeBlockMatch[1];
+          }
+
+          // Basic validation: check for Remotion imports
+          if (!tsxCode.includes('from \'remotion\'') && !tsxCode.includes('from "remotion"')) {
+            console.warn(`Generated code for slide ${slide.slideNumber} missing Remotion imports`);
+            return undefined;
+          }
+
+          console.log(`✓ Remotion script generated for slide ${slide.slideNumber} (${tsxCode.length} chars)`);
+          return tsxCode;
+
+        } catch (error) {
+          console.error(`Error generating Remotion script for slide ${slide.slideNumber}:`, error);
+          return undefined;
+        }
+      };
+
+      // Generate Remotion scripts in parallel for all slides
+      const remotionPromises = pitchDeckStructure.slides.map(async (slide) => {
+        // Only generate for slides with visual content
+        if (slide.visualType && slide.visualType !== 'none') {
+          slide.animationScript = await generateRemotionScript(slide);
+        }
+      });
+
+      await Promise.all(remotionPromises);
+
+      const scriptsGenerated = pitchDeckStructure.slides.filter(s => s.animationScript).length;
+      console.log(`Remotion animation scripts: ${scriptsGenerated}/${pitchDeckStructure.slides.length} slides`);
+    }
+
+    // Step 3: Generate images for slides that need them (if requested)
     if (includeImages) {
       console.log('Generating images for slides in parallel...');
 
