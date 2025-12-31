@@ -2187,7 +2187,9 @@ Generated with AI Query Hub
       {/* Presentation Mode - Fullscreen with hidden controls */}
       {isPresentationMode && pitchDeck && !presenterSessionId && presentationStarted && (
         <div
+          ref={presentationRef}
           className={`fixed inset-0 bg-black z-50 flex flex-col animation-${presentationSettings.animationStyle}`}
+          tabIndex={0}
           onMouseEnter={handlePresentationMouseEnter}
           onMouseLeave={handlePresentationMouseLeave}
         >
