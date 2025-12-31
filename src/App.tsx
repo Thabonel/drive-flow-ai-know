@@ -13,6 +13,8 @@ import { AppSidebar } from "@/components/AppSidebar";
 import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
 import { PresentationModeProvider } from "@/contexts/PresentationModeContext";
 import { AgentRightPane } from "@/components/agent/AgentRightPane";
+import { AIAssistantSidebar } from "@/components/AIAssistantSidebar";
+import { FeatureGate } from "@/components/FeatureGate";
 import { supabase } from "@/integrations/supabase/client";
 import Header from "./layout/Header";
 import Index from "./pages/Index";
@@ -111,8 +113,14 @@ function AppLayout({ children }: { children: React.ReactNode }) {
               {children}
             </div>
           </main>
-          {!loadingAgentMode && agentMode && user && (
-            <AgentRightPane userId={user.id} />
+          {user && (
+            <FeatureGate requiredTier="enterprise">
+              {!loadingAgentMode && agentMode ? (
+                <AgentRightPane userId={user.id} />
+              ) : (
+                <AIAssistantSidebar />
+              )}
+            </FeatureGate>
           )}
         </div>
       </div>
