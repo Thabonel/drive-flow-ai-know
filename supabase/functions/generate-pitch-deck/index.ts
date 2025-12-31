@@ -49,6 +49,7 @@ interface Slide {
   videoDuration?: number;
   videoFileSizeMb?: number;
   videoPrompt?: string;  // Narrative prompt for async video generation
+  imagePrompt?: string;  // Visual prompt for async image generation
   // Remotion narrative animation (Phase 7)
   animationScript?: string;  // React TSX code for Remotion video generation
 }
@@ -1035,21 +1036,17 @@ The code should be production-ready and immediately renderable by Remotion.`;
         }
 
         if (shouldGenerateImage && slide.visualPrompt) {
-          // Generate static image (videos will be generated asynchronously after deck is returned)
-          slide.imageData = await generateImage(slide.visualPrompt, slide.visualType || 'illustration');
-          if (slide.imageData) {
-            imagesGenerated++;
-            console.log(`✓ Image generated for slide ${slide.slideNumber}`);
-          } else {
-            console.warn(`⚠ Failed to generate image for slide ${slide.slideNumber}`);
-          }
+          // TEMPORARY: Skip image generation to avoid timeout
+          // Both images and videos will be generated asynchronously after deck is returned
+          console.log(`⏭ Skipping sync generation for slide ${slide.slideNumber} (will generate async)`);
+
+          // Store visual prompt for async image generation
+          slide.imagePrompt = slide.visualPrompt;
 
           // Store narrative prompt for async video generation
           if (animationStyle === 'expressive') {
             const narrativePrompt = createNarrativeAnimationPrompt(slide);
-            // Store prompt in slide metadata for later video generation
             slide.videoPrompt = narrativePrompt;
-            console.log(`✓ Video prompt prepared for slide ${slide.slideNumber} (will generate async)`);
           }
 
           // Generate frame images if expressive mode is enabled and frames exist
