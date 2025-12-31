@@ -61,15 +61,9 @@ const assistantNavigationItems = [
   },
   {
     title: 'AI Chat',
-    url: '/ai-chat',
-    icon: MessageSquare,
-    description: 'Ask questions & get insights'
-  },
-  {
-    title: 'Conversations',
     url: '/conversations',
     icon: MessageSquare,
-    description: 'Browse saved chats'
+    description: 'Ask questions & get insights'
   },
 ];
 
