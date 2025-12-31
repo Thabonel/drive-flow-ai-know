@@ -56,6 +56,8 @@ interface Slide {
   videoUrl?: string;
   videoDuration?: number;
   videoFileSizeMb?: number;
+  // Remotion animation script for narrative video generation (Phase 7)
+  animationScript?: string;
 }
 
 interface PitchDeck {
