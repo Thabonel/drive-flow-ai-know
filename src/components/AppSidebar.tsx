@@ -33,6 +33,12 @@ const navigationItems = [
     description: 'Plan your day & track tasks'
   },
   {
+    title: 'AI Chat',
+    url: '/conversations',
+    icon: MessageSquare,
+    description: 'Ask questions & get insights'
+  },
+  {
     title: 'Dashboard',
     url: '/dashboard',
     icon: BookOpen,
@@ -58,12 +64,6 @@ const assistantNavigationItems = [
     url: '/agent',
     icon: Bot,
     description: 'Autonomous AI assistant'
-  },
-  {
-    title: 'AI Chat',
-    url: '/conversations',
-    icon: MessageSquare,
-    description: 'Ask questions & get insights'
   },
 ];
 
