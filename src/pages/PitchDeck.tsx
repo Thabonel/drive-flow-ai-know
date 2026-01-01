@@ -7,10 +7,13 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
 import { useAuth } from '@/hooks/useAuth';
 import { usePresentationMode } from '@/contexts/PresentationModeContext';
+import { usePitchDeckStream } from '@/hooks/usePitchDeckStream';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { SlideCardSkeleton, TitleSlideCardSkeleton, SlideGenerationProgress } from '@/components/SlideCardSkeleton';
 import { Loader2, Presentation, Download, Eye, FileText, Layers, Share2, X, Archive, Monitor, Settings } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import jsPDF from 'jspdf';
@@ -95,6 +98,21 @@ export default function PitchDeck() {
   const [shareToken, setShareToken] = useState<string | null>(null);
   const [isGeneratingShareLink, setIsGeneratingShareLink] = useState(false);
   const [showCostModal, setShowCostModal] = useState(false);
+  const [useProgressiveMode, setUseProgressiveMode] = useState(true); // NEW: Enable streaming by default
+
+  // Progressive streaming hook
+  const streamingHook = usePitchDeckStream();
+
+  // Sync streaming data to pitchDeck state when complete
+  useEffect(() => {
+    if (streamingHook.isComplete && streamingHook.deckMetadata && streamingHook.slides.length > 0) {
+      const completedDeck = streamingHook.getPitchDeck();
+      if (completedDeck) {
+        setPitchDeck(completedDeck);
+        setGenerating(false);
+      }
+    }
+  }, [streamingHook.isComplete, streamingHook.deckMetadata, streamingHook.slides.length, streamingHook.getPitchDeck]);
 
   // Presenter view state
   const [presenterSessionId, setPresenterSessionId] = useState<string | null>(null);
@@ -605,6 +623,29 @@ export default function PitchDeck() {
   };
 
   const handleGenerateConfirmed = async () => {
+    // Use progressive streaming mode if enabled
+    if (useProgressiveMode) {
+      setGenerating(true);
+      try {
+        await streamingHook.generate({
+          topic,
+          targetAudience,
+          numberOfSlides: autoSlideCount ? undefined : parseInt(numberOfSlides) || 10,
+          autoSlideCount,
+          style: style as 'professional' | 'creative' | 'minimal' | 'bold',
+          animationStyle: animationStyle as 'none' | 'minimal' | 'standard' | 'expressive',
+          includeImages,
+          selectedDocumentIds: selectedDocIds.length > 0 ? selectedDocIds : undefined,
+        });
+      } catch (error) {
+        console.error('Pitch deck streaming error:', error);
+      } finally {
+        setGenerating(false);
+      }
+      return;
+    }
+
+    // Fallback to synchronous mode
     setGenerating(true);
     try {
       const { data, error } = await supabase.functions.invoke('generate-pitch-deck', {
@@ -1779,6 +1820,22 @@ Generated with AI Query Hub
               </p>
             </div>
 
+            <div>
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="progressiveMode"
+                  checked={useProgressiveMode}
+                  onChange={(e) => setUseProgressiveMode(e.target.checked)}
+                  className="rounded"
+                />
+                <Label htmlFor="progressiveMode">Progressive streaming mode</Label>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1 ml-6">
+                Shows slides as they generate in real-time. Recommended for better experience.
+              </p>
+            </div>
+
             <Button
               onClick={handleGenerate}
               disabled={generating || (!topic.trim() && selectedDocIds.length === 0)}
@@ -1936,13 +1993,81 @@ Generated with AI Query Hub
             )}
 
             {generating && (
-              <div className="flex flex-col items-center justify-center h-96">
-                <Loader2 className="h-16 w-16 animate-spin text-primary mb-4" />
-                <p className="text-muted-foreground">
-                  {includeImages
-                    ? 'Generating content and images... This may take a minute'
-                    : 'Generating pitch deck content...'}
-                </p>
+              <div className="space-y-6">
+                {/* Progressive streaming UI */}
+                {useProgressiveMode && streamingHook.isGenerating && (
+                  <div className="mb-6">
+                    <SlideGenerationProgress
+                      currentSlide={streamingHook.currentSlide}
+                      totalSlides={streamingHook.totalSlides}
+                      progress={streamingHook.progress}
+                      status={streamingHook.status}
+                    />
+                  </div>
+                )}
+
+                {/* Show title slide skeleton or completed metadata */}
+                {streamingHook.deckMetadata ? (
+                  <Card className="bg-gradient-to-br from-primary/10 to-accent/10 border-primary/20">
+                    <CardContent className="pt-6">
+                      <h2 className="text-3xl font-bold mb-2">{streamingHook.deckMetadata.title}</h2>
+                      <p className="text-xl text-muted-foreground">{streamingHook.deckMetadata.subtitle}</p>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <TitleSlideCardSkeleton />
+                )}
+
+                {/* Show completed slides + skeletons for remaining */}
+                <div className="space-y-4 max-h-[600px] overflow-y-auto pr-4">
+                  {/* Completed slides from stream */}
+                  {streamingHook.slides.map((slide) => (
+                    <Card key={slide.slideNumber} className="hover:shadow-lg transition-shadow">
+                      <CardHeader>
+                        <div className="flex items-center justify-between">
+                          <CardTitle className="text-xl">{slide.title}</CardTitle>
+                          <span className="text-sm text-muted-foreground">Slide {slide.slideNumber}</span>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        {slide.imageData && (
+                          <img
+                            src={`data:image/png;base64,${slide.imageData}`}
+                            alt={slide.visualPrompt || ''}
+                            className="w-full rounded-lg"
+                          />
+                        )}
+                        <div className="whitespace-pre-wrap text-sm">{slide.content}</div>
+                        {slide.notes && (
+                          <div className="bg-muted p-3 rounded text-sm italic text-muted-foreground">
+                            <strong>Speaker Notes:</strong> {slide.notes}
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  ))}
+
+                  {/* Skeleton placeholders for remaining slides */}
+                  {Array.from({ length: Math.max(0, streamingHook.totalSlides - streamingHook.slides.length) }).map((_, i) => (
+                    <SlideCardSkeleton
+                      key={`skeleton-${i}`}
+                      slideNumber={streamingHook.slides.length + i + 1}
+                      showImage={includeImages}
+                    />
+                  ))}
+                </div>
+
+                {/* Fallback for non-streaming mode */}
+                {!useProgressiveMode && (
+                  <div className="flex flex-col items-center justify-center h-96">
+                    <Loader2 className="h-16 w-16 animate-spin text-primary mb-4" />
+                    <p className="text-muted-foreground">
+                      {includeImages
+                        ? 'Generating content and images... This may take a minute'
+                        : 'Generating pitch deck content...'}
+                    </p>
+                  </div>
+                )}
               </div>
             )}
 

@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -8,7 +7,13 @@ import {
   Check,
   CheckCircle2,
   Menu,
-  X
+  X,
+  Shield,
+  Brain,
+  Clock,
+  Database,
+  XCircle,
+  MessageSquare
 } from 'lucide-react';
 
 const plans = [
@@ -80,6 +85,16 @@ const plans = [
 
 const features = [
   {
+    title: 'AI Memory',
+    description: 'Long-running conversations that remember context. Your AI builds on previous discussions without you repeating yourself.',
+    benefit: 'Context that persists',
+  },
+  {
+    title: 'Privacy First',
+    description: 'Your data is never used for AI training. 30-day conversation retention, then wiped. Documents stay forever in YOUR system.',
+    benefit: 'Your data stays yours',
+  },
+  {
     title: 'Ask Questions Like Normal',
     description: 'Type what you want to know. Get answers pulled from your docs. No special keywords needed.',
     benefit: 'Plain English works',
@@ -101,7 +116,7 @@ const features = [
   },
   {
     title: 'Timeline Manager',
-    description: 'Visual timeline that flows in real-time. Schedule tasks, see what\'s logjammed, park items for later. Switch between day, week, and month views.',
+    description: 'Visual timeline that flows in real-time. Schedule tasks, see what\'s causing delays, park items for later. Switch between day, week, and month views.',
     benefit: 'Time flows naturally',
   },
   {
@@ -305,10 +320,10 @@ export default function Landing() {
           {/* Hero Illustration */}
           <div className="flex justify-center mt-6">
             <img
-              src="https://fskwutnoxbbflzqrphro.supabase.co/storage/v1/object/public/assets/AI%20Qyeryhubhero.jpg"
+              src="https://fskwutnoxbbflzqrphro.supabase.co/storage/v1/object/public/assets/Queryhubhero.jpg"
               alt="AI Query Hub - AI Knowledge Assistant"
               className="max-w-6xl w-full h-auto object-contain rounded-2xl"
-              fetchpriority="high"
+              fetchPriority="high"
               decoding="async"
               loading="eager"
             />
@@ -366,6 +381,105 @@ export default function Landing() {
         </div>
       </section>
 
+      {/* Security & Privacy Section */}
+      <section className="py-20 bg-primary text-primary-foreground">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-12">
+            <Shield className="h-16 w-16 mx-auto mb-4 text-accent" />
+            <h2 className="text-4xl font-bold mb-4">Your Data Stays Yours</h2>
+            <p className="text-xl opacity-90 max-w-2xl mx-auto">
+              Unlike other AI tools, we don't use your data to train AI models.
+              Your documents and conversations remain private and secure.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto">
+            <div className="text-center p-6 rounded-2xl bg-white/10 backdrop-blur-xl">
+              <XCircle className="h-10 w-10 mx-auto mb-3 text-accent" />
+              <h3 className="font-semibold mb-2 text-lg">No AI Training</h3>
+              <p className="opacity-80 text-sm">Your data is never used to train AI models. Ever.</p>
+            </div>
+            <div className="text-center p-6 rounded-2xl bg-white/10 backdrop-blur-xl">
+              <Clock className="h-10 w-10 mx-auto mb-3 text-accent" />
+              <h3 className="font-semibold mb-2 text-lg">30-Day AI Memory</h3>
+              <p className="opacity-80 text-sm">Conversation context kept 30 days for follow-ups, then wiped from AI memory.</p>
+            </div>
+            <div className="text-center p-6 rounded-2xl bg-white/10 backdrop-blur-xl">
+              <Database className="h-10 w-10 mx-auto mb-3 text-accent" />
+              <h3 className="font-semibold mb-2 text-lg">Forever in Your System</h3>
+              <p className="opacity-80 text-sm">Documents stay permanently in your knowledge base - you control your data.</p>
+            </div>
+          </div>
+
+          <div className="mt-12 p-6 rounded-2xl bg-white/10 backdrop-blur-xl border border-white/20 max-w-3xl mx-auto">
+            <p className="text-center text-white/90">
+              <strong className="text-white">Your data never leaves your control.</strong> We don't spread it across the internet,
+              don't use it for training, and give you full control over retention. Privacy isn't a feature - it's how we built this.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* AI Memory & Long Conversations Section */}
+      <section className="py-20 bg-muted/30">
+        <div className="container mx-auto px-4">
+          <div className="grid md:grid-cols-2 gap-12 items-center max-w-6xl mx-auto">
+            <div>
+              <Brain className="h-12 w-12 mb-4 text-primary" />
+              <h2 className="text-3xl md:text-4xl font-bold mb-4 text-primary">AI That Remembers</h2>
+              <p className="text-lg text-muted-foreground mb-6">
+                Long-running conversations that maintain context across sessions.
+                Your AI assistant remembers previous discussions and builds on them -
+                no more repeating yourself every time you start a new chat.
+              </p>
+              <ul className="space-y-4">
+                <li className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-success/20 flex items-center justify-center flex-shrink-0">
+                    <Check className="h-5 w-5 text-success" />
+                  </div>
+                  <span className="text-foreground">Context persists across conversations</span>
+                </li>
+                <li className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-success/20 flex items-center justify-center flex-shrink-0">
+                    <Check className="h-5 w-5 text-success" />
+                  </div>
+                  <span className="text-foreground">Reference previous discussions naturally</span>
+                </li>
+                <li className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-success/20 flex items-center justify-center flex-shrink-0">
+                    <Check className="h-5 w-5 text-success" />
+                  </div>
+                  <span className="text-foreground">Build on insights over time</span>
+                </li>
+                <li className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-success/20 flex items-center justify-center flex-shrink-0">
+                    <Check className="h-5 w-5 text-success" />
+                  </div>
+                  <span className="text-foreground">Memory wiped after 30 days for privacy</span>
+                </li>
+              </ul>
+            </div>
+            <div className="bg-card rounded-2xl shadow-card border border-border p-8">
+              <div className="space-y-4">
+                <div className="flex items-start gap-3">
+                  <MessageSquare className="h-6 w-6 text-primary mt-1 flex-shrink-0" />
+                  <div className="bg-primary/5 rounded-lg p-3 flex-1">
+                    <p className="text-sm text-muted-foreground">"Remember that budget analysis we discussed last week?"</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3 justify-end">
+                  <div className="bg-accent/10 rounded-lg p-3 flex-1">
+                    <p className="text-sm text-foreground">"Yes! You mentioned the Q3 projections were 15% higher than expected. Would you like me to update those figures with the latest data from your documents?"</p>
+                  </div>
+                  <Brain className="h-6 w-6 text-accent mt-1 flex-shrink-0" />
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground text-center mt-4">AI remembers context from previous conversations</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* AI Pitch Deck Generator Showcase */}
       <section className="py-20 bg-gradient-to-br from-accent/5 to-accent/10">
         <div className="container max-w-7xl mx-auto px-4">
@@ -392,7 +506,7 @@ export default function Landing() {
                 onError={(e) => {
                   // Fallback to placeholder if image fails to load
                   e.currentTarget.style.display = 'none';
-                  const placeholder = e.currentTarget.nextElementSibling;
+                  const placeholder = e.currentTarget.nextElementSibling as HTMLElement | null;
                   if (placeholder) placeholder.style.display = 'flex';
                 }}
               />

@@ -207,7 +207,7 @@ export default function PresentationAudience() {
             size="lg"
             className="w-full h-16 text-xl bg-primary hover:bg-primary/90"
           >
-            Click to Connect &amp; Go Fullscreen
+            Click to Connect & Go Fullscreen
           </Button>
         </div>
       </div>
