@@ -670,12 +670,14 @@ serve(async (req) => {
       animationStyle = 'none',
       frameCount = 3,
       enableRemotionAnimation = false,
-      async: asyncMode = false  // NEW: Enable async job processing
+      animateSlides = true,  // Enable SVD video animation of still images
+      async: asyncMode = false  // Enable async job processing
     } = requestBody;
 
     const isRevision = !!revisionRequest && !!currentDeck;
     const generateFrames = animationStyle === 'expressive' && frameCount >= 2 && frameCount <= 5;
     const effectiveFrameCount = Math.max(2, Math.min(5, frameCount)); // Enforce 2-5 range
+    const shouldAnimateSlides = animateSlides && includeImages;  // Only animate if images enabled
 
     console.log('Generating pitch deck:', {
       topic,
@@ -689,6 +691,7 @@ serve(async (req) => {
       generateFrames,
       frameCount: generateFrames ? effectiveFrameCount : 0,
       enableRemotionAnimation,
+      animateSlides: shouldAnimateSlides,
       asyncMode
     });
 
@@ -1429,7 +1432,7 @@ The code should be production-ready and immediately renderable by Remotion.`;
 
               // Generate animated video from the still image using SVD Turbo
               // This creates subtle element movement (head turns, gentle sway, etc.)
-              if (generateFrames) {
+              if (shouldAnimateSlides) {
                 console.log(`Animating image for slide ${slide.slideNumber}...`);
                 const videoResult = await generateVideo(slide.imageData, slide.slideNumber);
 
