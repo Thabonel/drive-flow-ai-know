@@ -1011,8 +1011,9 @@ The code should be production-ready and immediately renderable by Remotion.`;
       let imagesGenerated = 0;
       let imagesPreserved = 0;
 
-      // Process images in batches of 3 to avoid timeout
-      const BATCH_SIZE = 3;
+      // Process images in batches of 2 to stay within Edge Function timeout
+      // Total time budget: ~50s (Claude: 10s + 10 slides × 2 batches × 4s/image = 48s)
+      const BATCH_SIZE = 2;
       const slides = pitchDeckStructure.slides;
 
       for (let i = 0; i < slides.length; i += BATCH_SIZE) {
@@ -1067,20 +1068,15 @@ The code should be production-ready and immediately renderable by Remotion.`;
               console.log(`✗ Image generation failed for slide ${slide.slideNumber}`);
             }
 
-            // Generate frame images if expressive mode is enabled and frames exist
+            // NOTE: Frame image generation disabled to avoid Edge Function timeout
+            // Frame images were taking too long (3 frames × 10 slides = 30 extra API calls)
+            // If expressive mode animation is needed, use video generation instead
             if (generateFrames && slide.frames && slide.frames.length > 0) {
-              console.log(`Generating ${slide.frames.length} frame images for slide ${slide.slideNumber}...`);
-
-              // Generate frame images sequentially to avoid overload
-              for (const frame of slide.frames) {
-                if (frame.visualPrompt) {
-                  frame.imageData = await generateImage(frame.visualPrompt, slide.visualType || 'illustration');
-                  if (frame.imageData) {
-                    console.log(`Frame ${frame.frameNumber} image generated for slide ${slide.slideNumber}`);
-                  }
-                }
-              }
-              console.log(`All frame images generated for slide ${slide.slideNumber}`);
+              console.log(`⏭ Skipping frame image generation for slide ${slide.slideNumber} (use video mode instead)`);
+              // Clear frame prompts to prevent confusion - frames exist for metadata only
+              slide.frames.forEach(frame => {
+                frame.imageData = undefined;
+              });
             }
           }
         });
