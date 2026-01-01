@@ -6,10 +6,11 @@ import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { MessageSquare, Send, Loader2, Save, FileText, PlusCircle, Calendar, X } from 'lucide-react';
+import { MessageSquare, Send, Loader2, Save, FileText, PlusCircle, Calendar, X, Play } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useBackgroundTasks } from '@/contexts/BackgroundTasksContext';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { DictationButton } from '@/components/DictationButton';
 import { AIProgressIndicator } from '@/components/ai/AIProgressIndicator';
@@ -38,6 +39,7 @@ export const AIQueryInput = ({ selectedKnowledgeBase, onClearSelection }: AIQuer
   const [timelineContent, setTimelineContent] = useState('');
   const { toast } = useToast();
   const { user } = useAuth();
+  const { submitTask } = useBackgroundTasks();
   const queryClient = useQueryClient();
   const scrollRef = useRef<HTMLDivElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -175,6 +177,25 @@ export const AIQueryInput = ({ selectedKnowledgeBase, onClearSelection }: AIQuer
         description: 'Generation stopped',
       });
     }
+  };
+
+  // Run task in background - allows navigating away while AI works
+  const handleRunInBackground = () => {
+    if (!query.trim() || !user) return;
+
+    const conversationContext = messages.map(msg => ({
+      role: msg.role,
+      content: msg.content
+    }));
+
+    submitTask({
+      query: query.trim(),
+      knowledgeBaseId: selectedKnowledgeBase?.id,
+      knowledgeBaseName: selectedKnowledgeBase?.name,
+      conversationContext
+    });
+
+    setQuery('');
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -513,9 +534,22 @@ export const AIQueryInput = ({ selectedKnowledgeBase, onClearSelection }: AIQuer
                 <X className="h-5 w-5" />
               </Button>
             ) : (
-              <Button type="submit" disabled={!query.trim() || query.length < 3} className="h-auto px-6">
-                <Send className="h-5 w-5" />
-              </Button>
+              <>
+                <Button type="submit" disabled={!query.trim() || query.length < 3} className="h-auto px-6">
+                  <Send className="h-5 w-5" />
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleRunInBackground}
+                  disabled={!query.trim() || query.length < 3}
+                  className="h-auto px-4 text-xs"
+                  title="Run in background - you can navigate away"
+                >
+                  <Play className="h-4 w-4 mr-1" />
+                  Background
+                </Button>
+              </>
             )}
           </div>
         </form>
