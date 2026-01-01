@@ -129,7 +129,8 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
       .from('messages')
       .select('*')
       .eq('conversation_id', conversationId)
-      .order('sequence_number', { ascending: true });
+      .order('sequence_number', { ascending: true })
+      .order('created_at', { ascending: true }); // Tiebreaker for duplicate sequence numbers
 
     if (error) {
       console.error('Error loading messages:', error);
@@ -150,7 +151,16 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
         return currentMessages;
       }
 
-      return data as Message[];
+      // Sort by sequence_number, then by created_at as tiebreaker
+      // This ensures correct order even if sequence numbers are duplicated
+      const sortedData = [...data].sort((a, b) => {
+        if (a.sequence_number !== b.sequence_number) {
+          return a.sequence_number - b.sequence_number;
+        }
+        return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+      });
+
+      return sortedData as Message[];
     });
   };
 
