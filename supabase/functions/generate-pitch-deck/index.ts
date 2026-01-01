@@ -608,8 +608,7 @@ Style: Professional, clean, modern. Use warm earth tones (terracotta, sage green
             }]
           }],
           generationConfig: {
-            responseModalities: ['image', 'text'],
-            responseMimeType: 'image/png'
+            responseModalities: ['image', 'text']
           }
         })
       }
