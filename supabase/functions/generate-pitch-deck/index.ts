@@ -2,6 +2,11 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { CLAUDE_MODELS } from '../_shared/models.ts';
 
+// @ts-ignore - EdgeRuntime is available in Supabase Edge Functions
+declare const EdgeRuntime: {
+  waitUntil(promise: Promise<unknown>): void;
+};
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -25,6 +30,8 @@ interface PitchDeckRequest {
   frameCount?: number;  // 2-5 frames per slide for expressive mode
   // Remotion narrative animation (Phase 7)
   enableRemotionAnimation?: boolean;  // Generate Remotion TSX code for animated videos
+  // Async mode for progressive streaming (Phase 8)
+  async?: boolean;  // Return job_id immediately, process in background
 }
 
 interface AnimationFrame {
@@ -310,6 +317,323 @@ ANIMATION PRINCIPLES:
   return narrativePrompt;
 }
 
+/**
+ * Process pitch deck job in background
+ * Updates job status and slides progressively in the database
+ */
+async function processJobInBackground(jobId: string, supabase: any): Promise<void> {
+  console.log(`[Job ${jobId}] Starting background processing`);
+
+  try {
+    // Fetch job details
+    const { data: job, error: fetchError } = await supabase
+      .from('pitch_deck_jobs')
+      .select('*')
+      .eq('id', jobId)
+      .single();
+
+    if (fetchError || !job) {
+      console.error(`[Job ${jobId}] Failed to fetch job:`, fetchError);
+      return;
+    }
+
+    const input = job.input_data as PitchDeckRequest;
+    const {
+      topic,
+      targetAudience = 'general business audience',
+      numberOfSlides,
+      autoSlideCount = false,
+      style = 'professional',
+      includeImages = true,
+      selectedDocumentIds,
+      animationStyle = 'none'
+    } = input;
+
+    // Update status: started
+    await supabase
+      .from('pitch_deck_jobs')
+      .update({
+        status: 'generating_structure',
+        started_at: new Date().toISOString(),
+        progress_percent: 5
+      })
+      .eq('id', jobId);
+
+    // Get API key
+    const anthropicKey = Deno.env.get('ANTHROPIC_API_KEY');
+    if (!anthropicKey) {
+      throw new Error('ANTHROPIC_API_KEY not configured');
+    }
+
+    // Fetch documents if provided
+    let documentContext = '';
+    if (selectedDocumentIds && selectedDocumentIds.length > 0) {
+      const { data: docs } = await supabase
+        .from('knowledge_documents')
+        .select('*')
+        .in('id', selectedDocumentIds);
+
+      if (docs && docs.length > 0) {
+        documentContext = docs
+          .map((doc: any) => `### ${doc.title}\n${doc.ai_summary || doc.content?.substring(0, 500) || ''}`)
+          .join('\n\n---\n\n');
+      }
+    }
+
+    // Determine slide count
+    let slideCount = numberOfSlides || 10;
+    if (autoSlideCount) {
+      const recommendation = await determineOptimalSlideCount(topic, documentContext, targetAudience, anthropicKey);
+      slideCount = recommendation.count;
+      console.log(`[Job ${jobId}] Auto slide count: ${slideCount} (${recommendation.reasoning})`);
+    }
+
+    // Update total slides
+    await supabase
+      .from('pitch_deck_jobs')
+      .update({ total_slides: slideCount, progress_percent: 10 })
+      .eq('id', jobId);
+
+    // Generate deck structure
+    console.log(`[Job ${jobId}] Generating structure for ${slideCount} slides`);
+    await supabase
+      .from('pitch_deck_jobs')
+      .update({ status: 'generating_slides', progress_percent: 15 })
+      .eq('id', jobId);
+
+    const structurePrompt = buildStructurePrompt(topic, targetAudience, slideCount, style, documentContext);
+    const structureResponse = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': anthropicKey,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model: CLAUDE_MODELS.PRIMARY,
+        max_tokens: 16384,
+        messages: [{
+          role: 'user',
+          content: structurePrompt
+        }]
+      })
+    });
+
+    if (!structureResponse.ok) {
+      const errorText = await structureResponse.text();
+      throw new Error(`Claude API error: ${structureResponse.status} - ${errorText}`);
+    }
+
+    const structureData = await structureResponse.json();
+    const structureText = structureData.content[0].text;
+
+    // Parse the JSON response
+    let deckStructure;
+    try {
+      const jsonMatch = structureText.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        deckStructure = JSON.parse(jsonMatch[0]);
+      } else {
+        throw new Error('No valid JSON found in response');
+      }
+    } catch (parseError) {
+      console.error(`[Job ${jobId}] Failed to parse structure:`, parseError);
+      throw new Error('Failed to parse pitch deck structure');
+    }
+
+    // Update with deck metadata
+    await supabase
+      .from('pitch_deck_jobs')
+      .update({
+        deck_metadata: {
+          title: deckStructure.title,
+          subtitle: deckStructure.subtitle,
+          totalSlides: deckStructure.slides?.length || slideCount
+        },
+        progress_percent: 25
+      })
+      .eq('id', jobId);
+
+    // Generate images for each slide in parallel batches
+    const slides = deckStructure.slides || [];
+    const completedSlides: any[] = [];
+    const BATCH_SIZE = 3; // Process 3 slides at a time
+
+    if (includeImages) {
+      await supabase
+        .from('pitch_deck_jobs')
+        .update({ status: 'generating_images' })
+        .eq('id', jobId);
+
+      console.log(`[Job ${jobId}] Generating images for ${slides.length} slides`);
+
+      for (let i = 0; i < slides.length; i += BATCH_SIZE) {
+        const batch = slides.slice(i, i + BATCH_SIZE);
+        const batchPromises = batch.map(async (slide: any) => {
+          try {
+            const imageData = await generateSlideImageForJob(slide.visualPrompt, slide.visualType);
+            return { ...slide, imageData };
+          } catch (error) {
+            console.error(`[Job ${jobId}] Image generation failed for slide ${slide.slideNumber}:`, error);
+            return { ...slide, imageData: undefined };
+          }
+        });
+
+        const batchResults = await Promise.all(batchPromises);
+        completedSlides.push(...batchResults);
+
+        // Update progress after each batch
+        const progress = Math.round(25 + ((completedSlides.length / slides.length) * 70));
+        await supabase
+          .from('pitch_deck_jobs')
+          .update({
+            slides: completedSlides,
+            current_slide: completedSlides.length,
+            progress_percent: Math.min(progress, 95)
+          })
+          .eq('id', jobId);
+
+        console.log(`[Job ${jobId}] Completed ${completedSlides.length}/${slides.length} slides (${progress}%)`);
+      }
+    } else {
+      // No images - just copy slides as-is
+      completedSlides.push(...slides);
+      await supabase
+        .from('pitch_deck_jobs')
+        .update({
+          slides: completedSlides,
+          current_slide: slides.length,
+          progress_percent: 95
+        })
+        .eq('id', jobId);
+    }
+
+    // Mark as completed
+    await supabase
+      .from('pitch_deck_jobs')
+      .update({
+        status: 'completed',
+        progress_percent: 100,
+        completed_at: new Date().toISOString(),
+        slides: completedSlides,
+        deck_metadata: {
+          title: deckStructure.title,
+          subtitle: deckStructure.subtitle,
+          totalSlides: completedSlides.length
+        }
+      })
+      .eq('id', jobId);
+
+    console.log(`[Job ${jobId}] Completed successfully with ${completedSlides.length} slides`);
+
+  } catch (error) {
+    console.error(`[Job ${jobId}] Processing failed:`, error);
+
+    // Mark job as failed
+    await supabase
+      .from('pitch_deck_jobs')
+      .update({
+        status: 'failed',
+        error_message: error instanceof Error ? error.message : 'Unknown error'
+      })
+      .eq('id', jobId);
+  }
+}
+
+/**
+ * Build the structure prompt for Claude
+ */
+function buildStructurePrompt(topic: string, targetAudience: string, slideCount: number, style: string, documentContext: string): string {
+  return `You are an expert pitch deck creator. Generate a complete pitch deck structure as JSON.
+
+Topic: ${topic}
+Target Audience: ${targetAudience}
+Number of Slides: ${slideCount}
+Style: ${style}
+
+${documentContext ? `Reference Materials:\n${documentContext}\n` : ''}
+
+Generate a JSON response with this exact structure:
+{
+  "title": "Deck Title",
+  "subtitle": "Deck Subtitle",
+  "slides": [
+    {
+      "slideNumber": 1,
+      "title": "Slide Title",
+      "content": "Slide content with key points",
+      "visualType": "photo/chart/diagram/illustration",
+      "visualPrompt": "Detailed prompt for image generation",
+      "notes": "Speaker notes"
+    }
+  ]
+}
+
+Requirements:
+- Generate exactly ${slideCount} slides
+- Each slide must have a unique, compelling visualPrompt
+- Content should be concise but informative
+- Include speaker notes for each slide
+- Use professional language appropriate for ${targetAudience}
+- Follow ${style} style guidelines
+
+Respond ONLY with the JSON object, no additional text.`;
+}
+
+/**
+ * Generate image for a slide in background job
+ */
+async function generateSlideImageForJob(visualPrompt: string, visualType: string): Promise<string | undefined> {
+  const geminiKey = Deno.env.get('GEMINI_API_KEY');
+  if (!geminiKey) {
+    console.log('No GEMINI_API_KEY configured, skipping image generation');
+    return undefined;
+  }
+
+  try {
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${geminiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{
+            parts: [{
+              text: `Generate a 16:9 presentation slide image.
+
+Visual Type: ${visualType}
+Description: ${visualPrompt}
+
+Style: Professional, clean, modern. Use warm earth tones (terracotta, sage green, cream, navy). No purple or neon colors. High quality, suitable for business presentations.`
+            }]
+          }],
+          generationConfig: {
+            responseModalities: ['image', 'text'],
+            responseMimeType: 'image/png'
+          }
+        })
+      }
+    );
+
+    if (!response.ok) {
+      const error = await response.text();
+      console.error('Gemini API error:', error);
+      return undefined;
+    }
+
+    const data = await response.json();
+    const imagePart = data.candidates?.[0]?.content?.parts?.find((p: any) => p.inlineData);
+    if (imagePart?.inlineData?.data) {
+      return imagePart.inlineData.data;
+    }
+
+    return undefined;
+  } catch (error) {
+    console.error('Image generation error:', error);
+    return undefined;
+  }
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -332,6 +656,7 @@ serve(async (req) => {
       throw new Error('Unauthorized');
     }
 
+    const requestBody: PitchDeckRequest = await req.json();
     const {
       topic,
       targetAudience = 'general business audience',
@@ -345,8 +670,9 @@ serve(async (req) => {
       slideNumber,
       animationStyle = 'none',
       frameCount = 3,
-      enableRemotionAnimation = false
-    }: PitchDeckRequest = await req.json();
+      enableRemotionAnimation = false,
+      async: asyncMode = false  // NEW: Enable async job processing
+    } = requestBody;
 
     const isRevision = !!revisionRequest && !!currentDeck;
     const generateFrames = animationStyle === 'expressive' && frameCount >= 2 && frameCount <= 5;
@@ -363,8 +689,47 @@ serve(async (req) => {
       animationStyle,
       generateFrames,
       frameCount: generateFrames ? effectiveFrameCount : 0,
-      enableRemotionAnimation
+      enableRemotionAnimation,
+      asyncMode
     });
+
+    // ========== ASYNC MODE: Create job and process in background ==========
+    if (asyncMode && !isRevision) {
+      console.log('Async mode enabled - creating job for background processing');
+
+      // Create job record
+      const { data: job, error: jobError } = await supabase
+        .from('pitch_deck_jobs')
+        .insert({
+          user_id: user.id,
+          status: 'pending',
+          input_data: requestBody,
+          total_slides: numberOfSlides || 12
+        })
+        .select()
+        .single();
+
+      if (jobError) {
+        console.error('Failed to create job:', jobError);
+        throw new Error('Failed to create pitch deck job');
+      }
+
+      console.log('Created job:', job.id);
+
+      // Start background processing (doesn't block response)
+      EdgeRuntime.waitUntil(processJobInBackground(job.id, supabase));
+
+      // Return immediately with job ID
+      return new Response(
+        JSON.stringify({
+          job_id: job.id,
+          status: 'pending',
+          message: 'Pitch deck generation started. Connect to SSE stream for progress updates.'
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    // ========== END ASYNC MODE ==========
 
     // Fetch selected documents if provided
     let documentContext = '';

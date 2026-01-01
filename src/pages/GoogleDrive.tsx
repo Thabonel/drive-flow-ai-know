@@ -189,7 +189,7 @@ const GoogleDrive = () => {
               <Label htmlFor="folder-urls">Paste Google Drive URLs (one per line)</Label>
               <Textarea
                 id="folder-urls"
-                placeholder="https://drive.google.com/drive/folders/...&#10;https://drive.google.com/drive/folders/..."
+                placeholder={"https://drive.google.com/drive/folders/...\nhttps://drive.google.com/drive/folders/..."}
                 value={newFolderUrls}
                 onChange={(e) => setNewFolderUrls(e.target.value)}
                 rows={4}
