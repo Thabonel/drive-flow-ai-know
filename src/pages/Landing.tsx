@@ -91,7 +91,7 @@ const features = [
   },
   {
     title: 'Privacy First',
-    description: 'Your data is never used for AI training. 30-day conversation retention, then wiped. Documents stay forever in YOUR system.',
+    description: 'Your data is never used for AI training. Your team\'s knowledge stays within your organization - private and controlled.',
     benefit: 'Your data stays yours',
   },
   {
@@ -110,13 +110,13 @@ const features = [
     benefit: 'Fast answers',
   },
   {
-    title: 'Future-Proof AI Intelligence',
-    description: 'Multi-provider architecture with leading AI models. We automatically route to the best available AI and update to the latest frontier models. No switching services, no new accounts, no manual upgrades.',
+    title: 'Future-Proof AI',
+    description: 'Multi-provider architecture with automatic updates to the latest frontier models. No switching services.',
     benefit: 'Always latest AI',
   },
   {
     title: 'Timeline Manager',
-    description: 'Visual timeline that flows in real-time. Schedule tasks, see what\'s causing delays, park items for later. Switch between day, week, and month views.',
+    description: 'Visual timeline that flows in real-time. Schedule tasks, see delays, switch between day, week, and month views.',
     benefit: 'Time flows naturally',
   },
   {
@@ -125,34 +125,14 @@ const features = [
     benefit: 'Context-aware answers',
   },
   {
-    title: 'Persistent Knowledge Base',
-    description: 'Upload documents once and they stay forever. Every conversation has access to your entire library. No more re-uploading files.',
-    benefit: 'Upload once, use forever',
-  },
-  {
     title: 'Works Anywhere',
-    description: 'Open it in any browser. Desktop, laptop, tablet, phone—doesn\'t matter.',
+    description: 'Open it in any browser. Desktop, laptop, tablet, phone - doesn\'t matter.',
     benefit: 'No app to install',
   },
   {
-    title: 'Context Operates at Team Level',
-    description: 'Team-shared documents mean everyone\'s AI has access to the same knowledge. No more asking "who has that file?"',
-    benefit: 'Shared organizational context',
-  },
-  {
-    title: 'Context is Local',
-    description: 'Your team\'s knowledge stays within your organization. AI assistants only see what your team uploads—context that\'s private and controlled.',
-    benefit: 'Your data, your boundaries',
-  },
-  {
-    title: 'Context Fluency Across Organization',
-    description: 'Everyone sings from the same song list. Team members get consistent AI responses because they\'re all working from shared documents.',
-    benefit: 'Organization-wide alignment',
-  },
-  {
-    title: 'Meaningfully Upshift Bottom Line',
-    description: 'Teams waste hours every week searching for information. AI Query Hub turns that into billable hours, faster projects, and more closed deals—real ROI, not just "AI experiments." Give your team instant answers so they can ship faster, close more deals, and make you more money.',
-    benefit: 'ROI you can measure',
+    title: 'Team Collaboration',
+    description: 'Share documents across your team. Everyone gets consistent AI responses from the same knowledge base.',
+    benefit: 'Shared context',
   },
 ];
 
@@ -305,14 +285,8 @@ export default function Landing() {
               <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/30 backdrop-blur-sm">
                 <span className="font-medium text-primary">Your data stays private</span>
               </div>
-              <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-success/10 border border-success/30 backdrop-blur-sm">
-                <span className="font-medium text-success">Fast, reliable answers</span>
-              </div>
               <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-accent/10 border border-accent/30 backdrop-blur-sm">
                 <span className="font-medium text-accent">No credit card required</span>
-              </div>
-              <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/30 backdrop-blur-sm">
-                <span className="font-medium text-primary">Always latest AI models</span>
               </div>
             </div>
           </div>
@@ -411,13 +385,7 @@ export default function Landing() {
             </div>
           </div>
 
-          <div className="mt-12 p-6 rounded-2xl bg-white/10 backdrop-blur-xl border border-white/20 max-w-3xl mx-auto">
-            <p className="text-center text-white/90">
-              <strong className="text-white">Your data never leaves your control.</strong> We don't spread it across the internet,
-              don't use it for training, and give you full control over retention. Privacy isn't a feature - it's how we built this.
-            </p>
           </div>
-        </div>
       </section>
 
       {/* AI Memory & Long Conversations Section */}
@@ -638,13 +606,6 @@ export default function Landing() {
                 </div>
               </div>
             </div>
-          </div>
-
-          <div className="mt-12 p-6 rounded-2xl bg-white/10 backdrop-blur-xl border border-white/20">
-            <p className="text-lg text-white/90 leading-relaxed">
-              <strong className="text-white">Upload once, use forever.</strong> Every document you add becomes part of your permanent knowledge base.
-              The AI can reference any file you've ever uploaded, in any conversation, at any time. No more re-uploading the same documents.
-            </p>
           </div>
         </div>
       </section>
@@ -874,24 +835,6 @@ export default function Landing() {
                   Start Free Trial
                 </Link>
               </Button>
-              {/* Schedule Demo - Commented out until we have significant user numbers to showcase
-              <Button asChild size="lg" variant="outline" className="text-lg px-8 py-6 border-2 border-white/40 bg-white/10 text-white hover:bg-white/20 hover:border-white/60 backdrop-blur-sm">
-                <a href="#pricing">
-                  Schedule Demo
-                </a>
-              </Button>
-              */}
-            </div>
-            <div className="flex flex-wrap gap-6 justify-center items-center mt-6 text-sm text-white/90">
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 backdrop-blur-sm border border-white/20">
-                <span>No credit card required</span>
-              </div>
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 backdrop-blur-sm border border-white/20">
-                <span>14-day free trial</span>
-              </div>
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 backdrop-blur-sm border border-white/20">
-                <span>Cancel anytime</span>
-              </div>
             </div>
           </div>
         </div>
