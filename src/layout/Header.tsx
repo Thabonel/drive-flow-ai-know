@@ -4,6 +4,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { KeyboardShortcutsHelp } from '@/components/KeyboardShortcutsHelp';
+import { BackgroundTaskIndicator } from '@/components/BackgroundTaskIndicator';
 import { useOffline } from '@/hooks/useOffline';
 import { useUserSettings } from '@/hooks/useUserSettings';
 import { LogOut, Settings, User } from 'lucide-react';
@@ -41,6 +42,7 @@ const Header = () => {
         </div>
 
         <div className="flex items-center gap-2">
+          <BackgroundTaskIndicator />
           <KeyboardShortcutsHelp />
 
           {user && (

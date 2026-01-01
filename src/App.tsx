@@ -10,6 +10,7 @@ import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { useKeyboardShortcuts, globalShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { AppSidebar } from "@/components/AppSidebar";
+import { BackgroundTasksProvider } from "@/contexts/BackgroundTasksContext";
 import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
 import { PresentationModeProvider } from "@/contexts/PresentationModeContext";
 import { AgentRightPane } from "@/components/agent/AgentRightPane";
@@ -173,6 +174,7 @@ const App = () => (
           <Sonner />
           <BrowserRouter>
             <AuthProvider>
+            <BackgroundTasksProvider>
             <PWAInstallPrompt />
             <Routes>
             <Route path="/auth" element={
@@ -339,6 +341,7 @@ const App = () => (
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
+            </BackgroundTasksProvider>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
