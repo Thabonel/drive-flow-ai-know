@@ -1036,17 +1036,15 @@ The code should be production-ready and immediately renderable by Remotion.`;
         }
 
         if (shouldGenerateImage && slide.visualPrompt) {
-          // TEMPORARY: Skip image generation to avoid timeout
-          // Both images and videos will be generated asynchronously after deck is returned
-          console.log(`⏭ Skipping sync generation for slide ${slide.slideNumber} (will generate async)`);
+          // Generate image for this slide
+          console.log(`Generating image for slide ${slide.slideNumber}...`);
+          slide.imageData = await generateImage(slide.visualPrompt, slide.visualType || 'illustration');
 
-          // Store visual prompt for async image generation
-          slide.imagePrompt = slide.visualPrompt;
-
-          // Store narrative prompt for async video generation
-          if (animationStyle === 'expressive') {
-            const narrativePrompt = createNarrativeAnimationPrompt(slide);
-            slide.videoPrompt = narrativePrompt;
+          if (slide.imageData) {
+            imagesGenerated++;
+            console.log(`✓ Image generated for slide ${slide.slideNumber}`);
+          } else {
+            console.log(`✗ Image generation failed for slide ${slide.slideNumber}`);
           }
 
           // Generate frame images if expressive mode is enabled and frames exist
