@@ -18,12 +18,12 @@ serve(async (req) => {
 
     console.log('Generating video with Fal.ai Mochi-1:', { prompt, resolution });
 
-    // Verify FAL_KEY is set
-    const falKey = Deno.env.get('FAL_KEY');
+    // Verify FAL_API_KEY is set
+    const falKey = Deno.env.get('FAL_API_KEY');
     if (!falKey) {
-      throw new Error('FAL_KEY environment variable is not set');
+      throw new Error('FAL_API_KEY environment variable is not set');
     }
-    console.log('FAL_KEY is set (length:', falKey.length, ')');
+    console.log('FAL_API_KEY is set (length:', falKey.length, ')');
 
     // Call Fal.ai API with Mochi-1 model
     // Documentation: https://fal.ai/models/fal-ai/mochi-v1/api
