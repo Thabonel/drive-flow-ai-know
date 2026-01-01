@@ -899,24 +899,37 @@ The code should be production-ready and immediately renderable by Remotion.`;
     if (includeImages) {
       console.log('Generating images for slides in parallel...');
 
-      // Helper function to generate a single image
+      // Helper function to generate a single image with timeout
       const generateImage = async (visualPrompt: string, visualType: string): Promise<string | undefined> => {
         try {
+          const controller = new AbortController();
+          const timeout = setTimeout(() => controller.abort(), 30000); // 30s timeout per image
+
           const imageResponse = await fetch(`${supabaseUrl}/functions/v1/generate-image`, {
             method: 'POST',
             headers: {
               'Authorization': authHeader!,
               'Content-Type': 'application/json',
             },
-            body: JSON.stringify(getStandardImageParams(visualPrompt, visualType))
+            body: JSON.stringify(getStandardImageParams(visualPrompt, visualType)),
+            signal: controller.signal
           });
+
+          clearTimeout(timeout);
 
           if (imageResponse.ok) {
             const imageResult = await imageResponse.json();
             return imageResult.imageData;
+          } else {
+            const errorText = await imageResponse.text();
+            console.error(`Image generation failed (${imageResponse.status}):`, errorText.substring(0, 200));
           }
         } catch (error) {
-          console.error('Image generation error:', error);
+          if (error instanceof Error && error.name === 'AbortError') {
+            console.error('Image generation timed out');
+          } else {
+            console.error('Image generation error:', error);
+          }
         }
         return undefined;
       };
@@ -998,77 +1011,83 @@ The code should be production-ready and immediately renderable by Remotion.`;
       let imagesGenerated = 0;
       let imagesPreserved = 0;
 
-      // Generate all images in parallel to avoid timeout
-      const imagePromises = pitchDeckStructure.slides.map(async (slide) => {
-        // For revisions, preserve existing images/videos unless the slide was modified
-        const shouldGenerateImage = slide.visualType && slide.visualType !== 'none' && slide.visualPrompt;
-        const isRevisedSlide = isRevision && slideNumber ? slide.slideNumber === slideNumber : true;
+      // Process images in batches of 3 to avoid timeout
+      const BATCH_SIZE = 3;
+      const slides = pitchDeckStructure.slides;
 
-        // If revision and not the target slide, try to preserve existing media
-        if (isRevision && !isRevisedSlide && currentDeck) {
-          const existingSlide = currentDeck.slides.find(s => s.slideNumber === slide.slideNumber);
+      for (let i = 0; i < slides.length; i += BATCH_SIZE) {
+        const batch = slides.slice(i, i + BATCH_SIZE);
+        console.log(`Processing image batch ${Math.floor(i / BATCH_SIZE) + 1}/${Math.ceil(slides.length / BATCH_SIZE)} (slides ${i + 1}-${Math.min(i + BATCH_SIZE, slides.length)})`);
 
-          // Preserve video if it exists (expressive mode)
-          if (existingSlide?.videoUrl) {
-            slide.videoUrl = existingSlide.videoUrl;
-            slide.videoDuration = existingSlide.videoDuration;
-            slide.videoFileSizeMb = existingSlide.videoFileSizeMb;
-            videosPreserved++;
-            console.log(`✓ Preserved existing video for slide ${slide.slideNumber}`);
-            return;
+        const batchPromises = batch.map(async (slide) => {
+          // For revisions, preserve existing images/videos unless the slide was modified
+          const shouldGenerateImage = slide.visualType && slide.visualType !== 'none' && slide.visualPrompt;
+          const isRevisedSlide = isRevision && slideNumber ? slide.slideNumber === slideNumber : true;
+
+          // If revision and not the target slide, try to preserve existing media
+          if (isRevision && !isRevisedSlide && currentDeck) {
+            const existingSlide = currentDeck.slides.find(s => s.slideNumber === slide.slideNumber);
+
+            // Preserve video if it exists (expressive mode)
+            if (existingSlide?.videoUrl) {
+              slide.videoUrl = existingSlide.videoUrl;
+              slide.videoDuration = existingSlide.videoDuration;
+              slide.videoFileSizeMb = existingSlide.videoFileSizeMb;
+              videosPreserved++;
+              console.log(`✓ Preserved existing video for slide ${slide.slideNumber}`);
+              return;
+            }
+
+            // Preserve image if it exists (static modes)
+            if (existingSlide?.imageData) {
+              slide.imageData = existingSlide.imageData;
+              imagesPreserved++;
+              console.log(`✓ Preserved existing image for slide ${slide.slideNumber}`);
+              return;
+            }
+
+            // Preserve animation frames if they exist (old expressive mode)
+            if (existingSlide?.frames && existingSlide.frames.length > 0) {
+              slide.frames = existingSlide.frames;
+              imagesPreserved++; // Count frame preservation as image preservation
+              console.log(`✓ Preserved existing animation frames for slide ${slide.slideNumber}`);
+              return;
+            }
           }
 
-          // Preserve image if it exists (static modes)
-          if (existingSlide?.imageData) {
-            slide.imageData = existingSlide.imageData;
-            imagesPreserved++;
-            console.log(`✓ Preserved existing image for slide ${slide.slideNumber}`);
-            return;
-          }
+          if (shouldGenerateImage && slide.visualPrompt) {
+            // Generate image for this slide
+            console.log(`Generating image for slide ${slide.slideNumber}...`);
+            slide.imageData = await generateImage(slide.visualPrompt, slide.visualType || 'illustration');
 
-          // Preserve animation frames if they exist (old expressive mode)
-          if (existingSlide?.frames && existingSlide.frames.length > 0) {
-            slide.frames = existingSlide.frames;
-            imagesPreserved++; // Count frame preservation as image preservation
-            console.log(`✓ Preserved existing animation frames for slide ${slide.slideNumber}`);
-            return;
-          }
-        }
+            if (slide.imageData) {
+              imagesGenerated++;
+              console.log(`✓ Image generated for slide ${slide.slideNumber}`);
+            } else {
+              console.log(`✗ Image generation failed for slide ${slide.slideNumber}`);
+            }
 
-        if (shouldGenerateImage && slide.visualPrompt) {
-          // Generate image for this slide
-          console.log(`Generating image for slide ${slide.slideNumber}...`);
-          slide.imageData = await generateImage(slide.visualPrompt, slide.visualType || 'illustration');
+            // Generate frame images if expressive mode is enabled and frames exist
+            if (generateFrames && slide.frames && slide.frames.length > 0) {
+              console.log(`Generating ${slide.frames.length} frame images for slide ${slide.slideNumber}...`);
 
-          if (slide.imageData) {
-            imagesGenerated++;
-            console.log(`✓ Image generated for slide ${slide.slideNumber}`);
-          } else {
-            console.log(`✗ Image generation failed for slide ${slide.slideNumber}`);
-          }
-
-          // Generate frame images if expressive mode is enabled and frames exist
-          if (generateFrames && slide.frames && slide.frames.length > 0) {
-            console.log(`Generating ${slide.frames.length} frame images for slide ${slide.slideNumber}...`);
-
-            // Generate frame images in parallel
-            const frameImagePromises = slide.frames.map(async (frame) => {
-              if (frame.visualPrompt) {
-                frame.imageData = await generateImage(frame.visualPrompt, slide.visualType || 'illustration');
-                if (frame.imageData) {
-                  console.log(`Frame ${frame.frameNumber} image generated for slide ${slide.slideNumber}`);
+              // Generate frame images sequentially to avoid overload
+              for (const frame of slide.frames) {
+                if (frame.visualPrompt) {
+                  frame.imageData = await generateImage(frame.visualPrompt, slide.visualType || 'illustration');
+                  if (frame.imageData) {
+                    console.log(`Frame ${frame.frameNumber} image generated for slide ${slide.slideNumber}`);
+                  }
                 }
               }
-            });
-
-            await Promise.all(frameImagePromises);
-            console.log(`All frame images generated for slide ${slide.slideNumber}`);
+              console.log(`All frame images generated for slide ${slide.slideNumber}`);
+            }
           }
-        }
-      });
+        });
 
-      // Wait for all images to complete
-      await Promise.all(imagePromises);
+        // Wait for this batch to complete before starting the next
+        await Promise.all(batchPromises);
+      }
 
       // Log media generation summary with cost estimates
       const totalSlides = pitchDeckStructure.slides.length;
