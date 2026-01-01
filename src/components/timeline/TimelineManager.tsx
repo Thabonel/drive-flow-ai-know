@@ -9,6 +9,8 @@ import { AddItemForm } from './AddItemForm';
 import { ItemActionMenu } from './ItemActionMenu';
 import { ParkedItemsPanel } from './ParkedItemsPanel';
 import { ViewModeSwitcher } from './ViewModeSwitcher';
+import { ViewTypeSwitcher, ViewType } from './ViewTypeSwitcher';
+import { CalendarGrid } from './CalendarGrid';
 import { CalendarSyncButton } from './CalendarSyncButton';
 import { WorkloadIndicator } from './WorkloadIndicator';
 import { TaskHeaderPanel } from './TaskHeaderPanel';
@@ -113,11 +115,20 @@ export function TimelineManager({ onCanvasReady }: TimelineManagerProps = {}) {
   const [showEndOfDay, setShowEndOfDay] = useState(false);
   const [showAddTask, setShowAddTask] = useState(false);
   const [viewMode, setViewMode] = useState<TimelineViewMode>('week');
+  const [viewType, setViewType] = useState<ViewType>(() => {
+    const stored = localStorage.getItem('timeline-view-type');
+    return (stored === 'calendar' ? 'calendar' : 'timeline') as ViewType;
+  });
   const [initialFormValues, setInitialFormValues] = useState<{ startTime?: string; layerId?: string } | null>(null);
   const [jumpToDate, setJumpToDate] = useState<string>('');
 
   const { populateRoutinesForDay } = useRoutines();
   const { isCompactMode, setIsCompactMode } = useCompactMode();
+
+  // Persist view type to localStorage
+  useEffect(() => {
+    localStorage.setItem('timeline-view-type', viewType);
+  }, [viewType]);
 
   const animationFrameRef = useRef<number>();
   const lastTickRef = useRef<number>(Date.now());
@@ -696,8 +707,12 @@ export function TimelineManager({ onCanvasReady }: TimelineManagerProps = {}) {
               </DropdownMenuContent>
           </DropdownMenu>
 
-          {/* View Mode Switcher */}
-          <div className="ml-auto">
+          {/* View Type and Mode Switchers */}
+          <div className="ml-auto flex items-center gap-2">
+            <ViewTypeSwitcher
+              currentViewType={viewType}
+              onViewTypeChange={setViewType}
+            />
             <ViewModeSwitcher
               currentMode={viewMode}
               onModeChange={setViewMode}
@@ -750,13 +765,24 @@ export function TimelineManager({ onCanvasReady }: TimelineManagerProps = {}) {
 
       {/* Main timeline area */}
       <div className="space-y-4">
-        {/* Main timeline */}
+        {/* Main timeline or calendar */}
         {layers.length === 0 ? (
           <Alert>
             <AlertDescription>
               Create a layer first to start adding items to your timeline.
             </AlertDescription>
           </Alert>
+        ) : viewType === 'calendar' ? (
+          <CalendarGrid
+            items={items}
+            viewMode={viewMode}
+            nowTime={nowTime}
+            onItemClick={handleItemClick}
+            onItemDrop={handleItemDrop}
+            onItemResize={handleItemResize}
+            onDoubleClick={handleTimelineDoubleClick}
+            defaultLayerId={layers.find(l => l.is_visible)?.id}
+          />
         ) : (
           <TimelineCanvas
             items={items}
