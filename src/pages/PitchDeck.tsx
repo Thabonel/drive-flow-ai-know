@@ -1579,13 +1579,13 @@ Generated with AI Query Hub
             {/* Document Selection Section */}
             <div className="border rounded-lg p-4 space-y-3">
               <div className="flex items-center justify-between">
-                <Label>Source Documents (Optional)</Label>
+                <Label>Select source from documents</Label>
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => setShowDocSelector(!showDocSelector)}
                 >
-                  {showDocSelector ? 'Hide' : 'Show'} Documents
+                  {showDocSelector ? 'Hide' : 'Show'}
                 </Button>
               </div>
 
