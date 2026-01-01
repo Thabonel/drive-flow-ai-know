@@ -1298,26 +1298,25 @@ The code should be production-ready and immediately renderable by Remotion.`;
         return undefined;
       };
 
-      // Helper function to generate a single video with retry logic
-      const generateVideo = async (visualPrompt: string, visualType: string, retries = 2): Promise<{ url?: string; duration?: number; sizeMb?: number; error?: string }> => {
+      // Helper function to animate a still image using SVD Turbo
+      const generateVideo = async (imageData: string, slideNumber: number, retries = 2): Promise<{ url?: string; duration?: number; sizeMb?: number; error?: string }> => {
         for (let attempt = 0; attempt <= retries; attempt++) {
           try {
-            console.log(`Video generation attempt ${attempt + 1}/${retries + 1} for prompt: "${visualPrompt.substring(0, 50)}..."`);
+            console.log(`Video animation attempt ${attempt + 1}/${retries + 1} for slide ${slideNumber}`);
 
             const controller = new AbortController();
-            const timeout = setTimeout(() => controller.abort(), 90000); // 90s timeout for video API
+            const timeout = setTimeout(() => controller.abort(), 60000); // 60s timeout for SVD
 
-            const videoResponse = await fetch(`${supabaseUrl}/functions/v1/generate-video`, {
+            const videoResponse = await fetch(`${supabaseUrl}/functions/v1/generate-video-falai`, {
               method: 'POST',
               headers: {
                 'Authorization': authHeader!,
                 'Content-Type': 'application/json',
               },
               body: JSON.stringify({
-                prompt: visualPrompt,
-                duration: 4, // 4 seconds default
-                aspectRatio: '16:9',
-                resolution: '1080p',
+                image_data: imageData,    // Base64 still image to animate
+                motion_bucket_id: 80,     // Subtle movement
+                fps: 8,                   // Slow, deliberate (~3 sec video)
               }),
               signal: controller.signal
             });
@@ -1327,15 +1326,14 @@ The code should be production-ready and immediately renderable by Remotion.`;
             if (videoResponse.ok) {
               const videoResult = await videoResponse.json();
               if (videoResult.videoUrl) {
-                console.log(`✓ Video generated successfully (attempt ${attempt + 1}, cached: ${videoResult.cached || false})`);
+                console.log(`✓ Video animated successfully (attempt ${attempt + 1})`);
                 return {
                   url: videoResult.videoUrl,
                   duration: videoResult.duration,
-                  sizeMb: videoResult.fileSizeMb
+                  sizeMb: undefined
                 };
               } else if (videoResult.error) {
                 console.error(`✗ Video API returned error: ${videoResult.error}`);
-                // Don't retry if API explicitly returned an error
                 return { error: videoResult.error };
               }
             } else {
@@ -1353,7 +1351,7 @@ The code should be production-ready and immediately renderable by Remotion.`;
             }
           } catch (error) {
             const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-            console.error(`✗ Video generation exception (attempt ${attempt + 1}):`, errorMessage);
+            console.error(`✗ Video animation exception (attempt ${attempt + 1}):`, errorMessage);
 
             // Retry on network errors or timeouts
             if (attempt < retries) {
@@ -1428,16 +1426,29 @@ The code should be production-ready and immediately renderable by Remotion.`;
             if (slide.imageData) {
               imagesGenerated++;
               console.log(`✓ Image generated for slide ${slide.slideNumber}`);
+
+              // Generate animated video from the still image using SVD Turbo
+              // This creates subtle element movement (head turns, gentle sway, etc.)
+              if (generateFrames) {
+                console.log(`Animating image for slide ${slide.slideNumber}...`);
+                const videoResult = await generateVideo(slide.imageData, slide.slideNumber);
+
+                if (videoResult.url) {
+                  slide.videoUrl = videoResult.url;
+                  slide.videoDuration = videoResult.duration;
+                  slide.videoFileSizeMb = videoResult.sizeMb;
+                  videosGenerated++;
+                  console.log(`✓ Video animated for slide ${slide.slideNumber}: ${videoResult.url}`);
+                } else {
+                  console.log(`✗ Video animation failed for slide ${slide.slideNumber}: ${videoResult.error}`);
+                }
+              }
             } else {
               console.log(`✗ Image generation failed for slide ${slide.slideNumber}`);
             }
 
-            // NOTE: Frame image generation disabled to avoid Edge Function timeout
-            // Frame images were taking too long (3 frames × 10 slides = 30 extra API calls)
-            // If expressive mode animation is needed, use video generation instead
-            if (generateFrames && slide.frames && slide.frames.length > 0) {
-              console.log(`⏭ Skipping frame image generation for slide ${slide.slideNumber} (use video mode instead)`);
-              // Clear frame prompts to prevent confusion - frames exist for metadata only
+            // Clear frame prompts if they exist - frames are now replaced by video
+            if (slide.frames && slide.frames.length > 0) {
               slide.frames.forEach(frame => {
                 frame.imageData = undefined;
               });
@@ -1451,7 +1462,7 @@ The code should be production-ready and immediately renderable by Remotion.`;
 
       // Log media generation summary with cost estimates
       const totalSlides = pitchDeckStructure.slides.length;
-      const videoCostPerSlide = 0.20; // $0.20 per 4-second video
+      const videoCostPerSlide = 0.075; // $0.075 per ~3-second SVD video
       const imageCostPerSlide = 0.01; // $0.01 per static image
 
       const videosCost = videosGenerated * videoCostPerSlide;
