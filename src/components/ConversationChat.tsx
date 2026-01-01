@@ -5,7 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
-import { Loader2, Send, Archive, Trash2, Edit2, Check, X, FileText, MessageCircle, Calendar, Printer, Download, ChevronDown } from 'lucide-react';
+import { Loader2, Send, Archive, Trash2, Edit2, Check, X, FileText, MessageCircle, Calendar, Printer, Download, ChevronDown, ImageIcon } from 'lucide-react';
+import { arrayBufferToBase64 } from '@/lib/base64Utils';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -60,6 +61,14 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
   const scrollRef = useRef<HTMLDivElement>(null);
   const isSubmittingRef = useRef(false);
   const abortControllerRef = useRef<AbortController | null>(null);
+
+  // Image attachment state
+  const [pendingImage, setPendingImage] = useState<{
+    base64: string;
+    mimeType: string;
+    fileName?: string;
+  } | null>(null);
+  const [isProcessingImage, setIsProcessingImage] = useState(false);
 
   useEffect(() => {
     // Don't load messages if we're actively submitting (prevents race condition)
@@ -277,16 +286,20 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim() || isLoading) return;
+    if ((!input.trim() && !pendingImage) || isLoading) return;
+
+    // Capture image data before clearing
+    const imageData = pendingImage;
 
     // Store original message for display before any modifications
-    const originalMessage = input.trim();
+    const originalMessage = input.trim() || (imageData ? "What's in this image?" : '');
     let userMessage = originalMessage;
     let autoSavedDocId: string | null = null;
     let forceUseDocuments = useDocuments;
 
-    // CRITICAL: Clear input IMMEDIATELY for instant UI feedback
+    // CRITICAL: Clear input and image IMMEDIATELY for instant UI feedback
     setInput('');
+    setPendingImage(null);
 
     // If message is very long (>10KB), auto-save as document and reference it
     const LONG_MESSAGE_THRESHOLD = 10000;
@@ -404,6 +417,10 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
             query: userMessage,
             conversationContext,
             use_documents: forceUseDocuments,
+            image: imageData ? {
+              base64: imageData.base64,
+              media_type: imageData.mimeType,
+            } : undefined,
           }),
           signal: abortControllerRef.current.signal,
         }
@@ -926,42 +943,128 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
     }
   };
 
+  // Image handling utilities
+  const fileToBase64 = async (file: File): Promise<string> => {
+    const arrayBuffer = await file.arrayBuffer();
+    return arrayBufferToBase64(new Uint8Array(arrayBuffer));
+  };
+
+  const isValidImageFile = (file: File): boolean => {
+    const validTypes = ['image/png', 'image/jpeg', 'image/gif', 'image/webp'];
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    return validTypes.includes(file.type) && file.size <= maxSize;
+  };
+
+  const handleImageFile = async (file: File) => {
+    if (!isValidImageFile(file)) {
+      toast.error('Invalid image. Supported: PNG, JPEG, GIF, WebP (max 5MB)');
+      return;
+    }
+    setIsProcessingImage(true);
+    try {
+      const base64 = await fileToBase64(file);
+      setPendingImage({ base64, mimeType: file.type, fileName: file.name });
+      toast.success('Image ready to send');
+    } catch (error) {
+      console.error('Image processing error:', error);
+      toast.error('Failed to process image');
+    } finally {
+      setIsProcessingImage(false);
+    }
+  };
+
   // Extract input form to avoid duplication (used in both empty and active states)
   const renderInputForm = () => (
     <form onSubmit={handleSubmit} className="p-2 border-t flex-shrink-0 bg-background">
-      <div className="flex gap-2">
-        <Textarea
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder="Type your message..."
-          className="resize-none border-2 border-primary/30 focus:border-primary focus:ring-2 focus:ring-primary/20"
-          rows={2}
-          disabled={isLoading}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-              e.preventDefault();
-              handleSubmit(e);
-            }
-          }}
-        />
-        <div className="flex flex-col gap-2">
-          <DictationButton
-            onTranscription={(text) => setInput(prev => prev ? prev + ' ' + text : text)}
-          />
-          {isLoading ? (
+      <div
+        className={`relative ${pendingImage ? 'ring-2 ring-primary ring-offset-2 rounded-lg' : ''}`}
+        onDragOver={(e) => {
+          e.preventDefault();
+          e.currentTarget.classList.add('ring-2', 'ring-primary', 'ring-offset-2', 'rounded-lg');
+        }}
+        onDragLeave={(e) => {
+          e.preventDefault();
+          if (!pendingImage) {
+            e.currentTarget.classList.remove('ring-2', 'ring-primary', 'ring-offset-2', 'rounded-lg');
+          }
+        }}
+        onDrop={async (e) => {
+          e.preventDefault();
+          e.currentTarget.classList.remove('ring-2', 'ring-primary', 'ring-offset-2', 'rounded-lg');
+          const files = Array.from(e.dataTransfer.files);
+          const imageFile = files.find(f => f.type.startsWith('image/'));
+          if (imageFile) {
+            await handleImageFile(imageFile);
+          }
+        }}
+      >
+        {/* Image preview indicator */}
+        {pendingImage && (
+          <div className="flex items-center gap-2 p-2 mb-2 bg-primary/10 rounded-lg">
+            <ImageIcon className="h-4 w-4 text-primary" />
+            <span className="text-sm text-primary flex-1 truncate">
+              {pendingImage.fileName || 'Pasted image'}
+            </span>
             <Button
               type="button"
-              onClick={handleStopGeneration}
-              variant="destructive"
-              className="bg-red-600 hover:bg-red-700"
+              variant="ghost"
+              size="sm"
+              className="h-6 w-6 p-0"
+              onClick={() => setPendingImage(null)}
             >
               <X className="h-4 w-4" />
             </Button>
-          ) : (
-            <Button type="submit" disabled={!input.trim()}>
-              <Send className="h-4 w-4" />
-            </Button>
-          )}
+          </div>
+        )}
+
+        <div className="flex gap-2">
+          <Textarea
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            placeholder={pendingImage ? "Describe what you want to know about this image..." : "Type your message..."}
+            className="resize-none border-2 border-primary/30 focus:border-primary focus:ring-2 focus:ring-primary/20"
+            rows={2}
+            disabled={isLoading || isProcessingImage}
+            onPaste={async (e) => {
+              const items = e.clipboardData?.items;
+              if (!items) return;
+              for (const item of Array.from(items)) {
+                if (item.type.startsWith('image/')) {
+                  e.preventDefault();
+                  const file = item.getAsFile();
+                  if (file) {
+                    await handleImageFile(file);
+                  }
+                  break;
+                }
+              }
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleSubmit(e);
+              }
+            }}
+          />
+          <div className="flex flex-col gap-2">
+            <DictationButton
+              onTranscription={(text) => setInput(prev => prev ? prev + ' ' + text : text)}
+            />
+            {isLoading ? (
+              <Button
+                type="button"
+                onClick={handleStopGeneration}
+                variant="destructive"
+                className="bg-red-600 hover:bg-red-700"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            ) : (
+              <Button type="submit" disabled={!input.trim() && !pendingImage}>
+                <Send className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
         </div>
       </div>
     </form>

@@ -146,13 +146,47 @@ function getProviderTokenLimit(providerName: string): number {
   return PROVIDER_TOKEN_LIMITS.openrouter;
 }
 
-async function claudeCompletion(messages: Message[], systemMessage: string) {
+async function claudeCompletion(
+  messages: Message[],
+  systemMessage: string,
+  imageData?: { base64: string; media_type: string }
+) {
   if (!anthropicApiKey) {
     throw new Error('Anthropic API key not available');
   }
 
   // Filter out system messages from the messages array
-  const userMessages = messages.filter(m => m.role !== 'system');
+  let userMessages = messages.filter(m => m.role !== 'system').map(m => ({
+    role: m.role,
+    content: m.content
+  }));
+
+  // If we have an image, modify the last user message to include it
+  if (imageData && userMessages.length > 0) {
+    const lastIdx = userMessages.length - 1;
+    const lastMsg = userMessages[lastIdx];
+
+    // Convert string content to array format with image
+    userMessages[lastIdx] = {
+      role: 'user',
+      content: [
+        {
+          type: 'image',
+          source: {
+            type: 'base64',
+            media_type: imageData.media_type,
+            data: imageData.base64,
+          }
+        },
+        {
+          type: 'text',
+          text: lastMsg.content + '\n\nPlease also extract and include any text visible in this image (OCR).'
+        }
+      ]
+    } as any; // Type assertion needed for mixed content
+
+    console.log('Image added to message, media type:', imageData.media_type);
+  }
 
   // Define web search tool
   const tools = [{
@@ -322,7 +356,12 @@ async function openRouterCompletion(messages: Message[], systemMessage: string) 
 }
 
 
-export async function getLLMResponse(messages: Message[], systemMessage: string, providerOverride?: string) {
+export async function getLLMResponse(
+  messages: Message[],
+  systemMessage: string,
+  providerOverride?: string,
+  imageData?: { base64: string; media_type: string }
+) {
   let providerEnv = providerOverride || Deno.env.get('MODEL_PROVIDER');
   const useOpenRouter = Deno.env.get('USE_OPENROUTER') === 'true';
 
@@ -364,7 +403,7 @@ export async function getLLMResponse(messages: Message[], systemMessage: string,
             console.log('Anthropic API key not available, skipping');
             continue;
           }
-          return await claudeCompletion(messages, systemMessage);
+          return await claudeCompletion(messages, systemMessage, imageData);
         case 'openrouter':
           if (!openRouterApiKey) {
             console.log('OpenRouter API key not available, skipping');
@@ -439,7 +478,7 @@ serve(async (req) => {
     const personalPrompt = settings?.personal_prompt || '';
 
     const body = await req.json();
-    const { query, knowledge_base_id, conversationContext, use_documents } = body;
+    const { query, knowledge_base_id, conversationContext, use_documents, image } = body;
 
     // Input validation
     if (!query || typeof query !== 'string') {
@@ -457,6 +496,34 @@ serve(async (req) => {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         }
       );
+    }
+
+    // Validate image if provided
+    if (image) {
+      const validImageTypes = ['image/png', 'image/jpeg', 'image/gif', 'image/webp'];
+      if (!image.base64 || typeof image.base64 !== 'string') {
+        return new Response(
+          JSON.stringify({ error: 'Image base64 data is required' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      if (!image.media_type || !validImageTypes.includes(image.media_type)) {
+        return new Response(
+          JSON.stringify({ error: 'Invalid image media type. Supported: PNG, JPEG, GIF, WebP' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      // ~7MB base64 ≈ 5MB image
+      if (image.base64.length > 7 * 1024 * 1024) {
+        return new Response(
+          JSON.stringify({
+            error: 'Image too large',
+            response: "The image is too large (max 5MB). Please use a smaller image."
+          }),
+          { status: 413, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      console.log('Image received:', image.media_type, 'base64 length:', image.base64.length);
     }
 
     if (knowledge_base_id && typeof knowledge_base_id !== 'string') {
@@ -807,7 +874,7 @@ serve(async (req) => {
     console.log('Calling AI model for response generation with', messages.length, 'messages...');
     let aiAnswer;
     try {
-      aiAnswer = await getLLMResponse(messages, systemMessage, providerOverride);
+      aiAnswer = await getLLMResponse(messages, systemMessage, providerOverride, image);
       console.log('AI response generated successfully:', aiAnswer ? 'Yes' : 'No', 'Length:', aiAnswer?.length || 0);
     } catch (aiError) {
       console.error('AI model error details:', {
