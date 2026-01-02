@@ -22,7 +22,7 @@ interface CalendarGridProps {
   onItemDrop?: (item: TimelineItemType, newStartTime: string, newLayerId: string) => void;
   onItemResize?: (item: TimelineItemType, newDurationMinutes: number) => void;
   onDoubleClick?: (startTime: string, layerId: string) => void;
-  onQuickAdd?: (title: string, startTime: string, durationMinutes: number, layerId: string) => void;
+  onQuickAdd?: (title: string, startTime: string, durationMinutes: number, layerId: string) => Promise<boolean>;
   defaultLayerId?: string;
 }
 
@@ -373,7 +373,7 @@ export function CalendarGrid({
   }, [dragCreate, dayStartHour, rowHeight]);
 
   // Handle quick add submit
-  const handleQuickAddSubmit = (e: React.FormEvent) => {
+  const handleQuickAddSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!quickAdd.startTime || !quickAdd.endTime) return;
 
@@ -390,8 +390,8 @@ export function CalendarGrid({
     const durationMinutes = Math.round((quickAdd.endTime.getTime() - quickAdd.startTime.getTime()) / 60000);
 
     if (onQuickAdd) {
-      onQuickAdd(quickAddTitle.trim(), quickAdd.startTime.toISOString(), durationMinutes, defaultLayerId);
-      toast.success(`Created "${quickAddTitle.trim()}"`);
+      await onQuickAdd(quickAddTitle.trim(), quickAdd.startTime.toISOString(), durationMinutes, defaultLayerId);
+      // No success toast - item appearing on timeline is confirmation
     } else if (onDoubleClick) {
       // Fallback to double-click handler
       onDoubleClick(quickAdd.startTime.toISOString(), defaultLayerId);
