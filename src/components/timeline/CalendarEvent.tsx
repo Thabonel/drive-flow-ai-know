@@ -15,6 +15,7 @@ interface CalendarEventProps {
   onResize?: (item: TimelineItemType, newDurationMinutes: number) => void;
   overlappingCount?: number;
   overlappingIndex?: number;
+  dayColumnWidth?: number; // Actual column width for accurate cross-day drag
 }
 
 export function CalendarEvent({
@@ -26,6 +27,7 @@ export function CalendarEvent({
   onResize,
   overlappingCount = 1,
   overlappingIndex = 0,
+  dayColumnWidth = 150,
 }: CalendarEventProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [isResizing, setIsResizing] = useState(false);
@@ -114,8 +116,8 @@ export function CalendarEvent({
         const newStartTime = new Date(item.start_time);
         newStartTime.setMinutes(newStartTime.getMinutes() + minutesDelta);
 
-        // Calculate day offset based on X delta (assuming ~150px per day column)
-        const dayOffset = Math.round(deltaX / 150);
+        // Calculate day offset based on X delta using actual column width
+        const dayOffset = Math.round(deltaX / dayColumnWidth);
 
         onDragEnd(item, newStartTime.toISOString(), dayOffset);
       }
