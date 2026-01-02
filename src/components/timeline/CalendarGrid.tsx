@@ -1,6 +1,6 @@
 // Calendar Grid - Main Google Calendar-style view component
 
-import React, { useMemo, useRef, useEffect } from 'react';
+import React, { useMemo, useRef, useEffect, useState, useCallback } from 'react';
 import { startOfDay, addDays, format, isSameDay, startOfWeek, isToday } from 'date-fns';
 import { CalendarTimeColumn } from './CalendarTimeColumn';
 import { CalendarHeader } from './CalendarHeader';
@@ -8,6 +8,10 @@ import { CalendarEvent } from './CalendarEvent';
 import { TimelineItem as TimelineItemType } from '@/lib/timelineUtils';
 import { TimelineViewMode, CALENDAR_CONFIG } from '@/lib/timelineConstants';
 import { cn } from '@/lib/utils';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { X } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface CalendarGridProps {
   items: TimelineItemType[];
@@ -17,7 +21,27 @@ interface CalendarGridProps {
   onItemDrop?: (item: TimelineItemType, newStartTime: string, newLayerId: string) => void;
   onItemResize?: (item: TimelineItemType, newDurationMinutes: number) => void;
   onDoubleClick?: (startTime: string, layerId: string) => void;
+  onQuickAdd?: (title: string, startTime: string, durationMinutes: number, layerId: string) => void;
   defaultLayerId?: string;
+}
+
+// Quick add popup state
+interface QuickAddState {
+  visible: boolean;
+  x: number;
+  y: number;
+  startTime: Date | null;
+  endTime: Date | null;
+}
+
+// Drag to create state
+interface DragCreateState {
+  isDragging: boolean;
+  day: Date | null;
+  startHour: number;
+  startMinutes: number;
+  endHour: number;
+  endMinutes: number;
 }
 
 // Find overlapping events in a day
@@ -68,9 +92,35 @@ export function CalendarGrid({
   onItemDrop,
   onItemResize,
   onDoubleClick,
+  onQuickAdd,
   defaultLayerId,
 }: CalendarGridProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const gridRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // Quick add popup state
+  const [quickAdd, setQuickAdd] = useState<QuickAddState>({
+    visible: false,
+    x: 0,
+    y: 0,
+    startTime: null,
+    endTime: null,
+  });
+  const [quickAddTitle, setQuickAddTitle] = useState('');
+
+  // Drag to create state
+  const [dragCreate, setDragCreate] = useState<DragCreateState>({
+    isDragging: false,
+    day: null,
+    startHour: 0,
+    startMinutes: 0,
+    endHour: 0,
+    endMinutes: 0,
+  });
+
+  // Last action for undo
+  const [lastAction, setLastAction] = useState<{ item: TimelineItemType; prevStartTime: string } | null>(null);
 
   // Get config based on view mode (day or week - month uses week config)
   const config = viewMode === 'day' ? CALENDAR_CONFIG.day : CALENDAR_CONFIG.week;
@@ -155,24 +205,172 @@ export function CalendarGrid({
     }
   }, []);
 
-  // Handle click on empty cell
-  const handleCellClick = (day: Date, hour: number) => {
-    if (!onDoubleClick || !defaultLayerId) return;
+  // Focus input when quick add popup opens
+  useEffect(() => {
+    if (quickAdd.visible && inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [quickAdd.visible]);
+
+  // Close quick add on click outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (quickAdd.visible && gridRef.current && !gridRef.current.contains(e.target as Node)) {
+        setQuickAdd(prev => ({ ...prev, visible: false }));
+        setQuickAddTitle('');
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [quickAdd.visible]);
+
+  // Handle single click on empty cell - show quick add popup
+  const handleCellClick = (e: React.MouseEvent, day: Date, hour: number, minutes: number = 0) => {
+    if (!defaultLayerId) return;
 
     const startTime = new Date(day);
-    startTime.setHours(hour, 0, 0, 0);
-    onDoubleClick(startTime.toISOString(), defaultLayerId);
+    startTime.setHours(hour, minutes, 0, 0);
+
+    const endTime = new Date(startTime);
+    endTime.setHours(endTime.getHours() + 1); // Default 1 hour
+
+    // Position popup near click
+    const rect = (e.target as HTMLElement).getBoundingClientRect();
+
+    setQuickAdd({
+      visible: true,
+      x: rect.left,
+      y: rect.top,
+      startTime,
+      endTime,
+    });
+    setQuickAddTitle('');
   };
 
-  // Handle event drag end
+  // Handle mouse down for drag-to-create
+  const handleCellMouseDown = (e: React.MouseEvent, day: Date, hour: number) => {
+    if (e.button !== 0) return; // Only left click
+
+    const rect = (e.target as HTMLElement).getBoundingClientRect();
+    const relativeY = e.clientY - rect.top;
+    const minuteOffset = Math.floor((relativeY / rowHeight) * 60);
+
+    setDragCreate({
+      isDragging: true,
+      day,
+      startHour: hour,
+      startMinutes: minuteOffset,
+      endHour: hour,
+      endMinutes: minuteOffset + 30, // Minimum 30 min
+    });
+  };
+
+  // Handle mouse move for drag-to-create
+  const handleGridMouseMove = useCallback((e: React.MouseEvent) => {
+    if (!dragCreate.isDragging || !dragCreate.day) return;
+
+    const gridEl = gridRef.current;
+    if (!gridEl) return;
+
+    const rect = gridEl.getBoundingClientRect();
+    const relativeY = e.clientY - rect.top + (scrollRef.current?.scrollTop || 0);
+    const totalMinutes = Math.floor((relativeY / rowHeight) * 60) + dayStartHour * 60;
+    const endHour = Math.floor(totalMinutes / 60);
+    const endMinutes = totalMinutes % 60;
+
+    setDragCreate(prev => ({
+      ...prev,
+      endHour: Math.max(prev.startHour, Math.min(endHour, dayEndHour)),
+      endMinutes: endHour >= prev.startHour ? endMinutes : prev.startMinutes + 30,
+    }));
+  }, [dragCreate.isDragging, dragCreate.day, rowHeight, dayStartHour, dayEndHour]);
+
+  // Handle mouse up for drag-to-create
+  const handleGridMouseUp = useCallback(() => {
+    if (!dragCreate.isDragging || !dragCreate.day) return;
+
+    const startTime = new Date(dragCreate.day);
+    startTime.setHours(dragCreate.startHour, dragCreate.startMinutes, 0, 0);
+
+    const endTime = new Date(dragCreate.day);
+    endTime.setHours(dragCreate.endHour, dragCreate.endMinutes, 0, 0);
+
+    // Ensure minimum duration
+    if (endTime <= startTime) {
+      endTime.setMinutes(startTime.getMinutes() + 30);
+    }
+
+    // Show quick add popup
+    setQuickAdd({
+      visible: true,
+      x: 100, // Position in grid
+      y: (dragCreate.startHour - dayStartHour) * rowHeight,
+      startTime,
+      endTime,
+    });
+
+    setDragCreate({
+      isDragging: false,
+      day: null,
+      startHour: 0,
+      startMinutes: 0,
+      endHour: 0,
+      endMinutes: 0,
+    });
+  }, [dragCreate, dayStartHour, rowHeight]);
+
+  // Handle quick add submit
+  const handleQuickAddSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!quickAdd.startTime || !quickAdd.endTime || !quickAddTitle.trim() || !defaultLayerId) return;
+
+    const durationMinutes = Math.round((quickAdd.endTime.getTime() - quickAdd.startTime.getTime()) / 60000);
+
+    if (onQuickAdd) {
+      onQuickAdd(quickAddTitle.trim(), quickAdd.startTime.toISOString(), durationMinutes, defaultLayerId);
+      toast.success(`Created "${quickAddTitle.trim()}"`);
+    } else if (onDoubleClick) {
+      // Fallback to double-click handler
+      onDoubleClick(quickAdd.startTime.toISOString(), defaultLayerId);
+    }
+
+    setQuickAdd(prev => ({ ...prev, visible: false }));
+    setQuickAddTitle('');
+  };
+
+  // Handle quick add cancel
+  const handleQuickAddCancel = () => {
+    setQuickAdd(prev => ({ ...prev, visible: false }));
+    setQuickAddTitle('');
+  };
+
+  // Handle event drag end with undo toast
   const handleEventDragEnd = (item: TimelineItemType, newStartTime: string, dayOffset: number) => {
     if (!onItemDrop) return;
+
+    // Save for undo
+    const prevStartTime = item.start_time;
 
     // Adjust for day offset
     const adjustedTime = new Date(newStartTime);
     adjustedTime.setDate(adjustedTime.getDate() + dayOffset);
 
     onItemDrop(item, adjustedTime.toISOString(), item.layer_id);
+
+    // Show undo toast
+    setLastAction({ item, prevStartTime });
+    toast(`Moved "${item.title}"`, {
+      action: {
+        label: 'Undo',
+        onClick: () => {
+          if (onItemDrop) {
+            onItemDrop(item, prevStartTime, item.layer_id);
+            toast.success('Move undone');
+          }
+        },
+      },
+      duration: 5000,
+    });
   };
 
   // Handle event resize
@@ -206,12 +404,19 @@ export function CalendarGrid({
         />
 
         {/* Day columns */}
-        <div className="flex flex-1 relative">
-          {visibleDays.map((day, dayIndex) => {
+        <div
+          ref={gridRef}
+          className="flex flex-1 relative"
+          onMouseMove={handleGridMouseMove}
+          onMouseUp={handleGridMouseUp}
+          onMouseLeave={handleGridMouseUp}
+        >
+          {visibleDays.map((day) => {
             const dayKey = format(day, 'yyyy-MM-dd');
             const dayItems = itemsByDay.get(dayKey) || [];
             const dayOverlaps = overlapsByDay.get(dayKey) || new Map();
             const isCurrentDay = isToday(day);
+            const isDragDay = dragCreate.isDragging && dragCreate.day && isSameDay(dragCreate.day, day);
 
             return (
               <div
@@ -221,15 +426,41 @@ export function CalendarGrid({
                   isCurrentDay && "bg-primary/[0.02]"
                 )}
               >
-                {/* Hour grid lines */}
+                {/* Hour grid lines - click to create */}
                 {Array.from({ length: hours + 1 }, (_, i) => (
                   <div
                     key={i}
                     className="border-b border-dashed border-border/40 cursor-pointer hover:bg-muted/30 transition-colors"
                     style={{ height: rowHeight }}
-                    onDoubleClick={() => handleCellClick(day, dayStartHour + i)}
+                    onClick={(e) => handleCellClick(e, day, dayStartHour + i)}
+                    onMouseDown={(e) => handleCellMouseDown(e, day, dayStartHour + i)}
                   />
                 ))}
+
+                {/* Drag-to-create preview overlay */}
+                {isDragDay && (() => {
+                  const previewStart = new Date(day);
+                  previewStart.setHours(dragCreate.startHour, dragCreate.startMinutes, 0, 0);
+                  const previewEnd = new Date(day);
+                  previewEnd.setHours(dragCreate.endHour, dragCreate.endMinutes, 0, 0);
+
+                  return (
+                    <div
+                      className="absolute left-1 right-1 bg-primary/30 border-2 border-primary border-dashed rounded pointer-events-none z-20"
+                      style={{
+                        top: ((dragCreate.startHour - dayStartHour) * 60 + dragCreate.startMinutes) / 60 * rowHeight,
+                        height: Math.max(
+                          ((dragCreate.endHour - dragCreate.startHour) * 60 + dragCreate.endMinutes - dragCreate.startMinutes) / 60 * rowHeight,
+                          rowHeight / 2
+                        ),
+                      }}
+                    >
+                      <div className="p-1 text-xs text-primary font-medium">
+                        {format(previewStart, 'h:mm a')} - {format(previewEnd, 'h:mm a')}
+                      </div>
+                    </div>
+                  );
+                })()}
 
                 {/* Current time indicator */}
                 {isCurrentDay && currentTimePosition !== null && (
@@ -267,6 +498,50 @@ export function CalendarGrid({
               </div>
             );
           })}
+
+          {/* Quick add popup */}
+          {quickAdd.visible && quickAdd.startTime && (
+            <div
+              className="absolute z-50 bg-background border rounded-lg shadow-lg p-3 min-w-[250px]"
+              style={{
+                left: Math.min(quickAdd.x, window.innerWidth - 280),
+                top: Math.min(quickAdd.y, window.innerHeight - 150),
+              }}
+            >
+              <form onSubmit={handleQuickAddSubmit} className="space-y-2">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium text-muted-foreground">
+                    {format(quickAdd.startTime, 'h:mm a')} - {quickAdd.endTime && format(quickAdd.endTime, 'h:mm a')}
+                  </span>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 w-6 p-0"
+                    onClick={handleQuickAddCancel}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+                <Input
+                  ref={inputRef}
+                  value={quickAddTitle}
+                  onChange={(e) => setQuickAddTitle(e.target.value)}
+                  placeholder="Add title"
+                  className="text-sm"
+                  autoFocus
+                />
+                <div className="flex justify-end gap-2">
+                  <Button type="button" variant="ghost" size="sm" onClick={handleQuickAddCancel}>
+                    Cancel
+                  </Button>
+                  <Button type="submit" size="sm" disabled={!quickAddTitle.trim()}>
+                    Save
+                  </Button>
+                </div>
+              </form>
+            </div>
+          )}
         </div>
       </div>
     </div>

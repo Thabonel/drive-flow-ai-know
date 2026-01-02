@@ -2,9 +2,9 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { TimelineItem as TimelineItemType } from '@/lib/timelineUtils';
-import { format } from 'date-fns';
+import { format, addMinutes } from 'date-fns';
 import { cn } from '@/lib/utils';
-import { Check } from 'lucide-react';
+import { Check, Clock, Tag } from 'lucide-react';
 
 interface CalendarEventProps {
   item: TimelineItemType;
@@ -29,9 +29,12 @@ export function CalendarEvent({
 }: CalendarEventProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [isResizing, setIsResizing] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [resizeDelta, setResizeDelta] = useState(0);
   const dragStartRef = useRef({ x: 0, y: 0, startY: 0 });
+  const eventRef = useRef<HTMLDivElement>(null);
+  const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const wasDragged = useRef(false);
 
   // Calculate position
@@ -147,11 +150,37 @@ export function CalendarEvent({
 
   // Format time for display
   const timeDisplay = format(startTime, 'h:mm a');
+  const endTime = addMinutes(startTime, item.duration_minutes);
+  const endTimeDisplay = format(endTime, 'h:mm a');
+
+  // Hover handlers with delay
+  const handleMouseEnter = () => {
+    hoverTimeoutRef.current = setTimeout(() => {
+      setIsHovered(true);
+    }, 300); // Show tooltip after 300ms hover
+  };
+
+  const handleMouseLeave = () => {
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current);
+    }
+    setIsHovered(false);
+  };
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (hoverTimeoutRef.current) {
+        clearTimeout(hoverTimeoutRef.current);
+      }
+    };
+  }, []);
 
   return (
     <div
+      ref={eventRef}
       className={cn(
-        "absolute rounded px-2 py-1 text-xs cursor-pointer overflow-hidden transition-shadow",
+        "absolute rounded px-2 py-1 text-xs cursor-pointer overflow-hidden transition-shadow group",
         isDragging && "shadow-lg z-50",
         isLogjam && "ring-2 ring-red-500 animate-pulse"
       )}
@@ -162,10 +191,12 @@ export function CalendarEvent({
         width: displayWidth,
         backgroundColor: item.color,
         opacity: isDragging || isResizing ? 0.8 : opacity,
-        zIndex: isDragging ? 100 : 10,
+        zIndex: isDragging ? 100 : isHovered ? 50 : 10,
       }}
       onMouseDown={handleMouseDown}
       onClick={handleClick}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
     >
       {/* Event content */}
       <div className="flex flex-col h-full text-white">
@@ -197,6 +228,58 @@ export function CalendarEvent({
           <div className="w-1 h-1 rounded-full bg-white/40" />
           <div className="w-1 h-1 rounded-full bg-white/40" />
           <div className="w-1 h-1 rounded-full bg-white/40" />
+        </div>
+      )}
+
+      {/* Hover tooltip - like Google Calendar */}
+      {isHovered && !isDragging && !isResizing && (
+        <div
+          className="absolute left-full top-0 ml-2 z-[200] bg-background border rounded-lg shadow-lg p-3 min-w-[200px] max-w-[280px] pointer-events-none"
+          style={{ transform: 'translateY(-10%)' }}
+        >
+          {/* Title */}
+          <h4 className="font-semibold text-foreground text-sm mb-2 line-clamp-2">
+            {item.title}
+          </h4>
+
+          {/* Time range */}
+          <div className="flex items-center gap-2 text-muted-foreground text-xs mb-2">
+            <Clock className="h-3.5 w-3.5" />
+            <span>
+              {format(startTime, 'EEE, MMM d')} · {timeDisplay} - {endTimeDisplay}
+            </span>
+          </div>
+
+          {/* Duration */}
+          <div className="text-xs text-muted-foreground mb-2">
+            {item.duration_minutes >= 60
+              ? `${Math.floor(item.duration_minutes / 60)}h ${item.duration_minutes % 60 > 0 ? `${item.duration_minutes % 60}m` : ''}`
+              : `${item.duration_minutes}m`
+            }
+          </div>
+
+          {/* Status badge */}
+          {item.status && (
+            <div className="flex items-center gap-2">
+              <Tag className="h-3 w-3 text-muted-foreground" />
+              <span
+                className={cn(
+                  "text-xs px-2 py-0.5 rounded-full capitalize",
+                  item.status === 'completed' && "bg-green-100 text-green-700",
+                  item.status === 'active' && "bg-blue-100 text-blue-700",
+                  item.status === 'logjam' && "bg-red-100 text-red-700",
+                  item.status === 'parked' && "bg-gray-100 text-gray-700"
+                )}
+              >
+                {item.status}
+              </span>
+            </div>
+          )}
+
+          {/* Click hint */}
+          <div className="text-[10px] text-muted-foreground mt-2 border-t pt-2">
+            Click to edit · Drag to move
+          </div>
         </div>
       )}
     </div>
