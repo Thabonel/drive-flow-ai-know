@@ -5,6 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { TimelineLayer } from '@/lib/timelineUtils';
 import { useToast } from '@/hooks/use-toast';
+import { resolveLayerColor } from '@/lib/layerUtils';
 
 export function useLayers() {
   const { user } = useAuth();
@@ -42,6 +43,7 @@ export function useLayers() {
     if (!user) return;
 
     try {
+      const layerColor = resolveLayerColor(color);
       const maxSortOrder = layers.length > 0
         ? Math.max(...layers.map(l => l.sort_order))
         : -1;
@@ -51,7 +53,7 @@ export function useLayers() {
         .insert({
           user_id: user.id,
           name,
-          color,
+          color: layerColor,
           sort_order: maxSortOrder + 1,
         })
         .select()
@@ -59,7 +61,7 @@ export function useLayers() {
 
       if (error) throw error;
 
-      setLayers([...layers, data]);
+      setLayers([...layers, { ...data, color: data?.color || layerColor }]);
       toast({
         title: 'Layer added',
         description: `Layer "${name}" has been created`,
