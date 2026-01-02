@@ -241,9 +241,15 @@ export function CalendarGrid({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [quickAdd.visible]);
 
+  // Track mouse position for distinguishing click vs drag
+  const mouseDownPos = useRef<{ x: number; y: number; day: Date; hour: number; rect: DOMRect } | null>(null);
+
   // Handle single click on empty cell - show quick add popup
   const handleCellClick = (e: React.MouseEvent, day: Date, hour: number, minutes: number = 0) => {
-    if (!defaultLayerId) return;
+    if (!defaultLayerId) {
+      toast.error('Please create a layer first');
+      return;
+    }
 
     const startTime = new Date(day);
     startTime.setHours(hour, minutes, 0, 0);
@@ -267,10 +273,14 @@ export function CalendarGrid({
   // Handle mouse down for drag-to-create
   const handleCellMouseDown = (e: React.MouseEvent, day: Date, hour: number) => {
     if (e.button !== 0) return; // Only left click
+    e.preventDefault(); // Prevent text selection
 
     const rect = (e.target as HTMLElement).getBoundingClientRect();
     const relativeY = e.clientY - rect.top;
     const minuteOffset = Math.floor((relativeY / rowHeight) * 60);
+
+    // Store initial position to detect drag vs click
+    mouseDownPos.current = { x: e.clientX, y: e.clientY, day, hour, rect };
 
     setDragCreate({
       isDragging: true,
@@ -303,29 +313,55 @@ export function CalendarGrid({
   }, [dragCreate.isDragging, dragCreate.day, rowHeight, dayStartHour, dayEndHour]);
 
   // Handle mouse up for drag-to-create
-  const handleGridMouseUp = useCallback(() => {
+  const handleGridMouseUp = useCallback((e?: React.MouseEvent | MouseEvent) => {
     if (!dragCreate.isDragging || !dragCreate.day) return;
 
-    const startTime = new Date(dragCreate.day);
-    startTime.setHours(dragCreate.startHour, dragCreate.startMinutes, 0, 0);
+    // Check if this was a simple click (minimal movement) vs a drag
+    const isSimpleClick = mouseDownPos.current && e &&
+      Math.abs(e.clientX - mouseDownPos.current.x) < 5 &&
+      Math.abs(e.clientY - mouseDownPos.current.y) < 5;
 
-    const endTime = new Date(dragCreate.day);
-    endTime.setHours(dragCreate.endHour, dragCreate.endMinutes, 0, 0);
+    if (isSimpleClick && mouseDownPos.current) {
+      // Simple click - show quick add for 1 hour at clicked time
+      const clickDay = mouseDownPos.current.day;
+      const clickHour = mouseDownPos.current.hour;
 
-    // Ensure minimum duration
-    if (endTime <= startTime) {
-      endTime.setMinutes(startTime.getMinutes() + 30);
+      const startTime = new Date(clickDay);
+      startTime.setHours(clickHour, 0, 0, 0);
+
+      const endTime = new Date(startTime);
+      endTime.setHours(endTime.getHours() + 1);
+
+      setQuickAdd({
+        visible: true,
+        x: mouseDownPos.current.rect.left,
+        y: mouseDownPos.current.rect.top,
+        startTime,
+        endTime,
+      });
+    } else {
+      // Drag - show quick add for the dragged duration
+      const startTime = new Date(dragCreate.day);
+      startTime.setHours(dragCreate.startHour, dragCreate.startMinutes, 0, 0);
+
+      const endTime = new Date(dragCreate.day);
+      endTime.setHours(dragCreate.endHour, dragCreate.endMinutes, 0, 0);
+
+      // Ensure minimum duration
+      if (endTime <= startTime) {
+        endTime.setMinutes(startTime.getMinutes() + 30);
+      }
+
+      setQuickAdd({
+        visible: true,
+        x: 100,
+        y: (dragCreate.startHour - dayStartHour) * rowHeight,
+        startTime,
+        endTime,
+      });
     }
 
-    // Show quick add popup
-    setQuickAdd({
-      visible: true,
-      x: 100, // Position in grid
-      y: (dragCreate.startHour - dayStartHour) * rowHeight,
-      startTime,
-      endTime,
-    });
-
+    mouseDownPos.current = null;
     setDragCreate({
       isDragging: false,
       day: null,
@@ -339,7 +375,17 @@ export function CalendarGrid({
   // Handle quick add submit
   const handleQuickAddSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!quickAdd.startTime || !quickAdd.endTime || !quickAddTitle.trim() || !defaultLayerId) return;
+    if (!quickAdd.startTime || !quickAdd.endTime) return;
+
+    if (!quickAddTitle.trim()) {
+      toast.error('Please enter a title');
+      return;
+    }
+
+    if (!defaultLayerId) {
+      toast.error('Please create a layer first');
+      return;
+    }
 
     const durationMinutes = Math.round((quickAdd.endTime.getTime() - quickAdd.startTime.getTime()) / 60000);
 
@@ -558,8 +604,19 @@ export function CalendarGrid({
           ref={gridRef}
           className="flex flex-1 relative"
           onMouseMove={handleGridMouseMove}
-          onMouseUp={handleGridMouseUp}
-          onMouseLeave={handleGridMouseUp}
+          onMouseUp={(e) => handleGridMouseUp(e)}
+          onMouseLeave={() => {
+            // Cancel drag if mouse leaves without releasing
+            mouseDownPos.current = null;
+            setDragCreate({
+              isDragging: false,
+              day: null,
+              startHour: 0,
+              startMinutes: 0,
+              endHour: 0,
+              endMinutes: 0,
+            });
+          }}
         >
           {visibleDays.map((day) => {
             const dayKey = format(day, 'yyyy-MM-dd');
@@ -576,13 +633,12 @@ export function CalendarGrid({
                   isCurrentDay && "bg-primary/[0.02]"
                 )}
               >
-                {/* Hour grid lines - click to create */}
+                {/* Hour grid lines - click/drag to create */}
                 {Array.from({ length: hours + 1 }, (_, i) => (
                   <div
                     key={i}
                     className="border-b border-dashed border-border/40 cursor-pointer hover:bg-muted/30 transition-colors"
                     style={{ height: rowHeight }}
-                    onClick={(e) => handleCellClick(e, day, dayStartHour + i)}
                     onMouseDown={(e) => handleCellMouseDown(e, day, dayStartHour + i)}
                   />
                 ))}
