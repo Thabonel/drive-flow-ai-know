@@ -1,19 +1,20 @@
 // Calendar Header - day headers (Mon 15, Tue 16, etc.)
 
-import React from 'react';
-import { format, isSameDay, isToday } from 'date-fns';
+import { format, isToday } from 'date-fns';
 import { cn } from '@/lib/utils';
 
 interface CalendarHeaderProps {
   days: Date[];
   headerHeight: number;
   timeColumnWidth: number;
+  scrollbarWidth?: number; // Width of scrollbar to align with scrollable body
 }
 
 export function CalendarHeader({
   days,
   headerHeight,
   timeColumnWidth,
+  scrollbarWidth = 17, // Default scrollbar width
 }: CalendarHeaderProps) {
   return (
     <div
@@ -30,7 +31,7 @@ export function CalendarHeader({
 
       {/* Day headers */}
       <div className="flex flex-1">
-        {days.map((day, index) => {
+        {days.map((day) => {
           const isCurrentDay = isToday(day);
 
           return (
@@ -60,6 +61,12 @@ export function CalendarHeader({
           );
         })}
       </div>
+
+      {/* Scrollbar spacer - matches the scrollbar width in the body */}
+      <div
+        className="bg-background flex-shrink-0"
+        style={{ width: scrollbarWidth }}
+      />
     </div>
   );
 }
