@@ -1,7 +1,7 @@
 // Calendar Grid - Main Google Calendar-style view component
 
 import React, { useMemo, useRef, useEffect, useState, useCallback } from 'react';
-import { startOfDay, addDays, format, isSameDay, startOfWeek, isToday } from 'date-fns';
+import { startOfDay, addDays, format, isSameDay, startOfWeek, isToday, startOfMonth, endOfMonth, getDay, isSameMonth } from 'date-fns';
 import { CalendarTimeColumn } from './CalendarTimeColumn';
 import { CalendarHeader } from './CalendarHeader';
 import { CalendarEvent } from './CalendarEvent';
@@ -17,6 +17,7 @@ interface CalendarGridProps {
   items: TimelineItemType[];
   viewMode: TimelineViewMode;
   nowTime: Date;
+  viewDate?: Date; // The date to center the view on (for navigation)
   onItemClick: (item: TimelineItemType) => void;
   onItemDrop?: (item: TimelineItemType, newStartTime: string, newLayerId: string) => void;
   onItemResize?: (item: TimelineItemType, newDurationMinutes: number) => void;
@@ -88,6 +89,7 @@ export function CalendarGrid({
   items,
   viewMode,
   nowTime,
+  viewDate,
   onItemClick,
   onItemDrop,
   onItemResize,
@@ -95,6 +97,8 @@ export function CalendarGrid({
   onQuickAdd,
   defaultLayerId,
 }: CalendarGridProps) {
+  // Use viewDate for calendar navigation, fallback to nowTime
+  const baseDate = viewDate || nowTime;
   const scrollRef = useRef<HTMLDivElement>(null);
   const gridRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -132,24 +136,37 @@ export function CalendarGrid({
     const days: Date[] = [];
 
     if (viewMode === 'day') {
-      // Single day view - show current day
-      days.push(startOfDay(nowTime));
+      // Single day view - show selected day
+      days.push(startOfDay(baseDate));
     } else if (viewMode === 'week') {
-      // Week view - show 7 days starting from Monday
-      const weekStart = startOfWeek(nowTime, { weekStartsOn: 1 }); // Monday
+      // Week view - show 7 days starting from Monday of the week containing baseDate
+      const weekStart = startOfWeek(baseDate, { weekStartsOn: 1 }); // Monday
       for (let i = 0; i < 7; i++) {
         days.push(addDays(weekStart, i));
       }
     } else {
-      // Month view - show 7 days (week) centered on current day
-      const weekStart = startOfWeek(nowTime, { weekStartsOn: 1 });
-      for (let i = 0; i < 7; i++) {
-        days.push(addDays(weekStart, i));
+      // Month view - show full month calendar (up to 6 weeks)
+      const monthStart = startOfMonth(baseDate);
+      const monthEnd = endOfMonth(baseDate);
+
+      // Start from the Monday of the week containing the 1st of the month
+      const calendarStart = startOfWeek(monthStart, { weekStartsOn: 1 });
+
+      // End on the Sunday of the week containing the last day of the month
+      const lastDayOfWeek = getDay(monthEnd);
+      const daysToAdd = lastDayOfWeek === 0 ? 0 : 7 - lastDayOfWeek; // Sunday = 0
+      const calendarEnd = addDays(monthEnd, daysToAdd);
+
+      // Generate all days from calendarStart to calendarEnd
+      let current = calendarStart;
+      while (current <= calendarEnd) {
+        days.push(current);
+        current = addDays(current, 1);
       }
     }
 
     return days;
-  }, [viewMode, nowTime]);
+  }, [viewMode, baseDate]);
 
   // Group items by day
   const itemsByDay = useMemo(() => {
@@ -379,6 +396,139 @@ export function CalendarGrid({
     onItemResize(item, newDurationMinutes);
   };
 
+  // Month view - render a traditional calendar grid
+  if (viewMode === 'month') {
+    const weeks: Date[][] = [];
+    for (let i = 0; i < visibleDays.length; i += 7) {
+      weeks.push(visibleDays.slice(i, i + 7));
+    }
+
+    return (
+      <div className="flex flex-col border rounded-lg overflow-hidden bg-background">
+        {/* Month header */}
+        <div className="text-center py-3 bg-muted/30 border-b">
+          <h2 className="text-lg font-semibold">{format(baseDate, 'MMMM yyyy')}</h2>
+        </div>
+
+        {/* Day of week headers */}
+        <div className="grid grid-cols-7 border-b bg-muted/20">
+          {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) => (
+            <div key={day} className="text-center py-2 text-sm font-medium text-muted-foreground">
+              {day}
+            </div>
+          ))}
+        </div>
+
+        {/* Weeks grid */}
+        <div className="flex-1">
+          {weeks.map((week, weekIdx) => (
+            <div key={weekIdx} className="grid grid-cols-7 border-b last:border-b-0" style={{ minHeight: '100px' }}>
+              {week.map((day) => {
+                const dayKey = format(day, 'yyyy-MM-dd');
+                const dayItems = itemsByDay.get(dayKey) || [];
+                const isCurrentDay = isToday(day);
+                const isCurrentMonth = isSameMonth(day, baseDate);
+
+                return (
+                  <div
+                    key={dayKey}
+                    className={cn(
+                      "border-r last:border-r-0 p-1 min-h-[100px] cursor-pointer hover:bg-muted/20 transition-colors",
+                      !isCurrentMonth && "bg-muted/10 text-muted-foreground",
+                      isCurrentDay && "bg-primary/5"
+                    )}
+                    onClick={(e) => {
+                      // Click to add event at 9 AM by default
+                      const clickDay = new Date(day);
+                      clickDay.setHours(9, 0, 0, 0);
+                      handleCellClick(e, clickDay, 9);
+                    }}
+                  >
+                    {/* Day number */}
+                    <div className={cn(
+                      "text-sm font-medium mb-1",
+                      isCurrentDay && "w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center"
+                    )}>
+                      {format(day, 'd')}
+                    </div>
+
+                    {/* Events for this day */}
+                    <div className="space-y-0.5">
+                      {dayItems.slice(0, 3).map((item) => (
+                        <div
+                          key={item.id}
+                          className="text-xs px-1 py-0.5 rounded truncate cursor-pointer hover:opacity-80"
+                          style={{ backgroundColor: item.color, color: 'white' }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onItemClick(item);
+                          }}
+                          title={`${item.title} - ${format(new Date(item.start_time), 'h:mm a')}`}
+                        >
+                          {format(new Date(item.start_time), 'h:mm')} {item.title}
+                        </div>
+                      ))}
+                      {dayItems.length > 3 && (
+                        <div className="text-xs text-muted-foreground px-1">
+                          +{dayItems.length - 3} more
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ))}
+        </div>
+
+        {/* Quick add popup for month view */}
+        {quickAdd.visible && quickAdd.startTime && (
+          <div
+            className="fixed z-50 bg-background border rounded-lg shadow-lg p-3 min-w-[250px]"
+            style={{
+              left: Math.min(quickAdd.x, window.innerWidth - 280),
+              top: Math.min(quickAdd.y, window.innerHeight - 150),
+            }}
+          >
+            <form onSubmit={handleQuickAddSubmit} className="space-y-2">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium text-muted-foreground">
+                  {format(quickAdd.startTime, 'EEE, MMM d')} at {format(quickAdd.startTime, 'h:mm a')}
+                </span>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 w-6 p-0"
+                  onClick={handleQuickAddCancel}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+              <Input
+                ref={inputRef}
+                value={quickAddTitle}
+                onChange={(e) => setQuickAddTitle(e.target.value)}
+                placeholder="Add title"
+                className="text-sm"
+                autoFocus
+              />
+              <div className="flex justify-end gap-2">
+                <Button type="button" variant="ghost" size="sm" onClick={handleQuickAddCancel}>
+                  Cancel
+                </Button>
+                <Button type="submit" size="sm" disabled={!quickAddTitle.trim()}>
+                  Save
+                </Button>
+              </div>
+            </form>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // Day/Week view - Google Calendar style with time columns
   return (
     <div className="flex flex-col border rounded-lg overflow-hidden bg-background">
       {/* Fixed header */}

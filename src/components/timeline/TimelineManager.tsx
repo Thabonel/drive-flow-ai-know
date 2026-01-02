@@ -40,6 +40,7 @@ import {
   TimelineViewMode,
   VIEW_MODE_CONFIG,
 } from '@/lib/timelineConstants';
+import { addDays, addWeeks, addMonths, format } from 'date-fns';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, Clock, Settings, Layers, Lock, Unlock, Archive, LayoutTemplate, Sparkles, RefreshCw, Calendar as CalIcon, Brain, Sunrise, Moon, Link as LinkIcon, MoreHorizontal, ZoomIn, ZoomOut, Navigation, ChevronLeft, ChevronRight, Eye, EyeOff } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -121,6 +122,7 @@ export function TimelineManager({ onCanvasReady }: TimelineManagerProps = {}) {
   });
   const [initialFormValues, setInitialFormValues] = useState<{ startTime?: string; layerId?: string } | null>(null);
   const [jumpToDate, setJumpToDate] = useState<string>('');
+  const [calendarViewDate, setCalendarViewDate] = useState<Date>(new Date());
 
   const { populateRoutinesForDay } = useRoutines();
   const { isCompactMode, setIsCompactMode } = useCompactMode();
@@ -322,6 +324,14 @@ export function TimelineManager({ onCanvasReady }: TimelineManagerProps = {}) {
     setShowAddItemForm(true);
   };
 
+  // Handle quick add from calendar (single click + title)
+  const handleQuickAdd = async (title: string, startTime: string, durationMinutes: number, layerId: string) => {
+    const layer = layers.find(l => l.id === layerId);
+    if (!layer) return;
+
+    await addItem(layerId, title, startTime, durationMinutes, layer.color);
+  };
+
   // Handle populate today's routines
   const handlePopulateRoutines = async () => {
     if (layers.length === 0) return;
@@ -393,16 +403,45 @@ export function TimelineManager({ onCanvasReady }: TimelineManagerProps = {}) {
 
   // Jump forward by view mode increment
   const handleJumpForward = () => {
-    const incrementHours = getJumpIncrement();
-    const incrementPixels = incrementHours * pixelsPerHour;
-    setScrollOffset(prev => prev - incrementPixels); // Negative because scrolling right shows future
+    if (viewType === 'calendar') {
+      // For calendar view, advance the view date
+      setCalendarViewDate(prev => {
+        switch (viewMode) {
+          case 'day': return addDays(prev, 1);
+          case 'week': return addWeeks(prev, 1);
+          case 'month': return addMonths(prev, 1);
+          default: return addWeeks(prev, 1);
+        }
+      });
+    } else {
+      const incrementHours = getJumpIncrement();
+      const incrementPixels = incrementHours * pixelsPerHour;
+      setScrollOffset(prev => prev - incrementPixels); // Negative because scrolling right shows future
+    }
   };
 
   // Jump backward by view mode increment
   const handleJumpBackward = () => {
-    const incrementHours = getJumpIncrement();
-    const incrementPixels = incrementHours * pixelsPerHour;
-    setScrollOffset(prev => prev + incrementPixels); // Positive because scrolling left shows past
+    if (viewType === 'calendar') {
+      // For calendar view, go back in the view date
+      setCalendarViewDate(prev => {
+        switch (viewMode) {
+          case 'day': return addDays(prev, -1);
+          case 'week': return addWeeks(prev, -1);
+          case 'month': return addMonths(prev, -1);
+          default: return addWeeks(prev, -1);
+        }
+      });
+    } else {
+      const incrementHours = getJumpIncrement();
+      const incrementPixels = incrementHours * pixelsPerHour;
+      setScrollOffset(prev => prev + incrementPixels); // Positive because scrolling left shows past
+    }
+  };
+
+  // Jump to today for calendar view
+  const handleCalendarToday = () => {
+    setCalendarViewDate(new Date());
   };
 
   if (timelineLoading || layersLoading) {
@@ -777,10 +816,12 @@ export function TimelineManager({ onCanvasReady }: TimelineManagerProps = {}) {
             items={items}
             viewMode={viewMode}
             nowTime={nowTime}
+            viewDate={calendarViewDate}
             onItemClick={handleItemClick}
             onItemDrop={handleItemDrop}
             onItemResize={handleItemResize}
             onDoubleClick={handleTimelineDoubleClick}
+            onQuickAdd={handleQuickAdd}
             defaultLayerId={layers.find(l => l.is_visible)?.id}
           />
         ) : (
