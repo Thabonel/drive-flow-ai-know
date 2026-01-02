@@ -23,6 +23,7 @@ interface CalendarGridProps {
   onItemResize?: (item: TimelineItemType, newDurationMinutes: number) => void;
   onDoubleClick?: (startTime: string, layerId: string) => void;
   onQuickAdd?: (title: string, startTime: string, durationMinutes: number, layerId: string) => Promise<boolean>;
+  onOpenFullEditor?: (startTime: string, layerId: string) => void; // Open full AddItemForm
   defaultLayerId?: string;
 }
 
@@ -95,6 +96,7 @@ export function CalendarGrid({
   onItemResize,
   onDoubleClick,
   onQuickAdd,
+  onOpenFullEditor,
   defaultLayerId,
 }: CalendarGridProps) {
   // Use viewDate for calendar navigation, fallback to nowTime
@@ -125,6 +127,9 @@ export function CalendarGrid({
 
   // Last action for undo
   const [lastAction, setLastAction] = useState<{ item: TimelineItemType; prevStartTime: string } | null>(null);
+
+  // Day column width for accurate cross-day dragging
+  const [dayColumnWidth, setDayColumnWidth] = useState(150);
 
   // Get config based on view mode (day or week - month uses week config)
   const config = viewMode === 'day' ? CALENDAR_CONFIG.day : CALENDAR_CONFIG.week;
@@ -222,6 +227,20 @@ export function CalendarGrid({
     }
   }, []);
 
+  // Calculate day column width for accurate cross-day dragging
+  useEffect(() => {
+    const updateColumnWidth = () => {
+      if (gridRef.current && visibleDays.length > 0) {
+        const width = gridRef.current.offsetWidth / visibleDays.length;
+        setDayColumnWidth(width);
+      }
+    };
+
+    updateColumnWidth();
+    window.addEventListener('resize', updateColumnWidth);
+    return () => window.removeEventListener('resize', updateColumnWidth);
+  }, [visibleDays.length]);
+
   // Focus input when quick add popup opens
   useEffect(() => {
     if (quickAdd.visible && inputRef.current) {
@@ -243,6 +262,9 @@ export function CalendarGrid({
 
   // Track mouse position for distinguishing click vs drag
   const mouseDownPos = useRef<{ x: number; y: number; day: Date; hour: number; rect: DOMRect } | null>(null);
+
+  // Track last click for double-click detection
+  const lastClickRef = useRef<{ time: number; day: Date; hour: number } | null>(null);
 
   // Handle single click on empty cell - show quick add popup
   const handleCellClick = (e: React.MouseEvent, day: Date, hour: number, minutes: number = 0) => {
@@ -314,17 +336,45 @@ export function CalendarGrid({
 
   // Handle mouse up for drag-to-create
   const handleGridMouseUp = useCallback((e?: React.MouseEvent | MouseEvent) => {
-    if (!dragCreate.isDragging || !dragCreate.day) return;
+    // Use synchronous ref instead of async state to avoid race condition
+    if (!mouseDownPos.current) return;
 
     // Check if this was a simple click (minimal movement) vs a drag
-    const isSimpleClick = mouseDownPos.current && e &&
+    const isSimpleClick = e &&
       Math.abs(e.clientX - mouseDownPos.current.x) < 5 &&
       Math.abs(e.clientY - mouseDownPos.current.y) < 5;
 
-    if (isSimpleClick && mouseDownPos.current) {
-      // Simple click - show quick add for 1 hour at clicked time
+    if (isSimpleClick) {
       const clickDay = mouseDownPos.current.day;
       const clickHour = mouseDownPos.current.hour;
+      const now = Date.now();
+
+      // Check for double-click (within 300ms, same day and hour)
+      if (lastClickRef.current &&
+          now - lastClickRef.current.time < 300 &&
+          isSameDay(clickDay, lastClickRef.current.day) &&
+          clickHour === lastClickRef.current.hour) {
+        // Double-click - open full editor immediately
+        if (onOpenFullEditor && defaultLayerId) {
+          const startTime = new Date(clickDay);
+          startTime.setHours(clickHour, 0, 0, 0);
+          onOpenFullEditor(startTime.toISOString(), defaultLayerId);
+        }
+        lastClickRef.current = null;
+        mouseDownPos.current = null;
+        setDragCreate({
+          isDragging: false,
+          day: null,
+          startHour: 0,
+          startMinutes: 0,
+          endHour: 0,
+          endMinutes: 0,
+        });
+        return;
+      }
+
+      // Single click - show quick add popup
+      lastClickRef.current = { time: now, day: clickDay, hour: clickHour };
 
       const startTime = new Date(clickDay);
       startTime.setHours(clickHour, 0, 0, 0);
@@ -339,7 +389,7 @@ export function CalendarGrid({
         startTime,
         endTime,
       });
-    } else {
+    } else if (dragCreate.isDragging && dragCreate.day) {
       // Drag - show quick add for the dragged duration
       const startTime = new Date(dragCreate.day);
       startTime.setHours(dragCreate.startHour, dragCreate.startMinutes, 0, 0);
@@ -559,13 +609,30 @@ export function CalendarGrid({
                 className="text-sm"
                 autoFocus
               />
-              <div className="flex justify-end gap-2">
-                <Button type="button" variant="ghost" size="sm" onClick={handleQuickAddCancel}>
-                  Cancel
+              <div className="flex justify-between items-center gap-2">
+                <Button
+                  type="button"
+                  variant="link"
+                  size="sm"
+                  className="text-xs px-0"
+                  onClick={() => {
+                    if (onOpenFullEditor && quickAdd.startTime && defaultLayerId) {
+                      onOpenFullEditor(quickAdd.startTime.toISOString(), defaultLayerId);
+                      setQuickAdd(prev => ({ ...prev, visible: false }));
+                      setQuickAddTitle('');
+                    }
+                  }}
+                >
+                  More options
                 </Button>
-                <Button type="submit" size="sm" disabled={!quickAddTitle.trim()}>
-                  Save
-                </Button>
+                <div className="flex gap-2">
+                  <Button type="button" variant="ghost" size="sm" onClick={handleQuickAddCancel}>
+                    Cancel
+                  </Button>
+                  <Button type="submit" size="sm" disabled={!quickAddTitle.trim()}>
+                    Save
+                  </Button>
+                </div>
               </div>
             </form>
           </div>
@@ -696,6 +763,7 @@ export function CalendarGrid({
                           onResize={handleEventResize}
                           overlappingCount={overlapData.count}
                           overlappingIndex={overlapData.index}
+                          dayColumnWidth={dayColumnWidth}
                         />
                       );
                     })}
@@ -737,13 +805,30 @@ export function CalendarGrid({
                   className="text-sm"
                   autoFocus
                 />
-                <div className="flex justify-end gap-2">
-                  <Button type="button" variant="ghost" size="sm" onClick={handleQuickAddCancel}>
-                    Cancel
+                <div className="flex justify-between items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="link"
+                    size="sm"
+                    className="text-xs px-0"
+                    onClick={() => {
+                      if (onOpenFullEditor && quickAdd.startTime && defaultLayerId) {
+                        onOpenFullEditor(quickAdd.startTime.toISOString(), defaultLayerId);
+                        setQuickAdd(prev => ({ ...prev, visible: false }));
+                        setQuickAddTitle('');
+                      }
+                    }}
+                  >
+                    More options
                   </Button>
-                  <Button type="submit" size="sm" disabled={!quickAddTitle.trim()}>
-                    Save
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button type="button" variant="ghost" size="sm" onClick={handleQuickAddCancel}>
+                      Cancel
+                    </Button>
+                    <Button type="submit" size="sm" disabled={!quickAddTitle.trim()}>
+                      Save
+                    </Button>
+                  </div>
                 </div>
               </form>
             </div>

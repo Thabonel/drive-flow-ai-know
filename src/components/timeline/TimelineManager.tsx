@@ -826,6 +826,7 @@ export function TimelineManager({ onCanvasReady }: TimelineManagerProps = {}) {
             onItemResize={handleItemResize}
             onDoubleClick={handleTimelineDoubleClick}
             onQuickAdd={handleQuickAdd}
+            onOpenFullEditor={handleTimelineDoubleClick}
             defaultLayerId={layers.find(l => l.is_visible)?.id}
           />
         ) : (
