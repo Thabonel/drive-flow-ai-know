@@ -654,7 +654,7 @@ export function CalendarGrid({
       {/* Scrollable body */}
       <div
         ref={scrollRef}
-        className="flex overflow-auto"
+        className="flex overflow-y-scroll overflow-x-auto"
         style={{ maxHeight: 'calc(100vh - 400px)', minHeight: '400px' }}
       >
         {/* Time column (sticky left) */}

@@ -120,16 +120,16 @@ export const VIEW_MODE_CONFIG = {
 export const CALENDAR_CONFIG = {
   day: {
     columns: 1,           // Single day column
-    dayStartHour: 6,      // Start at 6 AM
-    dayEndHour: 22,       // End at 10 PM
+    dayStartHour: 0,      // Start at midnight
+    dayEndHour: 24,       // End at midnight (full 24 hours)
     rowHeight: 60,        // 60px per hour row
     timeColumnWidth: 60,  // Width of time labels column
     headerHeight: 50,     // Height of header row
   },
   week: {
     columns: 7,           // 7 days in a week
-    dayStartHour: 6,      // Start at 6 AM
-    dayEndHour: 22,       // End at 10 PM
+    dayStartHour: 0,      // Start at midnight
+    dayEndHour: 24,       // End at midnight (full 24 hours)
     rowHeight: 48,        // 48px per hour row (slightly smaller for week view)
     timeColumnWidth: 60,  // Width of time labels column
     headerHeight: 60,     // Height of header row (includes day name + date)
