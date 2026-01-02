@@ -99,6 +99,7 @@ export default function PitchDeck() {
   const [isGeneratingShareLink, setIsGeneratingShareLink] = useState(false);
   const [showCostModal, setShowCostModal] = useState(false);
   const [useProgressiveMode, setUseProgressiveMode] = useState(true); // NEW: Enable streaming by default
+  const [loopVideo, setLoopVideo] = useState(true); // Loop video animations
 
   // Progressive streaming hook
   const streamingHook = usePitchDeckStream();
@@ -2144,7 +2145,7 @@ Generated with AI Query Hub
                         <video
                           src={slide.videoUrl}
                           autoPlay
-                          loop
+                          loop={loopVideo}
                           muted
                           className="w-full rounded-lg"
                           playsInline
@@ -2235,7 +2236,7 @@ Generated with AI Query Hub
                   <video
                     src={pitchDeck.slides[currentSlideIndex - 1].videoUrl}
                     autoPlay
-                    loop
+                    loop={loopVideo}
                     muted
                     playsInline
                     className="w-full max-h-96 object-contain rounded-lg mb-6"
@@ -2289,6 +2290,15 @@ Generated with AI Query Hub
             </div>
 
             <div className="flex items-center gap-4">
+              <Button
+                onClick={() => setLoopVideo(!loopVideo)}
+                size="sm"
+                variant="ghost"
+                className={`text-xs ${loopVideo ? 'text-accent' : 'text-white/50'}`}
+              >
+                Loop {loopVideo ? 'On' : 'Off'}
+              </Button>
+
               <span className="text-accent font-bold text-lg">
                 {formatTime(elapsedSeconds)}
               </span>
@@ -2340,7 +2350,7 @@ Generated with AI Query Hub
                         <video
                           src={pitchDeck.slides[currentSlideIndex - 1].videoUrl}
                           autoPlay
-                          loop
+                          loop={loopVideo}
                           muted
                           playsInline
                           className="slide-image w-full max-h-[25vh] object-contain rounded-lg mb-3"
@@ -2394,7 +2404,7 @@ Generated with AI Query Hub
                       <video
                         src={pitchDeck.slides[currentSlideIndex - 1].videoUrl}
                         autoPlay
-                        loop
+                        loop={loopVideo}
                         muted
                         playsInline
                         className="slide-image w-full max-h-[50vh] object-contain rounded-lg mb-4"
