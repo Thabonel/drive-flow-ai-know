@@ -31,6 +31,7 @@ import { useTimelineSync } from '@/hooks/useTimelineSync';
 import { useTasks } from '@/hooks/useTasks';
 import { useCompactMode } from '@/hooks/useCompactMode';
 import { TimelineItem, clamp } from '@/lib/timelineUtils';
+import { resolveLayerColor } from '@/lib/layerUtils';
 import {
   DEFAULT_PIXELS_PER_HOUR,
   DEFAULT_LAYER_HEIGHT,
@@ -333,7 +334,13 @@ export function TimelineManager({ onCanvasReady }: TimelineManagerProps = {}) {
       return false;
     }
 
-    const result = await addItem(layerId, title, startTime, durationMinutes, layer.color);
+    const result = await addItem(
+      layerId,
+      title,
+      startTime,
+      durationMinutes,
+      resolveLayerColor(layer.color)
+    );
     return !!result;
   };
 
