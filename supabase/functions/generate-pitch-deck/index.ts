@@ -346,8 +346,13 @@ async function processJobInBackground(jobId: string, supabase: any): Promise<voi
       style = 'professional',
       includeImages = true,
       selectedDocumentIds,
-      animationStyle = 'none'
-    } = input;
+      animationStyle = 'none',
+      animateSlides = true  // Enable SVD video animation
+    } = input as any;
+
+    const shouldAnimateSlides = animateSlides && includeImages;
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
     // Update status: started
     await supabase
@@ -472,7 +477,42 @@ async function processJobInBackground(jobId: string, supabase: any): Promise<voi
         const batchPromises = batch.map(async (slide: any) => {
           try {
             const imageData = await generateSlideImageForJob(slide.visualPrompt, slide.visualType);
-            return { ...slide, imageData };
+            let videoUrl: string | undefined;
+            let videoDuration: number | undefined;
+
+            // Generate video animation if enabled and image was generated
+            if (shouldAnimateSlides && imageData) {
+              try {
+                console.log(`[Job ${jobId}] Animating slide ${slide.slideNumber}...`);
+                const videoResponse = await fetch(`${supabaseUrl}/functions/v1/generate-video-falai`, {
+                  method: 'POST',
+                  headers: {
+                    'Authorization': `Bearer ${serviceRoleKey}`,
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({
+                    image_data: imageData,
+                    motion_bucket_id: 80,  // Subtle movement
+                    fps: 8,                // ~3 second video
+                  }),
+                });
+
+                if (videoResponse.ok) {
+                  const videoResult = await videoResponse.json();
+                  if (videoResult.videoUrl) {
+                    videoUrl = videoResult.videoUrl;
+                    videoDuration = videoResult.duration;
+                    console.log(`[Job ${jobId}] ✓ Video animated for slide ${slide.slideNumber}`);
+                  }
+                } else {
+                  console.error(`[Job ${jobId}] Video animation failed for slide ${slide.slideNumber}: HTTP ${videoResponse.status}`);
+                }
+              } catch (videoError) {
+                console.error(`[Job ${jobId}] Video animation error for slide ${slide.slideNumber}:`, videoError);
+              }
+            }
+
+            return { ...slide, imageData, videoUrl, videoDuration };
           } catch (error) {
             console.error(`[Job ${jobId}] Image generation failed for slide ${slide.slideNumber}:`, error);
             return { ...slide, imageData: undefined };
