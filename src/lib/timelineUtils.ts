@@ -9,11 +9,20 @@ export interface TimelineItem {
   title: string;
   start_time: string; // ISO timestamp
   duration_minutes: number;
+  planned_duration_minutes?: number | null; // For time tracking
   status: 'active' | 'logjam' | 'completed' | 'parked';
   color: string;
   completed_at?: string | null;
   recurring_series_id?: string | null; // UUID to group recurring items
   occurrence_index?: number | null; // Index of this occurrence (0-based)
+  is_meeting?: boolean; // Whether this is a meeting/appointment
+  is_flexible?: boolean; // Whether this can be rescheduled automatically
+  sync_status?: string; // Google Calendar sync status
+  sync_source?: string; // local, google, both
+  team_id?: string | null; // Team this item belongs to
+  visibility?: 'personal' | 'team' | 'assigned';
+  assigned_to?: string | null; // User assigned to this task
+  assigned_by?: string | null; // User who assigned this task
   created_at: string;
   updated_at: string;
 }

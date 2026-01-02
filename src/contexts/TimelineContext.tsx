@@ -36,7 +36,7 @@ interface TimelineContextValue {
       occurrence_index?: number | null;
     }
   ) => Promise<TimelineItem | undefined>;
-  updateItem: (itemId: string, updates: Partial<TimelineItem>) => Promise<void>;
+  updateItem: (itemId: string, updates: Partial<TimelineItem>) => Promise<boolean>;
   completeItem: (itemId: string) => Promise<void>;
   rescheduleItem: (itemId: string, newStartTime: string, newLayerId?: string) => Promise<void>;
   parkItem: (itemId: string) => Promise<void>;
@@ -173,36 +173,34 @@ export function TimelineProvider({ children }: { children: React.ReactNode }) {
     if (!user) return;
 
     try {
-      console.log('Adding timeline item:', {
+      // Build the base insert object with required fields
+      const insertData: Record<string, unknown> = {
         user_id: user.id,
         layer_id: layerId,
         title,
         start_time: startTime,
         duration_minutes: durationMinutes,
-        ...options,
-      });
+        status: 'active',
+        color,
+        is_meeting: false,
+        is_flexible: true,
+        sync_status: 'local_only',
+        sync_source: 'local',
+        visibility: options?.visibility || 'personal',
+      };
+
+      // Only add optional fields if they have actual values (not undefined)
+      if (options?.team_id !== undefined) insertData.team_id = options.team_id;
+      if (options?.assigned_to !== undefined) insertData.assigned_to = options.assigned_to;
+      if (options?.assigned_by !== undefined) insertData.assigned_by = options.assigned_by;
+      if (options?.recurring_series_id !== undefined) insertData.recurring_series_id = options.recurring_series_id;
+      if (options?.occurrence_index !== undefined) insertData.occurrence_index = options.occurrence_index;
+
+      console.log('Adding timeline item:', insertData);
 
       const { data, error } = await supabase
         .from('timeline_items')
-        .insert({
-          user_id: user.id,
-          layer_id: layerId,
-          title,
-          start_time: startTime,
-          duration_minutes: durationMinutes,
-          status: 'active',
-          color,
-          is_meeting: false,
-          is_flexible: true,
-          sync_status: 'local_only',
-          sync_source: 'local',
-          team_id: options?.team_id,
-          visibility: options?.visibility || 'personal',
-          assigned_to: options?.assigned_to,
-          assigned_by: options?.assigned_by,
-          recurring_series_id: options?.recurring_series_id,
-          occurrence_index: options?.occurrence_index,
-        })
+        .insert(insertData)
         .select()
         .single();
 
