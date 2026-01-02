@@ -1,6 +1,7 @@
 // Main Timeline Manager Component
 
 import { useState, useEffect, useRef } from 'react';
+import { toast } from 'sonner';
 import { TimelineCanvas } from './TimelineCanvas';
 import { TimelineControls } from './TimelineControls';
 import { TimelineLayerManager } from './TimelineLayerManager';
@@ -325,11 +326,15 @@ export function TimelineManager({ onCanvasReady }: TimelineManagerProps = {}) {
   };
 
   // Handle quick add from calendar (single click + title)
-  const handleQuickAdd = async (title: string, startTime: string, durationMinutes: number, layerId: string) => {
+  const handleQuickAdd = async (title: string, startTime: string, durationMinutes: number, layerId: string): Promise<boolean> => {
     const layer = layers.find(l => l.id === layerId);
-    if (!layer) return;
+    if (!layer) {
+      toast.error('Layer not found. Please create or select a visible layer.');
+      return false;
+    }
 
-    await addItem(layerId, title, startTime, durationMinutes, layer.color);
+    const result = await addItem(layerId, title, startTime, durationMinutes, layer.color);
+    return !!result;
   };
 
   // Handle populate today's routines
@@ -365,12 +370,16 @@ export function TimelineManager({ onCanvasReady }: TimelineManagerProps = {}) {
     setJumpToDate('');
   };
 
-  // Jump to today (reset scroll)
+  // Jump to today (reset scroll or calendar view)
   const handleJumpToToday = () => {
-    const estimatedViewportWidth = 1200;
-    const pastHours = viewModeConfig.pastHours;
-    const targetScrollOffset = pastHours * pixelsPerHour - NOW_LINE_POSITION * estimatedViewportWidth;
-    setScrollOffset(targetScrollOffset);
+    if (viewType === 'calendar') {
+      setCalendarViewDate(new Date());
+    } else {
+      const estimatedViewportWidth = 1200;
+      const pastHours = viewModeConfig.pastHours;
+      const targetScrollOffset = pastHours * pixelsPerHour - NOW_LINE_POSITION * estimatedViewportWidth;
+      setScrollOffset(targetScrollOffset);
+    }
   };
 
   // Get jump increment in hours based on view mode
@@ -416,7 +425,7 @@ export function TimelineManager({ onCanvasReady }: TimelineManagerProps = {}) {
     } else {
       const incrementHours = getJumpIncrement();
       const incrementPixels = incrementHours * pixelsPerHour;
-      setScrollOffset(prev => prev - incrementPixels); // Negative because scrolling right shows future
+      setScrollOffset(scrollOffset - incrementPixels); // Negative because scrolling right shows future
     }
   };
 
@@ -435,13 +444,8 @@ export function TimelineManager({ onCanvasReady }: TimelineManagerProps = {}) {
     } else {
       const incrementHours = getJumpIncrement();
       const incrementPixels = incrementHours * pixelsPerHour;
-      setScrollOffset(prev => prev + incrementPixels); // Positive because scrolling left shows past
+      setScrollOffset(scrollOffset + incrementPixels); // Positive because scrolling left shows past
     }
-  };
-
-  // Jump to today for calendar view
-  const handleCalendarToday = () => {
-    setCalendarViewDate(new Date());
   };
 
   if (timelineLoading || layersLoading) {
