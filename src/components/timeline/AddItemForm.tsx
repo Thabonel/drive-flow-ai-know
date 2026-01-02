@@ -59,7 +59,7 @@ interface AddItemFormProps {
       assigned_by?: string | null;
     }
   ) => Promise<void>;
-  onUpdateItem?: (itemId: string, updates: Partial<TimelineItem>) => Promise<void>;
+  onUpdateItem?: (itemId: string, updates: Partial<TimelineItem>) => Promise<boolean>;
   onUpdateRecurringThisAndFollowing?: (item: TimelineItem, updates: Partial<TimelineItem>) => Promise<void>;
   onAddLayer: (name: string, color?: string) => Promise<any>;
   initialStartTime?: string;

@@ -670,6 +670,7 @@ export function CalendarGrid({
         <div
           ref={gridRef}
           className="flex flex-1 relative"
+          style={{ minHeight: (hours + 1) * rowHeight }}
           onMouseMove={handleGridMouseMove}
           onMouseUp={(e) => handleGridMouseUp(e)}
           onMouseLeave={() => {
@@ -699,6 +700,7 @@ export function CalendarGrid({
                   "flex-1 relative border-r last:border-r-0",
                   isCurrentDay && "bg-primary/[0.02]"
                 )}
+                style={{ minHeight: (hours + 1) * rowHeight }}
               >
                 {/* Hour grid lines - click/drag to create */}
                 {Array.from({ length: hours + 1 }, (_, i) => (
