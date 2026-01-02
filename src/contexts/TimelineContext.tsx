@@ -196,8 +196,6 @@ export function TimelineProvider({ children }: { children: React.ReactNode }) {
       if (options?.recurring_series_id !== undefined) insertData.recurring_series_id = options.recurring_series_id;
       if (options?.occurrence_index !== undefined) insertData.occurrence_index = options.occurrence_index;
 
-      console.log('Adding timeline item:', insertData);
-
       const { data, error } = await supabase
         .from('timeline_items')
         .insert(insertData)

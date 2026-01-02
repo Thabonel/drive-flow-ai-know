@@ -194,6 +194,7 @@ export function CalendarEvent({
         backgroundColor: item.color,
         opacity: isDragging || isResizing ? 0.8 : opacity,
         zIndex: isDragging ? 100 : isHovered ? 50 : 10,
+        pointerEvents: 'auto', // Enable clicks on events even though parent has pointer-events:none
       }}
       onMouseDown={handleMouseDown}
       onClick={handleClick}

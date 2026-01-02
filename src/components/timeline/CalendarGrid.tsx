@@ -748,9 +748,9 @@ export function CalendarGrid({
                   </div>
                 )}
 
-                {/* Events container */}
+                {/* Events container - pointer-events:none so clicks pass through to grid cells */}
                 <div className="absolute inset-0 top-0" style={{ pointerEvents: 'none' }}>
-                  <div className="relative w-full h-full" style={{ pointerEvents: 'auto' }}>
+                  <div className="relative w-full h-full">
                     {dayItems.map((item) => {
                       const overlapData = dayOverlaps.get(item.id) || { count: 1, index: 0 };
 
