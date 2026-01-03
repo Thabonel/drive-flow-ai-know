@@ -46,7 +46,7 @@ export function CalendarTimeColumn({
         {hours.map((hour, index) => (
           <div
             key={hour}
-            className="relative border-b border-dashed border-border/40 text-xs text-muted-foreground pr-2 flex items-start justify-end"
+            className="relative border-b border-dashed border-border/60 text-xs text-muted-foreground pr-2 flex items-start justify-end"
             style={{ height: rowHeight }}
           >
             <span className="relative -top-2 bg-background px-1">
