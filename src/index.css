@@ -39,8 +39,8 @@ All colors MUST be HSL.
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 220 13% 91%;
-    --input: 220 13% 91%;
+    --border: 220 13% 82%;
+    --input: 220 13% 82%;
     --ring: 258 84% 57%;
 
     --radius: 0.75rem;
@@ -173,8 +173,8 @@ All colors MUST be HSL.
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 0 0% 90%;
-    --input: 0 0% 90%;
+    --border: 0 0% 80%;
+    --input: 0 0% 80%;
     --ring: 0 0% 30%;
 
     /* Neumorphic shadow system */

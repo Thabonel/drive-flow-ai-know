@@ -706,7 +706,7 @@ export function CalendarGrid({
                 {Array.from({ length: hours + 1 }, (_, i) => (
                   <div
                     key={i}
-                    className="border-b border-dashed border-border/40 cursor-pointer hover:bg-muted/30 transition-colors"
+                    className="border-b border-dashed border-border/60 cursor-pointer hover:bg-muted/30 transition-colors"
                     style={{ height: rowHeight }}
                     onMouseDown={(e) => handleCellMouseDown(e, day, dayStartHour + i)}
                   />
