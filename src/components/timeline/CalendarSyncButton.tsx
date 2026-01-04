@@ -96,7 +96,7 @@ export function CalendarSyncButton() {
                 disabled={isConnecting}
               >
                 {getStatusIcon()}
-                <span className="hidden sm:inline">Calendar</span>
+                <span className="hidden sm:inline">Connect Google</span>
               </Button>
             </TooltipTrigger>
           </PopoverTrigger>
