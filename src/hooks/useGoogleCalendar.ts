@@ -82,12 +82,6 @@ export const useGoogleCalendar = () => {
     });
   }, []);
 
-  // Get Google client ID from Edge Function
-  const getClientId = useCallback(async () => {
-    const { data: config } = await supabase.functions.invoke('get-google-config');
-    return config.clientId;
-  }, []);
-
   // Load user's calendar list from Google
   const loadCalendars = useCallback(async () => {
     setIsLoading(true);
@@ -152,7 +146,38 @@ export const useGoogleCalendar = () => {
   const connectCalendar = useCallback(async () => {
     setIsConnecting(true);
     try {
-      const clientId = await getClientId();
+      // Get config from Edge Function
+      const { data: config, error: configError } = await supabase.functions.invoke('get-google-config');
+      if (configError) throw configError;
+
+      const clientId = config.clientId;
+      if (!clientId) {
+        throw new Error('Google Client ID not configured');
+      }
+
+      // Load Google API scripts if not already loaded
+      await Promise.all([
+        loadScript('https://accounts.google.com/gsi/client'),
+        loadScript('https://apis.google.com/js/api.js')
+      ]);
+
+      // Wait for window.google to be available
+      if (!window.google?.accounts?.oauth2) {
+        throw new Error('Google Identity Services failed to load');
+      }
+
+      // Load GAPI client if not already loaded
+      if (!window.gapi?.client) {
+        await new Promise<void>((resolve, reject) => {
+          window.gapi.load('client', { callback: resolve, onerror: reject });
+        });
+      }
+
+      // Initialize GAPI client for Calendar API
+      await window.gapi.client.init({
+        apiKey: config.apiKey,
+        discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest']
+      });
 
       toast({
         title: 'Opening Google Sign-In',
@@ -218,6 +243,15 @@ export const useGoogleCalendar = () => {
             throw new Error('No access token received from Google');
           }
         },
+        error_callback: (error: any) => {
+          console.error('OAuth popup error:', error);
+          toast({
+            title: 'Authentication Error',
+            description: error.message || 'The sign-in popup was closed or blocked. Please try again.',
+            variant: 'destructive',
+          });
+          setIsConnecting(false);
+        },
       });
 
       // Request access token with consent prompt
@@ -231,7 +265,8 @@ export const useGoogleCalendar = () => {
       });
       setIsConnecting(false);
     }
-  }, [getClientId, storeTokens, loadCalendars, toast, user]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loadScript, storeTokens, loadCalendars, toast, user]);
 
   // Disconnect from Google Calendar
   const disconnectCalendar = useCallback(async () => {
