@@ -38,7 +38,6 @@ import DocumentList from "./components/DocumentList";
 import Conversations from "./pages/Conversations";
 import MicrosoftCallback from "./pages/MicrosoftCallback";
 import DropboxCallback from "./pages/auth/DropboxCallback";
-import GoogleCalendarCallback from "./pages/GoogleCalendarCallback";
 import Terms from "./pages/Terms";
 import Privacy from "./pages/Privacy";
 import Disclaimer from "./pages/Disclaimer";
@@ -187,7 +186,6 @@ const App = () => (
             <Route path="/auth/confirm" element={<ConfirmEmail />} />
             <Route path="/auth/microsoft/callback" element={<MicrosoftCallback />} />
             <Route path="/auth/dropbox/callback" element={<DropboxCallback />} />
-            <Route path="/auth/google-calendar/callback" element={<GoogleCalendarCallback />} />
             <Route path="/" element={
               <PublicRoute>
                 <Landing />
