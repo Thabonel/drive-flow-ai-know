@@ -209,8 +209,36 @@ export const useGoogleCalendar = () => {
 
             toast({
               title: 'Connected Successfully!',
-              description: 'You can now sync your Google Calendar with Timeline Manager',
+              description: 'Syncing your calendar events now...',
             });
+
+            // Automatically sync events after connection
+            try {
+              const { data: syncResult, error: syncError } = await supabase.functions.invoke('google-calendar-sync', {
+                body: {
+                  sync_type: 'initial',
+                  calendar_id: primaryCalendar?.id || 'primary',
+                }
+              });
+
+              if (syncError) {
+                console.error('Auto-sync error:', syncError);
+                toast({
+                  title: 'Sync Warning',
+                  description: 'Connected successfully but initial sync failed. Try "Sync Now" manually.',
+                  variant: 'destructive',
+                });
+              } else {
+                console.log('Auto-sync completed:', syncResult);
+                toast({
+                  title: 'Calendar Synced!',
+                  description: `Imported ${syncResult?.items_created || 0} events from Google Calendar`,
+                });
+              }
+            } catch (syncErr) {
+              console.error('Auto-sync exception:', syncErr);
+            }
+
             setIsConnecting(false);
           } else {
             console.error('No access token in response:', response);
