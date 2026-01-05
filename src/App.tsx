@@ -60,6 +60,7 @@ import CreateTeam from "./pages/Team/CreateTeam";
 import AcceptInvite from "./pages/Team/AcceptInvite";
 import PresentationAudience from "./pages/PresentationAudience";
 import { Agent } from "./pages/Agent";
+import GoogleCalendarCallback from "./pages/GoogleCalendarCallback";
 
 const queryClient = new QueryClient();
 
@@ -186,6 +187,11 @@ const App = () => (
             <Route path="/auth/confirm" element={<ConfirmEmail />} />
             <Route path="/auth/microsoft/callback" element={<MicrosoftCallback />} />
             <Route path="/auth/dropbox/callback" element={<DropboxCallback />} />
+            <Route path="/auth/google-calendar/callback" element={
+              <ProtectedRoute>
+                <GoogleCalendarCallback />
+              </ProtectedRoute>
+            } />
             <Route path="/" element={
               <PublicRoute>
                 <Landing />
