@@ -159,10 +159,22 @@ export const useGoogleCalendar = () => {
         description: 'Please sign in and grant access to Google Calendar',
       });
 
+      // Set a timeout to reset connecting state if callback never fires
+      const timeoutId = setTimeout(() => {
+        console.error('OAuth timeout - callback never received');
+        toast({
+          title: 'Connection Timeout',
+          description: 'Google sign-in timed out. Please allow popups for this site and try again.',
+          variant: 'destructive',
+        });
+        setIsConnecting(false);
+      }, 120000); // 2 minute timeout
+
       const tokenClient = window.google.accounts.oauth2.initTokenClient({
         client_id: clientId,
         scope: 'https://www.googleapis.com/auth/calendar.events',
         callback: async (response: any) => {
+          clearTimeout(timeoutId); // Clear timeout on successful callback
           console.log('Calendar OAuth response received:', response);
 
           if (response.error) {
@@ -245,6 +257,16 @@ export const useGoogleCalendar = () => {
             setIsConnecting(false);
             throw new Error('No access token received from Google');
           }
+        },
+        error_callback: (error: any) => {
+          clearTimeout(timeoutId);
+          console.error('OAuth error_callback:', error);
+          toast({
+            title: 'Connection Failed',
+            description: error?.message || 'Google sign-in was closed or blocked. Please allow popups and try again.',
+            variant: 'destructive',
+          });
+          setIsConnecting(false);
         },
       });
 
