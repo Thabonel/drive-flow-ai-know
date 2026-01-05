@@ -36,37 +36,6 @@ export const useGoogleCalendar = () => {
   const { toast } = useToast();
   const { user } = useAuth();
 
-  // Store tokens securely in database
-  const storeTokens = useCallback(async (tokenResponse: any) => {
-    if (!user) return;
-
-    try {
-      const { data, error } = await supabase.functions.invoke('store-google-tokens', {
-        body: {
-          access_token: tokenResponse.access_token,
-          refresh_token: tokenResponse.refresh_token || null,
-          token_type: tokenResponse.token_type || 'Bearer',
-          expires_in: tokenResponse.expires_in || 3600,
-          scope: tokenResponse.scope,
-        }
-      });
-
-      if (error) {
-        console.error('Error storing tokens:', error);
-        throw error;
-      }
-
-      console.log('Calendar tokens stored securely:', data);
-    } catch (error) {
-      console.error('Error storing tokens:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to store authentication tokens securely',
-        variant: 'destructive',
-      });
-    }
-  }, [user, toast]);
-
   // Load external script helper
   const loadScript = useCallback((src: string): Promise<void> => {
     return new Promise((resolve, reject) => {
@@ -148,141 +117,42 @@ export const useGoogleCalendar = () => {
     }
   }, [loadScript, toast]);
 
-  // Connect to Google Calendar (OAuth flow)
+  // Connect to Google Calendar (OAuth redirect flow)
   const connectCalendar = useCallback(async () => {
     setIsConnecting(true);
     try {
       const clientId = await getClientId();
 
+      if (!clientId) {
+        throw new Error('Google Client ID not configured');
+      }
+
       toast({
-        title: 'Opening Google Sign-In',
+        title: 'Redirecting to Google',
         description: 'Please sign in and grant access to Google Calendar',
       });
 
-      // Set a timeout to reset connecting state if callback never fires
-      const timeoutId = setTimeout(() => {
-        console.error('OAuth timeout - callback never received');
-        toast({
-          title: 'Connection Timeout',
-          description: 'Google sign-in timed out. Please allow popups for this site and try again.',
-          variant: 'destructive',
-        });
-        setIsConnecting(false);
-      }, 120000); // 2 minute timeout
+      console.log('Starting OAuth redirect flow with clientId:', clientId?.substring(0, 20) + '...');
 
-      console.log('Creating token client with clientId:', clientId?.substring(0, 20) + '...');
+      // Build OAuth URL for redirect flow
+      const redirectUri = 'https://aiqueryhub.com/auth/google-calendar/callback';
+      const scope = 'https://www.googleapis.com/auth/calendar.events';
 
-      const tokenClient = window.google.accounts.oauth2.initTokenClient({
-        client_id: clientId,
-        scope: 'https://www.googleapis.com/auth/calendar.events',
-        callback: async (response: any) => {
-          clearTimeout(timeoutId); // Clear timeout on successful callback
-          console.log('=== OAUTH CALLBACK FIRED ===');
-          console.log('Calendar OAuth response received:', response);
-          console.log('Has access_token:', !!response?.access_token);
+      const authUrl = new URL('https://accounts.google.com/o/oauth2/v2/auth');
+      authUrl.searchParams.set('client_id', clientId);
+      authUrl.searchParams.set('redirect_uri', redirectUri);
+      authUrl.searchParams.set('response_type', 'code');
+      authUrl.searchParams.set('scope', scope);
+      authUrl.searchParams.set('access_type', 'offline'); // Request refresh token
+      authUrl.searchParams.set('prompt', 'consent'); // Force consent to get refresh token
+      authUrl.searchParams.set('include_granted_scopes', 'true');
 
-          if (response.error) {
-            console.error('OAuth error:', response);
-            toast({
-              title: 'Authentication Failed',
-              description: response.error_description || 'Failed to connect to Google Calendar',
-              variant: 'destructive',
-            });
-            setIsConnecting(false);
-            return;
-          }
+      console.log('Redirecting to:', authUrl.toString());
 
-          if (response.access_token) {
-            console.log('=== ACCESS TOKEN RECEIVED ===');
-            // Set the token in the Google API client
-            window.gapi.client.setToken(response);
-            console.log('Token set in GAPI client');
+      // Redirect to Google OAuth
+      window.location.href = authUrl.toString();
 
-            // Store tokens securely in database
-            console.log('Calling storeTokens...');
-            await storeTokens(response);
-            console.log('storeTokens completed');
-
-            // Update authentication state
-            setIsAuthenticated(true);
-            console.log('isAuthenticated set to true');
-
-            // Load user's calendars
-            console.log('Calling loadCalendars...');
-            const calendarList = await loadCalendars();
-            console.log('loadCalendars returned:', calendarList?.length, 'calendars');
-
-            // Auto-select primary calendar if exists
-            const primaryCalendar = calendarList.find(cal => cal.primary);
-            if (primaryCalendar) {
-              // Create or update sync settings
-              await supabase
-                .from('calendar_sync_settings')
-                .upsert({
-                  user_id: user?.id,
-                  enabled: true,
-                  selected_calendar_id: primaryCalendar.id,
-                  sync_direction: 'both',
-                  auto_sync_enabled: true,
-                  sync_interval_minutes: 15,
-                });
-
-              await loadSyncSettings();
-            }
-
-            toast({
-              title: 'Connected Successfully!',
-              description: 'Syncing your calendar events now...',
-            });
-
-            // Automatically sync events after connection
-            try {
-              const { data: syncResult, error: syncError } = await supabase.functions.invoke('google-calendar-sync', {
-                body: {
-                  sync_type: 'initial',
-                  calendar_id: primaryCalendar?.id || 'primary',
-                }
-              });
-
-              if (syncError) {
-                console.error('Auto-sync error:', syncError);
-                toast({
-                  title: 'Sync Warning',
-                  description: 'Connected successfully but initial sync failed. Try "Sync Now" manually.',
-                  variant: 'destructive',
-                });
-              } else {
-                console.log('Auto-sync completed:', syncResult);
-                toast({
-                  title: 'Calendar Synced!',
-                  description: `Imported ${syncResult?.items_created || 0} events from Google Calendar`,
-                });
-              }
-            } catch (syncErr) {
-              console.error('Auto-sync exception:', syncErr);
-            }
-
-            setIsConnecting(false);
-          } else {
-            console.error('No access token in response:', response);
-            setIsConnecting(false);
-            throw new Error('No access token received from Google');
-          }
-        },
-        error_callback: (error: any) => {
-          clearTimeout(timeoutId);
-          console.error('OAuth error_callback:', error);
-          toast({
-            title: 'Connection Failed',
-            description: error?.message || 'Google sign-in was closed or blocked. Please allow popups and try again.',
-            variant: 'destructive',
-          });
-          setIsConnecting(false);
-        },
-      });
-
-      // Request access token with consent prompt
-      tokenClient.requestAccessToken({ prompt: 'consent' });
+      // Note: setIsConnecting(false) will be handled by page unload or callback page
     } catch (error) {
       console.error('Error connecting calendar:', error);
       toast({
@@ -292,7 +162,7 @@ export const useGoogleCalendar = () => {
       });
       setIsConnecting(false);
     }
-  }, [getClientId, storeTokens, loadCalendars, toast, user]);
+  }, [getClientId, toast]);
 
   // Disconnect from Google Calendar
   const disconnectCalendar = useCallback(async () => {
