@@ -170,12 +170,16 @@ export const useGoogleCalendar = () => {
         setIsConnecting(false);
       }, 120000); // 2 minute timeout
 
+      console.log('Creating token client with clientId:', clientId?.substring(0, 20) + '...');
+
       const tokenClient = window.google.accounts.oauth2.initTokenClient({
         client_id: clientId,
         scope: 'https://www.googleapis.com/auth/calendar.events',
         callback: async (response: any) => {
           clearTimeout(timeoutId); // Clear timeout on successful callback
+          console.log('=== OAUTH CALLBACK FIRED ===');
           console.log('Calendar OAuth response received:', response);
+          console.log('Has access_token:', !!response?.access_token);
 
           if (response.error) {
             console.error('OAuth error:', response);
@@ -189,17 +193,24 @@ export const useGoogleCalendar = () => {
           }
 
           if (response.access_token) {
+            console.log('=== ACCESS TOKEN RECEIVED ===');
             // Set the token in the Google API client
             window.gapi.client.setToken(response);
+            console.log('Token set in GAPI client');
 
             // Store tokens securely in database
+            console.log('Calling storeTokens...');
             await storeTokens(response);
+            console.log('storeTokens completed');
 
             // Update authentication state
             setIsAuthenticated(true);
+            console.log('isAuthenticated set to true');
 
             // Load user's calendars
+            console.log('Calling loadCalendars...');
             const calendarList = await loadCalendars();
+            console.log('loadCalendars returned:', calendarList?.length, 'calendars');
 
             // Auto-select primary calendar if exists
             const primaryCalendar = calendarList.find(cal => cal.primary);
