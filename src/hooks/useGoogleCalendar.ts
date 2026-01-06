@@ -148,35 +148,36 @@ export const useGoogleCalendar = () => {
     }
   }, [loadScript, toast]);
 
-  // Connect to Google Calendar (OAuth flow)
+  // Connect to Google Calendar (OAuth flow) - matches working Google Drive pattern
   const connectCalendar = useCallback(async () => {
     setIsConnecting(true);
     try {
-      const clientId = await getClientId();
+      // Use same client ID as working Google Drive implementation
+      const clientId = '1050361175911-2caa9uiuf4tmi5pvqlt0arl1h592hurm.apps.googleusercontent.com';
 
       toast({
         title: 'Opening Google Sign-In',
         description: 'Please sign in and grant access to Google Calendar',
       });
 
-      // Set a timeout to reset connecting state if callback never fires
-      const timeoutId = setTimeout(() => {
-        console.error('OAuth timeout - callback never received');
-        toast({
-          title: 'Connection Timeout',
-          description: 'Google sign-in timed out. Please allow popups for this site and try again.',
-          variant: 'destructive',
+      // Load Google Identity Services script if not loaded (same as Google Drive)
+      if (!window.google?.accounts?.oauth2) {
+        await new Promise<void>((resolve, reject) => {
+          const script = document.createElement('script');
+          script.src = 'https://accounts.google.com/gsi/client';
+          script.onload = () => resolve();
+          script.onerror = () => reject(new Error('Failed to load Google Identity Services'));
+          document.head.appendChild(script);
         });
-        setIsConnecting(false);
-      }, 120000); // 2 minute timeout
+      }
 
-      console.log('Creating token client with clientId:', clientId?.substring(0, 20) + '...');
+      console.log('Creating token client with clientId:', clientId.substring(0, 20) + '...');
 
+      // Match Google Drive pattern exactly - no error_callback, no FedCM
       const tokenClient = window.google.accounts.oauth2.initTokenClient({
         client_id: clientId,
         scope: 'https://www.googleapis.com/auth/calendar.events',
         callback: async (response: any) => {
-          clearTimeout(timeoutId); // Clear timeout on successful callback
           console.log('=== OAUTH CALLBACK FIRED ===');
           console.log('Calendar OAuth response received:', response);
           console.log('Has access_token:', !!response?.access_token);
@@ -269,22 +270,11 @@ export const useGoogleCalendar = () => {
             throw new Error('No access token received from Google');
           }
         },
-        error_callback: (error: any) => {
-          clearTimeout(timeoutId);
-          console.error('OAuth error_callback:', error);
-          toast({
-            title: 'Connection Failed',
-            description: error?.message || 'Google sign-in was closed or blocked. Please allow popups and try again.',
-            variant: 'destructive',
-          });
-          setIsConnecting(false);
-        },
-        // Enable FedCM for browser-native credential management - bypasses COOP issues
-        use_fedcm_for_prompt: true,
       });
 
-      // Request access token (matching working Google Drive pattern)
-      tokenClient.requestAccessToken();
+      // Request the token (opens popup) - matching Google Drive pattern
+      tokenClient.requestAccessToken({ prompt: 'consent' });
+
     } catch (error) {
       console.error('Error connecting calendar:', error);
       toast({
@@ -294,7 +284,7 @@ export const useGoogleCalendar = () => {
       });
       setIsConnecting(false);
     }
-  }, [getClientId, storeTokens, loadCalendars, toast, user]);
+  }, [storeTokens, loadCalendars, toast, user]);
 
   // Disconnect from Google Calendar
   const disconnectCalendar = useCallback(async () => {
