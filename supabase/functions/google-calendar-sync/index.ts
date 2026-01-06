@@ -74,10 +74,19 @@ serve(async (req) => {
       .from('calendar_sync_settings')
       .select('*')
       .eq('user_id', user_id)
-      .single();
+      .maybeSingle();  // Use maybeSingle to handle missing row gracefully
 
-    if (settingsError || !syncSettings?.enabled) {
-      throw new Error('Calendar sync is not enabled for this user');
+    if (settingsError) {
+      console.error('Error fetching sync settings:', settingsError);
+      throw new Error('Failed to load sync settings. Please try again.');
+    }
+
+    if (!syncSettings) {
+      throw new Error('Please open Calendar Settings and select a calendar to sync first.');
+    }
+
+    if (!syncSettings.enabled) {
+      throw new Error('Calendar sync is disabled. Enable it in Calendar Settings.');
     }
 
     const targetCalendarId = calendar_id || syncSettings.selected_calendar_id;
@@ -85,22 +94,21 @@ serve(async (req) => {
       throw new Error('No calendar selected for sync');
     }
 
-    // Get user's Google Calendar access token
-    const clientIP = req.headers.get('x-forwarded-for') || 'unknown';
-    const userAgent = req.headers.get('user-agent') || 'unknown';
+    // Get user's Google Calendar access token directly from table
+    // Using service role key bypasses RLS, so we can query directly
+    const { data: tokenData, error: tokenError } = await supabaseClient
+      .from('user_google_tokens')
+      .select('access_token')
+      .eq('user_id', user_id)
+      .single();
 
-    const { data: tokenData, error: tokenError } = await supabaseClient.rpc('get_decrypted_google_token_enhanced', {
-      p_user_id: user_id,
-      p_ip_address: clientIP,
-      p_user_agent: userAgent
-    });
-
-    if (tokenError || !tokenData || tokenData.length === 0) {
+    if (tokenError || !tokenData?.access_token) {
+      console.error('Token fetch error:', tokenError);
       throw new Error('No Google Calendar access token found. Please reconnect your Google Calendar.');
     }
 
-    const tokenRecord = tokenData[0];
-    const googleToken = tokenRecord.access_token;
+    const googleToken = tokenData.access_token;
+    console.log('Successfully retrieved Google access token');
 
     // Create sync log entry
     const { data: logEntry, error: logError } = await supabaseClient

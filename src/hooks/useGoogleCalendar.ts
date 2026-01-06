@@ -88,32 +88,6 @@ export const useGoogleCalendar = () => {
     return config.clientId;
   }, []);
 
-  // Load user's calendar list from Google
-  const loadCalendars = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const response = await window.gapi.client.calendar.calendarList.list({
-        maxResults: 250,
-        minAccessRole: 'writer', // Only calendars the user can write to
-      });
-
-      const calendarList = response.result.items || [];
-      setCalendars(calendarList as GoogleCalendar[]);
-
-      return calendarList as GoogleCalendar[];
-    } catch (error) {
-      console.error('Error loading calendars:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to load Google Calendars',
-        variant: 'destructive',
-      });
-      return [];
-    } finally {
-      setIsLoading(false);
-    }
-  }, [toast]);
-
   // Initialize Google Calendar API
   const initializeGoogleCalendar = useCallback(async () => {
     try {
@@ -147,6 +121,60 @@ export const useGoogleCalendar = () => {
       });
     }
   }, [loadScript, toast]);
+
+  // Load user's calendar list from Google
+  const loadCalendars = useCallback(async () => {
+    if (!user) return [];
+
+    setIsLoading(true);
+    try {
+      // Ensure GAPI client is initialized
+      if (!window.gapi?.client) {
+        console.log('GAPI client not initialized, initializing now...');
+        await initializeGoogleCalendar();
+      }
+
+      // Ensure token is set in GAPI from stored tokens
+      if (!window.gapi?.client?.getToken()) {
+        console.log('No GAPI token set, fetching from database...');
+        // Fetch stored token from database
+        const { data: tokenData, error: tokenError } = await supabase
+          .from('user_google_tokens')
+          .select('access_token')
+          .eq('user_id', user.id)
+          .single();
+
+        if (tokenError || !tokenData?.access_token) {
+          console.error('No stored token found:', tokenError);
+          throw new Error('No Google token found. Please reconnect your Google Calendar.');
+        }
+
+        // Set token in GAPI
+        console.log('Setting token in GAPI client');
+        window.gapi.client.setToken({ access_token: tokenData.access_token });
+      }
+
+      const response = await window.gapi.client.calendar.calendarList.list({
+        maxResults: 250,
+        minAccessRole: 'writer', // Only calendars the user can write to
+      });
+
+      const calendarList = response.result.items || [];
+      setCalendars(calendarList as GoogleCalendar[]);
+
+      return calendarList as GoogleCalendar[];
+    } catch (error) {
+      console.error('Error loading calendars:', error);
+      toast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to load Google Calendars',
+        variant: 'destructive',
+      });
+      return [];
+    } finally {
+      setIsLoading(false);
+    }
+  }, [toast, user, initializeGoogleCalendar]);
 
   // Connect to Google Calendar (OAuth flow) - matches working Google Drive pattern
   const connectCalendar = useCallback(async () => {
