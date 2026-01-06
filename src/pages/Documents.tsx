@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Plus } from 'lucide-react';
+import { Plus, Upload } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -25,6 +25,7 @@ const Documents = () => {
   const [documentToDelete, setDocumentToDelete] = useState<any>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [generatingDocId, setGeneratingDocId] = useState<string | null>(null);
+  const [showDocumentSources, setShowDocumentSources] = useState(false);
   const documentsPerPage = 12;
 
   const { user } = useAuth();
@@ -239,18 +240,30 @@ const Documents = () => {
             ]}
           />
         </div>
-        <CreateKnowledgeDocumentModal 
-          trigger={
-            <Button size="lg" data-create-document aria-label="Create new document">
-              <Plus className="h-5 w-5 mr-2" />
-              Create Document
-            </Button>
-          }
-        />
+        <div className="flex items-center gap-3">
+          <Button
+            variant="outline"
+            size="lg"
+            onClick={() => setShowDocumentSources(!showDocumentSources)}
+          >
+            <Upload className="h-5 w-5 mr-2" />
+            {showDocumentSources ? 'Hide Upload' : 'Add Documents'}
+          </Button>
+          <CreateKnowledgeDocumentModal
+            trigger={
+              <Button size="lg" data-create-document aria-label="Create new document">
+                <Plus className="h-5 w-5 mr-2" />
+                Create Document
+              </Button>
+            }
+          />
+        </div>
       </div>
 
       {/* Document Upload Sources */}
-      <DocumentSources onDocumentsAdded={handleDocumentsAdded} />
+      {showDocumentSources && (
+        <DocumentSources onDocumentsAdded={handleDocumentsAdded} />
+      )}
 
       {/* AI Assistant for querying documents */}
       <AIQueryInput />
