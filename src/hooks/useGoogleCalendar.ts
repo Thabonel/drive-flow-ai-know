@@ -279,10 +279,12 @@ export const useGoogleCalendar = () => {
           });
           setIsConnecting(false);
         },
+        // Enable FedCM for browser-native credential management - bypasses COOP issues
+        use_fedcm_for_prompt: true,
       });
 
-      // Request access token with consent prompt
-      tokenClient.requestAccessToken({ prompt: 'consent' });
+      // Request access token (matching working Google Drive pattern)
+      tokenClient.requestAccessToken();
     } catch (error) {
       console.error('Error connecting calendar:', error);
       toast({
