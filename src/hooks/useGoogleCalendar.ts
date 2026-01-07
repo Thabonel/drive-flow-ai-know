@@ -36,9 +36,12 @@ export const useGoogleCalendar = () => {
   const { toast } = useToast();
   const { user } = useAuth();
 
-  // Store tokens securely in database
-  const storeTokens = useCallback(async (tokenResponse: any) => {
-    if (!user) return;
+  // Store tokens securely in database - returns true on success, false on failure
+  const storeTokens = useCallback(async (tokenResponse: any): Promise<boolean> => {
+    if (!user) {
+      console.error('storeTokens: No user available');
+      return false;
+    }
 
     try {
       const { data, error } = await supabase.functions.invoke('store-google-tokens', {
@@ -57,13 +60,15 @@ export const useGoogleCalendar = () => {
       }
 
       console.log('Calendar tokens stored securely:', data);
+      return true;
     } catch (error) {
       console.error('Error storing tokens:', error);
       toast({
-        title: 'Error',
-        description: 'Failed to store authentication tokens securely',
+        title: 'Token Storage Failed',
+        description: 'Failed to store authentication tokens. Please try connecting again.',
         variant: 'destructive',
       });
+      return false;
     }
   }, [user, toast]);
 
@@ -80,12 +85,6 @@ export const useGoogleCalendar = () => {
       script.onerror = () => reject(new Error(`Failed to load script: ${src}`));
       document.head.appendChild(script);
     });
-  }, []);
-
-  // Get Google client ID from Edge Function
-  const getClientId = useCallback(async () => {
-    const { data: config } = await supabase.functions.invoke('get-google-config');
-    return config.clientId;
   }, []);
 
   // Initialize Google Calendar API
@@ -232,10 +231,15 @@ export const useGoogleCalendar = () => {
             window.gapi.client.setToken(response);
             console.log('Token set in GAPI client');
 
-            // Store tokens securely in database
+            // Store tokens securely in database - MUST succeed before proceeding
             console.log('Calling storeTokens...');
-            await storeTokens(response);
-            console.log('storeTokens completed');
+            const tokenStored = await storeTokens(response);
+            if (!tokenStored) {
+              console.error('Token storage failed - aborting connection');
+              setIsConnecting(false);
+              return; // STOP - token not in database, sync will fail
+            }
+            console.log('storeTokens completed successfully');
 
             // Update authentication state
             setIsAuthenticated(true);
@@ -261,8 +265,9 @@ export const useGoogleCalendar = () => {
             // Auto-select primary calendar if exists
             const primaryCalendar = calendarList.find(cal => cal.primary);
             if (primaryCalendar) {
-              // Create or update sync settings
-              await supabase
+              // Create or update sync settings - MUST confirm write before sync
+              console.log('Creating sync settings for calendar:', primaryCalendar.id);
+              const { data: settingsResult, error: settingsError } = await supabase
                 .from('calendar_sync_settings')
                 .upsert({
                   user_id: user?.id,
@@ -271,7 +276,21 @@ export const useGoogleCalendar = () => {
                   sync_direction: 'both',
                   auto_sync_enabled: true,
                   sync_interval_minutes: 15,
+                })
+                .select()
+                .single();
+
+              if (settingsError || !settingsResult) {
+                console.error('Failed to create sync settings:', settingsError);
+                toast({
+                  title: 'Setup Failed',
+                  description: 'Could not save calendar settings. Please try again.',
+                  variant: 'destructive',
                 });
+                setIsConnecting(false);
+                return; // STOP - settings not saved, sync will fail
+              }
+              console.log('Sync settings created successfully:', settingsResult);
 
               await loadSyncSettings();
 
