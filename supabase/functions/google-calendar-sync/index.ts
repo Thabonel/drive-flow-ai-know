@@ -211,19 +211,25 @@ serve(async (req) => {
           // Create new timeline item from Google event
           const duration = calculateDuration(event.start.dateTime, event.end.dateTime);
 
-          // Determine target layer (use setting or default)
+          // Determine target layer (use setting or default to first VISIBLE layer)
           let targetLayerId = syncSettings.target_layer_id;
 
           if (!targetLayerId) {
-            // Get user's first layer as default
+            // Get user's first VISIBLE layer as default
             const { data: layers } = await supabaseClient
               .from('timeline_layers')
               .select('id')
               .eq('user_id', user_id)
+              .eq('is_visible', true)  // Only visible layers!
               .order('sort_order', { ascending: true })
               .limit(1);
 
             targetLayerId = layers?.[0]?.id;
+
+            if (!targetLayerId) {
+              console.warn(`No visible layers found for user ${user_id}, skipping event ${event.id}`);
+              continue; // Skip this event if no visible layer exists
+            }
           }
 
           if (targetLayerId) {
