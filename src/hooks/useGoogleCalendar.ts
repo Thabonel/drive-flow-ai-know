@@ -128,10 +128,15 @@ export const useGoogleCalendar = () => {
 
     setIsLoading(true);
     try {
-      // Ensure GAPI client is initialized
-      if (!window.gapi?.client) {
-        console.log('GAPI client not initialized, initializing now...');
+      // Ensure GAPI Calendar client is initialized (not just client)
+      if (!window.gapi?.client?.calendar) {
+        console.log('GAPI Calendar client not ready, initializing...');
         await initializeGoogleCalendar();
+      }
+
+      // Safety double-check after initialization
+      if (!window.gapi?.client?.calendar) {
+        throw new Error('Google Calendar API failed to load. Please refresh and try again.');
       }
 
       // Ensure token is set in GAPI from stored tokens
@@ -241,6 +246,18 @@ export const useGoogleCalendar = () => {
             const calendarList = await loadCalendars();
             console.log('loadCalendars returned:', calendarList?.length, 'calendars');
 
+            // Guard clause: abort if no calendars loaded
+            if (!calendarList || calendarList.length === 0) {
+              console.warn('No calendars loaded, aborting sync setup.');
+              toast({
+                title: 'Setup Failed',
+                description: 'Could not load your calendars. Please try again.',
+                variant: 'destructive',
+              });
+              setIsConnecting(false);
+              return; // STOP HERE - do not call Edge Function
+            }
+
             // Auto-select primary calendar if exists
             const primaryCalendar = calendarList.find(cal => cal.primary);
             if (primaryCalendar) {
@@ -257,38 +274,44 @@ export const useGoogleCalendar = () => {
                 });
 
               await loadSyncSettings();
-            }
 
-            toast({
-              title: 'Connected Successfully!',
-              description: 'Syncing your calendar events now...',
-            });
-
-            // Automatically sync events after connection
-            try {
-              const { data: syncResult, error: syncError } = await supabase.functions.invoke('google-calendar-sync', {
-                body: {
-                  sync_type: 'initial',
-                  calendar_id: primaryCalendar?.id || 'primary',
-                }
+              toast({
+                title: 'Connected Successfully!',
+                description: 'Syncing your calendar events now...',
               });
 
-              if (syncError) {
-                console.error('Auto-sync error:', syncError);
-                toast({
-                  title: 'Sync Warning',
-                  description: 'Connected successfully but initial sync failed. Try "Sync Now" manually.',
-                  variant: 'destructive',
+              // Automatically sync events after connection - INSIDE the if block
+              try {
+                const { data: syncResult, error: syncError } = await supabase.functions.invoke('google-calendar-sync', {
+                  body: {
+                    sync_type: 'initial',
+                    calendar_id: primaryCalendar.id,
+                  }
                 });
-              } else {
-                console.log('Auto-sync completed:', syncResult);
-                toast({
-                  title: 'Calendar Synced!',
-                  description: `Imported ${syncResult?.items_created || 0} events from Google Calendar`,
-                });
+
+                if (syncError) {
+                  console.error('Auto-sync error:', syncError);
+                  toast({
+                    title: 'Sync Warning',
+                    description: 'Connected successfully but initial sync failed. Try "Sync Now" manually.',
+                    variant: 'destructive',
+                  });
+                } else {
+                  console.log('Auto-sync completed:', syncResult);
+                  toast({
+                    title: 'Calendar Synced!',
+                    description: `Imported ${syncResult?.items_created || 0} events from Google Calendar`,
+                  });
+                }
+              } catch (syncErr) {
+                console.error('Auto-sync exception:', syncErr);
               }
-            } catch (syncErr) {
-              console.error('Auto-sync exception:', syncErr);
+            } else {
+              // No primary calendar found - still connected but user needs to select manually
+              toast({
+                title: 'Connected!',
+                description: 'Open Calendar Settings to select which calendar to sync.',
+              });
             }
 
             setIsConnecting(false);
