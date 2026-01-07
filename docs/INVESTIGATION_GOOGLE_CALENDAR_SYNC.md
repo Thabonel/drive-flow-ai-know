@@ -1,12 +1,48 @@
-# Investigation Report: Google Calendar Sync Failure
+# Investigation Report: Google Calendar Sync
 
 **Date:** 2026-01-08
-**Status:** Investigation Complete
-**Symptom:** "Connected successfully but initial sync failed"
+**Status:** RESOLVED & WORKING
+**Original Symptom:** "Connected successfully but initial sync failed"
 
 ---
 
-## Executive Summary
+## Current Status
+
+**Google Calendar sync is now fully functional:**
+- OAuth connects successfully
+- Primary calendar events sync to timeline
+- 42+ items imported and displaying correctly
+- All race conditions fixed
+
+---
+
+## Known Limitation: Single Calendar Only
+
+**External calendar events (like TANDA employer app) don't sync.**
+
+### Why
+- TANDA events appear on a **separate subscribed calendar** in Google Calendar
+- Each calendar has a different ID (e.g., `tanda.employer.com#calendar@group.v.calendar.google.com`)
+- App currently syncs **one calendar at a time** (primary by default)
+
+### Workaround
+User can manually select TANDA calendar in Calendar Settings, but loses personal calendar events.
+
+### Future Enhancement: Multi-Calendar Support
+
+**Estimated effort: 3-4 hours**
+
+Changes required:
+1. **Database**: Change `selected_calendar_id` TEXT → `selected_calendar_ids` TEXT[]
+2. **UI**: Replace single Select with multi-select checkbox component
+3. **Hook**: Update `useGoogleCalendar.ts` to handle array of calendar IDs
+4. **Edge Function**: Loop through all selected calendars when syncing
+
+**Decision**: Not implementing now - documented for future reference.
+
+---
+
+## Executive Summary (Original Investigation)
 
 Three parallel investigation agents analyzed the Google Calendar sync failure. **Two critical race conditions** were identified that cause the sync to fail despite successful OAuth connection.
 
@@ -278,3 +314,35 @@ The sync failure is caused by **race conditions** where async operations (token 
 2. **Confirming** database writes before proceeding
 3. Adding **retry logic** for transient timing issues
 4. **Verifying** critical data exists before dependent operations
+
+---
+
+## Fixes Applied
+
+All issues have been resolved. Here are the commits:
+
+| Commit | Description |
+|--------|-------------|
+| `7a38553` | fix: Properly initialize GAPI Calendar client before sync |
+| `42a0952` | fix: Eliminate race conditions in Google Calendar sync |
+| `7550531` | fix: Use correct OAuth scope for Google Calendar API |
+| `c948a73` | fix: Assign synced calendar items to VISIBLE layers |
+
+### Key Changes Made
+
+1. **OAuth Scope Fixed** (`useGoogleCalendar.ts:211`)
+   - Changed from `calendar.events` to `calendar` (full access)
+   - Enables `calendarList.list()` API call to work
+
+2. **Token Storage Made Fatal** (`useGoogleCalendar.ts:39-73`)
+   - `storeTokens()` now returns boolean
+   - Connection aborts if token storage fails
+
+3. **Sync Settings Confirmed** (`useGoogleCalendar.ts:282-294`)
+   - Added `.select().single()` to upsert
+   - Verifies write completes before calling Edge Function
+
+4. **Visible Layers Only** (`useGoogleCalendar.ts:268-278`, `google-calendar-sync/index.ts:214-233`)
+   - Synced items assigned to first VISIBLE layer
+   - Events skipped if no visible layer exists
+   - Timeline now displays all synced items correctly
