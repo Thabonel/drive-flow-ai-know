@@ -265,6 +265,18 @@ export const useGoogleCalendar = () => {
             // Auto-select primary calendar if exists
             const primaryCalendar = calendarList.find(cal => cal.primary);
             if (primaryCalendar) {
+              // Get first VISIBLE layer for synced items
+              const { data: visibleLayers } = await supabase
+                .from('timeline_layers')
+                .select('id')
+                .eq('user_id', user?.id)
+                .eq('is_visible', true)
+                .order('sort_order', { ascending: true })
+                .limit(1);
+
+              const targetLayerId = visibleLayers?.[0]?.id || null;
+              console.log('Target layer for synced items:', targetLayerId);
+
               // Create or update sync settings - MUST confirm write before sync
               console.log('Creating sync settings for calendar:', primaryCalendar.id);
               const { data: settingsResult, error: settingsError } = await supabase
@@ -276,6 +288,7 @@ export const useGoogleCalendar = () => {
                   sync_direction: 'both',
                   auto_sync_enabled: true,
                   sync_interval_minutes: 15,
+                  target_layer_id: targetLayerId,
                 })
                 .select()
                 .single();
