@@ -208,7 +208,7 @@ export const useGoogleCalendar = () => {
       // Match Google Drive pattern exactly - no error_callback, no FedCM
       const tokenClient = window.google.accounts.oauth2.initTokenClient({
         client_id: clientId,
-        scope: 'https://www.googleapis.com/auth/calendar.events',
+        scope: 'https://www.googleapis.com/auth/calendar',  // Full calendar access (list + events)
         callback: async (response: any) => {
           console.log('=== OAUTH CALLBACK FIRED ===');
           console.log('Calendar OAuth response received:', response);
