@@ -125,7 +125,7 @@ export default function Landing() {
           </nav>
 
           {/* Desktop CTA */}
-          <Button asChild className="hidden md:flex bg-accent hover:bg-accent/90 border-0 text-white shadow-lg hover:shadow-xl transition-all hover:scale-105">
+          <Button asChild className="hidden md:flex bg-accent hover:bg-accent/90 border-0 text-white transition-all hover:scale-105 [box-shadow:none] hover:[box-shadow:none]">
             <Link to="/auth">Get Started Free</Link>
           </Button>
 

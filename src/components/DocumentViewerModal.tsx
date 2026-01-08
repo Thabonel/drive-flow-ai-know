@@ -8,14 +8,22 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { FileText, Edit, Copy, Save, X, Tag, Calendar, Printer, Download, ChevronDown, FileImage } from 'lucide-react';
+import { FileText, Edit, Copy, Save, X, Tag, Calendar, Printer, Download, ChevronDown, FileImage, Sparkles, Loader2 } from 'lucide-react';
 import { PDFViewer } from '@/components/PDFViewer';
+import { DocumentDiffView } from '@/components/DocumentDiffView';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -38,6 +46,21 @@ export const DocumentViewerModal = ({ document, isOpen, onClose }: DocumentViewe
   });
   const [newTag, setNewTag] = useState('');
   const [showTimelineDialog, setShowTimelineDialog] = useState(false);
+
+  // AI Update state
+  const [showAIUpdateDialog, setShowAIUpdateDialog] = useState(false);
+  const [aiUpdateContext, setAIUpdateContext] = useState('');
+  const [aiUpdateType, setAIUpdateType] = useState<'refresh_data' | 'add_section' | 'restructure' | 'improve_clarity' | 'custom'>('improve_clarity');
+  const [isGeneratingUpdate, setIsGeneratingUpdate] = useState(false);
+  const [showDiffView, setShowDiffView] = useState(false);
+  const [aiUpdateResult, setAIUpdateResult] = useState<{
+    original_content: string;
+    suggested_content: string;
+    change_summary: string;
+    change_highlights: string[];
+    current_version: number;
+  } | null>(null);
+  const [isApplyingUpdate, setIsApplyingUpdate] = useState(false);
 
   const { user } = useAuth();
   const { toast } = useToast();
@@ -312,6 +335,126 @@ export const DocumentViewerModal = ({ document, isOpen, onClose }: DocumentViewe
     }
   };
 
+  // AI Update handlers
+  const handleGenerateAIUpdate = async () => {
+    if (!aiUpdateContext.trim()) {
+      toast({
+        title: 'Context Required',
+        description: 'Please provide context or instructions for the AI update.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsGeneratingUpdate(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('ai-document-update', {
+        body: {
+          document_id: document.id,
+          context: aiUpdateContext,
+          update_type: aiUpdateType,
+        },
+      });
+
+      if (error) throw error;
+      if (!data.success) throw new Error(data.error || 'Failed to generate update');
+
+      setAIUpdateResult({
+        original_content: data.original_content,
+        suggested_content: data.suggested_content,
+        change_summary: data.change_summary,
+        change_highlights: data.change_highlights || [],
+        current_version: data.current_version || 1,
+      });
+      setShowAIUpdateDialog(false);
+      setShowDiffView(true);
+    } catch (error) {
+      console.error('AI update error:', error);
+      toast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to generate AI update',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsGeneratingUpdate(false);
+    }
+  };
+
+  const handleApproveUpdate = async (content: string) => {
+    if (!aiUpdateResult || !user) return;
+
+    setIsApplyingUpdate(true);
+    try {
+      const newVersion = (aiUpdateResult.current_version || 1) + 1;
+
+      // Save version history
+      const { error: versionError } = await supabase
+        .from('document_versions')
+        .insert({
+          document_id: document.id,
+          version_number: newVersion,
+          content: content,
+          title: formData.title,
+          changed_by_type: 'ai',
+          changed_by_id: user.id,
+          change_summary: aiUpdateResult.change_summary,
+        });
+
+      if (versionError) {
+        console.error('Version save error:', versionError);
+        // Non-fatal - continue with update
+      }
+
+      // Update document
+      const { error: updateError } = await supabase
+        .from('knowledge_documents')
+        .update({
+          content: content,
+          current_version: newVersion,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', document.id)
+        .eq('user_id', user.id);
+
+      if (updateError) throw updateError;
+
+      // Update local state
+      setFormData(prev => ({ ...prev, content }));
+
+      // Refresh queries
+      queryClient.invalidateQueries({ queryKey: ['documents', user.id] });
+      queryClient.invalidateQueries({ queryKey: ['recent-documents', user.id] });
+
+      toast({
+        title: 'Document Updated',
+        description: `Changes applied. Document is now at version ${newVersion}.`,
+      });
+
+      // Reset state
+      setShowDiffView(false);
+      setAIUpdateResult(null);
+      setAIUpdateContext('');
+    } catch (error) {
+      console.error('Apply update error:', error);
+      toast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to apply changes',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsApplyingUpdate(false);
+    }
+  };
+
+  const handleRejectUpdate = () => {
+    setShowDiffView(false);
+    setAIUpdateResult(null);
+    toast({
+      title: 'Changes Rejected',
+      description: 'The suggested changes were not applied.',
+    });
+  };
+
   // Reset form when document changes
   React.useEffect(() => {
     if (document) {
@@ -345,8 +488,17 @@ export const DocumentViewerModal = ({ document, isOpen, onClose }: DocumentViewe
               <span className="truncate">{isEditing ? 'Edit Document' : 'View Document'}</span>
             </div>
             <div className="flex items-center gap-2 flex-shrink-0 flex-wrap">
-              {!isEditing && (
+              {!isEditing && !showDiffView && (
                 <>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowAIUpdateDialog(true)}
+                    className="bg-accent/10 hover:bg-accent/20 border-accent/30"
+                  >
+                    <Sparkles className="h-4 w-4 mr-2" />
+                    AI Update
+                  </Button>
                   <Button variant="outline" size="sm" onClick={handlePrint}>
                     <Printer className="h-4 w-4 mr-2" />
                     Print
@@ -647,6 +799,111 @@ export const DocumentViewerModal = ({ document, isOpen, onClose }: DocumentViewe
         sourceType="document"
         sourceTitle={formData.title}
       />
+
+      {/* AI Update Context Dialog */}
+      <AlertDialog open={showAIUpdateDialog} onOpenChange={setShowAIUpdateDialog}>
+        <AlertDialogContent className="max-w-lg">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-accent" />
+              AI Document Update
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Describe what changes you want to make to this document. The AI will generate suggestions for you to review.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="update-type">Update Type</Label>
+              <Select value={aiUpdateType} onValueChange={(v: any) => setAIUpdateType(v)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="improve_clarity">Improve Clarity</SelectItem>
+                  <SelectItem value="refresh_data">Refresh Data</SelectItem>
+                  <SelectItem value="add_section">Add Section</SelectItem>
+                  <SelectItem value="restructure">Restructure</SelectItem>
+                  <SelectItem value="custom">Custom Instructions</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="update-context">Context / Instructions</Label>
+              <Textarea
+                id="update-context"
+                value={aiUpdateContext}
+                onChange={(e) => setAIUpdateContext(e.target.value)}
+                placeholder={
+                  aiUpdateType === 'refresh_data'
+                    ? 'Paste the new data or describe what data to update...'
+                    : aiUpdateType === 'add_section'
+                    ? 'Describe the new section to add...'
+                    : aiUpdateType === 'restructure'
+                    ? 'Describe how you want the document restructured...'
+                    : 'Describe the changes you want to make...'
+                }
+                rows={4}
+              />
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-3">
+            <Button
+              variant="outline"
+              onClick={() => setShowAIUpdateDialog(false)}
+              disabled={isGeneratingUpdate}
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleGenerateAIUpdate} disabled={isGeneratingUpdate}>
+              {isGeneratingUpdate ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Generating...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="h-4 w-4 mr-2" />
+                  Generate Update
+                </>
+              )}
+            </Button>
+          </div>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* AI Diff View Dialog */}
+      <AlertDialog open={showDiffView} onOpenChange={setShowDiffView}>
+        <AlertDialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-accent" />
+              Review AI Suggestions
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Review the suggested changes before applying them to your document.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+
+          {aiUpdateResult && (
+            <DocumentDiffView
+              originalContent={aiUpdateResult.original_content}
+              suggestedContent={aiUpdateResult.suggested_content}
+              changeSummary={aiUpdateResult.change_summary}
+              changeHighlights={aiUpdateResult.change_highlights}
+              onApprove={handleApproveUpdate}
+              onReject={handleRejectUpdate}
+              onEdit={(content) => {
+                // Allow editing before approve
+              }}
+              isApproving={isApplyingUpdate}
+            />
+          )}
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   );
 };

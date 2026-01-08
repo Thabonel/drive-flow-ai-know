@@ -477,6 +477,28 @@ serve(async (req) => {
     const providerOverride = settings?.model_preference;
     const personalPrompt = settings?.personal_prompt || '';
 
+    // === CROSS-SESSION MEMORY: Retrieve relevant memories from previous conversations ===
+    let userMemories: { content: string; memory_type: string }[] = [];
+    try {
+      const { data: memories, error: memoryError } = await supabaseService
+        .from('agentic_memories')
+        .select('content, memory_type')
+        .eq('user_id', user_id)
+        .in('memory_type', ['user_fact', 'preference', 'context_note'])
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      if (memoryError) {
+        console.error('Memory retrieval error (non-fatal):', memoryError.message);
+      } else if (memories && memories.length > 0) {
+        userMemories = memories;
+        console.log(`Retrieved ${memories.length} memories for user context`);
+      }
+    } catch (memError) {
+      // Memory retrieval is non-critical - continue without memories
+      console.error('Memory retrieval failed (non-fatal):', memError);
+    }
+
     const body = await req.json();
     const { query, knowledge_base_id, conversationContext, use_documents, image } = body;
 
@@ -798,6 +820,18 @@ serve(async (req) => {
       - Write in clear, professional prose
 
       You have internet access through web search. Use it when needed to provide accurate, current information.`;
+    }
+
+    // === CROSS-SESSION MEMORY: Inject remembered facts from previous conversations ===
+    if (userMemories.length > 0) {
+      const memoryContext = userMemories.map(m => {
+        const typeLabel = m.memory_type === 'user_fact' ? 'About user' :
+                         m.memory_type === 'preference' ? 'Preference' : 'Context';
+        return `- [${typeLabel}] ${m.content}`;
+      }).join('\n');
+
+      systemMessage += `\n\nREMEMBERED FROM PREVIOUS CONVERSATIONS:\n${memoryContext}`;
+      console.log('Injected memory context into system message');
     }
 
     // Add personal prompt if user has one
