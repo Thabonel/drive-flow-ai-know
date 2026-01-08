@@ -129,16 +129,13 @@ serve(async (req) => {
     // Append negative prompt guidance
     enhancedPrompt += `\n\nAvoid: ${finalNegativePrompt}`;
 
-    // Use Gemini 3 Pro Image (released Nov 20, 2025)
-    // Model: gemini-3-pro-image-preview (aka Nano Banana Pro)
-    // Features: 2K/4K output, up to 14 reference images, character consistency
+    // Use Gemini 2.0 Flash Experimental for image generation
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-image-preview:generateContent`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${apiKey}`,
       {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-goog-api-key': apiKey,
         },
         body: JSON.stringify({
           contents: [{
@@ -147,7 +144,7 @@ serve(async (req) => {
             ]
           }],
           generationConfig: {
-            responseModalities: ["image"]
+            responseModalities: ["image", "text"]
           }
         })
       }
@@ -163,16 +160,16 @@ serve(async (req) => {
 
     const result = await response.json();
 
-    // Extract the generated image from Gemini 3 Pro Image response
-    // Response format: { candidates: [{ content: { parts: [{ inlineData: { mimeType, data } }] } }] }
-    const imageData = result.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
+    // Extract the generated image - search through parts to find one with inlineData
+    const imagePart = result.candidates?.[0]?.content?.parts?.find((p: any) => p.inlineData);
+    const imageData = imagePart?.inlineData?.data;
 
     if (!imageData) {
-      console.error('Unexpected response format:', JSON.stringify(result));
-      throw new Error('No image data returned from API');
+      console.error('Unexpected response format:', JSON.stringify(result).substring(0, 500));
+      throw new Error('No image data returned from API. The model may not support image generation for this prompt.');
     }
 
-    console.log('Image generated successfully with Gemini 3 Pro Image');
+    console.log('Image generated successfully with Gemini 2.0 Flash');
 
     return new Response(
       JSON.stringify({
