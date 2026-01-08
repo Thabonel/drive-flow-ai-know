@@ -2,18 +2,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Link } from 'react-router-dom';
-import {
-  Check,
-  CheckCircle2,
-  Menu,
-  X,
-  Shield,
-  Brain,
-  Clock,
-  Database,
-  XCircle,
-  MessageSquare
-} from 'lucide-react';
+import { Menu, X } from 'lucide-react';
 
 const plans = [
   {
@@ -288,7 +277,6 @@ export default function Landing() {
       <section className="py-24 bg-primary text-primary-foreground">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
-            <Shield className="h-16 w-16 mx-auto mb-4 text-accent" />
             <h2 className="text-4xl font-bold mb-4">Your Data Stays Yours</h2>
             <p className="text-xl opacity-90 max-w-2xl mx-auto">
               Unlike other AI tools, we don't use your data to train AI models.
@@ -298,17 +286,14 @@ export default function Landing() {
 
           <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto">
             <div className="text-center p-6 rounded-2xl bg-white/10 backdrop-blur-xl">
-              <XCircle className="h-10 w-10 mx-auto mb-3 text-accent" />
               <h3 className="font-semibold mb-2 text-lg">No AI Training</h3>
               <p className="opacity-80 text-sm">Your data is never used to train AI models. Ever.</p>
             </div>
             <div className="text-center p-6 rounded-2xl bg-white/10 backdrop-blur-xl">
-              <Clock className="h-10 w-10 mx-auto mb-3 text-accent" />
               <h3 className="font-semibold mb-2 text-lg">30-Day AI Memory</h3>
               <p className="opacity-80 text-sm">Conversation context kept 30 days for follow-ups, then wiped from AI memory.</p>
             </div>
             <div className="text-center p-6 rounded-2xl bg-white/10 backdrop-blur-xl">
-              <Database className="h-10 w-10 mx-auto mb-3 text-accent" />
               <h3 className="font-semibold mb-2 text-lg">Forever in Your System</h3>
               <p className="opacity-80 text-sm">Documents stay permanently in your knowledge base - you control your data.</p>
             </div>
@@ -322,53 +307,40 @@ export default function Landing() {
         <div className="container mx-auto px-4">
           <div className="grid md:grid-cols-2 gap-12 items-center max-w-6xl mx-auto">
             <div>
-              <Brain className="h-12 w-12 mb-4 text-primary" />
               <h2 className="text-3xl md:text-4xl font-bold mb-4 text-primary">AI That Remembers</h2>
               <p className="text-lg text-muted-foreground mb-6">
                 Long-running conversations that maintain context across sessions.
                 Your AI assistant remembers previous discussions and builds on them -
                 no more repeating yourself every time you start a new chat.
               </p>
-              <ul className="space-y-4">
-                <li className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-success/20 flex items-center justify-center flex-shrink-0">
-                    <Check className="h-5 w-5 text-success" />
-                  </div>
-                  <span className="text-foreground">Context persists across conversations</span>
+              <ul className="space-y-3 text-foreground">
+                <li className="flex items-start gap-2">
+                  <span className="text-primary font-medium">—</span>
+                  <span>Context persists across conversations</span>
                 </li>
-                <li className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-success/20 flex items-center justify-center flex-shrink-0">
-                    <Check className="h-5 w-5 text-success" />
-                  </div>
-                  <span className="text-foreground">Reference previous discussions naturally</span>
+                <li className="flex items-start gap-2">
+                  <span className="text-primary font-medium">—</span>
+                  <span>Reference previous discussions naturally</span>
                 </li>
-                <li className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-success/20 flex items-center justify-center flex-shrink-0">
-                    <Check className="h-5 w-5 text-success" />
-                  </div>
-                  <span className="text-foreground">Build on insights over time</span>
+                <li className="flex items-start gap-2">
+                  <span className="text-primary font-medium">—</span>
+                  <span>Build on insights over time</span>
                 </li>
-                <li className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-success/20 flex items-center justify-center flex-shrink-0">
-                    <Check className="h-5 w-5 text-success" />
-                  </div>
-                  <span className="text-foreground">Memory wiped after 30 days for privacy</span>
+                <li className="flex items-start gap-2">
+                  <span className="text-primary font-medium">—</span>
+                  <span>Memory wiped after 30 days for privacy</span>
                 </li>
               </ul>
             </div>
             <div className="bg-card rounded-2xl shadow-card border border-border p-8">
               <div className="space-y-4">
-                <div className="flex items-start gap-3">
-                  <MessageSquare className="h-6 w-6 text-primary mt-1 flex-shrink-0" />
-                  <div className="bg-primary/5 rounded-lg p-3 flex-1">
-                    <p className="text-sm text-muted-foreground">"Remember that budget analysis we discussed last week?"</p>
-                  </div>
+                <div className="bg-primary/5 rounded-lg p-4">
+                  <p className="text-xs text-muted-foreground mb-1 font-medium">You</p>
+                  <p className="text-sm text-muted-foreground">"Remember that budget analysis we discussed last week?"</p>
                 </div>
-                <div className="flex items-start gap-3 justify-end">
-                  <div className="bg-accent/10 rounded-lg p-3 flex-1">
-                    <p className="text-sm text-foreground">"Yes! You mentioned the Q3 projections were 15% higher than expected. Would you like me to update those figures with the latest data from your documents?"</p>
-                  </div>
-                  <Brain className="h-6 w-6 text-accent mt-1 flex-shrink-0" />
+                <div className="bg-accent/10 rounded-lg p-4">
+                  <p className="text-xs text-accent mb-1 font-medium">AI</p>
+                  <p className="text-sm text-foreground">"Yes! You mentioned the Q3 projections were 15% higher than expected. Would you like me to update those figures with the latest data from your documents?"</p>
                 </div>
               </div>
               <p className="text-xs text-muted-foreground text-center mt-4">AI remembers context from previous conversations</p>
@@ -458,61 +430,47 @@ export default function Landing() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-12 text-left">
             <div className="p-6 rounded-2xl bg-white/10 backdrop-blur-xl border border-white/20">
-              <div className="flex items-start gap-4">
-                <div className="w-12 h-12 rounded-xl bg-red-500/20 border border-red-500/30 flex items-center justify-center flex-shrink-0">
-                  <X className="h-6 w-6 text-red-300" />
-                </div>
-                <div>
-                  <h3 className="text-xl font-bold text-white mb-2">Other AI Chatbots</h3>
-                  <ul className="space-y-2 text-white/80">
-                    <li className="flex items-start gap-2">
-                      <span className="text-red-300 mt-1">•</span>
-                      <span>Upload files separately for each chat</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="text-red-300 mt-1">•</span>
-                      <span>Files disappear when you start new conversation</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="text-red-300 mt-1">•</span>
-                      <span>Can't search across all your documents</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="text-red-300 mt-1">•</span>
-                      <span>Re-upload same files over and over</span>
-                    </li>
-                  </ul>
-                </div>
-              </div>
+              <h3 className="text-xl font-bold text-white mb-4">Other AI Chatbots</h3>
+              <ul className="space-y-2 text-white/80">
+                <li className="flex items-start gap-2">
+                  <span className="text-red-300 mt-1">×</span>
+                  <span>Upload files separately for each chat</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-red-300 mt-1">×</span>
+                  <span>Files disappear when you start new conversation</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-red-300 mt-1">×</span>
+                  <span>Can't search across all your documents</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-red-300 mt-1">×</span>
+                  <span>Re-upload same files over and over</span>
+                </li>
+              </ul>
             </div>
 
             <div className="p-6 rounded-2xl bg-accent/20 backdrop-blur-xl border border-accent/30">
-              <div className="flex items-start gap-4">
-                <div className="w-12 h-12 rounded-xl bg-accent/30 border border-accent/40 flex items-center justify-center flex-shrink-0">
-                  <CheckCircle2 className="w-6 h-6 text-accent" />
-                </div>
-                <div>
-                  <h3 className="text-xl font-bold text-white mb-2">AI Query Hub</h3>
-                  <ul className="space-y-2 text-white/80">
-                    <li className="flex items-start gap-2">
-                      <span className="text-accent mt-1">•</span>
-                      <span>Upload documents once, available forever</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="text-accent mt-1">•</span>
-                      <span>AI has access to all files in every conversation</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="text-accent mt-1">•</span>
-                      <span>Search across your entire document library</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="text-accent mt-1">•</span>
-                      <span>Build persistent knowledge base over time</span>
-                    </li>
-                  </ul>
-                </div>
-              </div>
+              <h3 className="text-xl font-bold text-white mb-4">AI Query Hub</h3>
+              <ul className="space-y-2 text-white/80">
+                <li className="flex items-start gap-2">
+                  <span className="text-accent mt-1">✓</span>
+                  <span>Upload documents once, available forever</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-accent mt-1">✓</span>
+                  <span>AI has access to all files in every conversation</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-accent mt-1">✓</span>
+                  <span>Search across your entire document library</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-accent mt-1">✓</span>
+                  <span>Build persistent knowledge base over time</span>
+                </li>
+              </ul>
             </div>
           </div>
         </div>
@@ -540,11 +498,11 @@ export default function Landing() {
               </p>
               <ul className="space-y-2 text-muted-foreground">
                 <li className="flex items-start gap-2">
-                  <CheckCircle2 className="w-5 h-5 mt-0.5 flex-shrink-0 text-success" />
+                  <span className="text-success font-medium">—</span>
                   <span>Advanced reasoning capabilities</span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <CheckCircle2 className="w-5 h-5 mt-0.5 flex-shrink-0 text-success" />
+                  <span className="text-success font-medium">—</span>
                   <span>Access to diverse model capabilities</span>
                 </li>
               </ul>
@@ -558,15 +516,15 @@ export default function Landing() {
               </p>
               <ul className="space-y-2 text-muted-foreground">
                 <li className="flex items-start gap-2">
-                  <CheckCircle2 className="w-5 h-5 mt-0.5 flex-shrink-0 text-success" />
+                  <span className="text-success font-medium">—</span>
                   <span>Automatic model updates</span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <CheckCircle2 className="w-5 h-5 mt-0.5 flex-shrink-0 text-success" />
+                  <span className="text-success font-medium">—</span>
                   <span>Intelligent fallback routing</span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <CheckCircle2 className="w-5 h-5 mt-0.5 flex-shrink-0 text-success" />
+                  <span className="text-success font-medium">—</span>
                   <span>No vendor lock-in</span>
                 </li>
               </ul>
@@ -634,7 +592,7 @@ export default function Landing() {
                 <ul className="space-y-3 mb-6">
                   {plan.features.map((feature, j) => (
                     <li key={j} className="flex items-start gap-2">
-                      <Check className="w-4 h-4 mt-0.5 flex-shrink-0 text-success" />
+                      <span className="text-success font-medium">—</span>
                       <span className="text-foreground/80 text-sm">{feature}</span>
                     </li>
                   ))}
