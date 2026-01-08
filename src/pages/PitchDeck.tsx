@@ -14,7 +14,8 @@ import { usePitchDeckStream } from '@/hooks/usePitchDeckStream';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { SlideCardSkeleton, TitleSlideCardSkeleton, SlideGenerationProgress } from '@/components/SlideCardSkeleton';
-import { Loader2, Presentation, Download, Eye, FileText, Layers, Share2, X, Archive, Monitor, Settings } from 'lucide-react';
+import { Loader2, Presentation, Download, Eye, FileText, Layers, Share2, X, Archive, Monitor, Settings, Upload, File, Trash2 } from 'lucide-react';
+import { arrayBufferToBase64 } from '@/lib/base64Utils';
 import { useQuery } from '@tanstack/react-query';
 import jsPDF from 'jspdf';
 import pptxgen from 'pptxgenjs';
@@ -103,6 +104,19 @@ export default function PitchDeck() {
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null); // Track last save time
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false); // Track unsaved changes
   const [isAutoSaving, setIsAutoSaving] = useState(false); // Auto-save in progress indicator
+
+  // Direct file upload state
+  interface UploadedFile {
+    id: string;
+    name: string;
+    content: string;
+    status: 'uploading' | 'ready' | 'error';
+    progress: number;
+  }
+  const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
+  const [isDraggingFile, setIsDraggingFile] = useState(false);
+  const [saveUploadedToDocuments, setSaveUploadedToDocuments] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Progressive streaming hook
   const streamingHook = usePitchDeckStream();
@@ -613,8 +627,9 @@ export default function PitchDeck() {
       return;
     }
 
-    if (!topic.trim() && selectedDocIds.length === 0) {
-      toast.error('Please enter a topic or select documents for your pitch deck');
+    const readyUploadedFiles = uploadedFiles.filter(f => f.status === 'ready');
+    if (!topic.trim() && selectedDocIds.length === 0 && readyUploadedFiles.length === 0) {
+      toast.error('Please enter a topic, select documents, or upload files for your pitch deck');
       return;
     }
 
@@ -628,6 +643,12 @@ export default function PitchDeck() {
   };
 
   const handleGenerateConfirmed = async () => {
+    // Prepare uploaded file content
+    const readyUploadedFiles = uploadedFiles.filter(f => f.status === 'ready');
+    const uploadedContent = readyUploadedFiles.length > 0
+      ? readyUploadedFiles.map(f => `--- ${f.name} ---\n${f.content}`).join('\n\n')
+      : undefined;
+
     // Use progressive streaming mode if enabled
     if (useProgressiveMode) {
       setGenerating(true);
@@ -641,6 +662,7 @@ export default function PitchDeck() {
           animationStyle: animationStyle as 'none' | 'minimal' | 'standard' | 'expressive',
           includeImages,
           selectedDocumentIds: selectedDocIds.length > 0 ? selectedDocIds : undefined,
+          uploadedContent,
         });
       } catch (error) {
         console.error('Pitch deck streaming error:', error);
@@ -662,7 +684,8 @@ export default function PitchDeck() {
           style,
           animationStyle,
           includeImages,
-          selectedDocumentIds: selectedDocIds.length > 0 ? selectedDocIds : undefined
+          selectedDocumentIds: selectedDocIds.length > 0 ? selectedDocIds : undefined,
+          uploadedContent
         }
       });
 
@@ -1243,6 +1266,115 @@ export default function PitchDeck() {
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [hasUnsavedChanges, pitchDeck]);
 
+  // Direct file upload handlers
+  const handleFileDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDraggingFile(false);
+    const files = Array.from(e.dataTransfer.files);
+    handleFileUpload(files);
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    handleFileUpload(files);
+    // Reset input so same file can be selected again
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const handleFileUpload = async (files: globalThis.File[]) => {
+    const validExtensions = ['.txt', '.md', '.pdf', '.docx', '.doc', '.rtf', '.fdx', '.json'];
+
+    for (const file of files) {
+      const ext = '.' + (file.name.split('.').pop()?.toLowerCase() || '');
+      if (!validExtensions.includes(ext)) {
+        toast.error(`${file.name}: Unsupported file type. Use PDF, DOCX, TXT, MD, or RTF.`);
+        continue;
+      }
+      if (file.size > 20 * 1024 * 1024) {
+        toast.error(`${file.name}: File too large (max 20MB)`);
+        continue;
+      }
+
+      const fileId = Math.random().toString(36).substr(2, 9);
+
+      // Add to state as uploading
+      setUploadedFiles(prev => [...prev, {
+        id: fileId,
+        name: file.name,
+        content: '',
+        status: 'uploading',
+        progress: 10,
+      }]);
+
+      try {
+        let content = '';
+
+        // Handle text files directly
+        if (file.type.startsWith('text/') || ext === '.md' || ext === '.txt' || ext === '.json') {
+          content = await file.text();
+          setUploadedFiles(prev => prev.map(f =>
+            f.id === fileId ? { ...f, progress: 100, status: 'ready', content } : f
+          ));
+        } else {
+          // Binary files - use parse-document edge function
+          setUploadedFiles(prev => prev.map(f =>
+            f.id === fileId ? { ...f, progress: 30 } : f
+          ));
+
+          const arrayBuffer = await file.arrayBuffer();
+          const base64 = arrayBufferToBase64(new Uint8Array(arrayBuffer));
+
+          // Determine mime type
+          let mimeType = file.type;
+          if (ext === '.fdx') mimeType = 'application/x-final-draft';
+          else if (ext === '.rtf' && !mimeType) mimeType = 'application/rtf';
+          else if (ext === '.pdf' && !mimeType) mimeType = 'application/pdf';
+
+          setUploadedFiles(prev => prev.map(f =>
+            f.id === fileId ? { ...f, progress: 50 } : f
+          ));
+
+          const { data, error } = await supabase.functions.invoke('parse-document', {
+            body: { fileName: file.name, mimeType: mimeType || 'application/octet-stream', fileData: base64 }
+          });
+
+          if (error) throw new Error(error.message);
+          if (data?.metadata?.parseError) throw new Error(data.metadata.parseError);
+
+          content = data?.content || '';
+          setUploadedFiles(prev => prev.map(f =>
+            f.id === fileId ? { ...f, progress: 100, status: 'ready', content } : f
+          ));
+        }
+
+        // Optionally save to Documents
+        if (saveUploadedToDocuments && user) {
+          await supabase.from('knowledge_documents').insert({
+            title: file.name.replace(/\.[^/.]+$/, ''),
+            content,
+            user_id: user.id,
+            google_file_id: `upload_${Date.now()}_${fileId}`,
+            category: 'general',
+            file_type: ext.substring(1),
+            file_size: content.length,
+          });
+        }
+
+        toast.success(`${file.name} ready for pitch deck`);
+      } catch (error) {
+        console.error('File upload error:', error);
+        setUploadedFiles(prev => prev.map(f =>
+          f.id === fileId ? { ...f, status: 'error', progress: 0 } : f
+        ));
+        toast.error(`Failed to process ${file.name}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      }
+    }
+  };
+
+  const removeUploadedFile = (fileId: string) => {
+    setUploadedFiles(prev => prev.filter(f => f.id !== fileId));
+  };
+
   const handleLoadDeck = async (deckId: string) => {
     try {
       const { data, error } = await supabase
@@ -1674,6 +1806,82 @@ Generated with AI Query Hub
                 onChange={(e) => setTopic(e.target.value)}
                 rows={3}
               />
+            </div>
+
+            {/* Quick File Upload Section */}
+            <div className="border rounded-lg p-4 space-y-3">
+              <Label>Upload files directly</Label>
+              <p className="text-xs text-muted-foreground">
+                Drop PDF, DOCX, or text files here - no need to save to Documents first
+              </p>
+
+              {/* Drop Zone */}
+              <div
+                className={`border-2 border-dashed rounded-lg p-4 text-center transition-colors cursor-pointer ${
+                  isDraggingFile ? 'border-primary bg-primary/5' : 'border-muted-foreground/25 hover:border-primary/50'
+                }`}
+                onDragOver={(e) => { e.preventDefault(); setIsDraggingFile(true); }}
+                onDragLeave={(e) => { e.preventDefault(); setIsDraggingFile(false); }}
+                onDrop={handleFileDrop}
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <Upload className={`h-8 w-8 mx-auto mb-2 ${isDraggingFile ? 'text-primary' : 'text-muted-foreground'}`} />
+                <p className="text-sm text-muted-foreground">
+                  {isDraggingFile ? 'Drop files here' : 'Drag & drop or click to browse'}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">PDF, DOCX, TXT, MD (max 20MB)</p>
+              </div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                accept=".txt,.md,.pdf,.docx,.doc,.rtf,.fdx,.json"
+                onChange={handleFileSelect}
+                className="hidden"
+              />
+
+              {/* Uploaded Files List */}
+              {uploadedFiles.length > 0 && (
+                <div className="space-y-2">
+                  {uploadedFiles.map((file) => (
+                    <div key={file.id} className="flex items-center gap-2 p-2 bg-muted rounded text-sm">
+                      <File className="h-4 w-4 flex-shrink-0" />
+                      <span className="flex-1 truncate">{file.name}</span>
+                      {file.status === 'uploading' && (
+                        <div className="w-16">
+                          <Progress value={file.progress} className="h-1" />
+                        </div>
+                      )}
+                      {file.status === 'ready' && (
+                        <Badge variant="secondary" className="text-xs">Ready</Badge>
+                      )}
+                      {file.status === 'error' && (
+                        <Badge variant="destructive" className="text-xs">Error</Badge>
+                      )}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 w-6 p-0"
+                        onClick={() => removeUploadedFile(file.id)}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  ))}
+
+                  {/* Save to Documents Option */}
+                  <div className="flex items-center gap-2 pt-2">
+                    <Checkbox
+                      id="saveToDocuments"
+                      checked={saveUploadedToDocuments}
+                      onCheckedChange={(checked) => setSaveUploadedToDocuments(checked === true)}
+                    />
+                    <Label htmlFor="saveToDocuments" className="text-xs text-muted-foreground cursor-pointer">
+                      Also save to my Documents
+                    </Label>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Document Selection Section */}

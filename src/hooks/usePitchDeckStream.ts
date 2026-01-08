@@ -41,6 +41,7 @@ interface GenerateParams {
   animationStyle?: 'none' | 'minimal' | 'standard' | 'expressive';
   frameCount?: number;
   enableRemotionAnimation?: boolean;
+  uploadedContent?: string; // Direct file upload content
 }
 
 type StreamStatus = 'idle' | 'starting' | 'generating_structure' | 'generating_slides' | 'generating_images' | 'complete' | 'error';

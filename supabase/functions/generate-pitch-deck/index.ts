@@ -32,6 +32,8 @@ interface PitchDeckRequest {
   enableRemotionAnimation?: boolean;  // Generate Remotion TSX code for animated videos
   // Async mode for progressive streaming (Phase 8)
   async?: boolean;  // Return job_id immediately, process in background
+  // Direct file upload content (no Documents save required)
+  uploadedContent?: string;
 }
 
 interface AnimationFrame {
@@ -347,7 +349,8 @@ async function processJobInBackground(jobId: string, supabase: any): Promise<voi
       includeImages = true,
       selectedDocumentIds,
       animationStyle = 'none',
-      animateSlides = true  // Enable SVD video animation
+      animateSlides = true,  // Enable SVD video animation
+      uploadedContent  // Direct file upload content
     } = input as any;
 
     const shouldAnimateSlides = animateSlides && includeImages;
@@ -383,6 +386,13 @@ async function processJobInBackground(jobId: string, supabase: any): Promise<voi
           .map((doc: any) => `### ${doc.title}\n${doc.ai_summary || doc.content?.substring(0, 3000) || ''}`)
           .join('\n\n---\n\n');
       }
+    }
+
+    // Add uploaded file content if provided
+    if (uploadedContent && uploadedContent.trim()) {
+      const uploadedSection = `\n\n### Uploaded Files Content\n\n${uploadedContent}`;
+      documentContext = documentContext ? documentContext + uploadedSection : uploadedSection.trim();
+      console.log(`[Job ${jobId}] Added uploaded content (${uploadedContent.length} chars)`);
     }
 
     // Determine slide count
@@ -711,7 +721,8 @@ serve(async (req) => {
       frameCount = 3,
       enableRemotionAnimation = false,
       animateSlides = true,  // Enable SVD video animation of still images
-      async: asyncMode = false  // Enable async job processing
+      async: asyncMode = false,  // Enable async job processing
+      uploadedContent  // Direct file upload content
     } = requestBody;
 
     const isRevision = !!revisionRequest && !!currentDeck;
@@ -810,6 +821,13 @@ serve(async (req) => {
 
         console.log(`Built ranked context from ${rankedDocs.length}/${selectedDocs.length} documents (${documentContext.length} chars)`);
       }
+    }
+
+    // Add uploaded file content if provided
+    if (uploadedContent && uploadedContent.trim()) {
+      const uploadedSection = `\n\n### Uploaded Files Content\n\n${uploadedContent}`;
+      documentContext = documentContext ? documentContext + uploadedSection : uploadedSection.trim();
+      console.log(`Added uploaded content (${uploadedContent.length} chars)`);
     }
 
     // Determine slide count
