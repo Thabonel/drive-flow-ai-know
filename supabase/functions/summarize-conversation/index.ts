@@ -276,6 +276,77 @@ ${analysisResult.actionItems?.length > 0
       });
     }
 
+    // === MEMORY EXTRACTION: Extract specific facts for cross-session memory ===
+    try {
+      console.log('Extracting memorable facts from conversation...');
+
+      const memoryExtractionPrompt = `You are extracting memorable facts from a conversation that would be valuable to remember for future conversations with this user.
+
+Focus on extracting ONLY genuinely useful facts in these categories:
+1. user_fact - Personal details about the user (name, job, company, location, family)
+2. preference - User preferences (communication style, tools they like, working style)
+3. context_note - Project context, ongoing work, important decisions made
+
+Rules:
+- Only extract facts explicitly stated or strongly implied
+- Each fact should be a single, clear statement
+- Skip temporary/conversational details
+- Skip information that changes frequently
+- Maximum 5 facts per conversation
+
+Return JSON array (empty array [] if nothing notable):
+[
+  {"type": "user_fact|preference|context_note", "content": "The specific fact", "importance": "high|medium|low"}
+]`;
+
+      const memoryExtractionResponse = await getLLMResponse(
+        memoryExtractionPrompt,
+        `Extract memorable facts from this conversation:\n\n${conversationText}`
+      );
+
+      // Parse extracted memories
+      let extractedMemories = [];
+      try {
+        const jsonMatch = memoryExtractionResponse.match(/```json\n([\s\S]*?)\n```/) ||
+                          memoryExtractionResponse.match(/```\n([\s\S]*?)\n```/) ||
+                          memoryExtractionResponse.match(/\[[\s\S]*\]/);
+        const jsonString = jsonMatch ? (jsonMatch[1] || jsonMatch[0]) : memoryExtractionResponse;
+        extractedMemories = JSON.parse(jsonString);
+      } catch (parseError) {
+        console.log('No valid JSON in memory extraction response, skipping');
+        extractedMemories = [];
+      }
+
+      // Store each extracted memory
+      if (Array.isArray(extractedMemories) && extractedMemories.length > 0) {
+        console.log(`Storing ${extractedMemories.length} extracted memories`);
+
+        for (const memory of extractedMemories) {
+          if (memory.type && memory.content) {
+            await supabase.from('agentic_memories').insert({
+              user_id: user.id,
+              agent: 'personal_assistant',
+              memory_type: memory.type, // user_fact, preference, or context_note
+              content: memory.content,
+              metadata: {
+                source: 'conversation_extraction',
+                conversation_id: conversationId,
+                importance: memory.importance || 'medium',
+                extracted_at: new Date().toISOString(),
+              },
+            });
+          }
+        }
+
+        console.log(`Successfully stored ${extractedMemories.length} memories`);
+      } else {
+        console.log('No memorable facts extracted from this conversation');
+      }
+    } catch (memoryError) {
+      // Memory extraction is non-critical - don't fail the whole operation
+      console.error('Memory extraction failed (non-fatal):', memoryError);
+    }
+
     console.log('Conversation summarized successfully');
 
     return new Response(

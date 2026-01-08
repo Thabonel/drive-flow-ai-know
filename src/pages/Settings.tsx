@@ -22,6 +22,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useTheme } from "@/components/ThemeProvider";
 import { AIQueryInput } from "@/components/AIQueryInput";
 import { AgentModeToggle } from "@/components/settings/AgentModeToggle";
+import { MemoryManager } from "@/components/settings/MemoryManager";
 import {
   User,
   Bell,
@@ -295,6 +296,21 @@ const Settings = () => {
                   </CardHeader>
                   <CardContent>
                     {user && <AgentModeToggle userId={user.id} />}
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Brain className="h-5 w-5" />
+                      AI Memory
+                    </CardTitle>
+                    <CardDescription>
+                      Facts the AI remembers about you from previous conversations
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {user && <MemoryManager userId={user.id} />}
                   </CardContent>
                 </Card>
 
