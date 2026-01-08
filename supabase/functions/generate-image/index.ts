@@ -86,7 +86,17 @@ serve(async (req) => {
 
     const apiKey = Deno.env.get('GEMINI_API_KEY');
     if (!apiKey) {
-      throw new Error('GEMINI_API_KEY not configured');
+      console.error('GEMINI_API_KEY is not set. Image generation requires a Gemini API key.');
+      return new Response(
+        JSON.stringify({
+          error: 'Image generation is not available. Please configure GEMINI_API_KEY in your Supabase Edge Functions secrets to enable visual content.',
+          missingConfig: 'GEMINI_API_KEY'
+        } as ImageGenerationResponse),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 503, // Service Unavailable
+        }
+      );
     }
 
     // Default negative prompt to avoid common issues

@@ -144,7 +144,7 @@ ${topic}
 ${targetAudience}
 
 ## Available Context
-${documentContext ? `${documentContext.substring(0, 2000)}...` : 'No source documents provided'}
+${documentContext ? `${documentContext.substring(0, 8000)}...` : 'No source documents provided'}
 
 ## Guidelines
 - Minimum: 8 slides (cover essential story)
@@ -380,7 +380,7 @@ async function processJobInBackground(jobId: string, supabase: any): Promise<voi
 
       if (docs && docs.length > 0) {
         documentContext = docs
-          .map((doc: any) => `### ${doc.title}\n${doc.ai_summary || doc.content?.substring(0, 500) || ''}`)
+          .map((doc: any) => `### ${doc.title}\n${doc.ai_summary || doc.content?.substring(0, 3000) || ''}`)
           .join('\n\n---\n\n');
       }
     }
@@ -795,12 +795,12 @@ serve(async (req) => {
             keyMetrics: extractMetrics(doc.content || doc.ai_summary || '')
           }))
           .sort((a, b) => b.relevanceScore - a.relevanceScore)
-          .slice(0, 10); // Limit to top 10 most relevant documents
+          .slice(0, 25); // Limit to top 25 most relevant documents
 
         // Build smarter context with summaries and metrics
         documentContext = rankedDocs
           .map(doc => {
-            const summary = doc.ai_summary || doc.content?.substring(0, 500) || '';
+            const summary = doc.ai_summary || doc.content?.substring(0, 3000) || '';
             const metricsText = doc.keyMetrics.length > 0
               ? `\nKey Metrics: ${doc.keyMetrics.join(', ')}`
               : '';
