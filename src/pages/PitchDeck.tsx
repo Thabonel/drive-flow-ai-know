@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -100,6 +100,9 @@ export default function PitchDeck() {
   const [showCostModal, setShowCostModal] = useState(false);
   const [useProgressiveMode, setUseProgressiveMode] = useState(true); // NEW: Enable streaming by default
   const [loopVideo, setLoopVideo] = useState(true); // Loop video animations
+  const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null); // Track last save time
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false); // Track unsaved changes
+  const [isAutoSaving, setIsAutoSaving] = useState(false); // Auto-save in progress indicator
 
   // Progressive streaming hook
   const streamingHook = usePitchDeckStream();
@@ -111,6 +114,7 @@ export default function PitchDeck() {
       if (completedDeck) {
         setPitchDeck(completedDeck);
         setGenerating(false);
+        setHasUnsavedChanges(true); // Mark as needing save
       }
     }
   }, [streamingHook.isComplete, streamingHook.deckMetadata, streamingHook.slides.length, streamingHook.getPitchDeck]);
@@ -1144,6 +1148,101 @@ export default function PitchDeck() {
     }
   };
 
+  // Auto-save function (silent, no toast for success)
+  const autoSave = useCallback(async (deckToSave: PitchDeck, existingDeckId: string | null) => {
+    if (!user || !deckToSave) return null;
+
+    setIsAutoSaving(true);
+    try {
+      const deckData = {
+        title: deckToSave.title,
+        subtitle: deckToSave.subtitle,
+        slides: deckToSave.slides,
+        totalSlides: deckToSave.totalSlides,
+      };
+
+      if (existingDeckId) {
+        // Update existing deck
+        const { error } = await supabase
+          .from('pitch_decks')
+          .update({
+            title: deckToSave.title,
+            subtitle: deckToSave.subtitle,
+            deck_data: deckData,
+            topic,
+            target_audience: targetAudience,
+            style,
+            animation_style: animationStyle,
+            number_of_slides: deckToSave.totalSlides,
+            source_document_ids: selectedDocIds.length > 0 ? selectedDocIds : null,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', existingDeckId);
+
+        if (error) throw error;
+        setLastSavedAt(new Date());
+        setHasUnsavedChanges(false);
+        return existingDeckId;
+      } else {
+        // Create new deck
+        const { data, error } = await supabase
+          .from('pitch_decks')
+          .insert({
+            user_id: user.id,
+            title: deckToSave.title,
+            subtitle: deckToSave.subtitle,
+            deck_data: deckData,
+            topic,
+            target_audience: targetAudience,
+            style,
+            animation_style: animationStyle,
+            number_of_slides: deckToSave.totalSlides,
+            source_document_ids: selectedDocIds.length > 0 ? selectedDocIds : null,
+          })
+          .select()
+          .single();
+
+        if (error) throw error;
+        setSavedDeckId(data.id);
+        setLastSavedAt(new Date());
+        setHasUnsavedChanges(false);
+        refetchSavedDecks();
+        return data.id;
+      }
+    } catch (error) {
+      console.error('Auto-save error:', error);
+      // Don't show error toast for auto-save failures, just log
+      return null;
+    } finally {
+      setIsAutoSaving(false);
+    }
+  }, [user, topic, targetAudience, style, animationStyle, selectedDocIds, refetchSavedDecks]);
+
+  // Auto-save effect: trigger save when deck is generated or changes
+  useEffect(() => {
+    if (hasUnsavedChanges && pitchDeck && !isAutoSaving) {
+      autoSave(pitchDeck, savedDeckId).then((newId) => {
+        if (newId && !savedDeckId) {
+          toast.success('Pitch deck saved automatically');
+        }
+      });
+    }
+  }, [hasUnsavedChanges, pitchDeck, savedDeckId, isAutoSaving, autoSave]);
+
+  // Warn user before leaving with unsaved changes
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasUnsavedChanges && pitchDeck) {
+        e.preventDefault();
+        e.returnValue = 'You have unsaved changes. Are you sure you want to leave?';
+        return e.returnValue;
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [hasUnsavedChanges, pitchDeck]);
+
   const handleLoadDeck = async (deckId: string) => {
     try {
       const { data, error } = await supabase
@@ -2110,8 +2209,30 @@ Generated with AI Query Hub
                 {/* Title Slide */}
                 <Card className="bg-gradient-to-br from-primary/10 to-accent/10 border-primary/20">
                   <CardContent className="pt-6">
-                    <h2 className="text-3xl font-bold mb-2">{pitchDeck.title}</h2>
-                    <p className="text-xl text-muted-foreground">{pitchDeck.subtitle}</p>
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h2 className="text-3xl font-bold mb-2">{pitchDeck.title}</h2>
+                        <p className="text-xl text-muted-foreground">{pitchDeck.subtitle}</p>
+                      </div>
+                      {/* Save Status Indicator */}
+                      <div className="text-sm text-muted-foreground flex items-center gap-2">
+                        {isAutoSaving ? (
+                          <>
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                            <span>Saving...</span>
+                          </>
+                        ) : lastSavedAt ? (
+                          <>
+                            <span className="text-green-600">Saved</span>
+                            <span className="text-xs">
+                              {lastSavedAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                          </>
+                        ) : savedDeckId ? (
+                          <span className="text-green-600">Saved</span>
+                        ) : null}
+                      </div>
+                    </div>
                   </CardContent>
                 </Card>
 
