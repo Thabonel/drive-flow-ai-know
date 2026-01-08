@@ -1672,20 +1672,18 @@ Generated with AI Query Hub
           </div>
           <PageHelp
             title="Pitch Deck Generator Help"
-            description="Create professional AI-powered pitch decks in minutes. Generate decks from topics or your existing documents, customize with AI revisions, and export to multiple formats."
+            description="Create professional AI-powered pitch decks in minutes. Upload files directly, use your document library, or describe your topic. AI generates slides with visuals."
             tips={[
-              "Enter a topic or select documents from your knowledge base to generate a deck",
-              "Use the revision input to request changes to the entire deck or specific slides",
-              "Save your deck to load and edit it later, export to PDF, PowerPoint, HTML, or ZIP",
-              "Click 'Start Presentation' for fullscreen mode with keyboard navigation",
-              "Press S during presentation to open settings, ? for help overlay",
-              "Enable Content Auto-Scroll to smoothly scroll through long slide content",
-              "Enable Slide Auto-Advance for hands-free demos (2-5 second intervals)",
-              "Choose animation styles: None, Minimal (fade), Standard (slide), or Expressive",
-              "Expressive mode generates AI animation frames that cycle during presentation",
-              "Hover your mouse to pause auto-scroll, auto-advance, and frame animations",
-              "Visual progress indicators show scroll position and countdown to next slide",
-              "Press N to toggle split-screen speaker notes view"
+              "Drag & drop PDF, DOCX, or text files directly - no need to save to Documents first",
+              "Or select existing documents from your library for context",
+              "Decks auto-save when generated - find them in 'Saved Pitch Decks' above",
+              "Use the revision input to request changes to specific slides or the whole deck",
+              "Export to PDF, PowerPoint, HTML, or download as ZIP with all assets",
+              "Click 'Start Presentation' for fullscreen mode with arrow key navigation",
+              "Press S for settings, ? for keyboard shortcuts, N for speaker notes",
+              "Enable Auto-Scroll for smooth content scrolling, Auto-Advance for hands-free demos",
+              "Choose animation styles: None, Minimal, Standard, or Expressive (AI-animated frames)",
+              "Hover to pause any automatic animations or scrolling"
             ]}
           />
         </div>
