@@ -1,8 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Link } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
 import {
   Check,
   CheckCircle2,
@@ -95,39 +94,19 @@ const features = [
     benefit: 'Your data stays yours',
   },
   {
-    title: 'Ask Questions Like Normal',
+    title: 'Natural Questions',
     description: 'Type what you want to know. Get answers pulled from your docs. No special keywords needed.',
     benefit: 'Plain English works',
   },
   {
-    title: 'Your Files, Your Rules',
+    title: 'Your Storage, Your Choice',
     description: 'Use our cloud, or connect Google Drive, Microsoft 365, or S3. Choose where your files live.',
     benefit: 'Keep control of your data',
-  },
-  {
-    title: 'Fast Search',
-    description: 'Search through all your documents quickly. Get answers in seconds, not hours.',
-    benefit: 'Fast answers',
   },
   {
     title: 'Future-Proof AI',
     description: 'Multi-provider architecture with automatic updates to the latest frontier models. No switching services.',
     benefit: 'Always latest AI',
-  },
-  {
-    title: 'Timeline Manager',
-    description: 'Visual timeline that flows in real-time. Schedule tasks, see delays, switch between day, week, and month views.',
-    benefit: 'Time flows naturally',
-  },
-  {
-    title: 'Group Your Documents',
-    description: 'Make collections from related files. The AI reads them together to answer your questions.',
-    benefit: 'Context-aware answers',
-  },
-  {
-    title: 'Works Anywhere',
-    description: 'Open it in any browser. Desktop, laptop, tablet, phone - doesn\'t matter.',
-    benefit: 'No app to install',
   },
   {
     title: 'Team Collaboration',
@@ -138,57 +117,7 @@ const features = [
 
 export default function Landing() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [stats, setStats] = useState([
-    { value: '0', label: 'Questions Answered' },
-    { value: '0', label: 'Hours Saved' },
-    { value: '0', label: 'Active Users' },
-    { value: '4.9/5', label: 'User Rating' },
-  ]);
 
-  useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        // Fetch real stats from database
-        const [queriesResult, usersResult] = await Promise.all([
-          supabase.from('ai_query_history').select('id', { count: 'exact', head: true }),
-          supabase.from('profiles').select('id', { count: 'exact', head: true })
-        ]);
-
-        const totalQueries = queriesResult.count || 0;
-        const totalUsers = usersResult.count || 0;
-
-        // Estimate hours saved (assuming 15 minutes saved per query)
-        const hoursSaved = Math.floor(totalQueries * 0.25);
-
-        setStats([
-          {
-            value: totalQueries >= 1000000 ? `${(totalQueries / 1000000).toFixed(1)}M+` :
-                   totalQueries >= 1000 ? `${(totalQueries / 1000).toFixed(1)}K+` :
-                   totalQueries.toString(),
-            label: 'Questions Answered'
-          },
-          {
-            value: hoursSaved >= 1000000 ? `${(hoursSaved / 1000000).toFixed(1)}M+` :
-                   hoursSaved >= 1000 ? `${(hoursSaved / 1000).toFixed(1)}K+` :
-                   hoursSaved.toString(),
-            label: 'Hours Saved'
-          },
-          {
-            value: totalUsers >= 1000000 ? `${(totalUsers / 1000000).toFixed(1)}M+` :
-                   totalUsers >= 1000 ? `${(totalUsers / 1000).toFixed(1)}K+` :
-                   totalUsers.toString(),
-            label: 'Active Users'
-          },
-          { value: '4.9/5', label: 'User Rating' },
-        ]);
-      } catch (error) {
-        console.error('Error fetching stats:', error);
-        // Keep fallback values if fetch fails
-      }
-    };
-
-    fetchStats();
-  }, []);
   return (
     <div className="min-h-screen relative overflow-hidden bg-background">
       {/* Navigation */}
@@ -322,10 +251,10 @@ export default function Landing() {
       </section>
 
       {/* How It Works */}
-      <section id="how-it-works" className="relative py-16 px-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="text-4xl md:text-5xl font-bold mb-3 text-primary">
+      <section id="how-it-works" className="relative py-24 px-6">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl md:text-5xl font-bold mb-4 text-primary">
               How It Works
             </h2>
             <p className="text-lg text-muted-foreground">Three steps. That's it.</p>
@@ -356,7 +285,7 @@ export default function Landing() {
       </section>
 
       {/* Security & Privacy Section */}
-      <section className="py-20 bg-primary text-primary-foreground">
+      <section className="py-24 bg-primary text-primary-foreground">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
             <Shield className="h-16 w-16 mx-auto mb-4 text-accent" />
@@ -449,54 +378,41 @@ export default function Landing() {
       </section>
 
       {/* AI Pitch Deck Generator Showcase */}
-      <section className="py-20 bg-gradient-to-br from-accent/5 to-accent/10">
-        <div className="container max-w-7xl mx-auto px-4">
-          <div className="text-center mb-12">
-            <Badge className="mb-4 bg-accent/20 text-accent border-accent">
-              NEW FEATURE
-            </Badge>
+      <section className="py-24 px-6 bg-muted/30">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-16">
             <h2 className="text-4xl md:text-5xl font-bold text-primary mb-4">
-              Turn Your Docs Into Investor-Ready Pitch Decks
+              Turn Docs Into Pitch Decks
             </h2>
-            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-              Our AI analyzes your documents and creates professional pitch decks in minutes.
-              16:9 slides, AI-determined optimal length, and presentation-ready visuals.
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              AI analyzes your documents and creates professional pitch decks in minutes.
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-8 items-center">
-            {/* Left: Visual Demo */}
+          <div className="grid md:grid-cols-2 gap-12 items-center">
             <div className="relative">
               <img
                 src="https://fskwutnoxbbflzqrphro.supabase.co/storage/v1/object/public/assets/wheels.jpg"
-                alt="AI Pitch Deck Generator interface showing Wheels & Wins presentation"
-                className="rounded-2xl shadow-2xl border border-primary/10"
+                alt="AI Pitch Deck Generator"
+                className="rounded-2xl shadow-card border border-border"
                 onError={(e) => {
-                  // Fallback to placeholder if image fails to load
                   e.currentTarget.style.display = 'none';
                   const placeholder = e.currentTarget.nextElementSibling as HTMLElement | null;
                   if (placeholder) placeholder.style.display = 'flex';
                 }}
               />
-              <div className="hidden rounded-2xl shadow-2xl border border-primary/10 bg-muted/20 items-center justify-center h-[400px]">
-                <div className="text-center">
-                  <p className="text-muted-foreground">Pitch Deck Preview</p>
-                </div>
+              <div className="hidden rounded-2xl shadow-card border border-border bg-muted/20 items-center justify-center h-[400px]">
+                <p className="text-muted-foreground">Pitch Deck Preview</p>
               </div>
-              <Badge className="absolute top-4 right-4 bg-success">
-                Generated in 2 minutes
-              </Badge>
             </div>
 
-            {/* Right: Benefits */}
-            <div className="space-y-6">
+            <div className="space-y-8">
               <div>
                 <h3 className="text-xl font-semibold text-primary mb-2">
                   AI Determines Perfect Length
                 </h3>
                 <p className="text-muted-foreground">
-                  No more guessing. AI analyzes complexity and recommends 8-15 slides following
-                  Guy Kawasaki's 10/20/30 rule and Y Combinator standards.
+                  Analyzes complexity and recommends 8-15 slides following industry standards.
                 </p>
               </div>
 
@@ -505,8 +421,7 @@ export default function Landing() {
                   Professional 16:9 Format
                 </h3>
                 <p className="text-muted-foreground">
-                  All slides use industry-standard 16:9 aspect ratio. No letterboxing,
-                  no formatting issues. Export to PDF, PowerPoint, or present directly.
+                  Export to PDF, PowerPoint, or present directly. No formatting issues.
                 </p>
               </div>
 
@@ -515,23 +430,16 @@ export default function Landing() {
                   Uses Your Document Data
                 </h3>
                 <p className="text-muted-foreground">
-                  AI pulls metrics, facts, and insights from your uploaded documents to create
-                  data-driven, credible presentations.
+                  AI pulls metrics and insights from your uploaded documents.
                 </p>
               </div>
-
-              <Button asChild size="lg" className="w-full md:w-auto">
-                <Link to="/auth">
-                  Try Pitch Deck Generator
-                </Link>
-              </Button>
             </div>
           </div>
         </div>
       </section>
 
       {/* Document Context - Key Differentiator */}
-      <section className="relative py-16 px-6 bg-primary">
+      <section className="relative py-24 px-6 bg-primary">
         <div className="max-w-5xl mx-auto text-center">
           <div className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-accent/20 border border-accent/30 backdrop-blur-xl mb-6">
             <span className="text-sm font-semibold text-accent">
@@ -611,151 +519,92 @@ export default function Landing() {
       </section>
 
       {/* AI Model Leadership Section */}
-      <section className="relative py-16 px-6 bg-primary">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="text-4xl md:text-5xl font-bold mb-4 text-white">
+      <section className="relative py-24 px-6">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl md:text-5xl font-bold mb-4 text-primary">
               Powered by the Best AI, Automatically
             </h2>
-            <p className="text-lg md:text-xl text-white/80 max-w-3xl mx-auto leading-relaxed">
+            <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
               We constantly update to the latest frontier models so you never have to switch providers,
               create new accounts, or worry about falling behind.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl mx-auto">
-            <div className="p-6 rounded-2xl bg-white/10 backdrop-blur-xl border border-white/20">
-              <h3 className="text-xl font-bold text-white mb-4">Multi-Provider Architecture</h3>
-              <p className="text-white/80 mb-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="p-8 rounded-2xl bg-card border border-border shadow-card">
+              <h3 className="text-xl font-bold text-primary mb-4">Multi-Provider Architecture</h3>
+              <p className="text-muted-foreground mb-4">
                 We integrate with multiple leading AI providers and cutting-edge models.
                 You get the best of all worlds without managing multiple subscriptions.
               </p>
-              <ul className="space-y-2 text-white/70">
+              <ul className="space-y-2 text-muted-foreground">
                 <li className="flex items-start gap-2">
-                  <CheckCircle2 className="w-5 h-5 mt-0.5 flex-shrink-0" />
+                  <CheckCircle2 className="w-5 h-5 mt-0.5 flex-shrink-0 text-success" />
                   <span>Advanced reasoning capabilities</span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <CheckCircle2 className="w-5 h-5 mt-0.5 flex-shrink-0" />
+                  <CheckCircle2 className="w-5 h-5 mt-0.5 flex-shrink-0 text-success" />
                   <span>Access to diverse model capabilities</span>
                 </li>
               </ul>
             </div>
 
-            <div className="p-6 rounded-2xl bg-white/10 backdrop-blur-xl border border-white/20">
-              <h3 className="text-xl font-bold text-white mb-4">Always Up-to-Date</h3>
-              <p className="text-white/80 mb-4">
+            <div className="p-8 rounded-2xl bg-card border border-border shadow-card">
+              <h3 className="text-xl font-bold text-primary mb-4">Always Up-to-Date</h3>
+              <p className="text-muted-foreground mb-4">
                 When new frontier models are released, we update automatically. No action needed on your part.
                 You always get state-of-the-art AI performance.
               </p>
-              <ul className="space-y-2 text-white/70">
+              <ul className="space-y-2 text-muted-foreground">
                 <li className="flex items-start gap-2">
-                  <CheckCircle2 className="w-5 h-5 mt-0.5 flex-shrink-0" />
+                  <CheckCircle2 className="w-5 h-5 mt-0.5 flex-shrink-0 text-success" />
                   <span>Automatic model updates</span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <CheckCircle2 className="w-5 h-5 mt-0.5 flex-shrink-0" />
+                  <CheckCircle2 className="w-5 h-5 mt-0.5 flex-shrink-0 text-success" />
                   <span>Intelligent fallback routing</span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <CheckCircle2 className="w-5 h-5 mt-0.5 flex-shrink-0" />
+                  <CheckCircle2 className="w-5 h-5 mt-0.5 flex-shrink-0 text-success" />
                   <span>No vendor lock-in</span>
                 </li>
               </ul>
             </div>
           </div>
-
-          <div className="mt-12 p-6 rounded-2xl bg-white/10 backdrop-blur-xl border border-white/20 max-w-4xl mx-auto">
-            <p className="text-lg text-white/90 text-center leading-relaxed">
-              <strong className="text-white">One platform, zero maintenance.</strong> While others force you to chase the latest models across different services,
-              we handle everything behind the scenes. Your workflow stays the same, your AI gets better. We ship new features as quickly as we can imagine them.
-            </p>
-          </div>
         </div>
       </section>
 
       {/* Features Section */}
-      <section id="features" className="relative py-16 px-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="text-4xl md:text-5xl font-bold mb-3 text-primary">
+      <section id="features" className="relative py-24 px-6">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl md:text-5xl font-bold mb-4 text-primary">
               What You Get
             </h2>
-            <p className="text-lg text-muted-foreground">The stuff that actually matters</p>
+            <p className="text-lg text-muted-foreground">The essentials, nothing more</p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {features.map((feature, i) => {
-              return (
-                <div key={i} className={`group p-6 rounded-2xl bg-card border border-border shadow-card backdrop-blur-xl transition-all hover:scale-105 hover:shadow-lg`}>
-                  <h3 className="text-xl font-bold mb-2 text-primary">{feature.title}</h3>
-                  <p className="text-muted-foreground mb-3 text-sm">{feature.description}</p>
-                  <div className="inline-flex items-center gap-2 text-sm font-medium px-3 py-1.5 rounded-full bg-success/10 border border-success/20">
-                    <span className="text-success">{feature.benefit}</span>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
-      {/* Social Proof - Join Early Adopters */}
-      <section className="relative py-16 px-6 bg-muted/30">
-        <div className="max-w-5xl mx-auto">
-          <div className="text-center p-12 rounded-3xl bg-card border border-border shadow-card">
-            <div className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-success/20 border border-success/30 backdrop-blur-xl mb-6">
-              <span className="text-sm font-semibold text-success">
-                Join Early Adopters
-              </span>
-            </div>
-
-            <h2 className="text-4xl md:text-5xl font-bold mb-6 text-primary">
-              Be Among The First
-            </h2>
-
-            <p className="text-lg text-muted-foreground max-w-3xl mx-auto mb-8 leading-relaxed">
-              Get early access to AI Query Hub and shape the future of document intelligence.
-              Early adopters get priority support, exclusive features, and special pricing.
-            </p>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
-              <div className="p-6 rounded-xl bg-primary/5 border border-primary/20">
-                <h3 className="font-bold text-primary mb-2">Priority Support</h3>
-                <p className="text-sm text-muted-foreground">Direct line to our team for any issues or questions</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {features.map((feature, i) => (
+              <div key={i} className="group p-8 rounded-2xl bg-card border border-border shadow-card transition-all hover:shadow-lg">
+                <h3 className="text-xl font-bold mb-3 text-primary">{feature.title}</h3>
+                <p className="text-muted-foreground mb-4 leading-relaxed">{feature.description}</p>
+                <span className="text-sm font-medium text-success">{feature.benefit}</span>
               </div>
-              <div className="p-6 rounded-xl bg-success/5 border border-success/20">
-                <h3 className="font-bold text-success mb-2">Exclusive Features</h3>
-                <p className="text-sm text-muted-foreground">Get first access to new AI capabilities as we release them</p>
-              </div>
-              <div className="p-6 rounded-xl bg-accent/5 border border-accent/20">
-                <h3 className="font-bold text-accent mb-2">Special Pricing</h3>
-                <p className="text-sm text-muted-foreground">Lock in early adopter rates before we raise prices</p>
-              </div>
-            </div>
-
-            <Button asChild size="lg" className="mt-8 text-lg px-8 py-6 bg-accent hover:bg-accent/90 shadow-lg hover:shadow-xl transition-all hover:scale-105 border-0 text-white">
-              <Link to="/auth">
-                Get Started Free
-              </Link>
-            </Button>
+            ))}
           </div>
         </div>
       </section>
 
       {/* Pricing */}
-      <section id="pricing" className="relative py-16 px-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-12">
-            <div className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-success/20 border border-success/30 backdrop-blur-xl shadow-glow mb-4">
-              <span className="text-sm font-semibold text-success">
-                14-Day Free Trial • No Credit Card Required
-              </span>
-            </div>
-            <h2 className="text-4xl md:text-5xl font-bold mb-3 text-primary">
+      <section id="pricing" className="relative py-24 px-6 bg-muted/30">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl md:text-5xl font-bold mb-4 text-primary">
               Pricing
             </h2>
-            <p className="text-lg text-muted-foreground">Pick what works for you</p>
+            <p className="text-lg text-muted-foreground">14-day free trial, no credit card required</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl mx-auto">
@@ -820,23 +669,19 @@ export default function Landing() {
       </section>
 
       {/* Final CTA */}
-      <section className="relative py-16 px-6">
-        <div className="max-w-4xl mx-auto">
-          <div className="text-center p-12 rounded-3xl bg-gradient-to-r from-primary to-secondary shadow-glow">
-            <h2 className="text-4xl md:text-5xl font-bold mb-4 text-white">
-              Try It Free For 14 Days
-            </h2>
-            <p className="text-lg text-white/90 mb-6 max-w-2xl mx-auto">
-              No credit card. No commitment. Just upload some docs and ask questions.
-            </p>
-            <div className="flex flex-wrap gap-4 justify-center">
-              <Button asChild size="lg" className="text-lg px-8 py-6 bg-accent hover:bg-accent/90 text-white shadow-xl hover:shadow-2xl transition-all hover:scale-105 border-0">
-                <Link to="/auth">
-                  Start Free Trial
-                </Link>
-              </Button>
-            </div>
-          </div>
+      <section className="relative py-24 px-6">
+        <div className="max-w-3xl mx-auto text-center">
+          <h2 className="text-4xl md:text-5xl font-bold mb-6 text-primary">
+            Ready to Get Started?
+          </h2>
+          <p className="text-lg text-muted-foreground mb-8">
+            No credit card. No commitment. Just upload some docs and ask questions.
+          </p>
+          <Button asChild size="lg" className="text-lg px-10 py-6 bg-accent hover:bg-accent/90 text-white shadow-lg hover:shadow-xl transition-all border-0">
+            <Link to="/auth">
+              Start Free Trial
+            </Link>
+          </Button>
         </div>
       </section>
 
