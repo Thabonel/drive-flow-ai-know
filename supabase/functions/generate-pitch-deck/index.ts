@@ -34,6 +34,14 @@ interface PitchDeckRequest {
   async?: boolean;  // Return job_id immediately, process in background
   // Direct file upload content (no Documents save required)
   uploadedContent?: string;
+  // Custom instructions for formatting/style
+  customInstructions?: string;
+  // Brand guidelines document IDs
+  brandDocIds?: string[];
+  // Deck purpose: presenter (with notes) vs audience (self-contained)
+  deckPurpose?: 'presenter' | 'audience';
+  // Enable SVD video animation of still images
+  animateSlides?: boolean;
 }
 
 interface AnimationFrame {
@@ -722,7 +730,10 @@ serve(async (req) => {
       enableRemotionAnimation = false,
       animateSlides = true,  // Enable SVD video animation of still images
       async: asyncMode = false,  // Enable async job processing
-      uploadedContent  // Direct file upload content
+      uploadedContent,  // Direct file upload content
+      customInstructions,  // User-provided formatting/style instructions
+      brandDocIds,  // Brand guidelines document IDs
+      deckPurpose = 'presenter'  // Presenter mode (with notes) or audience mode (self-contained)
     } = requestBody;
 
     const isRevision = !!revisionRequest && !!currentDeck;
@@ -830,6 +841,26 @@ serve(async (req) => {
       console.log(`Added uploaded content (${uploadedContent.length} chars)`);
     }
 
+    // Fetch brand guidelines document if specified
+    let brandContext = '';
+    if (brandDocIds && brandDocIds.length > 0) {
+      console.log(`Fetching ${brandDocIds.length} brand guideline documents...`);
+      const { data: brandDocs, error: brandError } = await supabase
+        .from('knowledge_documents')
+        .select('title, content, ai_summary')
+        .in('id', brandDocIds)
+        .eq('user_id', user.id);
+
+      if (brandError) {
+        console.error('Error fetching brand documents:', brandError);
+      } else if (brandDocs && brandDocs.length > 0) {
+        brandContext = brandDocs.map(doc =>
+          `## Brand Guidelines: ${doc.title}\n${doc.ai_summary || doc.content?.substring(0, 3000) || ''}`
+        ).join('\n\n');
+        console.log(`Built brand context from ${brandDocs.length} documents (${brandContext.length} chars)`);
+      }
+    }
+
     // Determine slide count
     const anthropicKey = Deno.env.get('ANTHROPIC_API_KEY');
     if (!anthropicKey) {
@@ -906,7 +937,21 @@ Revise the pitch deck based on the user's request. This could involve:
 
 Maintain the same number of slides (${currentDeck.totalSlides}) unless the user specifically requests otherwise.
 
-${documentContext ? `\n## Available Source Documents:\n\n${documentContext}\n\n` : ''}`;
+${documentContext ? `\n## Available Source Documents:\n\n${documentContext}\n\n` : ''}
+${brandContext ? `\n## Brand Guidelines\n\nFollow these brand guidelines for visual and content consistency:\n${brandContext}\n\n` : ''}
+${customInstructions ? `\n## User Custom Instructions\n\nIMPORTANT - Follow these specific instructions from the user:\n${customInstructions}\n\n` : ''}
+${deckPurpose === 'audience' ? `
+## Self-Contained Deck Requirement
+
+This deck will be sent to customers/investors WITHOUT a presenter. Each slide MUST:
+- Be completely self-explanatory without speaker notes
+- Include all necessary context in the slide content itself
+- Have clear, detailed bullet points that tell the full story
+- Not assume the reader has background knowledge
+- Be persuasive as a standalone sales/pitch document
+
+Speaker notes should still be generated but will not be shown to the audience.
+` : ''}`;
       }
     } else {
       // New generation mode
@@ -922,7 +967,20 @@ Style: ${style} - ${getStyleGuidance(style)}
 ${slideCountReasoning ? `\n## Slide Count Rationale\nThis deck uses ${finalSlideCount} slides because: ${slideCountReasoning}\n` : ''}
 
 ${documentContext ? `\n## Source Documents\n\n${documentContext}\n\n` : ''}
+${brandContext ? `\n## Brand Guidelines\n\nFollow these brand guidelines for visual and content consistency:\n${brandContext}\n\n` : ''}
+${customInstructions ? `\n## User Custom Instructions\n\nIMPORTANT - Follow these specific instructions from the user:\n${customInstructions}\n\n` : ''}
+${deckPurpose === 'audience' ? `
+## Self-Contained Deck Requirement
 
+This deck will be sent to customers/investors WITHOUT a presenter. Each slide MUST:
+- Be completely self-explanatory without speaker notes
+- Include all necessary context in the slide content itself
+- Have clear, detailed bullet points that tell the full story
+- Not assume the reader has background knowledge
+- Be persuasive as a standalone sales/pitch document
+
+Speaker notes should still be generated but will not be shown to the audience.
+` : ''}
 ## Pitch Deck Structure Guidelines
 
 **Opening Slide (Slide 1):**

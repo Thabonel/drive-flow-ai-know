@@ -14,7 +14,7 @@ import { usePitchDeckStream } from '@/hooks/usePitchDeckStream';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { SlideCardSkeleton, TitleSlideCardSkeleton, SlideGenerationProgress } from '@/components/SlideCardSkeleton';
-import { Loader2, Presentation, Download, Eye, FileText, Layers, Share2, X, Archive, Monitor, Settings, Upload, File, Trash2 } from 'lucide-react';
+import { Loader2, Presentation, Download, Eye, FileText, Layers, Share2, X, Archive, Monitor, Settings, Upload, File, Trash2, Square } from 'lucide-react';
 import { arrayBufferToBase64 } from '@/lib/base64Utils';
 import { useQuery } from '@tanstack/react-query';
 import jsPDF from 'jspdf';
@@ -104,6 +104,13 @@ export default function PitchDeck() {
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null); // Track last save time
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false); // Track unsaved changes
   const [isAutoSaving, setIsAutoSaving] = useState(false); // Auto-save in progress indicator
+
+  // Custom Instructions & Brand Document state
+  const [customInstructions, setCustomInstructions] = useState('');
+  const [brandDocIds, setBrandDocIds] = useState<string[]>([]);
+
+  // Deck Purpose state - presenter (with notes) vs audience (self-contained)
+  const [deckPurpose, setDeckPurpose] = useState<'presenter' | 'audience'>('presenter');
 
   // Direct file upload state
   interface UploadedFile {
@@ -663,6 +670,9 @@ export default function PitchDeck() {
           includeImages,
           selectedDocumentIds: selectedDocIds.length > 0 ? selectedDocIds : undefined,
           uploadedContent,
+          customInstructions: customInstructions || undefined,
+          brandDocIds: brandDocIds.length > 0 ? brandDocIds : undefined,
+          deckPurpose,
         });
       } catch (error) {
         console.error('Pitch deck streaming error:', error);
@@ -685,7 +695,10 @@ export default function PitchDeck() {
           animationStyle,
           includeImages,
           selectedDocumentIds: selectedDocIds.length > 0 ? selectedDocIds : undefined,
-          uploadedContent
+          uploadedContent,
+          customInstructions: customInstructions || undefined,
+          brandDocIds: brandDocIds.length > 0 ? brandDocIds : undefined,
+          deckPurpose
         }
       });
 
@@ -728,7 +741,10 @@ export default function PitchDeck() {
           selectedDocumentIds: selectedDocIds.length > 0 ? selectedDocIds : undefined,
           revisionRequest,
           currentDeck: pitchDeck,
-          slideNumber
+          slideNumber,
+          customInstructions: customInstructions || undefined,
+          brandDocIds: brandDocIds.length > 0 ? brandDocIds : undefined,
+          deckPurpose
         }
       });
 
@@ -952,8 +968,8 @@ export default function PitchDeck() {
         pdf.text(displayedContentLines, margin, currentY);
         currentY += (displayedContentLines.length * 5) + 5;
 
-        // Speaker notes (at bottom if space available)
-        if (slide.notes && currentY < pageHeight - margin - 15) {
+        // Speaker notes (only in presenter mode, at bottom if space available)
+        if (deckPurpose === 'presenter' && slide.notes && currentY < pageHeight - margin - 15) {
           pdf.setFontSize(9);
           pdf.setTextColor(100, 100, 100);
           pdf.setFont('helvetica', 'italic');
@@ -1676,14 +1692,16 @@ Generated with AI Query Hub
             tips={[
               "Drag & drop PDF, DOCX, or text files directly - no need to save to Documents first",
               "Or select existing documents from your library for context",
+              "Enable Live Preview to see slides as they generate - click Stop to edit without waiting",
+              "Use Custom Instructions to specify exact formatting, colors, fonts, or style requirements",
+              "Select a Brand Guidelines document to maintain consistent branding across slides",
+              "Choose Deck Purpose: Presenter Mode (with speaker notes) or Send-out Mode (self-contained PDF for customers)",
+              "Send-out Mode creates slides that tell the full story without needing a presenter",
               "Decks auto-save when generated - find them in 'Saved Pitch Decks' above",
               "Use the revision input to request changes to specific slides or the whole deck",
               "Export to PDF, PowerPoint, HTML, or download as ZIP with all assets",
               "Click 'Start Presentation' for fullscreen mode with arrow key navigation",
-              "Press S for settings, ? for keyboard shortcuts, N for speaker notes",
-              "Enable Auto-Scroll for smooth content scrolling, Auto-Advance for hands-free demos",
-              "Choose animation styles: None, Minimal, Standard, or Expressive (AI-animated frames)",
-              "Hover to pause any automatic animations or scrolling"
+              "Press S for settings, ? for keyboard shortcuts, N for speaker notes"
             ]}
           />
         </div>
@@ -2126,6 +2144,7 @@ Generated with AI Query Hub
               </p>
             </div>
 
+            {/* Progressive Streaming Mode */}
             <div>
               <div className="flex items-center space-x-2">
                 <input
@@ -2135,31 +2154,161 @@ Generated with AI Query Hub
                   onChange={(e) => setUseProgressiveMode(e.target.checked)}
                   className="rounded"
                 />
-                <Label htmlFor="progressiveMode">Progressive streaming mode</Label>
+                <Label htmlFor="progressiveMode">Live preview mode</Label>
               </div>
               <p className="text-xs text-muted-foreground mt-1 ml-6">
-                Shows slides as they generate in real-time. Recommended for better experience.
+                See slides as they generate. Stop anytime to edit without waiting for completion.
               </p>
             </div>
 
-            <Button
-              onClick={handleGenerate}
-              disabled={generating || (!topic.trim() && selectedDocIds.length === 0)}
-              className="w-full"
-              size="lg"
-            >
-              {generating ? (
-                <>
-                  <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-                  Generating Deck...
-                </>
-              ) : (
-                <>
-                  <Presentation className="h-5 w-5 mr-2" />
-                  Generate Pitch Deck
-                </>
+            {/* Custom Instructions */}
+            <div>
+              <Label htmlFor="customInstructions">Custom Instructions (Optional)</Label>
+              <Textarea
+                id="customInstructions"
+                value={customInstructions}
+                onChange={(e) => setCustomInstructions(e.target.value)}
+                placeholder="Add specific formatting requirements, style preferences, or content guidelines...
+
+Example: Use a minimalist black and white design. Each slide should have a single key message. Use statistics from our Q4 report prominently."
+                className="mt-1 min-h-[100px]"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Provide detailed instructions for AI to follow when generating slides
+              </p>
+            </div>
+
+            {/* Brand Document Selector */}
+            <div>
+              <Label>Brand Guidelines Document (Optional)</Label>
+              <div className="mt-1">
+                <Select
+                  value={brandDocIds[0] || '__none__'}
+                  onValueChange={(value) => setBrandDocIds(value === '__none__' ? [] : [value])}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a brand guidelines document..." />
+                  </SelectTrigger>
+                  <SelectContent className="max-w-[300px]">
+                    <SelectItem value="__none__">None</SelectItem>
+                    {documents?.filter(doc =>
+                      doc.title.toLowerCase().includes('brand') ||
+                      doc.title.toLowerCase().includes('style') ||
+                      doc.title.toLowerCase().includes('guideline')
+                    ).map(doc => (
+                      <SelectItem key={doc.id} value={doc.id} className="truncate">
+                        {doc.title.length > 40 ? doc.title.substring(0, 40) + '...' : doc.title}
+                      </SelectItem>
+                    ))}
+                    {documents?.filter(doc =>
+                      !doc.title.toLowerCase().includes('brand') &&
+                      !doc.title.toLowerCase().includes('style') &&
+                      !doc.title.toLowerCase().includes('guideline')
+                    ).map(doc => (
+                      <SelectItem key={doc.id} value={doc.id} className="truncate">
+                        {doc.title.length > 40 ? doc.title.substring(0, 40) + '...' : doc.title}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Select a document with brand colors, fonts, and style guidelines
+                </p>
+              </div>
+            </div>
+
+            {/* Deck Purpose Toggle */}
+            <div>
+              <Label>Deck Purpose</Label>
+              <div className="mt-2 space-y-2">
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="radio"
+                    id="purpose-presenter"
+                    name="deckPurpose"
+                    value="presenter"
+                    checked={deckPurpose === 'presenter'}
+                    onChange={() => setDeckPurpose('presenter')}
+                    className="rounded"
+                  />
+                  <Label htmlFor="purpose-presenter" className="font-normal cursor-pointer">
+                    Presenter Mode
+                  </Label>
+                </div>
+                <p className="text-xs text-muted-foreground ml-6">
+                  For live presentations - includes speaker notes
+                </p>
+
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="radio"
+                    id="purpose-audience"
+                    name="deckPurpose"
+                    value="audience"
+                    checked={deckPurpose === 'audience'}
+                    onChange={() => setDeckPurpose('audience')}
+                    className="rounded"
+                  />
+                  <Label htmlFor="purpose-audience" className="font-normal cursor-pointer">
+                    Send-out Mode
+                  </Label>
+                </div>
+                <p className="text-xs text-muted-foreground ml-6">
+                  Self-contained PDF for customers/investors - slides convey full message without notes
+                </p>
+              </div>
+            </div>
+
+            <div className="flex gap-2">
+              <Button
+                onClick={handleGenerate}
+                disabled={generating || (!topic.trim() && selectedDocIds.length === 0)}
+                className={generating ? "flex-1" : "w-full"}
+                size="lg"
+              >
+                {generating ? (
+                  <>
+                    <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <Presentation className="h-5 w-5 mr-2" />
+                    Generate Pitch Deck
+                  </>
+                )}
+              </Button>
+              {generating && useProgressiveMode && (
+                <Button
+                  onClick={() => {
+                    streamingHook.cancel();
+                    setGenerating(false);
+                    // If we have slides, create a partial deck
+                    if (streamingHook.slides.length > 0 && streamingHook.deckMetadata) {
+                      setPitchDeck({
+                        title: streamingHook.deckMetadata.title,
+                        subtitle: streamingHook.deckMetadata.subtitle,
+                        slides: streamingHook.slides,
+                        totalSlides: streamingHook.slides.length,
+                      });
+                      toast.success(`Stopped with ${streamingHook.slides.length} slides. You can edit them now.`);
+                    }
+                  }}
+                  variant="destructive"
+                  size="lg"
+                >
+                  <Square className="h-5 w-5 mr-2" />
+                  Stop
+                </Button>
               )}
-            </Button>
+            </div>
+
+            {/* Stopped indicator with slide count */}
+            {streamingHook.isStopped && streamingHook.slides.length > 0 && (
+              <p className="text-sm text-amber-600 dark:text-amber-400">
+                Generation stopped with {streamingHook.slides.length} slides. Edit them below or generate again.
+              </p>
+            )}
 
             {pitchDeck && (
               <div className="space-y-2">
@@ -2201,7 +2350,7 @@ Generated with AI Query Hub
                   className="w-full"
                 >
                   <FileText className="h-4 w-4 mr-2" />
-                  Export as PDF
+                  Export as PDF {deckPurpose === 'audience' ? '(No Notes)' : '(With Notes)'}
                 </Button>
                 <Button
                   onClick={handleExportPowerPoint}
