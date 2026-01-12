@@ -2189,15 +2189,15 @@ Example: Use a minimalist black and white design. Each slide should have a singl
                   <SelectTrigger>
                     <SelectValue placeholder="Select a brand guidelines document..." />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="max-w-[300px]">
                     <SelectItem value="__none__">None</SelectItem>
                     {documents?.filter(doc =>
                       doc.title.toLowerCase().includes('brand') ||
                       doc.title.toLowerCase().includes('style') ||
                       doc.title.toLowerCase().includes('guideline')
                     ).map(doc => (
-                      <SelectItem key={doc.id} value={doc.id}>
-                        {doc.title}
+                      <SelectItem key={doc.id} value={doc.id} className="whitespace-normal">
+                        <span className="block">{doc.title}</span>
                       </SelectItem>
                     ))}
                     {documents?.filter(doc =>
@@ -2205,8 +2205,8 @@ Example: Use a minimalist black and white design. Each slide should have a singl
                       !doc.title.toLowerCase().includes('style') &&
                       !doc.title.toLowerCase().includes('guideline')
                     ).map(doc => (
-                      <SelectItem key={doc.id} value={doc.id}>
-                        {doc.title}
+                      <SelectItem key={doc.id} value={doc.id} className="whitespace-normal">
+                        <span className="block">{doc.title}</span>
                       </SelectItem>
                     ))}
                   </SelectContent>
