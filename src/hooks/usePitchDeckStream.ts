@@ -42,9 +42,12 @@ interface GenerateParams {
   frameCount?: number;
   enableRemotionAnimation?: boolean;
   uploadedContent?: string; // Direct file upload content
+  customInstructions?: string; // User-provided formatting/style instructions
+  brandDocIds?: string[]; // Brand guidelines document IDs
+  deckPurpose?: 'presenter' | 'audience'; // Presenter (with notes) vs audience (self-contained)
 }
 
-type StreamStatus = 'idle' | 'starting' | 'generating_structure' | 'generating_slides' | 'generating_images' | 'complete' | 'error';
+type StreamStatus = 'idle' | 'starting' | 'generating_structure' | 'generating_slides' | 'generating_images' | 'complete' | 'stopped' | 'error';
 
 interface PitchDeckStreamState {
   status: StreamStatus;
@@ -87,7 +90,7 @@ export function usePitchDeckStream() {
   const abortControllerRef = useRef<AbortController | null>(null);
 
   /**
-   * Cancel ongoing generation
+   * Cancel ongoing generation - preserves slides generated so far
    */
   const cancel = useCallback(() => {
     if (eventSourceRef.current) {
@@ -100,8 +103,9 @@ export function usePitchDeckStream() {
     }
     setState(prev => ({
       ...prev,
-      status: 'idle',
-      error: 'Generation cancelled',
+      // Keep slides generated so far, set status to stopped (not error)
+      status: prev.slides.length > 0 ? 'stopped' : 'idle',
+      error: null,
     }));
   }, []);
 
@@ -313,8 +317,9 @@ export function usePitchDeckStream() {
     jobId: state.jobId,
 
     // Convenience flags
-    isGenerating: state.status !== 'idle' && state.status !== 'complete' && state.status !== 'error',
+    isGenerating: state.status !== 'idle' && state.status !== 'complete' && state.status !== 'error' && state.status !== 'stopped',
     isComplete: state.status === 'complete',
+    isStopped: state.status === 'stopped',
     hasError: state.status === 'error',
   };
 }
