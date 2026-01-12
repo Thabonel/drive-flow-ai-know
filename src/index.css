@@ -67,6 +67,10 @@ All colors MUST be HSL.
     /* 3D effect: dual-shadow system with close proximity + primary drop shadow (aliased to neumorphic) */
     --shadow-card: var(--shadow-neu-raised);
 
+    /* Hero animation system */
+    --hero-animation-duration: 8s;
+    --hero-glow-color: hsl(var(--accent) / 0.4);
+
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 212 48% 52%;
     --sidebar-primary: 212 48% 52%;
@@ -517,4 +521,140 @@ All colors MUST be HSL.
     opacity: 1 !important;
     transform: none !important;
   }
+}
+
+/* ============================================
+   DOCUMENT CONTENT CONTRAST ENFORCEMENT
+   Prevents blue-on-blue and other low-contrast text issues
+   in documents with embedded HTML/styles, especially code blocks
+   ============================================ */
+
+/* Force readable text colors in prose content areas */
+.prose,
+.prose-slate,
+[class*="prose"] {
+  /* Ensure all text has proper contrast against background */
+  --tw-prose-body: hsl(var(--foreground));
+  --tw-prose-headings: hsl(var(--foreground));
+  --tw-prose-lead: hsl(var(--muted-foreground));
+  --tw-prose-bold: hsl(var(--foreground));
+  --tw-prose-counters: hsl(var(--muted-foreground));
+  --tw-prose-bullets: hsl(var(--muted-foreground));
+  --tw-prose-hr: hsl(var(--border));
+  --tw-prose-quotes: hsl(var(--foreground));
+  --tw-prose-quote-borders: hsl(var(--border));
+  --tw-prose-captions: hsl(var(--muted-foreground));
+  --tw-prose-th-borders: hsl(var(--border));
+  --tw-prose-td-borders: hsl(var(--border));
+
+  /* CODE BLOCK CONTRAST FIX - Light text on dark backgrounds */
+  --tw-prose-code: #e2e8f0;
+  --tw-prose-pre-code: #e2e8f0;
+  --tw-prose-pre-bg: #1e293b;
+}
+
+/* CODE BLOCKS: Force high contrast (light text on dark bg) */
+.prose pre,
+[class*="prose"] pre {
+  background-color: #1e293b !important;
+  color: #e2e8f0 !important;
+  border: 1px solid hsl(var(--border));
+  border-radius: 0.5rem;
+  padding: 1rem;
+  overflow-x: auto;
+}
+
+.prose pre code,
+[class*="prose"] pre code {
+  background-color: transparent !important;
+  color: #e2e8f0 !important;
+  padding: 0 !important;
+  border: none !important;
+  font-size: 0.875rem;
+  line-height: 1.7;
+}
+
+/* Inline code (not in pre blocks) */
+.prose code:not(pre code),
+[class*="prose"] code:not(pre code) {
+  background-color: hsl(var(--muted)) !important;
+  color: hsl(var(--foreground)) !important;
+  padding: 0.125rem 0.375rem;
+  border-radius: 0.25rem;
+  font-size: 0.875em;
+}
+
+/* Override inline styles that cause contrast issues in document content */
+.prose [style*="color"]:not(pre):not(code),
+.prose [style*="background"]:not(pre):not(code),
+[class*="prose"] [style*="color"]:not(pre):not(code),
+[class*="prose"] [style*="background"]:not(pre):not(code) {
+  color: inherit !important;
+  background-color: transparent !important;
+}
+
+/* Ensure tables have proper contrast */
+.prose table,
+.prose th,
+.prose td,
+[class*="prose"] table,
+[class*="prose"] th,
+[class*="prose"] td {
+  color: hsl(var(--foreground)) !important;
+  background-color: hsl(var(--background)) !important;
+}
+
+.prose th,
+[class*="prose"] th {
+  background-color: hsl(var(--muted)) !important;
+}
+
+/* Handle any divs or spans with problematic background colors */
+.prose div[style*="background"]:not(pre),
+.prose span[style*="background"]:not(code),
+[class*="prose"] div[style*="background"]:not(pre),
+[class*="prose"] span[style*="background"]:not(code) {
+  background-color: hsl(var(--muted)) !important;
+  color: hsl(var(--foreground)) !important;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+}
+
+/* Dark mode specific overrides - same light-on-dark for code */
+.dark .prose pre,
+.dark [class*="prose"] pre {
+  background-color: #0f172a !important;
+  color: #e2e8f0 !important;
+}
+
+.dark .prose pre code,
+.dark [class*="prose"] pre code {
+  background-color: transparent !important;
+  color: #e2e8f0 !important;
+}
+
+.dark .prose code:not(pre code),
+.dark [class*="prose"] code:not(pre code) {
+  background-color: hsl(212 48% 20%) !important;
+  color: hsl(0 0% 90%) !important;
+}
+
+/* Handle Word document styles that often use blue themes */
+.prose [style*="rgb(0, 0, 128)"]:not(pre):not(code),
+.prose [style*="rgb(0, 0, 139)"]:not(pre):not(code),
+.prose [style*="rgb(0, 0, 205)"]:not(pre):not(code),
+.prose [style*="rgb(0, 0, 255)"]:not(pre):not(code),
+.prose [style*="#000080"]:not(pre):not(code),
+.prose [style*="#00008B"]:not(pre):not(code),
+.prose [style*="#0000CD"]:not(pre):not(code),
+.prose [style*="#0000FF"]:not(pre):not(code),
+[class*="prose"] [style*="rgb(0, 0, 128)"]:not(pre):not(code),
+[class*="prose"] [style*="rgb(0, 0, 139)"]:not(pre):not(code),
+[class*="prose"] [style*="rgb(0, 0, 205)"]:not(pre):not(code),
+[class*="prose"] [style*="rgb(0, 0, 255)"]:not(pre):not(code),
+[class*="prose"] [style*="#000080"]:not(pre):not(code),
+[class*="prose"] [style*="#00008B"]:not(pre):not(code),
+[class*="prose"] [style*="#0000CD"]:not(pre):not(code),
+[class*="prose"] [style*="#0000FF"]:not(pre):not(code) {
+  color: hsl(var(--primary)) !important;
 }

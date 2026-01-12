@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Link } from 'react-router-dom';
 import { Menu, X } from 'lucide-react';
+import { DocumentFlowHero } from '@/components/hero';
 
 const plans = [
   {
@@ -209,16 +210,9 @@ export default function Landing() {
             </div>
           </div>
 
-          {/* Hero Illustration */}
+          {/* Animated Hero - Document Flow Visualization */}
           <div className="flex justify-center mt-6">
-            <img
-              src="https://fskwutnoxbbflzqrphro.supabase.co/storage/v1/object/public/assets/Queryhubhero.jpg"
-              alt="AI Query Hub - AI Knowledge Assistant"
-              className="max-w-6xl w-full h-auto object-contain rounded-2xl"
-              fetchPriority="high"
-              decoding="async"
-              loading="eager"
-            />
+            <DocumentFlowHero className="max-w-4xl w-full" />
           </div>
 
           {/* Trust Badges - Replacing Disabled Stats */}
@@ -255,8 +249,8 @@ export default function Landing() {
               { title: "Ask", desc: "Type your question like texting a friend", color: "secondary" },
               { title: "Get Answers", desc: "AI pulls exact answers from your docs", color: "success" }
             ].map((step, i) => (
-              <div key={i} className="relative group">
-                <div className={`text-center p-6 rounded-2xl bg-card border border-border shadow-card backdrop-blur-xl transition-all hover:scale-105 hover:shadow-lg`}>
+              <div key={i} className="relative group h-full">
+                <div className={`text-center p-6 rounded-2xl bg-card border border-border shadow-card backdrop-blur-xl transition-all hover:scale-105 hover:shadow-lg h-full`}>
                   <div className={`text-7xl font-bold absolute top-4 right-4 ${
                     step.color === 'primary' ? 'text-primary/10' :
                     step.color === 'secondary' ? 'text-secondary/10' :
