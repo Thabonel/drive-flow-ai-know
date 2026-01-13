@@ -30,8 +30,12 @@ export async function parseDocument(filePath: string, mimeType: string, fileName
     return await parseWord(filePath, fileName);
   }
 
-  if (mimeType.includes('spreadsheetml') || mimeType.includes('ms-excel')) {
+  if (mimeType.includes('spreadsheetml') || mimeType.includes('ms-excel') || ext === 'xlsx' || ext === 'xls') {
     return await parseExcel(filePath, fileName);
+  }
+
+  if (mimeType === 'text/csv' || ext === 'csv') {
+    return await parseCSV(filePath, fileName);
   }
 
   if (mimeType.includes('presentationml') || mimeType.includes('ms-powerpoint')) {
@@ -455,17 +459,299 @@ async function parseWord(filePath: string, fileName: string): Promise<ParseResul
 
 async function parseExcel(filePath: string, fileName: string): Promise<ParseResult> {
   try {
+    console.log('Parsing Excel file using SheetJS...');
+
+    // Import xlsx library dynamically
+    const XLSX = await import('npm:xlsx@0.18.5');
+
+    // Read the file
+    const fileBytes = await Deno.readFile(filePath);
+    const workbook = XLSX.read(fileBytes, {
+      type: 'array',
+      cellFormula: true,  // Preserve formulas
+      cellStyles: true,   // Preserve styles
+      cellDates: true,    // Parse dates properly
+    });
+
+    const sheets: Array<{
+      name: string;
+      data: Array<Record<string, any>>;
+      formulas: Array<{ cell: string; formula: string; value: any }>;
+      rowCount: number;
+      columnCount: number;
+    }> = [];
+
+    let totalRows = 0;
+    let totalFormulas = 0;
+    let allContent = '';
+
+    // Process each sheet
+    for (const sheetName of workbook.SheetNames) {
+      const worksheet = workbook.Sheets[sheetName];
+
+      // Convert to JSON with headers
+      const jsonData = XLSX.utils.sheet_to_json(worksheet, {
+        header: 1,  // Use array of arrays first to get headers
+        defval: '', // Default value for empty cells
+        raw: false, // Format numbers/dates as strings
+      }) as any[][];
+
+      if (jsonData.length === 0) continue;
+
+      // Extract headers from first row
+      const headers = jsonData[0].map((h: any, idx: number) =>
+        h ? String(h).trim() : `Column${idx + 1}`
+      );
+
+      // Convert rows to objects
+      const rowData: Array<Record<string, any>> = [];
+      for (let i = 1; i < jsonData.length; i++) {
+        const row = jsonData[i];
+        if (row.every((cell: any) => cell === '' || cell === null || cell === undefined)) continue;
+
+        const rowObj: Record<string, any> = {};
+        headers.forEach((header: string, idx: number) => {
+          rowObj[header] = row[idx] !== undefined ? row[idx] : '';
+        });
+        rowData.push(rowObj);
+      }
+
+      // Extract formulas
+      const formulas: Array<{ cell: string; formula: string; value: any }> = [];
+      const range = XLSX.utils.decode_range(worksheet['!ref'] || 'A1');
+
+      for (let row = range.s.r; row <= range.e.r; row++) {
+        for (let col = range.s.c; col <= range.e.c; col++) {
+          const cellRef = XLSX.utils.encode_cell({ r: row, c: col });
+          const cell = worksheet[cellRef];
+          if (cell && cell.f) {
+            formulas.push({
+              cell: cellRef,
+              formula: `=${cell.f}`,
+              value: cell.v
+            });
+          }
+        }
+      }
+
+      sheets.push({
+        name: sheetName,
+        data: rowData,
+        formulas,
+        rowCount: rowData.length,
+        columnCount: headers.length
+      });
+
+      totalRows += rowData.length;
+      totalFormulas += formulas.length;
+
+      // Build text content for AI processing
+      allContent += `\n## Sheet: ${sheetName}\n`;
+      allContent += `Columns: ${headers.join(', ')}\n`;
+      allContent += `Rows: ${rowData.length}\n\n`;
+
+      // Include data as markdown table (limit to first 100 rows for very large files)
+      const displayRows = rowData.slice(0, 100);
+      if (displayRows.length > 0) {
+        // Header row
+        allContent += '| ' + headers.join(' | ') + ' |\n';
+        allContent += '| ' + headers.map(() => '---').join(' | ') + ' |\n';
+
+        // Data rows
+        for (const row of displayRows) {
+          const values = headers.map((h: string) => {
+            const val = row[h];
+            return val !== null && val !== undefined ? String(val).replace(/\|/g, '\\|') : '';
+          });
+          allContent += '| ' + values.join(' | ') + ' |\n';
+        }
+
+        if (rowData.length > 100) {
+          allContent += `\n... and ${rowData.length - 100} more rows\n`;
+        }
+      }
+
+      // Include formulas summary
+      if (formulas.length > 0) {
+        allContent += `\n### Formulas (${formulas.length} total)\n`;
+        for (const f of formulas.slice(0, 20)) {
+          allContent += `- ${f.cell}: ${f.formula}\n`;
+        }
+        if (formulas.length > 20) {
+          allContent += `... and ${formulas.length - 20} more formulas\n`;
+        }
+      }
+    }
+
+    console.log(`Excel parsing complete: ${sheets.length} sheets, ${totalRows} rows, ${totalFormulas} formulas`);
+
+    // Build summary header
+    let content = `# Excel Spreadsheet: ${fileName}\n\n`;
+    content += `**Sheets:** ${sheets.length}\n`;
+    content += `**Total Rows:** ${totalRows}\n`;
+    content += `**Total Formulas:** ${totalFormulas}\n`;
+    content += allContent;
+
     return {
-      content: `Excel Spreadsheet: ${fileName}\n\nThis is a Microsoft Excel file. Content extraction will be implemented with a spreadsheet parsing library.`,
+      content,
       title: fileName.replace(/\.[^/.]+$/, ''),
       metadata: {
         type: 'excel',
-        originalName: fileName
+        originalName: fileName,
+        extractionMethod: 'sheetjs',
+        sheets: sheets.map(s => ({
+          name: s.name,
+          rowCount: s.rowCount,
+          columnCount: s.columnCount,
+          formulaCount: s.formulas.length
+        })),
+        totalSheets: sheets.length,
+        totalRows,
+        totalFormulas,
+        hasFormulas: totalFormulas > 0,
+        // Include structured data for SpreadsheetViewer
+        spreadsheetData: {
+          sheets: sheets.map(s => ({
+            name: s.name,
+            data: s.data,
+            formulas: s.formulas
+          })),
+          metadata: {
+            totalSheets: sheets.length,
+            hasFormulas: totalFormulas > 0,
+            hasCharts: false,
+            dataTypes: ['string', 'number']
+          }
+        }
       }
     };
   } catch (error) {
     console.error('Excel parsing error:', error);
-    throw error;
+    throw new Error(`Failed to parse Excel file: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+}
+
+async function parseCSV(filePath: string, fileName: string): Promise<ParseResult> {
+  try {
+    console.log('Parsing CSV file...');
+
+    const fileBytes = await Deno.readFile(filePath);
+    const text = new TextDecoder('utf-8').decode(fileBytes);
+
+    // Parse CSV manually (handle quoted values with commas)
+    const lines = text.split(/\r?\n/).filter(line => line.trim());
+    if (lines.length === 0) {
+      return {
+        content: 'Empty CSV file',
+        title: fileName.replace(/\.[^/.]+$/, ''),
+        metadata: { type: 'csv', originalName: fileName }
+      };
+    }
+
+    // Parse a CSV line handling quoted values
+    const parseCSVLine = (line: string): string[] => {
+      const result: string[] = [];
+      let current = '';
+      let inQuotes = false;
+
+      for (let i = 0; i < line.length; i++) {
+        const char = line[i];
+        if (char === '"') {
+          if (inQuotes && line[i + 1] === '"') {
+            current += '"';
+            i++;
+          } else {
+            inQuotes = !inQuotes;
+          }
+        } else if (char === ',' && !inQuotes) {
+          result.push(current.trim());
+          current = '';
+        } else {
+          current += char;
+        }
+      }
+      result.push(current.trim());
+      return result;
+    };
+
+    // Extract headers
+    const headers = parseCSVLine(lines[0]).map((h, idx) =>
+      h ? h : `Column${idx + 1}`
+    );
+
+    // Parse data rows
+    const rowData: Array<Record<string, any>> = [];
+    for (let i = 1; i < lines.length; i++) {
+      const values = parseCSVLine(lines[i]);
+      if (values.every(v => v === '')) continue;
+
+      const rowObj: Record<string, any> = {};
+      headers.forEach((header, idx) => {
+        let value: any = values[idx] || '';
+        // Try to parse numbers
+        if (value && !isNaN(Number(value))) {
+          value = Number(value);
+        }
+        rowObj[header] = value;
+      });
+      rowData.push(rowObj);
+    }
+
+    console.log(`CSV parsing complete: ${rowData.length} rows, ${headers.length} columns`);
+
+    // Build markdown table content
+    let content = `# CSV File: ${fileName}\n\n`;
+    content += `**Rows:** ${rowData.length}\n`;
+    content += `**Columns:** ${headers.length}\n\n`;
+
+    // Include data as markdown table (limit to first 100 rows)
+    const displayRows = rowData.slice(0, 100);
+    if (displayRows.length > 0) {
+      content += '| ' + headers.join(' | ') + ' |\n';
+      content += '| ' + headers.map(() => '---').join(' | ') + ' |\n';
+
+      for (const row of displayRows) {
+        const values = headers.map(h => {
+          const val = row[h];
+          return val !== null && val !== undefined ? String(val).replace(/\|/g, '\\|') : '';
+        });
+        content += '| ' + values.join(' | ') + ' |\n';
+      }
+
+      if (rowData.length > 100) {
+        content += `\n... and ${rowData.length - 100} more rows\n`;
+      }
+    }
+
+    return {
+      content,
+      title: fileName.replace(/\.[^/.]+$/, ''),
+      metadata: {
+        type: 'csv',
+        originalName: fileName,
+        extractionMethod: 'native',
+        totalRows: rowData.length,
+        totalColumns: headers.length,
+        columns: headers,
+        // Include structured data for SpreadsheetViewer
+        spreadsheetData: {
+          sheets: [{
+            name: 'Data',
+            data: rowData,
+            formulas: []
+          }],
+          metadata: {
+            totalSheets: 1,
+            hasFormulas: false,
+            hasCharts: false,
+            dataTypes: ['string', 'number']
+          }
+        }
+      }
+    };
+  } catch (error) {
+    console.error('CSV parsing error:', error);
+    throw new Error(`Failed to parse CSV file: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
 
