@@ -8,13 +8,24 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { useAuth } from '@/hooks/useAuth';
 import { usePresentationMode } from '@/contexts/PresentationModeContext';
 import { usePitchDeckStream } from '@/hooks/usePitchDeckStream';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { SlideCardSkeleton, TitleSlideCardSkeleton, SlideGenerationProgress } from '@/components/SlideCardSkeleton';
-import { Loader2, Presentation, Download, Eye, FileText, Layers, Share2, X, Archive, Monitor, Settings, Upload, File, Trash2, Square } from 'lucide-react';
+import { Loader2, Presentation, Download, Eye, FileText, Layers, Share2, X, Archive, Monitor, Settings, Upload, File, Trash2, Square, AlertTriangle, HelpCircle } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { arrayBufferToBase64 } from '@/lib/base64Utils';
 import { useQuery } from '@tanstack/react-query';
 import jsPDF from 'jspdf';
@@ -62,6 +73,8 @@ interface Slide {
   videoFileSizeMb?: number;
   // Remotion animation script for narrative video generation (Phase 7)
   animationScript?: string;
+  // Error handling
+  imageGenerationFailed?: boolean;  // Flag when image regeneration failed
 }
 
 interface PitchDeck {
@@ -99,6 +112,8 @@ export default function PitchDeck() {
   const [shareToken, setShareToken] = useState<string | null>(null);
   const [isGeneratingShareLink, setIsGeneratingShareLink] = useState(false);
   const [showCostModal, setShowCostModal] = useState(false);
+  const [showNewDeckConfirmation, setShowNewDeckConfirmation] = useState(false); // Confirm when generating with loaded deck
+  const [isUpdatingExistingDeck, setIsUpdatingExistingDeck] = useState(false); // Track if user chose to update vs create new
   const [useProgressiveMode, setUseProgressiveMode] = useState(true); // NEW: Enable streaming by default
   const [loopVideo, setLoopVideo] = useState(true); // Loop video animations
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null); // Track last save time
@@ -640,6 +655,26 @@ export default function PitchDeck() {
       return;
     }
 
+    // If a deck is already loaded, ask user if they want to create new or update existing
+    if (savedDeckId && pitchDeck) {
+      setShowNewDeckConfirmation(true);
+      return;
+    }
+
+    // Proceed with generation
+    proceedToGenerate();
+  };
+
+  // Called after user confirms they want to create a new deck (not update existing)
+  const handleCreateNewDeck = () => {
+    setSavedDeckId(null);
+    setShareToken(null);
+    setShowNewDeckConfirmation(false);
+    proceedToGenerate();
+  };
+
+  // Helper function to proceed with generation flow
+  const proceedToGenerate = () => {
     // Show cost modal if images are enabled
     if (includeImages) {
       setShowCostModal(true);
@@ -650,6 +685,15 @@ export default function PitchDeck() {
   };
 
   const handleGenerateConfirmed = async () => {
+    // IMPORTANT: Only clear savedDeckId when generating NEW content
+    // If user explicitly chose "Update Current Deck", keep the ID to overwrite
+    if (!isUpdatingExistingDeck) {
+      setSavedDeckId(null);
+      setShareToken(null);
+    }
+    // Reset the flag for next time
+    setIsUpdatingExistingDeck(false);
+
     // Prepare uploaded file content
     const readyUploadedFiles = uploadedFiles.filter(f => f.status === 'ready');
     const uploadedContent = readyUploadedFiles.length > 0
@@ -2092,7 +2136,25 @@ Generated with AI Query Hub
             </div>
 
             <div>
-              <Label htmlFor="style">Style</Label>
+              <div className="flex items-center gap-1.5 mb-1">
+                <Label htmlFor="style">Style</Label>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <HelpCircle className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-xs">
+                      <p className="font-medium mb-1">How Style affects your deck:</p>
+                      <ul className="text-xs space-y-1">
+                        <li><strong>Professional:</strong> Formal tone, data-driven, statistics and metrics</li>
+                        <li><strong>Creative:</strong> Bold storytelling, memorable metaphors, visionary language</li>
+                        <li><strong>Minimal:</strong> Extreme clarity, one idea per slide, maximum white space</li>
+                        <li><strong>Bold:</strong> Strong assertions, confident claims, commanding presence</li>
+                      </ul>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
               <Select value={style} onValueChange={setStyle}>
                 <SelectTrigger>
                   <SelectValue />
@@ -2107,7 +2169,25 @@ Generated with AI Query Hub
             </div>
 
             <div>
-              <Label htmlFor="animationStyle">Animation Style</Label>
+              <div className="flex items-center gap-1.5 mb-1">
+                <Label htmlFor="animationStyle">Animation Style</Label>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <HelpCircle className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-xs">
+                      <p className="font-medium mb-1">How Animation Style affects your deck:</p>
+                      <ul className="text-xs space-y-1">
+                        <li><strong>None:</strong> Static slides, fastest generation</li>
+                        <li><strong>Minimal:</strong> Simple fade transitions during presentation</li>
+                        <li><strong>Standard:</strong> Professional slide transitions</li>
+                        <li><strong>Expressive:</strong> AI generates animated video for each slide - creates more narrative, story-driven content (slower)</li>
+                      </ul>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
               <Select value={animationStyle} onValueChange={(value: any) => setAnimationStyle(value)}>
                 <SelectTrigger>
                   <SelectValue />
@@ -2138,6 +2218,17 @@ Generated with AI Query Hub
                   className="rounded"
                 />
                 <Label htmlFor="includeImages">Include AI-generated images</Label>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <HelpCircle className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-xs">
+                      <p className="font-medium mb-1">AI-Generated Images:</p>
+                      <p className="text-xs">When enabled, AI creates custom visuals for each slide based on the content. This adds ~$0.01 per image. Disable for faster, text-only generation that you can add your own images to later.</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               </div>
               <p className="text-xs text-muted-foreground mt-1 ml-6">
                 Creates AI-generated visuals for each slide. Uncheck for faster, text-only generation.
@@ -2155,6 +2246,17 @@ Generated with AI Query Hub
                   className="rounded"
                 />
                 <Label htmlFor="progressiveMode">Live preview mode</Label>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <HelpCircle className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-xs">
+                      <p className="font-medium mb-1">Live Preview Mode:</p>
+                      <p className="text-xs">Watch slides appear one-by-one as they're generated. You can stop generation early and keep what's been created. Disable to wait for the complete deck before viewing.</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               </div>
               <p className="text-xs text-muted-foreground mt-1 ml-6">
                 See slides as they generate. Stop anytime to edit without waiting for completion.
@@ -2633,6 +2735,12 @@ Example: Use a minimalist black and white design. Each slide should have a singl
                           className="w-full rounded-lg"
                         />
                       ) : null}
+                      {slide.imageGenerationFailed && (
+                        <div className="flex items-center gap-2 p-2 bg-amber-50 border border-amber-200 rounded-lg text-amber-800 text-sm">
+                          <AlertTriangle className="h-4 w-4 flex-shrink-0" />
+                          <span>Image could not be updated - previous image preserved. Try rephrasing the description without demographic terms.</span>
+                        </div>
+                      )}
                       <div className="whitespace-pre-wrap text-sm">{slide.content}</div>
                       {slide.notes && (
                         <div className="bg-muted p-3 rounded text-sm italic text-muted-foreground">
@@ -2961,6 +3069,36 @@ Example: Use a minimalist black and white design. Each slide should have a singl
         onConfirm={handleGenerateConfirmed}
         onCancel={() => setShowCostModal(false)}
       />
+
+      {/* New Deck Confirmation Dialog */}
+      <AlertDialog open={showNewDeckConfirmation} onOpenChange={setShowNewDeckConfirmation}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Create New Deck or Update Existing?</AlertDialogTitle>
+            <AlertDialogDescription>
+              You have "{pitchDeck?.title || 'a deck'}" loaded. Would you like to create a completely new pitch deck, or generate new content to replace the current deck?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setShowNewDeckConfirmation(false)}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setShowNewDeckConfirmation(false);
+                setIsUpdatingExistingDeck(true); // Keep savedDeckId to overwrite existing
+                proceedToGenerate();
+              }}
+              className="bg-secondary hover:bg-secondary/90"
+            >
+              Update Current Deck
+            </AlertDialogAction>
+            <AlertDialogAction onClick={handleCreateNewDeck}>
+              Create New Deck
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

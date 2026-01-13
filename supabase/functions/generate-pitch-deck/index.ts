@@ -69,6 +69,8 @@ interface Slide {
   imagePrompt?: string;  // Visual prompt for async image generation
   // Remotion narrative animation (Phase 7)
   animationScript?: string;  // React TSX code for Remotion video generation
+  // Error handling
+  imageGenerationFailed?: boolean;  // Flag when image generation failed (previous image preserved)
 }
 
 interface PitchDeckResponse {
@@ -80,15 +82,137 @@ interface PitchDeckResponse {
 
 /**
  * Get style-specific guidance for pitch deck generation
+ * Expanded with detailed tone, language, and structural guidance
  */
 function getStyleGuidance(style: string): string {
   const styleGuide: Record<string, string> = {
-    professional: 'Use formal language, data-driven arguments, structured layouts. Emphasize credibility and authority. Include statistics and metrics where possible.',
-    creative: 'Use storytelling, bold visuals, innovative metaphors. Emphasize differentiation and vision. Be memorable and engaging.',
-    minimal: 'Use extreme clarity, white space, key messages only. Emphasize simplicity and focus. One core idea per slide.',
-    bold: 'Use strong statements, confident language, striking visuals. Emphasize strength and conviction. Be direct and assertive.'
+    professional: `PROFESSIONAL STYLE - Corporate Excellence
+TONE: Authoritative, trustworthy, measured, confident without being aggressive.
+LANGUAGE:
+- Use formal but accessible language
+- Lead with data, statistics, and concrete metrics
+- Include industry terminology appropriately
+- Cite sources and evidence
+- Use phrases like "research indicates", "data shows", "proven results"
+STRUCTURE:
+- Clear hierarchy: headline, supporting points, evidence
+- Logical flow from problem to solution
+- Include ROI calculations and projections
+- End with clear next steps
+AVOID: Hyperbole, unsubstantiated claims, overly casual language.`,
+
+    creative: `CREATIVE STYLE - Bold & Memorable
+TONE: Energetic, visionary, provocative, emotionally engaging.
+LANGUAGE:
+- Use vivid storytelling and narrative arcs
+- Employ unexpected metaphors and analogies
+- Ask rhetorical questions that challenge assumptions
+- Use punchy, memorable phrases that stick
+- Embrace bold claims: "revolutionary", "game-changing", "breakthrough"
+- Create tension and resolution in your narrative
+STRUCTURE:
+- Open with a hook that surprises or intrigues
+- Build emotional momentum through the deck
+- Use contrast and juxtaposition for impact
+- End with a vision that inspires action
+EMBRACE: Unconventional approaches, creative risks, memorable language.
+THIS STYLE INTENTIONALLY uses bold, innovative, visionary language - do NOT tone it down.`,
+
+    minimal: `MINIMAL STYLE - Maximum Clarity
+TONE: Clean, focused, zen-like calm, confident simplicity.
+LANGUAGE:
+- One powerful idea per slide
+- Short, declarative sentences
+- Remove all filler words and hedging
+- Every word must earn its place
+- Use white space as a design element
+- Let silence speak
+STRUCTURE:
+- Strip to essential elements only
+- Maximum 3 bullet points per slide
+- Prefer single statements over lists
+- Use numbers and icons sparingly but effectively
+AVOID: Complexity, dense text, unnecessary elaboration.`,
+
+    bold: `BOLD STYLE - Confident & Direct
+TONE: Strong, assertive, unapologetic, commanding presence.
+LANGUAGE:
+- Make definitive statements, not suggestions
+- Use active voice exclusively
+- Lead with your strongest claims
+- Challenge the status quo directly
+- Use power words: "dominate", "transform", "lead", "own"
+- No hedging, no qualifiers, no apologies
+STRUCTURE:
+- Open with your biggest claim
+- Back it up with undeniable evidence
+- Anticipate and crush objections
+- Close with a compelling call to action
+EMBRACE: Confidence, directness, competitive positioning.
+THIS STYLE INTENTIONALLY uses strong, assertive language - do NOT soften it.`
   };
   return styleGuide[style] || styleGuide.professional;
+}
+
+/**
+ * Get anti-AI aesthetic guidelines that are conditional based on style
+ * Creative and Bold styles get relaxed guidelines to allow more expressive language
+ */
+function getAntiAIGuidelines(style: string): string {
+  // For creative and bold styles, we relax the language constraints
+  // since those styles intentionally use "bold", "innovative", "revolutionary" etc.
+  const isExpressiveStyle = style === 'creative' || style === 'bold';
+
+  if (isExpressiveStyle) {
+    return `## WRITING QUALITY GUIDELINES
+
+**Writing Quality:**
+- NEVER use em dashes (—). Use commas or periods instead
+- Write in direct, engaging language. Vary sentence lengths for rhythm
+- Avoid clichéd openings like "In today's digital age" or "It's important to note"
+- Be specific rather than vague - use concrete examples and numbers
+
+**Visual Constraints:**
+- NEVER recommend purple, violet, or indigo as primary colors
+- NEVER suggest purple-to-blue gradients
+- NEVER use gold or bronze accents
+- NEVER recommend neon colors on dark backgrounds
+- INSTEAD use: warm neutrals, earth tones, classic navy, forest green, terracotta, or specific brand colors
+
+**Note for ${style.toUpperCase()} style:**
+Bold, innovative, and visionary language IS APPROPRIATE for this style.
+Do NOT filter out impactful words like "revolutionary", "game-changing", "breakthrough", "transform", or "innovative".
+This style should be memorable and provocative.`;
+  }
+
+  // For professional and minimal styles, use full anti-AI constraints
+  return `## ANTI-AI AESTHETIC GUIDELINES (MANDATORY)
+
+**Writing Constraints:**
+- NEVER use em dashes (—). Use commas or periods instead
+- AVOID overused AI words: delve, realm, tapestry, unleash, unlock, harness, navigate, embark, journey, elevate, robust, cutting-edge, game-changer, testament, vibrant, bustling, meticulous, paramount, pivotal, seamless, groundbreaking, revolutionize, transformative, unprecedented, beacon, landscape, illuminate, unveil, synergy, paradigm, foster, leverage, empower, holistic, streamline
+- AVOID generic phrases: "In today's digital age", "It's important to note", "When it comes to", "In the realm of", "A testament to", "Unlock the secrets", "Designed to enhance"
+- Write in direct, conversational language. Short sentences. Active voice
+- No lists of three unless essential
+- Prefer prose over excessive bullet points
+
+**Visual Constraints:**
+- NEVER recommend purple, violet, or indigo as primary colors
+- NEVER suggest purple-to-blue gradients
+- NEVER use gold or bronze accents
+- NEVER recommend neon colors on dark backgrounds
+- INSTEAD use: warm neutrals, earth tones, classic navy, forest green, terracotta, or specific brand colors
+- Prefer clean whites, subtle grays, and single accent colors
+
+**Typography Guidance:**
+- AVOID: Inter, Roboto, Arial, or generic system fonts
+- Prefer distinctive fonts appropriate to context (reference real design systems like Apple's minimalism or editorial design standards)
+- Use high contrast in weights (300 vs 700, not 400 vs 500)
+
+**Formatting:**
+- Minimal headers - let content speak
+- Avoid cookie-cutter slide structures
+- Each slide should feel intentionally designed, not template-filled`;
 }
 
 /**
@@ -1019,33 +1143,7 @@ Speaker notes should still be generated but will not be shown to the audience.
 - Use active voice and strong verbs
 - Include specific data points and metrics where available${documentContext ? ' from source documents' : ''}
 
-## ANTI-AI AESTHETIC GUIDELINES (MANDATORY)
-
-**Writing Constraints:**
-- NEVER use em dashes (—). Use commas or periods instead
-- AVOID overused AI words: delve, realm, tapestry, unleash, unlock, harness, navigate, embark, journey, elevate, robust, cutting-edge, game-changer, testament, vibrant, bustling, meticulous, paramount, pivotal, seamless, groundbreaking, revolutionize, transformative, unprecedented, beacon, landscape, illuminate, unveil, synergy, paradigm, foster, leverage, empower, holistic, streamline
-- AVOID generic phrases: "In today's digital age", "It's important to note", "When it comes to", "In the realm of", "A testament to", "Unlock the secrets", "Designed to enhance"
-- Write in direct, conversational language. Short sentences. Active voice
-- No lists of three unless essential
-- Prefer prose over excessive bullet points
-
-**Visual Constraints:**
-- NEVER recommend purple, violet, or indigo as primary colors
-- NEVER suggest purple-to-blue gradients
-- NEVER use gold or bronze accents
-- NEVER recommend neon colors on dark backgrounds
-- INSTEAD use: warm neutrals, earth tones, classic navy, forest green, terracotta, or specific brand colors
-- Prefer clean whites, subtle grays, and single accent colors
-
-**Typography Guidance:**
-- AVOID: Inter, Roboto, Arial, or generic system fonts
-- Prefer distinctive fonts appropriate to context (reference real design systems like Apple's minimalism or editorial design standards)
-- Use high contrast in weights (300 vs 700, not 400 vs 500)
-
-**Formatting:**
-- Minimal headers - let content speak
-- Avoid cookie-cutter slide structures
-- Each slide should feel intentionally designed, not template-filled
+${getAntiAIGuidelines(style)}
 
 ## Visual Recommendations
 
@@ -1564,6 +1662,30 @@ The code should be production-ready and immediately renderable by Remotion.`;
               }
             } else {
               console.log(`✗ Image generation failed for slide ${slide.slideNumber}`);
+
+              // FALLBACK: If this is a revision and image generation failed,
+              // try to preserve the existing image from the current deck
+              if (isRevision && currentDeck) {
+                const existingSlide = currentDeck.slides.find(s => s.slideNumber === slide.slideNumber);
+                if (existingSlide?.imageData) {
+                  slide.imageData = existingSlide.imageData;
+                  slide.imageGenerationFailed = true; // Flag to inform user
+                  imagesPreserved++;
+                  console.log(`↩ Preserved existing image for slide ${slide.slideNumber} (new image generation failed)`);
+                } else if (existingSlide?.videoUrl) {
+                  slide.videoUrl = existingSlide.videoUrl;
+                  slide.videoDuration = existingSlide.videoDuration;
+                  slide.videoFileSizeMb = existingSlide.videoFileSizeMb;
+                  slide.imageGenerationFailed = true;
+                  videosPreserved++;
+                  console.log(`↩ Preserved existing video for slide ${slide.slideNumber} (new image generation failed)`);
+                } else {
+                  slide.imageGenerationFailed = true;
+                  console.log(`⚠ No fallback image available for slide ${slide.slideNumber}`);
+                }
+              } else {
+                slide.imageGenerationFailed = true;
+              }
             }
 
             // Clear frame prompts if they exist - frames are now replaced by video
