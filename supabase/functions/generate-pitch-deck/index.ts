@@ -42,6 +42,8 @@ interface PitchDeckRequest {
   deckPurpose?: 'presenter' | 'audience';
   // Enable SVD video animation of still images
   animateSlides?: boolean;
+  // User-specified presentation title (if provided, use this instead of AI-generating)
+  presentationTitle?: string;
 }
 
 interface AnimationFrame {
@@ -857,7 +859,8 @@ serve(async (req) => {
       uploadedContent,  // Direct file upload content
       customInstructions,  // User-provided formatting/style instructions
       brandDocIds,  // Brand guidelines document IDs
-      deckPurpose = 'presenter'  // Presenter mode (with notes) or audience mode (self-contained)
+      deckPurpose = 'presenter',  // Presenter mode (with notes) or audience mode (self-contained)
+      presentationTitle  // User-specified presentation title (overrides AI-generated title)
     } = requestBody;
 
     const isRevision = !!revisionRequest && !!currentDeck;
@@ -1260,6 +1263,12 @@ Make it compelling, data-driven where appropriate (especially if source document
     }
 
     const pitchDeckStructure: PitchDeckResponse = JSON.parse(jsonMatch[0]);
+
+    // Override AI-generated title with user-specified title if provided
+    if (presentationTitle && presentationTitle.trim()) {
+      console.log(`Using user-specified presentation title: "${presentationTitle}"`);
+      pitchDeckStructure.title = presentationTitle.trim();
+    }
 
     // Step 2: Generate Remotion animation scripts (Phase 7 - Narrative Animation)
     if (enableRemotionAnimation) {

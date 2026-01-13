@@ -24,7 +24,7 @@ import { usePitchDeckStream } from '@/hooks/usePitchDeckStream';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { SlideCardSkeleton, TitleSlideCardSkeleton, SlideGenerationProgress } from '@/components/SlideCardSkeleton';
-import { Loader2, Presentation, Download, Eye, FileText, Layers, Share2, X, Archive, Monitor, Settings, Upload, File, Trash2, Square, AlertTriangle, HelpCircle } from 'lucide-react';
+import { Loader2, Presentation, Download, Eye, FileText, Layers, Share2, X, Archive, Monitor, Settings, Upload, File, Trash2, Square, AlertTriangle, HelpCircle, Pencil, Check } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { arrayBufferToBase64 } from '@/lib/base64Utils';
 import { useQuery } from '@tanstack/react-query';
@@ -123,6 +123,12 @@ export default function PitchDeck() {
   // Custom Instructions & Brand Document state
   const [customInstructions, setCustomInstructions] = useState('');
   const [brandDocIds, setBrandDocIds] = useState<string[]>([]);
+
+  // Naming & Versioning state
+  const [presentationTitle, setPresentationTitle] = useState(''); // Optional: exact title on slides (AI generates if blank)
+  const [displayName, setDisplayName] = useState(''); // Optional: name in saved list (with auto-versioning V1, V2...)
+  const [editingDisplayNameId, setEditingDisplayNameId] = useState<string | null>(null); // ID of deck being edited inline
+  const [editingDisplayNameValue, setEditingDisplayNameValue] = useState(''); // Temp value for inline edit
 
   // Deck Purpose state - presenter (with notes) vs audience (self-contained)
   const [deckPurpose, setDeckPurpose] = useState<'presenter' | 'audience'>('presenter');
@@ -717,6 +723,7 @@ export default function PitchDeck() {
           customInstructions: customInstructions || undefined,
           brandDocIds: brandDocIds.length > 0 ? brandDocIds : undefined,
           deckPurpose,
+          presentationTitle: presentationTitle.trim() || undefined, // Use user's title if provided
         });
       } catch (error) {
         console.error('Pitch deck streaming error:', error);
@@ -742,7 +749,8 @@ export default function PitchDeck() {
           uploadedContent,
           customInstructions: customInstructions || undefined,
           brandDocIds: brandDocIds.length > 0 ? brandDocIds : undefined,
-          deckPurpose
+          deckPurpose,
+          presentationTitle: presentationTitle.trim() || undefined // Use user's title if provided
         }
       });
 
@@ -1162,6 +1170,35 @@ export default function PitchDeck() {
     }
   };
 
+  // Helper function to calculate next version number for a display name
+  const calculateNextVersion = async (baseName: string): Promise<{ displayName: string; versionNumber: number }> => {
+    if (!user) return { displayName: baseName, versionNumber: 1 };
+
+    // Remove any existing V# suffix to get the true base name
+    const cleanBaseName = baseName.replace(/ V\d+$/, '').trim();
+
+    // Find all decks with this base name (with or without version suffix)
+    const { data: existingDecks } = await supabase
+      .from('pitch_decks')
+      .select('display_name, version_number')
+      .eq('user_id', user.id)
+      .or(`display_name.ilike.${cleanBaseName},display_name.ilike.${cleanBaseName} V%`);
+
+    if (!existingDecks || existingDecks.length === 0) {
+      // First deck with this name - V1
+      return { displayName: `${cleanBaseName} V1`, versionNumber: 1 };
+    }
+
+    // Find the highest version number
+    const highestVersion = existingDecks.reduce((max, deck) => {
+      const version = deck.version_number || 1;
+      return version > max ? version : max;
+    }, 0);
+
+    const nextVersion = highestVersion + 1;
+    return { displayName: `${cleanBaseName} V${nextVersion}`, versionNumber: nextVersion };
+  };
+
   const handleSave = async () => {
     if (!user || !pitchDeck) {
       toast.error('Please generate a pitch deck first');
@@ -1178,7 +1215,7 @@ export default function PitchDeck() {
       };
 
       if (savedDeckId) {
-        // Update existing deck
+        // Update existing deck - don't change display_name or version
         const { error } = await supabase
           .from('pitch_decks')
           .update({
@@ -1198,7 +1235,24 @@ export default function PitchDeck() {
         if (error) throw error;
         toast.success('Pitch deck updated successfully!');
       } else {
-        // Create new deck
+        // Create new deck with versioning
+        // Determine the display name: user-provided or fallback to presentation title
+        const userDisplayName = displayName.trim() || pitchDeck.title;
+
+        // Calculate version number if display name is provided
+        let finalDisplayName = userDisplayName;
+        let versionNumber = 1;
+
+        if (displayName.trim()) {
+          // User provided a display name - apply auto-versioning
+          const versionInfo = await calculateNextVersion(displayName.trim());
+          finalDisplayName = versionInfo.displayName;
+          versionNumber = versionInfo.versionNumber;
+        } else {
+          // No display name - use title without versioning (first time)
+          finalDisplayName = pitchDeck.title;
+        }
+
         const { data, error } = await supabase
           .from('pitch_decks')
           .insert({
@@ -1212,13 +1266,15 @@ export default function PitchDeck() {
             animation_style: animationStyle,
             number_of_slides: pitchDeck.totalSlides,
             source_document_ids: selectedDocIds.length > 0 ? selectedDocIds : null,
+            display_name: finalDisplayName,
+            version_number: versionNumber,
           })
           .select()
           .single();
 
         if (error) throw error;
         setSavedDeckId(data.id);
-        toast.success('Pitch deck saved successfully!');
+        toast.success(`Pitch deck saved as "${finalDisplayName}"!`);
       }
 
       // Refetch saved decks list
@@ -1245,7 +1301,7 @@ export default function PitchDeck() {
       };
 
       if (existingDeckId) {
-        // Update existing deck
+        // Update existing deck - don't change display_name or version
         const { error } = await supabase
           .from('pitch_decks')
           .update({
@@ -1267,7 +1323,21 @@ export default function PitchDeck() {
         setHasUnsavedChanges(false);
         return existingDeckId;
       } else {
-        // Create new deck
+        // Create new deck with versioning
+        // Determine the display name: user-provided or fallback to presentation title
+        const userDisplayName = displayName.trim() || deckToSave.title;
+
+        // Calculate version number if display name is provided
+        let finalDisplayName = userDisplayName;
+        let versionNumber = 1;
+
+        if (displayName.trim()) {
+          // User provided a display name - apply auto-versioning
+          const versionInfo = await calculateNextVersion(displayName.trim());
+          finalDisplayName = versionInfo.displayName;
+          versionNumber = versionInfo.versionNumber;
+        }
+
         const { data, error } = await supabase
           .from('pitch_decks')
           .insert({
@@ -1281,6 +1351,8 @@ export default function PitchDeck() {
             animation_style: animationStyle,
             number_of_slides: deckToSave.totalSlides,
             source_document_ids: selectedDocIds.length > 0 ? selectedDocIds : null,
+            display_name: finalDisplayName,
+            version_number: versionNumber,
           })
           .select()
           .single();
@@ -1299,7 +1371,7 @@ export default function PitchDeck() {
     } finally {
       setIsAutoSaving(false);
     }
-  }, [user, topic, targetAudience, style, animationStyle, selectedDocIds, refetchSavedDecks]);
+  }, [user, topic, targetAudience, style, animationStyle, selectedDocIds, displayName, refetchSavedDecks, calculateNextVersion]);
 
   // Auto-save effect: trigger save when deck is generated or changes
   useEffect(() => {
@@ -1494,6 +1566,26 @@ export default function PitchDeck() {
     } catch (error) {
       console.error('Archive error:', error);
       toast.error(archive ? 'Failed to archive pitch deck' : 'Failed to restore pitch deck');
+    }
+  };
+
+  // Handle inline display name editing
+  const handleUpdateDisplayName = async (deckId: string, newDisplayName: string) => {
+    try {
+      const { error } = await supabase
+        .from('pitch_decks')
+        .update({ display_name: newDisplayName.trim() })
+        .eq('id', deckId);
+
+      if (error) throw error;
+
+      toast.success('Display name updated');
+      setEditingDisplayNameId(null);
+      setEditingDisplayNameValue('');
+      refetchSavedDecks();
+    } catch (error) {
+      console.error('Update display name error:', error);
+      toast.error('Failed to update display name');
     }
   };
 
@@ -1796,9 +1888,67 @@ Generated with AI Query Hub
                     >
                       <div
                         className="flex-1 cursor-pointer"
-                        onClick={() => handleLoadDeck(deck.id)}
+                        onClick={() => editingDisplayNameId !== deck.id && handleLoadDeck(deck.id)}
                       >
-                        <h3 className="font-medium">{deck.title}</h3>
+                        {/* Display Name with inline editing */}
+                        {editingDisplayNameId === deck.id ? (
+                          <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                            <Input
+                              value={editingDisplayNameValue}
+                              onChange={(e) => setEditingDisplayNameValue(e.target.value)}
+                              className="h-7 text-sm"
+                              autoFocus
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  handleUpdateDisplayName(deck.id, editingDisplayNameValue);
+                                } else if (e.key === 'Escape') {
+                                  setEditingDisplayNameId(null);
+                                  setEditingDisplayNameValue('');
+                                }
+                              }}
+                            />
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 w-7 p-0"
+                              onClick={() => handleUpdateDisplayName(deck.id, editingDisplayNameValue)}
+                            >
+                              <Check className="h-4 w-4 text-green-600" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 w-7 p-0"
+                              onClick={() => {
+                                setEditingDisplayNameId(null);
+                                setEditingDisplayNameValue('');
+                              }}
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2">
+                            <h3 className="font-medium">{deck.display_name || deck.title}</h3>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 w-6 p-0 opacity-50 hover:opacity-100"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setEditingDisplayNameId(deck.id);
+                                setEditingDisplayNameValue(deck.display_name || deck.title);
+                              }}
+                              title="Edit display name"
+                            >
+                              <Pencil className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        )}
+                        {/* Show presentation title if different from display name */}
+                        {deck.display_name && deck.display_name !== deck.title && (
+                          <p className="text-xs text-muted-foreground">Presentation: {deck.title}</p>
+                        )}
                         {deck.subtitle && (
                           <p className="text-sm text-muted-foreground">{deck.subtitle}</p>
                         )}
@@ -1809,6 +1959,11 @@ Generated with AI Query Hub
                           {deck.style && (
                             <Badge variant="outline" className="text-xs">
                               {deck.style}
+                            </Badge>
+                          )}
+                          {deck.version_number && deck.version_number > 1 && (
+                            <Badge variant="outline" className="text-xs bg-blue-50">
+                              V{deck.version_number}
                             </Badge>
                           )}
                           <span className="text-xs text-muted-foreground">
@@ -1866,6 +2021,66 @@ Generated with AI Query Hub
                 onChange={(e) => setTopic(e.target.value)}
                 rows={3}
               />
+            </div>
+
+            {/* Presentation Title & Display Name Section */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Presentation Title - appears on slides */}
+              <div>
+                <div className="flex items-center gap-1.5 mb-1">
+                  <Label htmlFor="presentationTitle">Presentation Title</Label>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <HelpCircle className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs">
+                        <p className="font-medium mb-1">Title on your slides:</p>
+                        <ul className="text-xs space-y-1">
+                          <li><strong>If specified:</strong> Your exact title appears on the title slide</li>
+                          <li><strong>If blank:</strong> AI generates a compelling title based on your topic</li>
+                        </ul>
+                        <p className="text-xs mt-2 text-muted-foreground">This is what your audience sees.</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+                <Input
+                  id="presentationTitle"
+                  placeholder="e.g., Revolutionizing Fintech (AI generates if blank)"
+                  value={presentationTitle}
+                  onChange={(e) => setPresentationTitle(e.target.value)}
+                />
+              </div>
+
+              {/* Display Name - for saved list only */}
+              <div>
+                <div className="flex items-center gap-1.5 mb-1">
+                  <Label htmlFor="displayName">Display Name</Label>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <HelpCircle className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs">
+                        <p className="font-medium mb-1">Name in your saved list:</p>
+                        <ul className="text-xs space-y-1">
+                          <li><strong>Purpose:</strong> Organize your decks (e.g., "Client Pitch", "Investor Deck")</li>
+                          <li><strong>Auto-versioning:</strong> Creates V1, V2, V3... when same name is used</li>
+                          <li><strong>Not on slides:</strong> Version numbers only appear in your saved list</li>
+                        </ul>
+                        <p className="text-xs mt-2 text-muted-foreground">If blank, uses the presentation title.</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+                <Input
+                  id="displayName"
+                  placeholder="e.g., Client Pitch, Investor Deck (auto-versions)"
+                  value={displayName}
+                  onChange={(e) => setDisplayName(e.target.value)}
+                />
+              </div>
             </div>
 
             {/* Quick File Upload Section */}
