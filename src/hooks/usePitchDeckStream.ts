@@ -45,6 +45,7 @@ interface GenerateParams {
   customInstructions?: string; // User-provided formatting/style instructions
   brandDocIds?: string[]; // Brand guidelines document IDs
   deckPurpose?: 'presenter' | 'audience'; // Presenter (with notes) vs audience (self-contained)
+  presentationTitle?: string; // User-specified presentation title (overrides AI-generated)
 }
 
 type StreamStatus = 'idle' | 'starting' | 'generating_structure' | 'generating_slides' | 'generating_images' | 'complete' | 'stopped' | 'error';
