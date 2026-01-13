@@ -35,8 +35,11 @@ const DragDropUpload = ({ onFilesAdded }: DragDropUploadProps) => {
 
   const acceptedTypes = [
     '.txt', '.md', '.pdf', '.docx', '.doc', '.rtf', '.fdx',
+    '.xlsx', '.xls', '.csv',
     'text/*', 'application/pdf', 'application/msword',
     'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    'application/vnd.ms-excel',
     'application/x-final-draft'
   ];
 
@@ -82,7 +85,7 @@ const DragDropUpload = ({ onFilesAdded }: DragDropUploadProps) => {
       const fileExt = '.' + (fileName.split('.').pop() || '');
 
       // Check by file extension first (most reliable)
-      const validExtensions = ['.txt', '.md', '.pdf', '.docx', '.doc', '.rtf', '.fdx', '.json', '.xml', '.csv'];
+      const validExtensions = ['.txt', '.md', '.pdf', '.docx', '.doc', '.rtf', '.fdx', '.json', '.xml', '.csv', '.xlsx', '.xls'];
       const hasValidExtension = validExtensions.includes(fileExt);
 
       // Also check MIME type as fallback
@@ -91,6 +94,8 @@ const DragDropUpload = ({ onFilesAdded }: DragDropUploadProps) => {
         'application/pdf',
         'application/msword',
         'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'application/vnd.ms-excel',
         'application/rtf',
         'application/json',
         'application/xml',
@@ -104,7 +109,7 @@ const DragDropUpload = ({ onFilesAdded }: DragDropUploadProps) => {
       if (!isValidType) {
         toast({
           title: 'Invalid File Type',
-          description: `${file.name} is not a supported file type. Supported: PDF, DOCX, RTF, TXT, MD, FDX`,
+          description: `${file.name} is not a supported file type. Supported: PDF, DOCX, RTF, TXT, MD, FDX, XLSX, XLS, CSV`,
           variant: 'destructive',
         });
       }
@@ -155,8 +160,8 @@ const DragDropUpload = ({ onFilesAdded }: DragDropUploadProps) => {
     const { file } = uploadingFile;
     const fileName = file.name.toLowerCase();
 
-    // Handle text files directly (fast path)
-    if (file.type.startsWith('text/') || fileName.endsWith('.md') || fileName.endsWith('.txt')) {
+    // Handle text files directly (fast path) - but NOT CSV which needs structured parsing
+    if ((file.type.startsWith('text/') && !fileName.endsWith('.csv')) || fileName.endsWith('.md') || fileName.endsWith('.txt')) {
       const reader = new FileReader();
       reader.onload = async (e) => {
         const content = e.target?.result as string;
@@ -200,7 +205,7 @@ const DragDropUpload = ({ onFilesAdded }: DragDropUploadProps) => {
           )
         );
 
-        // Determine mime type (browser may not detect FDX files correctly)
+        // Determine mime type (browser may not detect some files correctly)
         let mimeType = file.type;
         if (fileName.endsWith('.fdx')) {
           mimeType = 'application/x-final-draft';
@@ -208,6 +213,12 @@ const DragDropUpload = ({ onFilesAdded }: DragDropUploadProps) => {
           mimeType = 'application/rtf';
         } else if (fileName.endsWith('.pdf') && !mimeType) {
           mimeType = 'application/pdf';
+        } else if (fileName.endsWith('.xlsx')) {
+          mimeType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+        } else if (fileName.endsWith('.xls') && !mimeType) {
+          mimeType = 'application/vnd.ms-excel';
+        } else if (fileName.endsWith('.csv')) {
+          mimeType = 'text/csv';
         }
 
         // Start simulated progress for long-running operations (PDFs with Claude Vision can take 10-30s)
@@ -462,7 +473,14 @@ const DragDropUpload = ({ onFilesAdded }: DragDropUploadProps) => {
         <p className="text-muted-foreground mb-4">
           Or click to browse files from your computer
         </p>
-        <Button variant="outline">
+        <Button
+          variant="outline"
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            handleFileSelect();
+          }}
+        >
           <Upload className="h-4 w-4 mr-2" />
           Choose Files
         </Button>

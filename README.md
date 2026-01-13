@@ -1,177 +1,177 @@
-# AI Query Hub
+# Supabase CLI
 
-AI-powered document search and knowledge management platform. Upload documents, create knowledge bases, and query them using natural language.
+[![Coverage Status](https://coveralls.io/repos/github/supabase/cli/badge.svg?branch=main)](https://coveralls.io/github/supabase/cli?branch=main) [![Bitbucket Pipelines](https://img.shields.io/bitbucket/pipelines/supabase-cli/setup-cli/master?style=flat-square&label=Bitbucket%20Canary)](https://bitbucket.org/supabase-cli/setup-cli/pipelines) [![Gitlab Pipeline Status](https://img.shields.io/gitlab/pipeline-status/sweatybridge%2Fsetup-cli?label=Gitlab%20Canary)
+](https://gitlab.com/sweatybridge/setup-cli/-/pipelines)
 
-**Live App**: [AI Query Hub](https://drive-flow-ai-know.netlify.app/)
-**Lovable Project**: https://lovable.dev/projects/e9679863-45e8-4512-afee-c00b1a012e4a
+[Supabase](https://supabase.io) is an open source Firebase alternative. We're building the features of Firebase using enterprise-grade open source tools.
 
-## How can I edit this code?
+This repository contains all the functionality for Supabase CLI.
 
-There are several ways of editing your application.
+- [x] Running Supabase locally
+- [x] Managing database migrations
+- [x] Creating and deploying Supabase Functions
+- [x] Generating types directly from your database schema
+- [x] Making authenticated HTTP requests to [Management API](https://supabase.com/docs/reference/api/introduction)
 
-**Use Lovable**
+## Getting started
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/e9679863-45e8-4512-afee-c00b1a012e4a) and start prompting.
+### Install the CLI
 
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Set up git hooks for security (prevents pushing secrets)
-./scripts/setup-git-hooks.sh
-
-# Step 5: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
-
-### 🔒 Security Setup (Important!)
-
-After cloning, **immediately run** the git hooks setup:
+Available via [NPM](https://www.npmjs.com) as dev dependency. To install:
 
 ```bash
-./scripts/setup-git-hooks.sh
+npm i supabase --save-dev
 ```
 
-This installs a pre-push hook that scans for secrets (API keys, tokens, etc.) before you push to GitHub. See [`docs/GIT_HOOKS.md`](docs/GIT_HOOKS.md) for details.
+When installing with yarn 4, you need to disable experimental fetch with the following nodejs config.
 
-**Edit a file directly in GitHub**
-
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
-
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
-
-- **Vite** - Fast build tool and dev server
-- **TypeScript** - Type-safe JavaScript
-- **React** - UI framework
-- **shadcn-ui** - Component library
-- **Tailwind CSS** - Utility-first CSS framework
-- **Supabase** - Backend (PostgreSQL, Auth, Edge Functions, Storage)
-- **Claude Sonnet 4.5** - Primary AI model (via Anthropic API)
-- **OpenRouter** - Fallback AI provider
-
-## Design System
-
-### Navy & Gold Theme
-
-The application uses a professional "Deep Corporate" color scheme:
-
-- **Primary (Navy)**: #0A2342 - Headers, navigation, primary elements
-- **Accent (Gold)**: #FFC300 - CTAs, highlights, important actions
-- **Backgrounds**: White and light gray (#F8F8F8)
-
-**Key Features:**
-- Solid colors (no animated gradients) for clean, professional aesthetic
-- Navy conveys trust and authority
-- Gold creates high contrast for important CTAs
-- Fully responsive and accessible (WCAG AA)
-- Dark mode support
-
-### Customizing Colors
-
-Colors are defined as CSS variables in `src/index.css`:
-
-```css
-:root {
-  --primary: 213 74% 15%;    /* Navy */
-  --accent: 46 100% 50%;     /* Gold */
-  --secondary: 213 74% 20%;  /* Light Navy */
-  --muted: 0 0% 97%;         /* Light Gray */
-}
+```
+NODE_OPTIONS=--no-experimental-fetch yarn add supabase
 ```
 
-All colors use HSL format for consistency. Update both `:root` (light mode) and `.dark` (dark mode) sections when modifying theme.
+> **Note**
+For Bun versions below v1.0.17, you must add `supabase` as a [trusted dependency](https://bun.sh/guides/install/trusted) before running `bun add -D supabase`.
 
-For detailed theming documentation, see `CLAUDE.md`.
+<details>
+  <summary><b>macOS</b></summary>
 
-## How can I deploy this project?
+  Available via [Homebrew](https://brew.sh). To install:
 
-Simply open [Lovable](https://lovable.dev/projects/e9679863-45e8-4512-afee-c00b1a012e4a) and click on Share -> Publish.
+  ```sh
+  brew install supabase/tap/supabase
+  ```
 
-## Can I connect a custom domain to my Lovable project?
+  To install the beta release channel:
+  
+  ```sh
+  brew install supabase/tap/supabase-beta
+  brew link --overwrite supabase-beta
+  ```
+  
+  To upgrade:
 
-Yes, you can!
+  ```sh
+  brew upgrade supabase
+  ```
+</details>
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+<details>
+  <summary><b>Windows</b></summary>
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+  Available via [Scoop](https://scoop.sh). To install:
 
-## Environment Variables
+  ```powershell
+  scoop bucket add supabase https://github.com/supabase/scoop-bucket.git
+  scoop install supabase
+  ```
 
-### Frontend (.env)
+  To upgrade:
+
+  ```powershell
+  scoop update supabase
+  ```
+</details>
+
+<details>
+  <summary><b>Linux</b></summary>
+
+  Available via [Homebrew](https://brew.sh) and Linux packages.
+
+  #### via Homebrew
+
+  To install:
+
+  ```sh
+  brew install supabase/tap/supabase
+  ```
+
+  To upgrade:
+
+  ```sh
+  brew upgrade supabase
+  ```
+
+  #### via Linux packages
+
+  Linux packages are provided in [Releases](https://github.com/supabase/cli/releases). To install, download the `.apk`/`.deb`/`.rpm`/`.pkg.tar.zst` file depending on your package manager and run the respective commands.
+
+  ```sh
+  sudo apk add --allow-untrusted <...>.apk
+  ```
+
+  ```sh
+  sudo dpkg -i <...>.deb
+  ```
+
+  ```sh
+  sudo rpm -i <...>.rpm
+  ```
+
+  ```sh
+  sudo pacman -U <...>.pkg.tar.zst
+  ```
+</details>
+
+<details>
+  <summary><b>Other Platforms</b></summary>
+
+  You can also install the CLI via [go modules](https://go.dev/ref/mod#go-install) without the help of package managers.
+
+  ```sh
+  go install github.com/supabase/cli@latest
+  ```
+
+  Add a symlink to the binary in `$PATH` for easier access:
+
+  ```sh
+  ln -s "$(go env GOPATH)/bin/cli" /usr/bin/supabase
+  ```
+
+  This works on other non-standard Linux distros.
+</details>
+
+<details>
+  <summary><b>Community Maintained Packages</b></summary>
+
+  Available via [pkgx](https://pkgx.sh/). Package script [here](https://github.com/pkgxdev/pantry/blob/main/projects/supabase.com/cli/package.yml).
+  To install in your working directory:
+
+  ```bash
+  pkgx install supabase
+  ```
+
+  Available via [Nixpkgs](https://nixos.org/). Package script [here](https://github.com/NixOS/nixpkgs/blob/master/pkgs/development/tools/supabase-cli/default.nix).
+</details>
+
+### Run the CLI
+
+```bash
+supabase bootstrap
 ```
-VITE_SUPABASE_URL=https://fskwutnoxbbflzqrphro.supabase.co
-VITE_SUPABASE_ANON_KEY=<your-anon-key>
+
+Or using npx:
+
+```bash
+npx supabase bootstrap
 ```
 
-### Supabase Edge Functions
+The bootstrap command will guide you through the process of setting up a Supabase project using one of the [starter](https://github.com/supabase-community/supabase-samples/blob/main/samples.json) templates.
 
-Configure these in your Supabase dashboard (Project Settings → Edge Functions):
+## Docs
 
-- `ANTHROPIC_API_KEY` – Claude AI access (primary provider)
-- `OPENROUTER_API_KEY` – OpenRouter API access (fallback provider)
-- `OPENAI_API_KEY` – OpenAI API access (research agent)
-- `BRAVE_SEARCH_API_KEY` – Web search capability for Claude
-- `SUPABASE_URL` – Your Supabase project URL
-- `SUPABASE_SERVICE_ROLE_KEY` – Service role key for database operations
+Command & config reference can be found [here](https://supabase.com/docs/reference/cli/about).
 
-### Optional Configuration
+## Breaking changes
 
-- `MODEL_PROVIDER` – Override AI provider (claude/openrouter/ollama)
-- `USE_OPENROUTER` – Set to 'true' to prefer OpenRouter
-- `USE_LOCAL_LLM` – Set to 'true' to use local Ollama instance
+We follow semantic versioning for changes that directly impact CLI commands, flags, and configurations.
 
-## Key Features
+However, due to dependencies on other service images, we cannot guarantee that schema migrations, seed.sql, and generated types will always work for the same CLI major version. If you need such guarantees, we encourage you to pin a specific version of CLI in package.json.
 
-- 📄 **Document Upload** - PDF, DOCX, TXT, MD, CSV, JSON support
-- 🔍 **AI-Powered Search** - Natural language queries across documents
-- 📚 **Knowledge Bases** - Organize documents into searchable collections
-- 💬 **AI Chat** - Conversational interface with document context
-- ⏱️ **Timeline** - Track and plan your daily activities
-- 👥 **Team Collaboration** - Share documents and timelines (Business tier)
-- 🤝 **Assistant Delegation** - Executive tier assistant management
-- 🔐 **Secure** - Row-level security, private data storage
+## Developing
 
-## Subscription Tiers
+To run from source:
 
-- **Starter** ($9 AUD/month) - 200 queries, 5GB storage, 3 knowledge bases
-- **Pro** ($45 AUD/month) - 1,000 queries, 50GB storage, unlimited knowledge bases
-- **Business** ($150 AUD/month) - Unlimited queries, 500GB storage, team features
-
-All plans include a 14-day free trial.
-
-## Documentation
-
-- **CLAUDE.md** - Comprehensive development guide for AI assistants and developers
-- **research-agent/README.md** - Deep research agent documentation
-
-## Support
-
-If something doesn't work, please [open an issue](https://github.com/Thabonel/drive-flow-ai-know/issues) or contact support.
+```sh
+# Go >= 1.22
+go run . help
+```
