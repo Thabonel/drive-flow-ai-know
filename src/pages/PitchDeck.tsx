@@ -1863,7 +1863,7 @@ Generated with AI Query Hub
                 </Button>
               </div>
               <Button
-                variant="ghost"
+                variant="outline"
                 size="sm"
                 onClick={() => setShowSavedDecks(!showSavedDecks)}
               >
@@ -2164,7 +2164,7 @@ Generated with AI Query Hub
               <div className="flex items-center justify-between">
                 <Label>Select source from documents</Label>
                 <Button
-                  variant="ghost"
+                  variant="outline"
                   size="sm"
                   onClick={() => setShowDocSelector(!showDocSelector)}
                 >
@@ -2178,7 +2178,7 @@ Generated with AI Query Hub
                     {selectedDocIds.length} document{selectedDocIds.length > 1 ? 's' : ''} selected
                   </p>
                   <Button
-                    variant="ghost"
+                    variant="outline"
                     size="sm"
                     onClick={() => setSelectedDocIds([])}
                   >
