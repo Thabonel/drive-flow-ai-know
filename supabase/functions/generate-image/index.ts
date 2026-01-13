@@ -16,6 +16,8 @@ interface ImageGenerationResponse {
   imageUrl?: string;
   imageData?: string; // base64 encoded image
   error?: string;
+  errorCode?: 'CONTENT_BLOCKED' | 'API_ERROR' | 'CONFIG_ERROR' | 'UNKNOWN';
+  suggestion?: string;
 }
 
 // Design system guidelines for human-crafted aesthetic
@@ -154,19 +156,88 @@ serve(async (req) => {
       const errorText = await response.text();
       console.error('Gemini API error:', errorText);
 
-      // Fallback: Return a placeholder or error
+      // Check for specific error types
+      if (response.status === 400 && errorText.toLowerCase().includes('safety')) {
+        return new Response(
+          JSON.stringify({
+            error: 'Image generation was blocked due to content guidelines. Try rephrasing the description.',
+            errorCode: 'CONTENT_BLOCKED',
+            suggestion: 'Remove specific demographic descriptors or sensitive terms and try again.'
+          } as ImageGenerationResponse),
+          {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 400,
+          }
+        );
+      }
+
       throw new Error(`Image generation failed: ${response.status} - ${errorText}`);
     }
 
     const result = await response.json();
 
+    // Check for content filtering / safety blocks in response
+    const candidate = result.candidates?.[0];
+    const finishReason = candidate?.finishReason;
+    const safetyRatings = candidate?.safetyRatings;
+    const promptFeedback = result.promptFeedback;
+
+    // Check if prompt was blocked
+    if (promptFeedback?.blockReason) {
+      console.error('Prompt blocked:', promptFeedback.blockReason);
+      return new Response(
+        JSON.stringify({
+          error: 'Image generation was blocked - the description may contain terms that triggered content filters.',
+          errorCode: 'CONTENT_BLOCKED',
+          suggestion: 'Try rephrasing without specific demographic descriptors (e.g., use "professional" instead of specific characteristics).'
+        } as ImageGenerationResponse),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 400,
+        }
+      );
+    }
+
+    // Check if generation was stopped due to safety
+    if (finishReason === 'SAFETY' || finishReason === 'RECITATION') {
+      console.error('Generation stopped due to safety:', finishReason, safetyRatings);
+      return new Response(
+        JSON.stringify({
+          error: 'Image generation was stopped due to content guidelines.',
+          errorCode: 'CONTENT_BLOCKED',
+          suggestion: 'Try using more general descriptions. Avoid specific demographic terms or sensitive topics.'
+        } as ImageGenerationResponse),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 400,
+        }
+      );
+    }
+
     // Extract the generated image - search through parts to find one with inlineData
-    const imagePart = result.candidates?.[0]?.content?.parts?.find((p: any) => p.inlineData);
+    const imagePart = candidate?.content?.parts?.find((p: any) => p.inlineData);
     const imageData = imagePart?.inlineData?.data;
 
     if (!imageData) {
       console.error('Unexpected response format:', JSON.stringify(result).substring(0, 500));
-      throw new Error('No image data returned from API. The model may not support image generation for this prompt.');
+
+      // Check if there's a text response that might explain why
+      const textPart = candidate?.content?.parts?.find((p: any) => p.text);
+      if (textPart?.text) {
+        console.log('Model text response:', textPart.text);
+      }
+
+      return new Response(
+        JSON.stringify({
+          error: 'No image was generated. The description may need adjustment.',
+          errorCode: 'CONTENT_BLOCKED',
+          suggestion: 'Try simplifying the description or removing any potentially sensitive terms.'
+        } as ImageGenerationResponse),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 400,
+        }
+      );
     }
 
     console.log('Image generated successfully with Gemini 2.0 Flash');
