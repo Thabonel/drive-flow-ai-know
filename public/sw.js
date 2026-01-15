@@ -1,18 +1,20 @@
 // Service Worker for AI Query Hub PWA
-const CACHE_NAME = 'ai-query-hub-v1';
+// Version updated on each deployment - change this to invalidate caches
+const CACHE_VERSION = 'v2';
+const CACHE_NAME = `ai-query-hub-${CACHE_VERSION}`;
+
+// Only cache static assets - NOT HTML (HTML should always be fresh)
 const urlsToCache = [
-  '/',
-  '/index.html',
   '/favicon.svg',
   '/manifest.json'
 ];
 
-// Install event - cache essential files
+// Install event - cache essential static files only
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then((cache) => {
-        console.log('Opened cache');
+        console.log('Opened cache:', CACHE_NAME);
         return cache.addAll(urlsToCache);
       })
   );
@@ -38,17 +40,38 @@ self.addEventListener('activate', (event) => {
   return self.clients.claim();
 });
 
-// Fetch event - serve from cache, fallback to network
+// Fetch event - different strategies for different content types
 self.addEventListener('fetch', (event) => {
   // Skip cross-origin requests
   if (!event.request.url.startsWith(self.location.origin)) {
     return;
   }
 
+  const url = new URL(event.request.url);
+
+  // Network-first for HTML/navigation requests (always get fresh content)
+  if (event.request.mode === 'navigate' ||
+      url.pathname === '/' ||
+      url.pathname.endsWith('.html')) {
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => {
+          // Got fresh response - don't cache HTML
+          return response;
+        })
+        .catch(() => {
+          // Network failed - try cache as fallback for offline support
+          return caches.match(event.request);
+        })
+    );
+    return;
+  }
+
+  // Cache-first for static assets (JS, CSS, images, fonts)
   event.respondWith(
     caches.match(event.request)
       .then((response) => {
-        // Cache hit - return response
+        // Cache hit - return cached response
         if (response) {
           return response;
         }
@@ -65,7 +88,7 @@ self.addEventListener('fetch', (event) => {
           // Clone the response
           const responseToCache = response.clone();
 
-          // Cache the fetched response for future use
+          // Cache static assets for future use
           caches.open(CACHE_NAME)
             .then((cache) => {
               cache.put(event.request, responseToCache);

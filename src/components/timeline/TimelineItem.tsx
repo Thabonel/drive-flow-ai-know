@@ -158,9 +158,15 @@ export function TimelineItem({
   };
 
   // Calculate display position (with drag offset)
-  const displayX = x + currentDragDelta.x;
-  const displayY = y + currentDragDelta.y;
-  const displayWidth = Math.max(width + resizeDelta, 20); // Minimum width
+  // Use fallback values to prevent undefined/NaN in SVG attributes
+  const displayX = Number.isFinite(x + currentDragDelta.x) ? x + currentDragDelta.x : 0;
+  const displayY = Number.isFinite(y + currentDragDelta.y) ? y + currentDragDelta.y : 0;
+  const displayWidth = Number.isFinite(width + resizeDelta) ? Math.max(width + resizeDelta, 20) : 20; // Minimum width
+
+  // Don't render if critical values are invalid
+  if (!Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(width) || !Number.isFinite(height)) {
+    return null;
+  }
 
   // Add global mouse handlers for resize (SVG events can be finicky)
   React.useEffect(() => {
