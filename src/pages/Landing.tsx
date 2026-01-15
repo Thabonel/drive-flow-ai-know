@@ -215,15 +215,15 @@ export default function Landing() {
             <DocumentFlowHero className="max-w-4xl w-full" />
           </div>
 
-          {/* Trust Badges - Replacing Disabled Stats */}
+          {/* Trust Badges - Privacy & Security */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-16">
             <div className="text-center p-6 rounded-2xl bg-primary/5 border border-primary/20 shadow-card hover:shadow-lg transition-all">
               <h3 className="text-xl font-bold text-primary mb-2">Secure & Encrypted</h3>
-              <p className="text-sm text-muted-foreground">Your documents are stored securely with industry-standard encryption.</p>
+              <p className="text-sm text-muted-foreground">Your documents are stored securely with industry-standard encryption. Unlike other AI tools, we don't use your data to train AI models.</p>
             </div>
             <div className="text-center p-6 rounded-2xl bg-success/5 border border-success/20 shadow-card hover:shadow-lg transition-all">
               <h3 className="text-xl font-bold text-success mb-2">100% Private</h3>
-              <p className="text-sm text-muted-foreground">Your documents stay private. Use your own storage or ours - you choose.</p>
+              <p className="text-sm text-muted-foreground">Your documents and conversations remain private. Use your own storage or ours - your data stays yours.</p>
             </div>
             <div className="text-center p-6 rounded-2xl bg-accent/5 border border-accent/20 shadow-card hover:shadow-lg transition-all">
               <h3 className="text-xl font-bold text-accent mb-2">Lightning Fast</h3>

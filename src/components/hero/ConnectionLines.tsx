@@ -50,7 +50,12 @@ export function ConnectionLines({
 
       {activeConnections.map((docIndex, i) => {
         const docPos = documentPositions[docIndex];
-        if (!docPos) return null;
+        // Safety check: ensure all coordinates are valid numbers
+        if (!docPos ||
+            !Number.isFinite(centerPoint.x) || !Number.isFinite(centerPoint.y) ||
+            !Number.isFinite(docPos.x) || !Number.isFinite(docPos.y)) {
+          return null;
+        }
 
         const lineLength = Math.sqrt(
           Math.pow(docPos.x - centerPoint.x, 2) +
@@ -89,7 +94,12 @@ export function ConnectionLines({
       {/* Animated particles traveling along lines */}
       {!reducedMotion && showLines && activeConnections.map((docIndex, i) => {
         const docPos = documentPositions[docIndex];
-        if (!docPos) return null;
+        // Safety check: ensure all coordinates are valid numbers
+        if (!docPos ||
+            !Number.isFinite(centerPoint.x) || !Number.isFinite(centerPoint.y) ||
+            !Number.isFinite(docPos.x) || !Number.isFinite(docPos.y)) {
+          return null;
+        }
 
         return (
           <motion.circle
