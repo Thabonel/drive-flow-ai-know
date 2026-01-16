@@ -6,6 +6,7 @@ import { CLAUDE_MODELS, OPENROUTER_MODELS } from '../_shared/models.ts';
 const openRouterApiKey = Deno.env.get('OPENROUTER_API_KEY');
 const anthropicApiKey = Deno.env.get('ANTHROPIC_API_KEY');
 const braveSearchApiKey = Deno.env.get('BRAVE_SEARCH_API_KEY');
+const rapidApiKey = Deno.env.get('RAPIDAPI_KEY');
 
 // Web search function using Brave Search API
 async function searchWeb(query: string): Promise<string> {
@@ -82,6 +83,95 @@ async function searchWeb(query: string): Promise<string> {
     console.error('Web search error:', error);
     return "Web search encountered an error.";
   }
+}
+
+// RapidAPI Product Price Search (Amazon, eBay, etc.)
+async function searchProductPrices(query: string): Promise<string> {
+  if (!rapidApiKey) {
+    console.log('RapidAPI key not configured, falling back to web search');
+    return searchWeb(`${query} price comparison`);
+  }
+
+  try {
+    const searchUrl = `https://price-comparison1.p.rapidapi.com/search?q=${encodeURIComponent(query)}`;
+
+    const response = await fetch(searchUrl, {
+      headers: {
+        'X-RapidAPI-Key': rapidApiKey,
+        'X-RapidAPI-Host': 'price-comparison1.p.rapidapi.com'
+      }
+    });
+
+    if (!response.ok) {
+      console.error('RapidAPI error:', response.status);
+      // Fall back to web search
+      return searchWeb(`${query} price comparison Amazon eBay`);
+    }
+
+    const data = await response.json();
+
+    if (!data.products || data.products.length === 0) {
+      return "No products found in price comparison. Try a more specific product name.";
+    }
+
+    const results = data.products.slice(0, 5).map((product: any, i: number) => {
+      const price = product.price || product.current_price || 'Price unavailable';
+      const seller = product.seller || product.merchant || product.source || 'Unknown seller';
+      const title = product.title || product.name || 'Product';
+      const url = product.url || product.link || '';
+
+      return `${i + 1}. ${title}\n   Price: ${price}\n   Seller: ${seller}${url ? `\n   URL: ${url}` : ''}`;
+    }).join('\n\n');
+
+    return `Product Price Comparison Results:\n\n${results}`;
+  } catch (error) {
+    console.error('Product search error:', error);
+    // Fall back to web search
+    return searchWeb(`${query} price comparison`);
+  }
+}
+
+// Australian Retail Search (JB Hi-Fi, Harvey Norman, etc.)
+async function searchAustralianRetail(query: string): Promise<string> {
+  const retailerDomains: Record<string, string> = {
+    'jb': 'site:jbhifi.com.au',
+    'jbhifi': 'site:jbhifi.com.au',
+    'jb hi-fi': 'site:jbhifi.com.au',
+    'jb hifi': 'site:jbhifi.com.au',
+    'harvey': 'site:harveynorman.com.au',
+    'harvey norman': 'site:harveynorman.com.au',
+    'officeworks': 'site:officeworks.com.au',
+    'bunnings': 'site:bunnings.com.au',
+    'kmart': 'site:kmart.com.au',
+    'big w': 'site:bigw.com.au',
+    'myer': 'site:myer.com.au',
+    'david jones': 'site:davidjones.com',
+    'the good guys': 'site:thegoodguys.com.au',
+    'good guys': 'site:thegoodguys.com.au',
+  };
+
+  // Detect retailer from query
+  let siteRestriction = '';
+  const queryLower = query.toLowerCase();
+
+  for (const [keyword, domain] of Object.entries(retailerDomains)) {
+    if (queryLower.includes(keyword)) {
+      siteRestriction = domain;
+      console.log(`Detected Australian retailer: ${keyword}, using ${domain}`);
+      break;
+    }
+  }
+
+  // If no specific retailer detected, search major AU retailers
+  if (!siteRestriction) {
+    siteRestriction = 'site:jbhifi.com.au OR site:harveynorman.com.au OR site:officeworks.com.au OR site:thegoodguys.com.au';
+    console.log('No specific retailer detected, searching all major AU retailers');
+  }
+
+  const enhancedQuery = `${query} ${siteRestriction} price`;
+  console.log('Australian retail search query:', enhancedQuery);
+
+  return searchWeb(enhancedQuery);
 }
 
 // Token estimation utilities
@@ -188,21 +278,51 @@ async function claudeCompletion(
     console.log('Image added to message, media type:', imageData.media_type);
   }
 
-  // Define web search tool
-  const tools = [{
-    name: "web_search",
-    description: "Search the internet for current information, news, product reviews, pricing, or any real-time data. Use this when you need up-to-date information beyond your training data.\n\nQUERY CONSTRUCTION BEST PRACTICES:\n- For time-sensitive queries (weather, news, prices), include temporal qualifiers like 'today', 'current', '2025'\n- For location-specific queries, specify city AND country (e.g., 'Sydney Australia' not just 'Sydney')\n- Use specific, detailed queries rather than vague ones\n- Time-sensitive keywords (today/current/now/latest/weather/price/news) automatically trigger freshness filtering\n\nEXAMPLES:\n- Good: 'Sydney Australia weather today' → Bad: 'Sydney weather'\n- Good: 'iPhone 16 price Australia 2025' → Bad: 'iPhone price'\n- Good: 'Tesla stock price today' → Bad: 'Tesla stock'",
-    input_schema: {
-      type: "object",
-      properties: {
-        query: {
-          type: "string",
-          description: "The search query to find information on the internet. Include location and time qualifiers for better results."
-        }
-      },
-      required: ["query"]
+  // Define search tools
+  const tools = [
+    {
+      name: "web_search",
+      description: "Search the internet for current information, news, product reviews, pricing, or any real-time data. Use this when you need up-to-date information beyond your training data.\n\nQUERY CONSTRUCTION BEST PRACTICES:\n- For time-sensitive queries (weather, news, prices), include temporal qualifiers like 'today', 'current', '2025'\n- For location-specific queries, specify city AND country (e.g., 'Sydney Australia' not just 'Sydney')\n- Use specific, detailed queries rather than vague ones\n- Time-sensitive keywords (today/current/now/latest/weather/price/news) automatically trigger freshness filtering\n\nEXAMPLES:\n- Good: 'Sydney Australia weather today' → Bad: 'Sydney weather'\n- Good: 'iPhone 16 price Australia 2025' → Bad: 'iPhone price'\n- Good: 'Tesla stock price today' → Bad: 'Tesla stock'",
+      input_schema: {
+        type: "object",
+        properties: {
+          query: {
+            type: "string",
+            description: "The search query to find information on the internet. Include location and time qualifiers for better results."
+          }
+        },
+        required: ["query"]
+      }
+    },
+    {
+      name: "product_price_search",
+      description: "Search for product prices across Amazon, eBay, and major online retailers. Returns price comparisons from multiple sellers. Use for general product pricing queries when the user wants to compare prices across different sellers.",
+      input_schema: {
+        type: "object",
+        properties: {
+          query: {
+            type: "string",
+            description: "Product name or description to search for prices"
+          }
+        },
+        required: ["query"]
+      }
+    },
+    {
+      name: "australian_retail_search",
+      description: "Search Australian retail stores specifically: JB Hi-Fi, Harvey Norman, Officeworks, Bunnings, Kmart, Big W, Myer, The Good Guys. Use when the user mentions these stores or asks about Australian retail prices. More reliable than general web search for these retailers.",
+      input_schema: {
+        type: "object",
+        properties: {
+          query: {
+            type: "string",
+            description: "Product search query for Australian retailers"
+          }
+        },
+        required: ["query"]
+      }
     }
-  }];
+  ];
 
   // Helper function to process tool uses recursively (with depth limit)
   async function processWithTools(currentMessages: any[], depth: number = 0): Promise<string> {
@@ -288,6 +408,22 @@ async function claudeCompletion(
             type: 'tool_result',
             tool_use_id: toolUse.id,
             content: searchResults
+          });
+        } else if (toolUse.name === 'product_price_search') {
+          console.log('Processing product price search:', toolUse.input.query);
+          const priceResults = await searchProductPrices(toolUse.input.query);
+          toolResults.push({
+            type: 'tool_result',
+            tool_use_id: toolUse.id,
+            content: priceResults
+          });
+        } else if (toolUse.name === 'australian_retail_search') {
+          console.log('Processing Australian retail search:', toolUse.input.query);
+          const retailResults = await searchAustralianRetail(toolUse.input.query);
+          toolResults.push({
+            type: 'tool_result',
+            tool_use_id: toolUse.id,
+            content: retailResults
           });
         } else {
           // Unknown tool - return empty result
