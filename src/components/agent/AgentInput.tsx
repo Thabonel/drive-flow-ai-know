@@ -26,8 +26,8 @@ export function AgentInput({
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    // Submit on Cmd/Ctrl+Enter
-    if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+    // Submit on Enter, new line on Shift+Enter
+    if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSubmit(e);
     }
@@ -69,7 +69,7 @@ export function AgentInput({
         </div>
       )}
       <div className="text-xs text-muted-foreground mt-2">
-        💡 Tip: Press Cmd/Ctrl+Enter to submit
+        💡 Tip: Press Enter to submit, Shift+Enter for new line
       </div>
     </form>
   );
