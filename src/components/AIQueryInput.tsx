@@ -453,7 +453,7 @@ export const AIQueryInput = ({ selectedKnowledgeBase, onClearSelection }: AIQuer
             disabled={isLoading}
             className="flex-1 min-h-[60px] resize-none text-base"
             onKeyDown={(e) => {
-              if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+              if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
                 handleSubmit(e);
               }
@@ -488,7 +488,7 @@ export const AIQueryInput = ({ selectedKnowledgeBase, onClearSelection }: AIQuer
                 {query.length > 10000 && ' (will auto-save as document)'}
               </span>
             ) : (
-              <span>Tip: Press Ctrl/Cmd + Enter to submit</span>
+              <span>Tip: Press Enter to submit, Shift+Enter for new line</span>
             )}
           </span>
 
