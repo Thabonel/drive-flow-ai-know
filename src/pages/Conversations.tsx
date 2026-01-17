@@ -8,8 +8,9 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ConversationChat } from '@/components/ConversationChat';
+import { ConvertToDocumentModal } from '@/components/ConvertToDocumentModal';
 import { PageHelp } from '@/components/PageHelp';
-import { MessageSquare, Archive, Search, Trash2, PanelLeftClose, PanelLeftOpen, MessageCircle } from 'lucide-react';
+import { MessageSquare, Archive, Search, Trash2, PanelLeftClose, PanelLeftOpen, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 
@@ -37,6 +38,8 @@ export default function Conversations() {
     const saved = localStorage.getItem('conversations-sidebar-collapsed');
     return saved === 'true';
   });
+  const [convertModalOpen, setConvertModalOpen] = useState(false);
+  const [selectedConversationForConvert, setSelectedConversationForConvert] = useState<Conversation | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -158,6 +161,19 @@ export default function Conversations() {
     localStorage.setItem('conversations-sidebar-collapsed', String(newState));
   };
 
+  const handleConvertToDocument = (conv: Conversation, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSelectedConversationForConvert(conv);
+    setConvertModalOpen(true);
+  };
+
+  const handleConvertSuccess = () => {
+    // Conversation was deleted as part of conversion, refresh the list
+    loadConversations();
+    setConvertModalOpen(false);
+    setSelectedConversationForConvert(null);
+  };
+
   return (
     <div className="w-full h-[calc(100vh-48px)] overflow-hidden">
       <div className={`grid grid-cols-1 gap-2 h-full ${sidebarCollapsed ? 'lg:grid-cols-[80px_1fr]' : 'lg:grid-cols-3'}`}>
@@ -249,6 +265,17 @@ export default function Conversations() {
                             <div className="flex justify-between items-start mb-2">
                               <h3 className="font-semibold line-clamp-1">{conv.title || 'Untitled'}</h3>
                               <div className="flex gap-1">
+                                {activeTab === 'archived' && (
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={(e) => handleConvertToDocument(conv, e)}
+                                    className="h-6 w-6 p-0"
+                                    title="Convert to document"
+                                  >
+                                    <FileText className="h-3 w-3" />
+                                  </Button>
+                                )}
                                 <Button
                                   size="sm"
                                   variant="ghost"
@@ -328,6 +355,20 @@ export default function Conversations() {
           )}
         </div>
       </div>
+
+      {/* Convert to Document Modal */}
+      {selectedConversationForConvert && (
+        <ConvertToDocumentModal
+          conversationId={selectedConversationForConvert.id}
+          conversationTitle={selectedConversationForConvert.title || 'Untitled'}
+          isOpen={convertModalOpen}
+          onClose={() => {
+            setConvertModalOpen(false);
+            setSelectedConversationForConvert(null);
+          }}
+          onSuccess={handleConvertSuccess}
+        />
+      )}
     </div>
   );
 }
