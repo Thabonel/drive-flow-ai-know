@@ -1,4 +1,4 @@
-import { Home, FileText, BookOpen, Settings, LogOut, HelpCircle, Clock, Users, UserCog, Building2, Calendar, Bot, MessageSquare, Presentation, Plus } from 'lucide-react';
+import { Home, FileText, BookOpen, Settings, LogOut, HelpCircle, Clock, Users, UserCog, Building2, Calendar, Bot, MessageSquare, Presentation, Plus, Database } from 'lucide-react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { usePresentationMode } from '@/contexts/PresentationModeContext';
@@ -31,6 +31,12 @@ const navigationItems = [
     url: '/timeline',
     icon: Clock,
     description: 'Plan your day & track tasks'
+  },
+  {
+    title: 'Knowledge Management',
+    url: '/knowledge',
+    icon: Database,
+    description: 'Add project documents & create knowledge bases'
   },
   {
     title: 'AI Chat',
