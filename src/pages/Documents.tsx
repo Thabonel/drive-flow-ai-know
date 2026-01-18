@@ -234,6 +234,7 @@ const Documents = () => {
               "Click a document card to open the viewer/editor modal",
               "Generate AI Insights to extract key concepts and summaries",
               "Add documents via Document Sources panel (Google Drive, upload, etc.)",
+              "Convert archived conversations to documents from the Conversations page",
               "Use the AI Assistant to query across all your documents",
               "Pagination shows 12 documents per page",
               "Create new documents manually with the 'Create Document' button"
