@@ -194,6 +194,7 @@ export default function Conversations() {
                       "Choose to schedule items immediately or save as unscheduled tasks",
                       "Delete unwanted conversations anytime using the trash icon",
                       "Archive completed conversations to keep your active list organized",
+                      "Convert archived conversations to documents using the file icon - choose AI summary, full transcript, or both",
                       "Search through conversations using keywords or tags"
                     ]}
                   />
