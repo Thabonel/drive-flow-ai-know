@@ -1,3 +1,4 @@
+import "https://deno.land/x/xhr@0.1.0/mod.ts";  // Required for fetch in Deno
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { updateTokenUsage, extractTokensFromClaudeResponse } from '../_shared/token-tracking.ts';
@@ -103,6 +104,7 @@ Output ONLY valid JSON array, no commentary.`;
       throw new Error('ANTHROPIC_API_KEY not configured');
     }
 
+    console.log('Using Claude model:', CLAUDE_MODELS.FAST);
     const startTime = Date.now();
 
     const response = await fetch('https://api.anthropic.com/v1/messages', {
@@ -126,15 +128,15 @@ Output ONLY valid JSON array, no commentary.`;
 
     if (!response.ok) {
       const errorData = await response.text();
-      console.error('Claude API error:', errorData);
-      throw new Error(`Claude API request failed: ${response.status}`);
+      console.error('Claude API error - Status:', response.status, 'Model:', CLAUDE_MODELS.FAST, 'Response:', errorData);
+      throw new Error(`Claude API request failed: ${response.status} - ${errorData}`);
     }
 
     const data = await response.json();
     const translationDuration = Date.now() - startTime;
 
     // Get session ID for token tracking (before processing tasks)
-    const { data: sessionData } = await supabase
+    let { data: sessionData } = await supabase
       .from('agent_sessions')
       .select('id')
       .eq('user_id', user.id)
@@ -142,6 +144,29 @@ Output ONLY valid JSON array, no commentary.`;
       .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle();
+
+    // Auto-create session if none exists
+    if (!sessionData) {
+      console.log('No active session found, creating new session for user:', user.id);
+      const { data: newSession, error: sessionError } = await supabase
+        .from('agent_sessions')
+        .insert({
+          user_id: user.id,
+          status: 'active',
+          tokens_used: 0,
+          tokens_budget: 100000,
+        })
+        .select('id')
+        .single();
+
+      if (sessionError) {
+        console.error('Failed to create agent session:', sessionError);
+        // Continue without session - tasks won't be stored but translation still works
+      } else {
+        sessionData = newSession;
+        console.log('Created new agent session:', newSession.id);
+      }
+    }
 
     // Track token usage
     if (sessionData) {
@@ -163,7 +188,11 @@ Output ONLY valid JSON array, no commentary.`;
       }
     }
 
-    // Extract tasks from Claude's response
+    // Extract tasks from Claude's response with defensive access
+    if (!data?.content?.[0]?.text) {
+      console.error('Unexpected Claude API response format:', JSON.stringify(data));
+      throw new Error('Unexpected AI response format');
+    }
     const content = data.content[0].text;
     let tasks: Task[];
 
@@ -201,7 +230,7 @@ Output ONLY valid JSON array, no commentary.`;
 
     // Log translation to agent memory
     if (sessionData) {
-      await supabase
+      const { error: memoryError } = await supabase
         .from('agent_memory')
         .insert({
           session_id: sessionData.id,
@@ -215,6 +244,11 @@ Output ONLY valid JSON array, no commentary.`;
           },
           importance: 3,
         });
+
+      if (memoryError) {
+        console.error('Error logging to agent_memory:', memoryError);
+        // Continue - not fatal, but log it for debugging
+      }
     }
 
     return new Response(
