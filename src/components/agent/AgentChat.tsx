@@ -10,6 +10,34 @@ import { Cpu, Archive, Download, Printer } from 'lucide-react';
 import { toast } from 'sonner';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { supabase } from '@/integrations/supabase/client';
+
+interface TranslatedTask {
+  title: string;
+  description: string;
+  agent_type: 'calendar' | 'briefing' | 'analysis';
+  priority: number;
+  estimated_duration: number;
+}
+
+interface TranslationResponse {
+  tasks: TranslatedTask[];
+  metadata: {
+    task_count: number;
+    translation_duration_ms: number;
+    user_id: string;
+  };
+}
+
+interface OrchestratorResponse {
+  message: string;
+  sub_agents_created: number;
+  agents: Array<{
+    id: string;
+    type: string;
+    status: string;
+  }>;
+}
 
 interface AgentSession {
   id: string;
@@ -61,6 +89,7 @@ export function AgentChat({ session, userId }: AgentChatProps) {
     }
 
     setIsLoading(true);
+    const startTime = Date.now();
 
     try {
       // Create temporary user message for optimistic UI
@@ -81,36 +110,106 @@ export function AgentChat({ session, userId }: AgentChatProps) {
         await updateTitle(command);
       }
 
-      // TODO: Phase 4 - Call agent-translate and agent-orchestrator
-      // For now, show placeholder response
-      const tempAssistantMessage = {
+      // Step 1: Call agent-translate to convert command to tasks
+      const { data: translateData, error: translateError } = await supabase.functions.invoke<TranslationResponse>(
+        'agent-translate',
+        {
+          body: { unstructured_input: command },
+        }
+      );
+
+      if (translateError) {
+        throw new Error(translateError.message || 'Translation failed');
+      }
+
+      if (!translateData?.tasks || translateData.tasks.length === 0) {
+        // No tasks extracted - provide helpful feedback
+        const noTasksMessage = {
+          id: `temp-assistant-${Date.now()}`,
+          conversation_id: conversation.id,
+          role: 'assistant' as const,
+          content: `I understood your request but couldn't extract specific tasks from it.\n\n**Your input:** "${command}"\n\nTry being more specific, for example:\n- "Schedule a meeting with [name] tomorrow at 2pm"\n- "Generate my daily briefing for today"\n- "Analyze my task completion rate this week"`,
+          sequence_number: messages.length + 1,
+          metadata: {
+            tasks_created: [],
+            sub_agents_spawned: [],
+            tokens_used: 0,
+            execution_time_ms: Date.now() - startTime,
+          },
+          timestamp: new Date().toISOString(),
+        };
+        addMessage(noTasksMessage);
+        return;
+      }
+
+      // Step 2: Call agent-orchestrator to spawn sub-agents
+      const { data: orchestratorData, error: orchestratorError } = await supabase.functions.invoke<OrchestratorResponse>(
+        'agent-orchestrator',
+        {
+          body: {},
+        }
+      );
+
+      if (orchestratorError) {
+        console.error('Orchestrator error:', orchestratorError);
+        // Continue even if orchestrator fails - tasks are still created
+      }
+
+      // Format the response message
+      const executionTime = Date.now() - startTime;
+      const taskList = translateData.tasks.map((task, idx) => {
+        const icon = task.agent_type === 'calendar' ? '📅' : task.agent_type === 'briefing' ? '📝' : '📊';
+        const priorityLabel = task.priority >= 4 ? '🔴 High' : task.priority >= 3 ? '🟡 Normal' : '🟢 Low';
+        return `${idx + 1}. ${icon} **${task.title}**\n   - ${task.description}\n   - Priority: ${priorityLabel} | Duration: ~${task.estimated_duration} min`;
+      }).join('\n\n');
+
+      const agentSummary = orchestratorData?.agents?.length
+        ? `\n\n**Sub-agents spawned:** ${orchestratorData.agents.map(a => `${a.type} (${a.status})`).join(', ')}`
+        : '';
+
+      const responseContent = `**Command understood!** I've created ${translateData.tasks.length} task${translateData.tasks.length > 1 ? 's' : ''}:\n\n${taskList}${agentSummary}\n\n---\n*Processing time: ${executionTime}ms*`;
+
+      const assistantMessage = {
         id: `temp-assistant-${Date.now()}`,
         conversation_id: conversation.id,
         role: 'assistant' as const,
-        content: `Command received: "${command}"\n\n🚧 **Agent integration coming in Phase 4**\n\nThis is a placeholder response. In Phase 4, this will:\n1. Translate your command into tasks using agent-translate Edge Function\n2. Spawn sub-agents using agent-orchestrator Edge Function\n3. Show real-time execution status\n4. Display task completion and results`,
+        content: responseContent,
         sequence_number: messages.length + 1,
         metadata: {
-          tasks_created: [],
-          sub_agents_spawned: [],
-          tokens_used: 0,
-          execution_time_ms: 0,
+          tasks_created: translateData.tasks.map(t => t.title),
+          sub_agents_spawned: orchestratorData?.agents?.map(a => a.id) || [],
+          tokens_used: translateData.metadata?.translation_duration_ms || 0,
+          execution_time_ms: executionTime,
         },
         timestamp: new Date().toISOString(),
       };
 
-      // Simulate processing delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      addMessage(tempAssistantMessage);
+      addMessage(assistantMessage);
 
       // Update metrics
       await updateMetrics({
         message_count: messages.length + 2,
       });
 
-      toast.success('Command processed (placeholder)');
+      toast.success(`Created ${translateData.tasks.length} task${translateData.tasks.length > 1 ? 's' : ''}`);
     } catch (error) {
       console.error('Error processing command:', error);
+
+      // Show error message in chat
+      const errorMessage = {
+        id: `temp-error-${Date.now()}`,
+        conversation_id: conversation.id,
+        role: 'assistant' as const,
+        content: `**Error processing your command**\n\n${error instanceof Error ? error.message : 'An unexpected error occurred. Please try again.'}\n\nIf this continues, check that your session is active in Settings.`,
+        sequence_number: messages.length + 1,
+        metadata: {
+          error: true,
+          execution_time_ms: Date.now() - startTime,
+        },
+        timestamp: new Date().toISOString(),
+      };
+      addMessage(errorMessage);
+
       toast.error('Failed to process command');
     } finally {
       setIsLoading(false);
