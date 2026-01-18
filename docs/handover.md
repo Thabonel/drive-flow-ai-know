@@ -1,5 +1,127 @@
 # AI Query Hub - Development Handover Document
-**Date:** October 23, 2025
+
+---
+
+## Latest Session: January 18, 2026
+
+**Summary:** Comprehensive security assessment and hardening implementation
+
+### Security Fixes Implemented
+
+| Severity | Fix | Status | Commit |
+|----------|-----|--------|--------|
+| CRITICAL | XSS prevention with DOMPurify | Complete | `b69ea8f` |
+| CRITICAL | Secure CORS with origin validation | Complete | `b69ea8f` |
+| CRITICAL | Remove token logging | Complete | `b69ea8f` |
+| HIGH | Rate limiting utility | Complete | `b69ea8f` |
+| HIGH | Path traversal prevention | Complete | `b69ea8f` |
+| HIGH | Clear OAuth tokens from URL | Complete | `b69ea8f` |
+| HIGH | Environment variable validation | Complete | `b69ea8f` |
+| HIGH | CSP headers documentation | Complete | `b69ea8f` |
+
+### Files Created
+
+| File | Purpose |
+|------|---------|
+| `supabase/functions/_shared/cors.ts` | Secure CORS with origin checking |
+| `supabase/functions/_shared/rate-limit.ts` | Database-backed rate limiting |
+| `supabase/functions/_shared/env-validation.ts` | Environment variable validation |
+| `supabase/migrations/20260118_add_rate_limits_table.sql` | Rate limits table |
+| `docs/BIBLE/05-SECURITY/CSP_HEADERS.md` | CSP configuration guide |
+| `docs/BIBLE/05-SECURITY/SECURITY_HARDENING.md` | Complete security documentation |
+
+### Files Modified
+
+| File | Changes |
+|------|---------|
+| `src/components/DocumentViewerModal.tsx` | Added DOMPurify sanitization |
+| `src/hooks/useGoogleDrive.ts` | Removed token logging, clear URL tokens |
+| `src/lib/ai/openai-client.ts` | Added deprecation warning |
+| `supabase/functions/ai-query/index.ts` | Added CORS and rate limiting |
+| `supabase/functions/parse-document/index.ts` | Path traversal prevention |
+
+### Production Deployment Checklist
+
+1. **Set ALLOWED_ORIGINS** in Supabase secrets:
+   ```bash
+   supabase secrets set ALLOWED_ORIGINS="https://yourdomain.com"
+   ```
+
+2. **Run rate limits migration**:
+   - Execute `supabase/migrations/20260118_add_rate_limits_table.sql` in SQL Editor
+
+3. **Configure CSP headers** in hosting platform (see docs/BIBLE/05-SECURITY/CSP_HEADERS.md)
+
+4. **Deploy Edge Functions**:
+   ```bash
+   npx supabase functions deploy ai-query --project-ref fskwutnoxbbflzqrphro
+   npx supabase functions deploy parse-document --project-ref fskwutnoxbbflzqrphro
+   ```
+
+### Branch
+
+- Branch: `security-fixes-2026-01-18`
+- PR: https://github.com/Thabonel/drive-flow-ai-know/pull/new/security-fixes-2026-01-18
+
+---
+
+## Previous Session: January 17, 2026
+
+**Summary:** Keyboard UX improvements, Australian price search, product documentation
+
+### Changes Made
+
+| Change | Status | Commit |
+|--------|--------|--------|
+| Enter key behavior (industry standard) | Complete | `96f6fcd` |
+| Product documentation (AI_QUERY_HUB.md) | Complete | `a5cf306` |
+| Australian retail price search tools | Complete | `173e3fe` |
+| Knowledge Management sidebar | Reverted | `116539b` |
+
+### Keyboard Behavior Update
+
+Changed all AI input fields to follow industry standard:
+- **Enter** → Submit message
+- **Shift+Enter** → New line
+
+Files modified:
+- `src/components/AIQueryInput.tsx`
+- `src/components/agent/AgentInput.tsx`
+- `src/components/ConversationChat.tsx` (already correct)
+
+### Australian Price Search Tools
+
+Added two new tools to the `ai-query` Edge Function:
+
+1. **`product_price_search`** - Searches Amazon AU & eBay AU via RapidAPI
+2. **`australian_retail_search`** - Site-specific search for JB Hi-Fi, Harvey Norman, Officeworks, Bunnings, Kmart
+
+**Pending:** Deploy the `ai-query` function:
+```bash
+npx supabase login
+npx supabase functions deploy ai-query --project-ref fskwutnoxbbflzqrphro
+```
+
+**Note:** `RAPIDAPI_KEY` secret already set in Supabase.
+
+### Product Documentation
+
+Created comprehensive product document at `docs/AI_QUERY_HUB.md` covering:
+- What AI Query Hub is
+- Core capabilities (7 major feature areas)
+- What makes it different
+- Use cases
+- Pricing tiers
+- Security & compliance
+
+### Reverted Change
+
+Knowledge Management sidebar item was added then reverted (user gave instructions to wrong app).
+
+---
+
+## Previous Session: October 23, 2025
+
 **Session Summary:** Support System, Landing Page Updates, Document Viewer Improvements
 
 ---
