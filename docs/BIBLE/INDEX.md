@@ -1,7 +1,7 @@
 # AI Query Hub - Complete Documentation (THE BIBLE)
 
-**Last Updated**: 2024-12-29
-**Version**: 2.0.1
+**Last Updated**: 2026-01-18
+**Version**: 2.1.0
 **Status**: Comprehensive Reference
 
 ---
@@ -11,6 +11,20 @@
 This is the complete, authoritative documentation for AI Query Hub. Every system, feature, function, and component is documented here.
 
 **Navigation**: This folder contains 9 major sections covering 100% of the application.
+
+---
+
+## Recent Updates (January 2026)
+
+### Security Hardening (2026-01-18)
+- XSS prevention with DOMPurify sanitization
+- Secure CORS with origin validation (backwards compatible)
+- Database-backed rate limiting utility
+- Path traversal prevention in document parsing
+- OAuth token security (URL clearing, logging removal)
+- Environment variable validation utility
+- CSP headers configuration documentation
+- **New Docs**: [SECURITY_HARDENING.md](05-SECURITY/SECURITY_HARDENING.md), [CSP_HEADERS.md](05-SECURITY/CSP_HEADERS.md)
 
 ---
 
@@ -206,6 +220,21 @@ This is the complete, authoritative documentation for AI Query Hub. Every system
   - Error handling (expired/invalid links)
   - Custom domain SMTP configuration
 
+- **SECURITY_HARDENING.md** - Security hardening guide (NEW)
+  - XSS prevention with DOMPurify
+  - Secure CORS implementation
+  - Database-backed rate limiting
+  - Path traversal prevention
+  - OAuth token security
+  - Environment variable validation
+  - Security utilities reference
+
+- **CSP_HEADERS.md** - Content Security Policy (NEW)
+  - Netlify configuration
+  - Vercel configuration
+  - Recommended CSP directives
+  - Testing and validation
+
 - **ROW_LEVEL_SECURITY.md** - RLS policies
   - User isolation
   - Team collaboration
@@ -217,6 +246,9 @@ This is the complete, authoritative documentation for AI Query Hub. Every system
 - OAuth (Google Drive)
 - API key storage (encrypted)
 - CORS and security headers
+- XSS prevention (DOMPurify)
+- Rate limiting (database-backed)
+- Content Security Policy (CSP)
 
 ---
 
@@ -359,6 +391,7 @@ This is the complete, authoritative documentation for AI Query Hub. Every system
 - **Multiple AI providers** documented
 
 **Recent Additions**:
+- Security hardening (Jan 2026) - XSS, CORS, rate limiting, CSP
 - Email confirmation system (Dec 2024)
 - Neumorphic design system (Dec 2024)
 - Google Drive hierarchical navigation (Dec 2024)
