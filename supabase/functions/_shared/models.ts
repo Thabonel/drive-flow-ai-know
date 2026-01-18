@@ -22,14 +22,13 @@
 // Using aliases means you get automatic updates when new versions release
 export const CLAUDE_MODELS = {
   // Primary: Most capable model for complex reasoning and analysis
-  // Claude Opus 4.5 is the flagship model for highest quality (as of Jan 2025)
-  PRIMARY: Deno.env.get('CLAUDE_PRIMARY_MODEL') || 'claude-opus-4-5',
+  PRIMARY: Deno.env.get('CLAUDE_PRIMARY_MODEL') || 'claude-sonnet-4-5-20250514',
 
   // Fast: Good balance of speed and capability
-  FAST: Deno.env.get('CLAUDE_FAST_MODEL') || 'claude-sonnet-4-5',
+  FAST: Deno.env.get('CLAUDE_FAST_MODEL') || 'claude-sonnet-4-5-20250514',
 
   // Cheap: Most cost-effective for simple tasks
-  CHEAP: Deno.env.get('CLAUDE_CHEAP_MODEL') || 'claude-haiku-4-5',
+  CHEAP: Deno.env.get('CLAUDE_CHEAP_MODEL') || 'claude-haiku-4-5-20250514',
 } as const;
 
 // OpenRouter models (for fallback)

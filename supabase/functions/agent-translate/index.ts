@@ -1,6 +1,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { updateTokenUsage, extractTokensFromClaudeResponse } from '../_shared/token-tracking.ts';
+import { CLAUDE_MODELS } from '../_shared/models.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -112,7 +113,7 @@ Output ONLY valid JSON array, no commentary.`;
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: 'claude-opus-4-5',
+        model: CLAUDE_MODELS.FAST,
         max_tokens: 2000,
         messages: [
           {
