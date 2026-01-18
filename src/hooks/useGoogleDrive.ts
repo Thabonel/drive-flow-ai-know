@@ -65,7 +65,6 @@ export const useGoogleDrive = () => {
   const storeProviderToken = useCallback(async (session: any) => {
     if (!session?.provider_token || !session?.user?.id) return;
 
-    console.log('Storing Google provider token via edge function...');
     try {
       const { data, error } = await supabase.functions.invoke('store-google-tokens', {
         body: {
@@ -78,14 +77,13 @@ export const useGoogleDrive = () => {
       });
 
       if (error) {
-        console.error('Error storing provider token:', error);
+        console.error('Error storing provider token');
         toast({
           title: 'Storage Error',
           description: error.message || 'Failed to store Google token',
           variant: 'destructive',
         });
       } else {
-        console.log('Token stored successfully:', data);
         setIsAuthenticated(true);
         toast({
           title: 'Connected Successfully!',
@@ -93,7 +91,7 @@ export const useGoogleDrive = () => {
         });
       }
     } catch (error) {
-      console.error('Error storing provider token:', error);
+      console.error('Error storing provider token');
       toast({
         title: 'Connection Error',
         description: error instanceof Error ? error.message : 'Failed to store Google token',
@@ -111,26 +109,26 @@ export const useGoogleDrive = () => {
       const urlProviderToken = hashParams.get('provider_token');
 
       if (urlAccessToken || urlProviderToken) {
-        console.log('Detected OAuth callback in URL hash, waiting for session...');
         // Give Supabase a moment to process the URL hash
         await new Promise(resolve => setTimeout(resolve, 500));
+
+        // Security: Clear tokens from URL to prevent exposure in browser history
+        // This removes the hash fragment containing sensitive tokens
+        if (window.history && window.history.replaceState) {
+          window.history.replaceState(
+            {},
+            document.title,
+            window.location.pathname + window.location.search
+          );
+        }
       }
 
-      const { data: { session }, error } = await supabase.auth.getSession();
-
-      console.log('Session check on mount:', {
-        hasSession: !!session,
-        hasProviderToken: !!session?.provider_token,
-        userId: session?.user?.id,
-        error: error?.message
-      });
+      const { data: { session } } = await supabase.auth.getSession();
 
       if (session?.provider_token) {
-        console.log('Found provider token in session on mount');
         await storeProviderToken(session);
       } else if (session?.user) {
         // User is logged in but no provider token - check stored tokens
-        console.log('No provider token in session, checking stored tokens...');
         await checkConnection();
       }
     };
@@ -140,8 +138,6 @@ export const useGoogleDrive = () => {
   // Listen for auth state changes (handles redirect back from Google)
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('Auth state change:', event, 'has provider_token:', !!session?.provider_token);
-
       // Check for provider token on any auth event
       if (session?.provider_token) {
         await storeProviderToken(session);
@@ -212,7 +208,7 @@ export const useGoogleDrive = () => {
         scope: 'https://www.googleapis.com/auth/drive.readonly',
         callback: async (response: any) => {
           if (response.error) {
-            console.error('Google OAuth error:', response);
+            console.error('Google OAuth error:', response.error);
             toast({
               title: 'Connection Failed',
               description: response.error_description || 'Failed to connect to Google',
@@ -223,7 +219,6 @@ export const useGoogleDrive = () => {
           }
 
           // Got access token - store it via edge function
-          console.log('Got Google access token, storing...');
           try {
             const { data, error } = await supabase.functions.invoke('store-google-tokens', {
               body: {
@@ -235,34 +230,31 @@ export const useGoogleDrive = () => {
               }
             });
 
-            console.log('Store tokens response:', { data, error });
-
             // Check for function-level error (network, auth, or 500)
             if (error) {
-              console.error('Function invoke error:', error);
+              console.error('Function invoke error');
               // Try to get the actual error message from the response body
               let errorMessage = error.message || 'Function call failed';
               try {
                 // FunctionsHttpError has context with the response
                 if (error.context) {
                   const errorBody = await error.context.json();
-                  console.error('Error body from function:', errorBody);
                   errorMessage = errorBody.error || errorMessage;
                 }
-              } catch (e) {
-                console.error('Could not parse error body:', e);
+              } catch {
+                // Could not parse error body
               }
               throw new Error(errorMessage);
             }
 
             // Check for application-level error in response body
             if (data?.error) {
-              console.error('Application error from function:', data.error);
+              console.error('Application error from function');
               throw new Error(data.error);
             }
 
             if (!data?.success) {
-              console.error('Unexpected response:', data);
+              console.error('Unexpected response from server');
               throw new Error('Unexpected response from server');
             }
 
@@ -275,7 +267,7 @@ export const useGoogleDrive = () => {
             // Automatically load drive items after successful authentication
             await loadDriveItems('root');
           } catch (storeError: any) {
-            console.error('Error storing token:', storeError);
+            console.error('Error storing token');
             const errorMessage = storeError?.message || 'Unknown error';
             toast({
               title: 'Storage Error',

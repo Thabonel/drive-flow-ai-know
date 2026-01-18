@@ -1,15 +1,37 @@
+/**
+ * @deprecated SECURITY WARNING: This client uses dangerouslyAllowBrowser which exposes
+ * API keys in the browser. DO NOT use this in production.
+ *
+ * For production use, all AI calls should go through Supabase Edge Functions:
+ * - supabase/functions/ai-query/ (main AI query endpoint)
+ * - supabase/functions/claude-document-processor/ (document processing)
+ *
+ * This file is kept for backwards compatibility and local development only.
+ * It will be removed in a future version.
+ *
+ * Migration guide:
+ * Instead of: await openai.chat.completions.create(...)
+ * Use: await supabase.functions.invoke('ai-query', { body: { query: ... } })
+ */
 import OpenAI from 'openai';
 
 // Initialize OpenAI client
+// SECURITY: API key is ONLY used if explicitly set in environment
+// DO NOT set VITE_OPENAI_API_KEY in production - use Edge Functions instead
 const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
 
 if (!apiKey || apiKey === 'your_openai_api_key_here') {
-  console.warn('OpenAI API key not configured. AI features will be disabled.');
+  console.warn(
+    '[DEPRECATED] OpenAI browser client not configured. ' +
+    'This is expected - use Supabase Edge Functions for AI calls in production.'
+  );
 }
 
 export const openai = new OpenAI({
   apiKey: apiKey || 'placeholder',
-  dangerouslyAllowBrowser: true, // Note: In production, use a backend proxy
+  // SECURITY WARNING: This flag exposes the API key to the browser.
+  // Only use for local development. In production, use Edge Functions.
+  dangerouslyAllowBrowser: true,
 });
 
 export interface StreamingOptions {

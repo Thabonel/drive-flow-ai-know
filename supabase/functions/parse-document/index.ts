@@ -20,6 +20,29 @@ interface DocumentParseResponse {
   metadata?: Record<string, any>;
 }
 
+// Sanitize filename to prevent path traversal attacks
+function sanitizeFileName(fileName: string): string {
+  // Remove any path components - only keep the base filename
+  const baseName = fileName.split('/').pop()?.split('\\').pop() || 'document';
+
+  // Remove any remaining dangerous characters
+  const sanitized = baseName
+    .replace(/\.\./g, '') // Remove parent directory references
+    .replace(/[<>:"|?*\x00-\x1f]/g, '') // Remove invalid filename characters
+    .trim();
+
+  // Ensure we have a valid filename
+  return sanitized || 'document';
+}
+
+// Generate a secure random temp filename
+function generateTempFilePath(originalFileName: string): string {
+  const sanitized = sanitizeFileName(originalFileName);
+  const extension = sanitized.includes('.') ? sanitized.split('.').pop() : '';
+  const randomId = crypto.randomUUID();
+  return `/tmp/parse_${randomId}${extension ? '.' + extension : ''}`;
+}
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -35,42 +58,48 @@ serve(async (req) => {
       throw new Error('Missing required fields: fileName and fileData');
     }
 
-    console.log(`Processing file: ${fileName}, type: ${mimeType}`);
+    // Sanitize filename to prevent path traversal
+    const safeFileName = sanitizeFileName(fileName);
+    console.log(`Processing file: ${safeFileName}, type: ${mimeType}`);
 
     // Convert base64 back to binary data
     const binaryData = Uint8Array.from(atob(fileData), c => c.charCodeAt(0));
-    
-    // Create a temporary file for processing
-    const tempFileName = `/tmp/${fileName}`;
-    await Deno.writeFile(tempFileName, binaryData);
+
+    // Create a secure temporary file path with random name
+    const tempFilePath = generateTempFilePath(fileName);
 
     let result: DocumentParseResponse;
 
     try {
-      // Import the document parsing function dynamically based on file type
-      const { parseDocument } = await import('./documentProcessor.ts');
-      result = await parseDocument(tempFileName, mimeType, fileName);
-    } catch (parseError) {
-      console.error('Parsing error:', parseError);
-      
-      // Fallback processing for unsupported formats
-      result = {
-        content: `File: ${fileName}\nType: ${mimeType}\nSize: ${binaryData.length} bytes\n\nContent extraction not available for this file type.`,
-        title: fileName.replace(/\.[^/.]+$/, ''),
-        metadata: {
-          originalName: fileName,
-          mimeType,
-          size: binaryData.length,
-          parseError: parseError instanceof Error ? parseError.message : 'Unknown error'
-        }
-      };
-    }
+      // Write file to secure temp location
+      await Deno.writeFile(tempFilePath, binaryData);
 
-    // Clean up temporary file
-    try {
-      await Deno.remove(tempFileName);
-    } catch (cleanupError) {
-      console.warn('Failed to cleanup temp file:', cleanupError);
+      try {
+        // Import the document parsing function dynamically based on file type
+        const { parseDocument } = await import('./documentProcessor.ts');
+        result = await parseDocument(tempFilePath, mimeType, safeFileName);
+      } catch (parseError) {
+        console.error('Parsing error:', parseError);
+
+        // Fallback processing for unsupported formats
+        result = {
+          content: `File: ${safeFileName}\nType: ${mimeType}\nSize: ${binaryData.length} bytes\n\nContent extraction not available for this file type.`,
+          title: safeFileName.replace(/\.[^/.]+$/, ''),
+          metadata: {
+            originalName: safeFileName,
+            mimeType,
+            size: binaryData.length,
+            parseError: parseError instanceof Error ? parseError.message : 'Unknown error'
+          }
+        };
+      }
+    } finally {
+      // Always clean up temporary file
+      try {
+        await Deno.remove(tempFilePath);
+      } catch {
+        // Ignore cleanup errors - file may not exist if write failed
+      }
     }
 
     return new Response(JSON.stringify(result), {
