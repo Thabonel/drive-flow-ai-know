@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
+import DOMPurify from 'dompurify';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -631,7 +632,7 @@ export const DocumentViewerModal = ({ document, isOpen, onClose }: DocumentViewe
                           document?.metadata?.extractionMethod === 'mammoth-html' ||
                           (formData.content && /<[a-z][\s\S]*>/i.test(formData.content))) ? (
                           <div
-                            dangerouslySetInnerHTML={{ __html: formData.content || 'No content available' }}
+                            dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(formData.content || 'No content available') }}
                           />
                         ) : (
                           <ReactMarkdown>
@@ -654,7 +655,7 @@ export const DocumentViewerModal = ({ document, isOpen, onClose }: DocumentViewe
                       document?.metadata?.extractionMethod === 'mammoth-html' ||
                       (formData.content && /<[a-z][\s\S]*>/i.test(formData.content))) ? (
                       <div
-                        dangerouslySetInnerHTML={{ __html: formData.content || 'No content available' }}
+                        dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(formData.content || 'No content available') }}
                       />
                     ) : (
                       <ReactMarkdown>
