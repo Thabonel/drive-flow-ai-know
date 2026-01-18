@@ -44,7 +44,7 @@ export const SpreadsheetViewer: React.FC<SpreadsheetViewerProps> = ({
 
   const filteredSheets = useMemo(() => {
     if (!searchTerm) return data.sheets;
-    
+
     return data.sheets.map(sheet => ({
       ...sheet,
       data: sheet.data.filter(row =>
@@ -55,48 +55,37 @@ export const SpreadsheetViewer: React.FC<SpreadsheetViewerProps> = ({
     }));
   }, [data.sheets, searchTerm]);
 
+  const downloadFile = (content: string, mimeType: string, filename: string) => {
+    const blob = new Blob([content], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const exportToCSV = (sheetData: Array<Record<string, any>>, sheetName: string) => {
     if (sheetData.length === 0) return;
-    
+
     const headers = Object.keys(sheetData[0]);
     const csvContent = [
       headers.join(','),
-      ...sheetData.map(row => 
+      ...sheetData.map(row =>
         headers.map(header => {
           const value = row[header];
           return typeof value === 'string' && value.includes(',') ? `"${value}"` : value;
         }).join(',')
       )
     ].join('\n');
-    
-    const blob = new Blob([csvContent], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${title}-${sheetName}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-    
-    toast({
-      title: 'Export Successful',
-      description: `${sheetName} exported as CSV`,
-    });
+
+    downloadFile(csvContent, 'text/csv', `${title}-${sheetName}.csv`);
+    toast({ title: 'Export Successful', description: `${sheetName} exported as CSV` });
   };
 
   const exportToJSON = (sheetData: Array<Record<string, any>>, sheetName: string) => {
-    const jsonContent = JSON.stringify(sheetData, null, 2);
-    const blob = new Blob([jsonContent], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${title}-${sheetName}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-    
-    toast({
-      title: 'Export Successful',
-      description: `${sheetName} exported as JSON`,
-    });
+    downloadFile(JSON.stringify(sheetData, null, 2), 'application/json', `${title}-${sheetName}.json`);
+    toast({ title: 'Export Successful', description: `${sheetName} exported as JSON` });
   };
 
   const getCellFormula = (sheetName: string, rowIndex: number, colKey: string) => {

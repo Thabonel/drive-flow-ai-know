@@ -63,6 +63,29 @@ When coding:
 - Ensure error handling is complete
 - Verify the solution matches the original request fully
 
+## Code Simplification
+
+Run the `code-simplifier` agent regularly to maintain code clarity and consistency:
+
+### When to Run
+- After completing a feature or significant code changes
+- Before creating a pull request
+- When refactoring existing code
+- Periodically during longer development sessions
+
+### How to Run
+Use the Task tool with `subagent_type: "code-simplifier:code-simplifier"` or invoke via skill:
+```
+/code-simplifier
+```
+
+### What It Does
+- Simplifies and refines code for clarity
+- Ensures consistency across the codebase
+- Improves maintainability
+- Preserves all functionality while reducing complexity
+- Focuses on recently modified code unless instructed otherwise
+
 ### Execution
 - Use parallel tool calls when tasks are independent.
 - Run tools sequentially only when outputs are required.
