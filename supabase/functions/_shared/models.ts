@@ -18,7 +18,8 @@
  * - LOCAL_MODEL: Local Ollama model (default: llama3)
  */
 
-// Claude model aliases - using known-valid Anthropic API model IDs
+// Claude model IDs - using known-valid Anthropic API model IDs
+// These are the same IDs used successfully by ai-query
 export const CLAUDE_MODELS = {
   // Primary: Most capable model for complex reasoning and analysis
   PRIMARY: Deno.env.get('CLAUDE_PRIMARY_MODEL') || 'claude-3-5-sonnet-20241022',
