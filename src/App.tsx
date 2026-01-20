@@ -108,9 +108,9 @@ function AppLayout({ children }: { children: React.ReactNode }) {
         )}
         <div className="flex flex-1 w-full">
           <AppSidebar />
-          <main className="flex-1">
+          <main className="flex-1 overflow-x-hidden">
             <Header />
-            <div className={location.pathname === '/conversations' ? '' : 'p-6'}>
+            <div className={`${location.pathname === '/conversations' ? '' : 'p-6'} max-w-full overflow-x-hidden`}>
               {children}
             </div>
           </main>
