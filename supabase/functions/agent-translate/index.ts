@@ -11,6 +11,10 @@ const corsHeaders = {
 
 interface TranslationRequest {
   unstructured_input: string;
+  context?: {
+    timezone?: string;
+    location?: string;
+  };
 }
 
 interface Task {
@@ -19,6 +23,63 @@ interface Task {
   agent_type: 'calendar' | 'briefing' | 'analysis';
   priority: number;
   estimated_duration: number;
+}
+
+/**
+ * Builds a timezone-aware system prompt following PAM architecture patterns.
+ * Includes current date/time in user's timezone and anti-hallucination guards.
+ */
+function buildSystemPrompt(context?: { timezone?: string }): string {
+  const tz = context?.timezone || 'UTC';
+  const now = new Date();
+
+  // Format current date/time in user's timezone
+  let currentDateTime: string;
+  try {
+    const formatter = new Intl.DateTimeFormat('en-US', {
+      timeZone: tz,
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      weekday: 'long',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+    currentDateTime = formatter.format(now);
+  } catch {
+    // Fallback if timezone is invalid
+    currentDateTime = now.toISOString();
+  }
+
+  return `You are a Personal Chief of Staff assistant that translates unstructured thoughts into structured, actionable tasks.
+
+**Current date/time:** ${currentDateTime} (${tz})
+
+**Your Task:**
+Analyze the user's input and extract discrete tasks. For each task provide:
+1. title - Concise, actionable verb phrase (e.g., "Schedule meeting with Sarah")
+2. description - Detailed context including all specifics from the input
+3. agent_type - One of: "calendar" (scheduling/meetings), "briefing" (daily prep/summaries), "analysis" (data review/insights)
+4. priority - Number 1-5 where 5 is most urgent
+5. estimated_duration - Minutes as integer
+
+**CRITICAL RULES:**
+- Extract ALL tasks, even implicit ones
+- Use the current date/time above when interpreting relative dates like "today", "tomorrow", "next Monday"
+- Be specific: include times, names, metrics, locations mentioned
+- Break complex requests into multiple smaller tasks
+- If unclear, make reasonable assumptions rather than asking
+- NEVER output anything except valid JSON
+
+**Agent Type Guidelines:**
+- calendar: meetings, appointments, calls, events, scheduling anything
+- briefing: daily summaries, preparation notes, status updates
+- analysis: data review, research, reports, insights generation
+
+**Output Format:**
+Return ONLY a valid JSON array. No markdown code fences, no commentary, no explanation.
+Example output:
+[{"title": "Schedule dentist appointment", "description": "Book routine checkup at Dr. Smith's office for next Tuesday afternoon", "agent_type": "calendar", "priority": 3, "estimated_duration": 60}]`;
 }
 
 serve(async (req) => {
@@ -46,8 +107,8 @@ serve(async (req) => {
       throw new Error('Unauthorized');
     }
 
-    // Parse request body
-    const { unstructured_input }: TranslationRequest = await req.json();
+    // Parse request body with optional context
+    const { unstructured_input, context }: TranslationRequest = await req.json();
 
     if (!unstructured_input || typeof unstructured_input !== 'string') {
       return new Response(
@@ -59,44 +120,8 @@ serve(async (req) => {
       );
     }
 
-    // Construct translation prompt
-    const translationPrompt = `You are a Personal Chief of Staff assistant. Your job is to translate unstructured thoughts into structured, actionable tasks.
-
-User Input (unstructured): "${unstructured_input}"
-
-Analyze the input and extract discrete tasks. For each task, determine:
-1. Title (concise, actionable)
-2. Description (detailed, specific)
-3. Agent Type (calendar, briefing, or analysis)
-4. Priority (1-5, where 5 = urgent)
-5. Estimated Duration (minutes)
-
-Return JSON array:
-[
-  {
-    "title": "Schedule meeting with Sarah",
-    "description": "Book 30-minute meeting tomorrow at 10am to discuss Q1 planning",
-    "agent_type": "calendar",
-    "priority": 4,
-    "estimated_duration": 30
-  },
-  {
-    "title": "Analyze Q1 revenue trends",
-    "description": "Review revenue data for Q1 and identify key trends before meeting",
-    "agent_type": "analysis",
-    "priority": 3,
-    "estimated_duration": 45
-  }
-]
-
-Guidelines:
-- Be specific (include times, names, metrics)
-- Prioritize based on urgency + importance
-- Break complex tasks into smaller sub-tasks
-- Assign appropriate agent types (calendar for scheduling/meetings, briefing for daily summaries/preparation, analysis for data review/insights)
-- If input is unclear, make reasonable assumptions
-
-Output ONLY valid JSON array, no commentary.`;
+    // Build timezone-aware system prompt (PAM pattern)
+    const systemPrompt = buildSystemPrompt(context);
 
     // Call Claude API
     const anthropicApiKey = Deno.env.get('ANTHROPIC_API_KEY');
@@ -105,6 +130,7 @@ Output ONLY valid JSON array, no commentary.`;
     }
 
     console.log('Using Claude model:', CLAUDE_MODELS.FAST);
+    console.log('User timezone:', context?.timezone || 'UTC (default)');
     const startTime = Date.now();
 
     const response = await fetch('https://api.anthropic.com/v1/messages', {
@@ -117,10 +143,11 @@ Output ONLY valid JSON array, no commentary.`;
       body: JSON.stringify({
         model: CLAUDE_MODELS.FAST,
         max_tokens: 2000,
+        system: systemPrompt,  // PAM pattern: explicit system prompt
         messages: [
           {
             role: 'user',
-            content: translationPrompt,
+            content: unstructured_input,  // Just the user input, context is in system prompt
           },
         ],
       }),
@@ -197,7 +224,12 @@ Output ONLY valid JSON array, no commentary.`;
     let tasks: Task[];
 
     try {
-      tasks = JSON.parse(content);
+      // Handle potential markdown code fences (despite instructions to avoid them)
+      let jsonContent = content.trim();
+      if (jsonContent.startsWith('```')) {
+        jsonContent = jsonContent.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '');
+      }
+      tasks = JSON.parse(jsonContent);
     } catch (parseError) {
       console.error('Failed to parse Claude response as JSON:', content);
       throw new Error('Failed to parse AI response');
@@ -241,6 +273,7 @@ Output ONLY valid JSON array, no commentary.`;
             input: unstructured_input,
             task_count: tasks.length,
             duration_ms: translationDuration,
+            timezone: context?.timezone || 'UTC',
           },
           importance: 3,
         });
