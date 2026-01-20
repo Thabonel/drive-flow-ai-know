@@ -6,6 +6,64 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Map agent types to their Edge Function names
+const AGENT_FUNCTION_MAP: Record<string, string> = {
+  calendar: 'calendar-sub-agent',
+  briefing: 'briefing-sub-agent',
+  analysis: 'analysis-sub-agent',
+};
+
+/**
+ * Invoke a sub-agent Edge Function
+ */
+async function invokeSubAgent(
+  agentType: string,
+  subAgentId: string,
+  authToken: string,
+  action?: string
+): Promise<{ success: boolean; result?: any; error?: string }> {
+  const functionName = AGENT_FUNCTION_MAP[agentType];
+  if (!functionName) {
+    return { success: false, error: `Unknown agent type: ${agentType}` };
+  }
+
+  const supabaseUrl = Deno.env.get('SUPABASE_URL');
+  const functionUrl = `${supabaseUrl}/functions/v1/${functionName}`;
+
+  try {
+    console.log(`Invoking ${functionName} for sub-agent ${subAgentId}`);
+
+    const body: any = { sub_agent_id: subAgentId };
+
+    // Calendar agent needs action parameter for event creation
+    if (agentType === 'calendar') {
+      body.action = action || 'create_event';
+    }
+
+    const response = await fetch(functionUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authToken}`,
+      },
+      body: JSON.stringify(body),
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      console.error(`Sub-agent ${functionName} failed:`, result);
+      return { success: false, error: result.error || `HTTP ${response.status}` };
+    }
+
+    console.log(`Sub-agent ${functionName} completed:`, result.status || 'success');
+    return { success: true, result };
+  } catch (error) {
+    console.error(`Error invoking ${functionName}:`, error);
+    return { success: false, error: error.message };
+  }
+}
+
 interface AgentTask {
   id: string;
   session_id: string;
@@ -150,6 +208,35 @@ serve(async (req) => {
           },
           importance: 3,
         });
+
+      // EXECUTE: Invoke the sub-agent immediately
+      const invocationResult = await invokeSubAgent(
+        agentType,
+        subAgent.id,
+        token,
+        agentType === 'calendar' ? 'create_event' : undefined
+      );
+
+      // Update sub-agent with execution result if it failed during invocation
+      if (!invocationResult.success) {
+        console.error(`Sub-agent ${agentType} invocation failed:`, invocationResult.error);
+        // The sub-agent function itself handles status updates, but log the error
+        await supabase
+          .from('agent_memory')
+          .insert({
+            session_id: task.session_id,
+            user_id: task.user_id,
+            memory_type: 'action_log',
+            content: {
+              action: 'sub_agent_invocation_failed',
+              agent_id: subAgent.id,
+              agent_type: agentType,
+              error: invocationResult.error,
+              timestamp: new Date().toISOString(),
+            },
+            importance: 4,
+          });
+      }
     }
 
     // Update session metrics
