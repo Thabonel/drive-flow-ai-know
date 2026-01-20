@@ -481,7 +481,7 @@ export const DocumentViewerModal = ({ document, isOpen, onClose }: DocumentViewe
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-5xl w-[95vw] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-5xl w-[95vw] max-h-[90vh] overflow-y-auto overflow-x-hidden">
         <DialogHeader>
           <DialogTitle className="flex items-center justify-between flex-wrap gap-3">
             <div className="flex items-center flex-1 min-w-0">
@@ -632,6 +632,7 @@ export const DocumentViewerModal = ({ document, isOpen, onClose }: DocumentViewe
                           document?.metadata?.extractionMethod === 'mammoth-html' ||
                           (formData.content && /<[a-z][\s\S]*>/i.test(formData.content))) ? (
                           <div
+                            className="break-words whitespace-pre-wrap [word-break:break-word]"
                             dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(formData.content || 'No content available') }}
                           />
                         ) : (
@@ -655,6 +656,7 @@ export const DocumentViewerModal = ({ document, isOpen, onClose }: DocumentViewe
                       document?.metadata?.extractionMethod === 'mammoth-html' ||
                       (formData.content && /<[a-z][\s\S]*>/i.test(formData.content))) ? (
                       <div
+                        className="break-words whitespace-pre-wrap [word-break:break-word]"
                         dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(formData.content || 'No content available') }}
                       />
                     ) : (
