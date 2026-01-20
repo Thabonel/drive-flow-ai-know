@@ -18,17 +18,17 @@
  * - LOCAL_MODEL: Local Ollama model (default: llama3)
  */
 
-// Claude model IDs - using known-valid Anthropic API model IDs
-// These are the same IDs used successfully by ai-query
+// Claude model IDs - using current Anthropic API model IDs (January 2026)
+// See: https://docs.anthropic.com/en/docs/about-claude/models
 export const CLAUDE_MODELS = {
   // Primary: Most capable model for complex reasoning and analysis
-  PRIMARY: Deno.env.get('CLAUDE_PRIMARY_MODEL') || 'claude-3-5-sonnet-20241022',
+  PRIMARY: Deno.env.get('CLAUDE_PRIMARY_MODEL') || 'claude-sonnet-4-5-20250514',
 
   // Fast: Good balance of speed and capability
-  FAST: Deno.env.get('CLAUDE_FAST_MODEL') || 'claude-3-5-sonnet-20241022',
+  FAST: Deno.env.get('CLAUDE_FAST_MODEL') || 'claude-sonnet-4-5-20250514',
 
   // Cheap: Most cost-effective for simple tasks
-  CHEAP: Deno.env.get('CLAUDE_CHEAP_MODEL') || 'claude-3-5-haiku-20241022',
+  CHEAP: Deno.env.get('CLAUDE_CHEAP_MODEL') || 'claude-haiku-4-5-20250514',
 } as const;
 
 // OpenRouter models (for fallback)
