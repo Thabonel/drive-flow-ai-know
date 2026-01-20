@@ -315,6 +315,13 @@ All colors MUST be HSL.
 @layer base {
   * {
     @apply border-border;
+    box-sizing: border-box;
+  }
+
+  /* Prevent horizontal scrolling site-wide */
+  html, body, #root {
+    overflow-x: hidden;
+    max-width: 100vw;
   }
 
   body {
@@ -551,9 +558,24 @@ All colors MUST be HSL.
   --tw-prose-code: #e2e8f0;
   --tw-prose-pre-code: #e2e8f0;
   --tw-prose-pre-bg: #1e293b;
+
+  /* OVERFLOW PREVENTION - Constrain content width and wrap text */
+  max-width: 100%;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
 }
 
-/* CODE BLOCKS: Force high contrast (light text on dark bg) */
+/* Constrain prose child elements to prevent overflow */
+.prose img,
+.prose table,
+.prose pre,
+[class*="prose"] img,
+[class*="prose"] table,
+[class*="prose"] pre {
+  max-width: 100%;
+}
+
+/* CODE BLOCKS: Force high contrast (light text on dark bg) + prevent overflow */
 .prose pre,
 [class*="prose"] pre {
   background-color: #1e293b !important;
@@ -561,7 +583,12 @@ All colors MUST be HSL.
   border: 1px solid hsl(var(--border));
   border-radius: 0.5rem;
   padding: 1rem;
-  overflow-x: auto;
+  overflow-x: hidden;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  word-break: break-word;
+  white-space: pre-wrap;
+  max-width: 100%;
 }
 
 .prose pre code,
@@ -572,6 +599,14 @@ All colors MUST be HSL.
   border: none !important;
   font-size: 0.875rem;
   line-height: 1.7;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+.prose code,
+[class*="prose"] code {
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
 /* Inline code (not in pre blocks) */
