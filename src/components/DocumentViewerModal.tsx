@@ -632,7 +632,7 @@ export const DocumentViewerModal = ({ document, isOpen, onClose }: DocumentViewe
                           document?.metadata?.extractionMethod === 'mammoth-html' ||
                           (formData.content && /<[a-z][\s\S]*>/i.test(formData.content))) ? (
                           <div
-                            className="break-words whitespace-pre-wrap [word-break:break-word]"
+                            className="break-words [word-break:break-word]"
                             dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(formData.content || 'No content available') }}
                           />
                         ) : (
@@ -656,7 +656,7 @@ export const DocumentViewerModal = ({ document, isOpen, onClose }: DocumentViewe
                       document?.metadata?.extractionMethod === 'mammoth-html' ||
                       (formData.content && /<[a-z][\s\S]*>/i.test(formData.content))) ? (
                       <div
-                        className="break-words whitespace-pre-wrap [word-break:break-word]"
+                        className="break-words [word-break:break-word]"
                         dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(formData.content || 'No content available') }}
                       />
                     ) : (
