@@ -37,6 +37,27 @@ interface DocumentViewerModalProps {
   onClose: () => void;
 }
 
+/**
+ * Determines if content is HTML (from Word docs) vs Markdown
+ * Looks for actual HTML structure, not just any angle brackets
+ */
+const isHTMLContent = (content: string | null | undefined): boolean => {
+  if (!content) return false;
+
+  // Check for common HTML block-level tags that indicate real HTML content
+  // These are tags typically produced by Word/mammoth conversion
+  const htmlBlockTags = /<(p|div|h[1-6]|ul|ol|li|table|tr|td|th|br|hr|section|article|header|footer|nav|aside|main|blockquote|pre|figure|figcaption)\b[^>]*>/i;
+
+  // Check for multiple HTML tags (real HTML usually has several)
+  const htmlTagMatches = content.match(/<[a-z][a-z0-9]*\b[^>]*>/gi);
+  const hasMultipleHtmlTags = htmlTagMatches && htmlTagMatches.length >= 3;
+
+  // Check for closing tags (markdown rarely has these)
+  const hasClosingTags = /<\/[a-z][a-z0-9]*>/i.test(content);
+
+  return htmlBlockTags.test(content) && (hasMultipleHtmlTags || hasClosingTags);
+};
+
 export const DocumentViewerModal = ({ document, isOpen, onClose }: DocumentViewerModalProps) => {
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
@@ -627,10 +648,10 @@ export const DocumentViewerModal = ({ document, isOpen, onClose }: DocumentViewe
                     </TabsContent>
                     <TabsContent value="extracted" className="mt-4">
                       <div className="p-6 border rounded-md bg-background min-h-[300px] select-text prose prose-slate dark:prose-invert max-w-full overflow-x-hidden break-words prose-headings:text-foreground prose-p:text-foreground prose-li:text-foreground prose-strong:text-foreground prose-a:text-primary prose-code:text-foreground prose-table:border-collapse prose-th:border prose-th:border-slate-300 prose-th:p-2 prose-td:border prose-td:border-slate-300 prose-td:p-2">
-                        {/* Render HTML content directly if it's from a Word document or contains HTML tags */}
+                        {/* Render HTML content directly if it's from a Word document, otherwise use ReactMarkdown */}
                         {(document?.metadata?.contentFormat === 'html' ||
                           document?.metadata?.extractionMethod === 'mammoth-html' ||
-                          (formData.content && /<[a-z][\s\S]*>/i.test(formData.content))) ? (
+                          isHTMLContent(formData.content)) ? (
                           <div
                             className="break-words [word-break:break-word]"
                             dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(formData.content || 'No content available') }}
@@ -651,10 +672,10 @@ export const DocumentViewerModal = ({ document, isOpen, onClose }: DocumentViewe
                   </Tabs>
                 ) : (
                   <div className="p-6 border rounded-md bg-background min-h-[300px] select-text prose prose-slate dark:prose-invert max-w-full overflow-x-hidden break-words prose-headings:text-foreground prose-p:text-foreground prose-li:text-foreground prose-strong:text-foreground prose-a:text-primary prose-code:text-foreground prose-table:border-collapse prose-th:border prose-th:border-slate-300 prose-th:p-2 prose-td:border prose-td:border-slate-300 prose-td:p-2">
-                    {/* Render HTML content directly if it's from a Word document or contains HTML tags */}
+                    {/* Render HTML content directly if it's from a Word document, otherwise use ReactMarkdown */}
                     {(document?.metadata?.contentFormat === 'html' ||
                       document?.metadata?.extractionMethod === 'mammoth-html' ||
-                      (formData.content && /<[a-z][\s\S]*>/i.test(formData.content))) ? (
+                      isHTMLContent(formData.content)) ? (
                       <div
                         className="break-words [word-break:break-word]"
                         dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(formData.content || 'No content available') }}
