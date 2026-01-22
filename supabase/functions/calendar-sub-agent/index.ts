@@ -210,8 +210,7 @@ async function createTimelineItems(
       status: 'active',
       color: '#10B981', // Green for exercise/wellness
       recurring_series_id: seriesId,
-      recurrence_pattern: recurrence,
-      notes: description,
+      occurrence_index: recurrence ? i : null,
     });
 
     if (recurrence) {
