@@ -11,6 +11,7 @@ const corsHeaders = {
 
 interface TranslationRequest {
   unstructured_input: string;
+  timezone_offset?: number;  // User's timezone offset in hours from UTC (e.g., +2 for Africa/Johannesburg)
   context?: {
     timezone?: string;
     location?: string;
@@ -108,7 +109,7 @@ serve(async (req) => {
     }
 
     // Parse request body with optional context
-    const { unstructured_input, context }: TranslationRequest = await req.json();
+    const { unstructured_input, timezone_offset, context }: TranslationRequest = await req.json();
 
     if (!unstructured_input || typeof unstructured_input !== 'string') {
       return new Response(
@@ -242,12 +243,15 @@ serve(async (req) => {
 
     // Store tasks in agent_tasks table (sessionData already fetched above for token tracking)
     if (sessionData) {
-      // Store each task
+      // Store each task - include timezone_offset for sub-agents to use
       const taskInserts = tasks.map(task => ({
         session_id: sessionData.id,
         user_id: user.id,
         original_input: unstructured_input,
-        structured_output: task,
+        structured_output: {
+          ...task,
+          timezone_offset: timezone_offset ?? 2, // Default to UTC+2 if not provided
+        },
         status: 'pending',
       }));
 

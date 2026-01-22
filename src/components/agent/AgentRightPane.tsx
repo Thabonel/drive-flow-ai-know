@@ -14,7 +14,9 @@ import {
   Cpu,
   Calendar,
   FileText,
-  BarChart3
+  BarChart3,
+  Sun,
+  History
 } from 'lucide-react';
 
 interface AgentMemory {
@@ -28,7 +30,21 @@ interface SubAgent {
   id: string;
   agent_type: string;
   status: string;
+  task_data?: {
+    title?: string;
+    description?: string;
+  };
+  result_data?: any;
   created_at: string;
+}
+
+interface TimelineItem {
+  id: string;
+  title: string;
+  start_time: string;
+  duration_minutes: number;
+  status: string;
+  color: string;
 }
 
 export function AgentRightPane({ userId }: { userId: string }) {
@@ -38,6 +54,8 @@ export function AgentRightPane({ userId }: { userId: string }) {
   });
   const [recentGoals, setRecentGoals] = useState<AgentMemory[]>([]);
   const [activeAgents, setActiveAgents] = useState<SubAgent[]>([]);
+  const [todayItems, setTodayItems] = useState<TimelineItem[]>([]);
+  const [recentActivity, setRecentActivity] = useState<SubAgent[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -69,6 +87,17 @@ export function AgentRightPane({ userId }: { userId: string }) {
           .limit(5);
 
         setActiveAgents(agentsData || []);
+
+        // Fetch recent completed sub-agents (activity history)
+        const { data: completedAgents } = await supabase
+          .from('sub_agents')
+          .select('*')
+          .eq('user_id', userId)
+          .eq('status', 'completed')
+          .order('completed_at', { ascending: false })
+          .limit(5);
+
+        setRecentActivity(completedAgents || []);
       } catch (error) {
         console.error('Error fetching agent data:', error);
       } finally {
@@ -76,7 +105,31 @@ export function AgentRightPane({ userId }: { userId: string }) {
       }
     };
 
+    // Fetch today's timeline items (independent of session)
+    const fetchTodayItems = async () => {
+      try {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+
+        const { data: items } = await supabase
+          .from('timeline_items')
+          .select('*')
+          .eq('user_id', userId)
+          .gte('start_time', today.toISOString())
+          .lt('start_time', tomorrow.toISOString())
+          .order('start_time', { ascending: true })
+          .limit(10);
+
+        setTodayItems(items || []);
+      } catch (error) {
+        console.error('Error fetching today items:', error);
+      }
+    };
+
     fetchAgentData();
+    fetchTodayItems();
 
     if (!session) return;
 
@@ -283,6 +336,76 @@ export function AgentRightPane({ userId }: { userId: string }) {
             </CardContent>
           </Card>
 
+          {/* Today's Schedule */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Sun className="h-4 w-4 text-yellow-500" />
+                Today's Schedule
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {todayItems.length > 0 ? (
+                <div className="space-y-2">
+                  {todayItems.map((item) => (
+                    <div key={item.id} className="flex items-start gap-2 text-sm">
+                      <div
+                        className="w-2 h-2 rounded-full mt-1.5 flex-shrink-0"
+                        style={{ backgroundColor: item.color || '#3b82f6' }}
+                      />
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium truncate">{item.title}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {formatTimeOfDay(item.start_time)} • {item.duration_minutes}min
+                        </p>
+                      </div>
+                      {item.status === 'completed' && (
+                        <CheckCircle2 className="h-4 w-4 text-success flex-shrink-0" />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">No items scheduled for today</p>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Recent Activity */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <History className="h-4 w-4" />
+                Recent Activity
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {recentActivity.length > 0 ? (
+                <div className="space-y-2">
+                  {recentActivity.map((agent) => (
+                    <div key={agent.id} className="text-sm">
+                      <div className="flex items-center gap-2">
+                        {getAgentIcon(agent.agent_type)}
+                        <span className="font-medium truncate flex-1">
+                          {agent.task_data?.title || `${agent.agent_type} task`}
+                        </span>
+                        <CheckCircle2 className="h-3 w-3 text-success" />
+                      </div>
+                      <p className="text-xs text-muted-foreground ml-6">
+                        {formatTimeAgo(agent.created_at)}
+                        {agent.result_data?.timeline_items_created && (
+                          <> • {agent.result_data.timeline_items_created} item(s) created</>
+                        )}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">No recent activity</p>
+              )}
+            </CardContent>
+          </Card>
+
           {/* Quick Actions */}
           <Card>
             <CardHeader className="pb-3">
@@ -304,4 +427,16 @@ export function AgentRightPane({ userId }: { userId: string }) {
       </ScrollArea>
     </div>
   );
+}
+
+/**
+ * Format time of day from ISO timestamp to local time (e.g., "3:00 PM")
+ */
+function formatTimeOfDay(timestamp: string): string {
+  const date = new Date(timestamp);
+  return date.toLocaleTimeString('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  });
 }
