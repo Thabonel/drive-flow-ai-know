@@ -110,11 +110,19 @@ export function AgentChat({ session, userId }: AgentChatProps) {
         await updateTitle(command);
       }
 
+      // Get user's timezone offset (in hours from UTC)
+      // Positive = ahead of UTC (e.g., +2 for Africa/Johannesburg)
+      // Note: getTimezoneOffset returns minutes behind UTC, so we negate and convert to hours
+      const timezoneOffset = -(new Date().getTimezoneOffset() / 60);
+
       // Step 1: Call agent-translate to convert command to tasks
       const { data: translateData, error: translateError } = await supabase.functions.invoke<TranslationResponse>(
         'agent-translate',
         {
-          body: { unstructured_input: command },
+          body: {
+            unstructured_input: command,
+            timezone_offset: timezoneOffset,
+          },
         }
       );
 

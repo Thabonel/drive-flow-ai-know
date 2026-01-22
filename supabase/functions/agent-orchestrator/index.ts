@@ -75,6 +75,7 @@ interface AgentTask {
     agent_type: 'calendar' | 'briefing' | 'analysis';
     priority: number;
     estimated_duration: number;
+    timezone_offset?: number;
   };
   status: string;
 }
@@ -167,6 +168,7 @@ serve(async (req) => {
             description: task.structured_output.description,
             priority: task.structured_output.priority,
             estimated_duration: task.structured_output.estimated_duration,
+            timezone_offset: task.structured_output.timezone_offset ?? 2, // Pass timezone to sub-agents
           },
         })
         .select()

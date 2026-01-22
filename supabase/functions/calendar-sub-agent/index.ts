@@ -100,24 +100,82 @@ function parseRecurrenceFromText(text: string): RecurrencePattern | null {
 }
 
 /**
- * Parse "starting from today", "starting tomorrow", "from January 22"
+ * Parse specific dates like "January 23", "Friday", "tomorrow", "today"
  */
-function parseStartDate(text: string): Date {
+function parseStartDate(text: string, referenceDate: Date = new Date()): Date {
   const lowerText = text.toLowerCase();
-  const now = new Date();
 
-  if (lowerText.includes('starting from today') || lowerText.includes('from today') || lowerText.includes('starting today')) {
-    return now;
+  // Today
+  if (lowerText.includes('starting from today') || lowerText.includes('from today') || lowerText.includes('starting today') || lowerText.includes('today')) {
+    return new Date(referenceDate);
   }
 
-  if (lowerText.includes('starting tomorrow') || lowerText.includes('from tomorrow')) {
-    const tomorrow = new Date(now);
+  // Tomorrow
+  if (lowerText.includes('tomorrow')) {
+    const tomorrow = new Date(referenceDate);
     tomorrow.setDate(tomorrow.getDate() + 1);
     return tomorrow;
   }
 
+  // Specific date like "January 23" or "Jan 23"
+  const monthDatePattern = /(january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\s+(\d{1,2})(?:,?\s*(\d{4}))?/i;
+  const monthMatch = text.match(monthDatePattern);
+  if (monthMatch) {
+    const monthNames: Record<string, number> = {
+      'january': 0, 'jan': 0, 'february': 1, 'feb': 1, 'march': 2, 'mar': 2,
+      'april': 3, 'apr': 3, 'may': 4, 'june': 5, 'jun': 5,
+      'july': 6, 'jul': 6, 'august': 7, 'aug': 7, 'september': 8, 'sep': 8,
+      'october': 9, 'oct': 9, 'november': 10, 'nov': 10, 'december': 11, 'dec': 11
+    };
+    const month = monthNames[monthMatch[1].toLowerCase()];
+    const day = parseInt(monthMatch[2], 10);
+    const year = monthMatch[3] ? parseInt(monthMatch[3], 10) : referenceDate.getFullYear();
+
+    const result = new Date(referenceDate);
+    result.setFullYear(year, month, day);
+    return result;
+  }
+
+  // Day of week like "Friday", "Monday"
+  const dayOfWeekPattern = /(monday|tuesday|wednesday|thursday|friday|saturday|sunday)/i;
+  const dayMatch = text.match(dayOfWeekPattern);
+  if (dayMatch) {
+    const dayNames: Record<string, number> = {
+      'sunday': 0, 'monday': 1, 'tuesday': 2, 'wednesday': 3,
+      'thursday': 4, 'friday': 5, 'saturday': 6
+    };
+    const targetDay = dayNames[dayMatch[1].toLowerCase()];
+    const currentDay = referenceDate.getDay();
+    let daysToAdd = targetDay - currentDay;
+    if (daysToAdd <= 0) daysToAdd += 7; // Always go to next occurrence
+
+    const result = new Date(referenceDate);
+    result.setDate(result.getDate() + daysToAdd);
+    return result;
+  }
+
   // Default to today
-  return now;
+  return new Date(referenceDate);
+}
+
+/**
+ * Get current date in user's timezone
+ */
+function getNowInTimezone(timezoneOffset: number): Date {
+  const now = new Date();
+  // Adjust for timezone offset (offset is in hours, e.g., +2 for Africa/Johannesburg)
+  const utcTime = now.getTime() + (now.getTimezoneOffset() * 60000);
+  return new Date(utcTime + (timezoneOffset * 3600000));
+}
+
+/**
+ * Convert local time to UTC for storage
+ * @param localDate - Date in user's local timezone
+ * @param timezoneOffset - User's timezone offset in hours (e.g., +2 for Africa/Johannesburg)
+ */
+function localToUTC(localDate: Date, timezoneOffset: number): Date {
+  // Subtract the timezone offset to get UTC
+  return new Date(localDate.getTime() - (timezoneOffset * 3600000));
 }
 
 /**
@@ -268,17 +326,33 @@ async function handleCreateEvent(
     const eventTitle = taskData.title || 'New Event';
     const eventDescription = taskData.description || '';
 
+    // Get user's timezone offset from task_data or default to UTC+2 (Africa/Johannesburg)
+    // Most users will be in this timezone based on usage patterns
+    const timezoneOffset = taskData.timezone_offset ?? 2;
+
     // Combine title and description for parsing
     const fullText = `${eventTitle} ${eventDescription}`;
 
     // Parse time from text (default to 9am if not found)
     const parsedTime = parseTimeFromText(fullText) || { hours: 9, minutes: 0 };
 
-    // Parse start date (default to today)
-    const startDate = parseStartDate(fullText);
+    console.log(`Parsed time from "${fullText}": ${parsedTime.hours}:${parsedTime.minutes.toString().padStart(2, '0')}`);
 
-    // Set the time on the start date
-    startDate.setHours(parsedTime.hours, parsedTime.minutes, 0, 0);
+    // Get "now" in user's local timezone for date parsing
+    const nowLocal = getNowInTimezone(timezoneOffset);
+
+    // Parse start date (default to today in user's timezone)
+    const startDateLocal = parseStartDate(fullText, nowLocal);
+
+    // Set the time on the start date (in user's local time)
+    startDateLocal.setHours(parsedTime.hours, parsedTime.minutes, 0, 0);
+
+    console.log(`Local time: ${startDateLocal.toISOString()} (offset: UTC+${timezoneOffset})`);
+
+    // Convert to UTC for storage
+    const startDate = localToUTC(startDateLocal, timezoneOffset);
+
+    console.log(`UTC time for storage: ${startDate.toISOString()}`);
 
     // Parse recurrence pattern
     const recurrence = parseRecurrenceFromText(fullText);
