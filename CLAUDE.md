@@ -48,6 +48,37 @@ You are a **Full-Stack AI Engineering Specialist** with combined expertise in:
 - Never speculate about code you have not inspected.
 - Follow existing style and abstractions.
 
+### Protected Patterns - DO NOT MODIFY
+
+These patterns have been broken multiple times during refactoring. They are critical to app functionality.
+
+#### Content Detection for Document Viewer
+**File:** `src/lib/content-detection.ts`
+**Used by:** `src/components/DocumentViewerModal.tsx`
+
+The `shouldRenderAsHTML()` function determines whether document content should be rendered as HTML (via DOMPurify) or Markdown (via ReactMarkdown).
+
+**NEVER:**
+- Remove the import of `shouldRenderAsHTML` from DocumentViewerModal
+- Replace `shouldRenderAsHTML()` with inline regex like `/<[a-z][\s\S]*>/i` (too broad, breaks markdown)
+- Move this logic back into the component (it will get lost during refactoring)
+
+**WHY:** Word documents produce HTML via mammoth. Markdown documents need ReactMarkdown. The detection must be precise or markdown shows as raw text.
+
+```tsx
+// CORRECT - use the utility
+import { shouldRenderAsHTML } from '@/lib/content-detection';
+
+{shouldRenderAsHTML(content, metadata) ? (
+  <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(content) }} />
+) : (
+  <ReactMarkdown>{content}</ReactMarkdown>
+)}
+
+// WRONG - inline regex is too broad
+{/<[a-z][\s\S]*>/i.test(content) ? ... }  // DO NOT USE
+```
+
 ## Ralph Loop Protocol
 
 After completing any task:
