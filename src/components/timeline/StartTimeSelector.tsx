@@ -16,8 +16,15 @@ export function StartTimeSelector({
   onHoursFromNowChange,
   label = 'Start Time'
 }: StartTimeSelectorProps) {
-  const [mode, setMode] = useState<'relative' | 'absolute'>('relative');
-  const [absoluteDate, setAbsoluteDate] = useState<Date | undefined>(undefined);
+  // Default to absolute (date/time picker) - more intuitive for most users
+  const [mode, setMode] = useState<'relative' | 'absolute'>('absolute');
+
+  // Initialize with current time + hoursFromNow
+  const [absoluteDate, setAbsoluteDate] = useState<Date | undefined>(() => {
+    const date = new Date();
+    date.setTime(date.getTime() + hoursFromNow * 60 * 60 * 1000);
+    return date;
+  });
 
   const handleAbsoluteDateChange = (date: Date | undefined) => {
     setAbsoluteDate(date);
@@ -44,28 +51,33 @@ export function StartTimeSelector({
         <div className="flex gap-1">
           <Button
             type="button"
-            variant={mode === 'relative' ? 'default' : 'ghost'}
-            size="sm"
-            onClick={() => setMode('relative')}
-            className="h-7 text-xs"
-          >
-            <Clock className="h-3 w-3 mr-1" />
-            Relative
-          </Button>
-          <Button
-            type="button"
             variant={mode === 'absolute' ? 'default' : 'ghost'}
             size="sm"
             onClick={() => setMode('absolute')}
             className="h-7 text-xs"
           >
             <Calendar className="h-3 w-3 mr-1" />
-            Date
+            Pick Time
+          </Button>
+          <Button
+            type="button"
+            variant={mode === 'relative' ? 'default' : 'ghost'}
+            size="sm"
+            onClick={() => setMode('relative')}
+            className="h-7 text-xs"
+          >
+            <Clock className="h-3 w-3 mr-1" />
+            Offset
           </Button>
         </div>
       </div>
 
-      {mode === 'relative' ? (
+      {mode === 'absolute' ? (
+        <DateTimePicker
+          value={absoluteDate}
+          onChange={handleAbsoluteDateChange}
+        />
+      ) : (
         <>
           <div className="flex items-center gap-2">
             <Input
@@ -74,24 +86,14 @@ export function StartTimeSelector({
               onChange={handleRelativeChange}
               step="0.25"
               className="flex-1"
-              placeholder="Hours from now"
+              placeholder="e.g., 2 for 2 hours from now"
             />
-            <span className="text-sm text-gray-600 dark:text-gray-400">
-              hours from now
+            <span className="text-sm text-muted-foreground whitespace-nowrap">
+              hours
             </span>
           </div>
-          <p className="text-xs text-gray-500">
-            Use negative values for past items
-          </p>
-        </>
-      ) : (
-        <>
-          <DateTimePicker
-            value={absoluteDate}
-            onChange={handleAbsoluteDateChange}
-          />
           <p className="text-xs text-muted-foreground">
-            Select a specific date and time for this item
+            Positive = future, negative = past
           </p>
         </>
       )}
