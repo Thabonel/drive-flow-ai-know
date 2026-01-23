@@ -2,6 +2,8 @@
 **Date:** January 1, 2025
 **Session Focus:** Sidebar navigation restructure and UI cleanup
 
+> **Update (Jan 23, 2026):** Dashboard and AIAssistantSidebar have been removed. See `docs/handover.md` for current navigation.
+
 ---
 
 ## Summary
@@ -177,7 +179,7 @@ Executive (enterprise only)
 | `src/components/AppSidebar.tsx` | Main sidebar navigation |
 | `src/App.tsx` | App layout with AI Assistant sidebar placement |
 | `src/components/ConversationChat.tsx` | AI Chat conversation interface |
-| `src/components/AIAssistantSidebar.tsx` | Quick AI Tools panel |
+| ~~`src/components/AIAssistantSidebar.tsx`~~ | ~~Quick AI Tools panel~~ *(Removed Jan 23, 2026)* |
 | `src/components/FeatureGate.tsx` | Tier-based feature visibility |
 
 ---
