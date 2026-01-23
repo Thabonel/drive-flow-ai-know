@@ -244,11 +244,13 @@ const { connectDrive, syncFiles, isConnected } = useGoogleDrive();
 Complex UI built from smaller composable components:
 
 ```tsx
-<AIAssistantSidebar>
+{/* Note: AIAssistantSidebar was removed Jan 23, 2026.
+    This pattern is now used in ConversationChat component. */}
+<ConversationChat>
   <AIQueryInput onSubmit={handleQuery} />
   <ConversationHistory messages={messages} />
   <DocumentContext documents={contextDocs} />
-</AIAssistantSidebar>
+</ConversationChat>
 ```
 
 #### 4. Render Props Pattern

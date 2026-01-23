@@ -6,11 +6,12 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { AIProgressIndicator } from '@/components/ai/AIProgressIndicator';
-import { Cpu, Archive, Download, Printer } from 'lucide-react';
+import { Cpu, Archive, Download, Printer, X, Calendar, FileText, BarChart3, Clock, CheckCircle2, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { supabase } from '@/integrations/supabase/client';
+import type { SubAgent } from '@/components/agent/AgentRightPane';
 
 interface TranslatedTask {
   title: string;
@@ -49,9 +50,11 @@ interface AgentSession {
 interface AgentChatProps {
   session: AgentSession | null;
   userId: string;
+  selectedTask?: SubAgent | null;
+  onCloseTaskDetail?: () => void;
 }
 
-export function AgentChat({ session, userId }: AgentChatProps) {
+export function AgentChat({ session, userId, selectedTask, onCloseTaskDetail }: AgentChatProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -257,6 +260,176 @@ export function AgentChat({ session, userId }: AgentChatProps) {
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
           <p className="text-muted-foreground">Loading conversation...</p>
+        </div>
+      </div>
+    );
+  }
+
+  const getAgentIcon = (type: string) => {
+    switch (type) {
+      case 'calendar':
+        return <Calendar className="h-5 w-5 text-blue-500" />;
+      case 'briefing':
+        return <FileText className="h-5 w-5 text-green-500" />;
+      case 'analysis':
+        return <BarChart3 className="h-5 w-5 text-purple-500" />;
+      default:
+        return <Cpu className="h-5 w-5 text-accent" />;
+    }
+  };
+
+  const getPriorityBadge = (priority?: number) => {
+    if (!priority) return null;
+    if (priority >= 4) return <Badge variant="destructive">High Priority</Badge>;
+    if (priority >= 3) return <Badge variant="secondary">Normal</Badge>;
+    return <Badge variant="outline">Low</Badge>;
+  };
+
+  const formatDuration = (ms?: number) => {
+    if (!ms) return null;
+    if (ms < 1000) return `${ms}ms`;
+    return `${(ms / 1000).toFixed(1)}s`;
+  };
+
+  // Show task detail view when a task is selected
+  if (selectedTask) {
+    return (
+      <div className="h-full flex flex-col">
+        {/* Header */}
+        <div className="flex-shrink-0 p-4 border-b">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              {getAgentIcon(selectedTask.agent_type)}
+              <div>
+                <h2 className="text-lg font-semibold">
+                  {selectedTask.task_data?.title || `${selectedTask.agent_type} Task`}
+                </h2>
+                <p className="text-sm text-muted-foreground capitalize">
+                  {selectedTask.agent_type} Agent
+                </p>
+              </div>
+            </div>
+            <Button variant="ghost" size="icon" onClick={onCloseTaskDetail}>
+              <X className="h-5 w-5" />
+            </Button>
+          </div>
+        </div>
+
+        {/* Task Details */}
+        <ScrollArea className="flex-1 p-4">
+          <div className="space-y-6 max-w-2xl">
+            {/* Status */}
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <CheckCircle2 className="h-4 w-4 text-success" />
+                  Status
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <Badge className="bg-success">Completed</Badge>
+                  {getPriorityBadge(selectedTask.task_data?.priority)}
+                </div>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  {selectedTask.completed_at && (
+                    <div>
+                      <p className="text-muted-foreground">Completed</p>
+                      <p className="font-medium">
+                        {new Date(selectedTask.completed_at).toLocaleString()}
+                      </p>
+                    </div>
+                  )}
+                  {selectedTask.duration_ms && (
+                    <div>
+                      <p className="text-muted-foreground">Execution Time</p>
+                      <p className="font-medium flex items-center gap-1">
+                        <Clock className="h-3 w-3" />
+                        {formatDuration(selectedTask.duration_ms)}
+                      </p>
+                    </div>
+                  )}
+                  {selectedTask.task_data?.estimated_duration && (
+                    <div>
+                      <p className="text-muted-foreground">Estimated Duration</p>
+                      <p className="font-medium">{selectedTask.task_data.estimated_duration} min</p>
+                    </div>
+                  )}
+                  <div>
+                    <p className="text-muted-foreground">Created</p>
+                    <p className="font-medium">
+                      {new Date(selectedTask.created_at).toLocaleString()}
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Description */}
+            {selectedTask.task_data?.description && (
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base">Description</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm">{selectedTask.task_data.description}</p>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Results */}
+            {selectedTask.result_data && (
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base">Results</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {selectedTask.result_data.timeline_items_created && (
+                    <div className="flex items-center gap-2 text-sm mb-2">
+                      <Calendar className="h-4 w-4 text-blue-500" />
+                      <span>{selectedTask.result_data.timeline_items_created} timeline item(s) created</span>
+                    </div>
+                  )}
+                  {selectedTask.result_data.message && (
+                    <p className="text-sm text-muted-foreground">
+                      {selectedTask.result_data.message}
+                    </p>
+                  )}
+                  {/* Show raw result data for debugging/transparency */}
+                  <details className="mt-4">
+                    <summary className="text-xs text-muted-foreground cursor-pointer hover:text-foreground">
+                      View raw data
+                    </summary>
+                    <pre className="mt-2 p-2 bg-muted rounded text-xs overflow-auto">
+                      {JSON.stringify(selectedTask.result_data, null, 2)}
+                    </pre>
+                  </details>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Error (if any) */}
+            {selectedTask.error_message && (
+              <Card className="border-destructive">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base flex items-center gap-2 text-destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    Error
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-destructive">{selectedTask.error_message}</p>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        </ScrollArea>
+
+        {/* Footer */}
+        <div className="flex-shrink-0 p-4 border-t">
+          <Button variant="outline" onClick={onCloseTaskDetail} className="w-full">
+            Back to Chat
+          </Button>
         </div>
       </div>
     );

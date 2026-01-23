@@ -166,7 +166,7 @@ interface TimelineItem {
 
 **Related Components**:
 - `KnowledgeBasePreview` - Preview KB content
-- `AIAssistantSidebar` - Query knowledge bases
+- ~~`AIAssistantSidebar`~~ - *(Removed Jan 23, 2026 - see AI Chat page)*
 
 **State**:
 ```typescript
@@ -589,12 +589,13 @@ import { Dialog, DialogContent, DialogHeader } from '@/components/ui/dialog';
 
 #### AI Components (`components/ai/`)
 
-**`AIAssistantSidebar.tsx`**
-- Main AI chat interface
-- Query input and response display
-- Knowledge base selection
-- Document context
-- Conversation history
+**`AIAssistantSidebar.tsx`** *(DEPRECATED - Removed Jan 23, 2026)*
+- ~~Main AI chat interface~~
+- ~~Query input and response display~~
+- ~~Knowledge base selection~~
+- ~~Document context~~
+- ~~Conversation history~~
+- *Functionality consolidated into AI Chat page (`/conversations`)*
 
 **`AIDailyBrief.tsx`**
 - AI-generated daily summary

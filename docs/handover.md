@@ -2,7 +2,33 @@
 
 ---
 
-## Latest Session: January 18, 2026
+## Latest Session: January 23, 2026
+
+**Summary:** UI cleanup and navigation simplification
+
+### Changes Made
+
+| Change | Commit |
+|--------|--------|
+| Remove Dashboard from sidebar navigation | `dd77982` |
+| Remove AIAssistantSidebar component | `42b3956` |
+| Default to date/time picker | `d598a61` |
+| Agent timezone support | `913a8b9` |
+
+### Current Sidebar Navigation
+1. Timeline
+2. AI Chat
+3. Documents
+4. Pitch Deck
+5. AI Assistant
+
+### Completed: RLS Circular Dependency Fix
+
+The RLS issue documented in `docs/2025-12-29-ui-polish-and-database-investigation.md` has been **COMPLETED** via migration `20251229140129_fix_rls_circular_dependency.sql`.
+
+---
+
+## Previous Session: January 18, 2026
 
 **Summary:** Comprehensive security assessment and hardening implementation
 

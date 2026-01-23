@@ -26,15 +26,20 @@ interface AgentMemory {
   created_at: string;
 }
 
-interface SubAgent {
+export interface SubAgent {
   id: string;
   agent_type: string;
   status: string;
   task_data?: {
     title?: string;
     description?: string;
+    priority?: number;
+    estimated_duration?: number;
   };
   result_data?: any;
+  error_message?: string;
+  completed_at?: string;
+  duration_ms?: number;
   created_at: string;
 }
 
@@ -47,7 +52,13 @@ interface TimelineItem {
   color: string;
 }
 
-export function AgentRightPane({ userId }: { userId: string }) {
+interface AgentRightPaneProps {
+  userId: string;
+  onTaskSelect?: (task: SubAgent) => void;
+  selectedTaskId?: string;
+}
+
+export function AgentRightPane({ userId, onTaskSelect, selectedTaskId }: AgentRightPaneProps) {
   const { session, loading: sessionLoading } = useAgentSession({
     userId,
     enabled: true, // This component only renders when agent mode is enabled
@@ -376,32 +387,38 @@ export function AgentRightPane({ userId }: { userId: string }) {
             <CardHeader className="pb-3">
               <CardTitle className="text-base flex items-center gap-2">
                 <History className="h-4 w-4" />
-                Recent Activity
+                Completed Tasks
               </CardTitle>
             </CardHeader>
             <CardContent>
               {recentActivity.length > 0 ? (
-                <div className="space-y-2">
+                <div className="space-y-1">
                   {recentActivity.map((agent) => (
-                    <div key={agent.id} className="text-sm">
+                    <button
+                      key={agent.id}
+                      onClick={() => onTaskSelect?.(agent)}
+                      className={`w-full text-left text-sm p-2 rounded-lg transition-colors hover:bg-accent/50 ${
+                        selectedTaskId === agent.id ? 'bg-accent/30 ring-1 ring-accent' : ''
+                      }`}
+                    >
                       <div className="flex items-center gap-2">
                         {getAgentIcon(agent.agent_type)}
                         <span className="font-medium truncate flex-1">
                           {agent.task_data?.title || `${agent.agent_type} task`}
                         </span>
-                        <CheckCircle2 className="h-3 w-3 text-success" />
+                        <CheckCircle2 className="h-3 w-3 text-success flex-shrink-0" />
                       </div>
                       <p className="text-xs text-muted-foreground ml-6">
                         {formatTimeAgo(agent.created_at)}
                         {agent.result_data?.timeline_items_created && (
-                          <> • {agent.result_data.timeline_items_created} item(s) created</>
+                          <> • {agent.result_data.timeline_items_created} item(s)</>
                         )}
                       </p>
-                    </div>
+                    </button>
                   ))}
                 </div>
               ) : (
-                <p className="text-sm text-muted-foreground">No recent activity</p>
+                <p className="text-sm text-muted-foreground">No completed tasks</p>
               )}
             </CardContent>
           </Card>
