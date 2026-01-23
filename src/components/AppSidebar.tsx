@@ -39,12 +39,6 @@ const navigationItems = [
     description: 'Ask questions & get insights'
   },
   {
-    title: 'Dashboard',
-    url: '/dashboard',
-    icon: BookOpen,
-    description: 'Overview & quick actions'
-  },
-  {
     title: 'Documents',
     url: '/documents',
     icon: FileText,
