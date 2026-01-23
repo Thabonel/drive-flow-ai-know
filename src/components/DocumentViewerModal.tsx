@@ -484,9 +484,9 @@ export const DocumentViewerModal = ({ document, isOpen, onClose }: DocumentViewe
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-5xl w-[95vw] max-h-[90vh] overflow-y-auto overflow-x-hidden">
-        <DialogHeader>
-          <DialogTitle className="flex items-center justify-between flex-wrap gap-3">
+      <DialogContent className="max-w-5xl w-[95vw] max-h-[90vh] overflow-y-auto overflow-x-hidden [&>*]:min-w-0">
+        <DialogHeader className="min-w-0">
+          <DialogTitle className="flex items-center justify-between flex-wrap gap-3 min-w-0">
             <div className="flex items-center flex-1 min-w-0">
               <FileText className="h-5 w-5 mr-2 flex-shrink-0" />
               <span className="truncate">{isEditing ? 'Edit Document' : 'View Document'}</span>
@@ -577,8 +577,8 @@ export const DocumentViewerModal = ({ document, isOpen, onClose }: DocumentViewe
           </div>
         )}
 
-        <div className="space-y-6">
-          <div className="space-y-2">
+        <div className="space-y-6 min-w-0 overflow-hidden">
+          <div className="space-y-2 min-w-0">
             <Label htmlFor="title">Title</Label>
             {isEditing ? (
               <Input
@@ -589,13 +589,13 @@ export const DocumentViewerModal = ({ document, isOpen, onClose }: DocumentViewe
                 className="font-sans"
               />
             ) : (
-              <div className="p-3 border rounded-md bg-muted/50 select-text font-sans text-lg font-semibold">
+              <div className="p-3 border rounded-md bg-muted/50 select-text font-sans text-lg font-semibold break-all">
                 {formData.title}
               </div>
             )}
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-2 min-w-0 overflow-hidden">
             <Label htmlFor="content">Content</Label>
             {isEditing ? (
               <Textarea
@@ -629,17 +629,19 @@ export const DocumentViewerModal = ({ document, isOpen, onClose }: DocumentViewe
                       />
                     </TabsContent>
                     <TabsContent value="extracted" className="mt-4">
-                      <div className="p-6 border rounded-md bg-background min-h-[300px] select-text prose prose-slate dark:prose-invert max-w-full overflow-x-hidden break-words prose-headings:text-foreground prose-p:text-foreground prose-li:text-foreground prose-strong:text-foreground prose-a:text-primary prose-code:text-foreground prose-table:border-collapse prose-th:border prose-th:border-slate-300 prose-th:p-2 prose-td:border prose-td:border-slate-300 prose-td:p-2">
+                      <div className="p-6 border rounded-md bg-background min-h-[300px] select-text prose prose-slate dark:prose-invert max-w-none overflow-x-hidden break-all prose-headings:text-foreground prose-p:text-foreground prose-li:text-foreground prose-strong:text-foreground prose-a:text-primary prose-code:text-foreground prose-code:break-all prose-table:border-collapse prose-th:border prose-th:border-slate-300 prose-th:p-2 prose-td:border prose-td:border-slate-300 prose-td:p-2">
                         {/* CRITICAL: Uses shouldRenderAsHTML from @/lib/content-detection - do not replace with inline logic */}
                         {shouldRenderAsHTML(formData.content, document?.metadata) ? (
                           <div
-                            className="break-words [word-break:break-word]"
+                            className="break-all [overflow-wrap:anywhere]"
                             dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(formData.content || 'No content available') }}
                           />
                         ) : (
-                          <ReactMarkdown>
-                            {formData.content || 'No content available'}
-                          </ReactMarkdown>
+                          <div className="break-all [overflow-wrap:anywhere]">
+                            <ReactMarkdown>
+                              {formData.content || 'No content available'}
+                            </ReactMarkdown>
+                          </div>
                         )}
                       </div>
                       <div className="mt-2 text-xs text-muted-foreground">
@@ -651,17 +653,19 @@ export const DocumentViewerModal = ({ document, isOpen, onClose }: DocumentViewe
                     </TabsContent>
                   </Tabs>
                 ) : (
-                  <div className="p-6 border rounded-md bg-background min-h-[300px] select-text prose prose-slate dark:prose-invert max-w-full overflow-x-hidden break-words prose-headings:text-foreground prose-p:text-foreground prose-li:text-foreground prose-strong:text-foreground prose-a:text-primary prose-code:text-foreground prose-table:border-collapse prose-th:border prose-th:border-slate-300 prose-th:p-2 prose-td:border prose-td:border-slate-300 prose-td:p-2">
+                  <div className="p-6 border rounded-md bg-background min-h-[300px] select-text prose prose-slate dark:prose-invert max-w-none overflow-x-hidden break-all prose-headings:text-foreground prose-p:text-foreground prose-li:text-foreground prose-strong:text-foreground prose-a:text-primary prose-code:text-foreground prose-code:break-all prose-table:border-collapse prose-th:border prose-th:border-slate-300 prose-th:p-2 prose-td:border prose-td:border-slate-300 prose-td:p-2">
                     {/* CRITICAL: Uses shouldRenderAsHTML from @/lib/content-detection - do not replace with inline logic */}
                     {shouldRenderAsHTML(formData.content, document?.metadata) ? (
                       <div
-                        className="break-words [word-break:break-word]"
+                        className="break-all [overflow-wrap:anywhere]"
                         dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(formData.content || 'No content available') }}
                       />
                     ) : (
-                      <ReactMarkdown>
-                        {formData.content || 'No content available'}
-                      </ReactMarkdown>
+                      <div className="break-all [overflow-wrap:anywhere]">
+                        <ReactMarkdown>
+                          {formData.content || 'No content available'}
+                        </ReactMarkdown>
+                      </div>
                     )}
                   </div>
                 )}

@@ -2,7 +2,63 @@
 
 ---
 
-## Latest Session: January 23, 2026
+## Latest Session: January 24, 2026
+
+**Summary:** CRITICAL Edge Functions fix and AI Agent System deployment
+
+### Critical Fix: @supabase/supabase-js Version
+
+**Root Cause:** The latest version of `@supabase/supabase-js` (v2.92.0) is incompatible with the Supabase Edge Runtime. When using `@2` without a pinned version, esm.sh pulls the latest which causes functions to crash before CORS preflight handlers run.
+
+**Fix:** Pinned all Edge Functions to `@supabase/supabase-js@2.45.0`
+
+**Files Changed:** 46 Edge Function files
+
+**Commit:** `b71e16d`
+
+```typescript
+// CORRECT - always use this
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
+
+// WRONG - will break
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+```
+
+### Functions Deployed with Fix
+- agent-translate ✓
+- agent-orchestrator ✓
+- creative-sub-agent ✓
+- briefing-sub-agent ✓
+- calendar-sub-agent ✓
+- analysis-sub-agent ✓
+- ai-query ✓
+
+### AI Agent System (Now Working)
+
+The multi-agent orchestration system is now functional:
+
+| Function | Purpose |
+|----------|---------|
+| `agent-translate` | Natural language → structured task |
+| `agent-orchestrator` | Routes tasks to sub-agents |
+| `calendar-sub-agent` | Calendar events, scheduling |
+| `briefing-sub-agent` | Daily briefs, summaries |
+| `analysis-sub-agent` | Document analysis |
+| `creative-sub-agent` | Creative content, marketing |
+
+### Current Model Configuration
+
+```typescript
+CLAUDE_MODELS = {
+  PRIMARY: 'claude-sonnet-4-5-20250929',
+  FAST: 'claude-sonnet-4-5-20250929',
+  CHEAP: 'claude-haiku-4-5-20250929',
+}
+```
+
+---
+
+## Previous Session: January 23, 2026
 
 **Summary:** UI cleanup and navigation simplification
 
@@ -28,7 +84,7 @@ The RLS issue documented in `docs/2025-12-29-ui-polish-and-database-investigatio
 
 ---
 
-## Previous Session: January 18, 2026
+## Session: January 18, 2026
 
 **Summary:** Comprehensive security assessment and hardening implementation
 

@@ -95,19 +95,33 @@ AI Query Hub follows a **modern serverless JAMstack architecture** with clear se
 | Technology | Version | Purpose |
 |-----------|---------|---------|
 | **Supabase** | 2.21.0 | Backend-as-a-Service |
+| **@supabase/supabase-js** | **2.45.0** | **CRITICAL: Must pin to this version** |
 | **PostgreSQL** | 15+ | Relational database |
 | **Deno** | Latest | Edge Function runtime |
 | **PostgREST** | Auto | Auto-generated REST API |
 | **GoTrue** | Auto | Authentication service |
 
+> **⚠️ CRITICAL**: All Edge Functions must import `@supabase/supabase-js@2.45.0` (not `@2`). The latest version (v2.92.0+) is incompatible with Supabase Edge Runtime and causes CORS/WORKER_ERROR.
+
 ### AI & ML Stack
 
 | Provider | Models | Purpose |
 |---------|---------|---------|
-| **Anthropic** | Claude Opus 4.5, Sonnet 4.5, Haiku 4.5 | Primary AI (text generation, analysis) |
+| **Anthropic** | Claude Sonnet 4.5 (primary), Haiku 4.5 (cheap) | Primary AI (text generation, analysis) |
 | **Google** | Gemini 3 Pro Image, Gemini 2.5 Flash | Image generation, multimodal |
 | **OpenAI** | GPT-4o, GPT-4o-mini | Fallback provider (via OpenRouter) |
 | **Ollama** | Llama3 | Local/offline AI |
+
+### AI Agent System
+
+| Component | Purpose |
+|-----------|---------|
+| **agent-translate** | Natural language → structured task classification |
+| **agent-orchestrator** | Routes tasks to specialized sub-agents |
+| **calendar-sub-agent** | Calendar events, scheduling, timezone handling |
+| **briefing-sub-agent** | Daily briefs, task summaries |
+| **analysis-sub-agent** | Deep document analysis |
+| **creative-sub-agent** | Creative content, marketing materials |
 
 ### Integration Stack
 
@@ -399,6 +413,43 @@ Sync Edge Function
     │
     ▼
 Document Available for Queries
+```
+
+### AI Agent Task Flow
+
+```
+User Input (Natural Language)
+    │
+    │ "Schedule meeting with John tomorrow at 2pm"
+    │
+    ▼
+Edge Function: agent-translate
+    │
+    ├─> Classify task type (calendar/briefing/analysis/creative)
+    ├─> Extract structured data (title, datetime, participants)
+    ├─> Detect timezone offset
+    │
+    ▼
+Edge Function: agent-orchestrator
+    │
+    ├─> Get active agent session
+    ├─> Create agent_tasks record
+    ├─> Create agent_sub_agents record
+    ├─> Invoke sub-agent function
+    │
+    ▼
+Sub-Agent (e.g., calendar-sub-agent)
+    │
+    ├─> Parse task details
+    ├─> Create timeline_items record
+    ├─> Optionally sync to Google Calendar
+    ├─> Update sub-agent status
+    │
+    ▼
+Response to User
+    │
+    └─> Task created confirmation
+        └─> Timeline item visible in UI
 ```
 
 ### Pitch Deck Generation Flow
