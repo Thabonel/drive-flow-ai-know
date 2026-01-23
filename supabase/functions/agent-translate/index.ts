@@ -21,7 +21,7 @@ interface TranslationRequest {
 interface Task {
   title: string;
   description: string;
-  agent_type: 'calendar' | 'briefing' | 'analysis';
+  agent_type: 'calendar' | 'briefing' | 'analysis' | 'creative';
   priority: number;
   estimated_duration: number;
 }
@@ -76,6 +76,7 @@ Analyze the user's input and extract discrete tasks. For each task provide:
 - calendar: meetings, appointments, calls, events, scheduling anything
 - briefing: daily summaries, preparation notes, status updates
 - analysis: data review, research, reports, insights generation
+- creative: content drafting, copywriting, taglines, strategy documents, marketing copy, visuals planning, ideation
 
 **Output Format:**
 Return ONLY a valid JSON array. No markdown code fences, no commentary, no explanation.
