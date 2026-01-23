@@ -1,12 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { MessageSquare, Send, Loader2, Save, FileText, PlusCircle, Calendar, X } from 'lucide-react';
+import { MessageSquare, Send, Loader2, Save, PlusCircle, Calendar, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -42,6 +41,7 @@ export const AIQueryInput = ({ selectedKnowledgeBase, onClearSelection }: AIQuer
   const { submitTask, tasks, getTask, clearTask } = useBackgroundTasks();
   const queryClient = useQueryClient();
   const scrollRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const pendingTaskIdRef = useRef<string | null>(null);
 
   const savePrompt = useMutation({
@@ -444,6 +444,7 @@ export const AIQueryInput = ({ selectedKnowledgeBase, onClearSelection }: AIQuer
         {/* Input Form */}
         <form onSubmit={handleSubmit} className="flex space-x-3">
           <Textarea
+            ref={textareaRef}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder={selectedKnowledgeBase
