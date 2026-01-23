@@ -1,7 +1,7 @@
 # AI Query Hub - Technical Documentation
 
-**Version:** 1.0.0
-**Last Updated:** October 18, 2025
+**Version:** 2.1.0
+**Last Updated:** January 24, 2026
 **Status:** Production
 
 ---
@@ -133,9 +133,11 @@ AI Query Hub is a full-stack document intelligence platform that enables users t
 
 | Service | Model | Purpose |
 |---------|-------|---------|
-| Anthropic | Claude Haiku 4.5 | Primary AI (fast, cost-effective) |
-| OpenRouter | GPT-4o, etc. | Fallback AI provider |
-| Ollama | llama3, mistral | Offline/local AI |
+| Anthropic | Claude Sonnet 4.5 | Primary AI (balanced speed/capability) |
+| Anthropic | Claude Haiku 4.5 | Cost-effective model for simple tasks |
+| OpenRouter | GPT-4o, GPT-4o-mini | Fallback AI provider |
+| Google | Gemini 2.5 Flash | Image generation, multimodal |
+| Ollama | llama3 | Offline/local AI |
 
 ### Infrastructure
 
@@ -314,20 +316,29 @@ CREATE POLICY "Users can view their own documents"
 
 ### 4. AI Providers
 
-**Primary: Claude Haiku 4.5 (Anthropic)**
-- Model: `claude-haiku-4-5`
+**Primary: Claude Sonnet 4.5 (Anthropic)**
+- Model: `claude-sonnet-4-5-20250929`
 - API Key: `ANTHROPIC_API_KEY`
-- Use: Fast, cost-effective primary AI
+- Use: Balanced speed and capability for most tasks
+
+**Cost-Effective: Claude Haiku 4.5 (Anthropic)**
+- Model: `claude-haiku-4-5-20250929`
+- Use: Simple tasks, summarization
 
 **Fallback 1: OpenRouter**
-- Models: GPT-4o, various others
+- Models: GPT-4o, GPT-4o-mini
 - API Key: `OPENROUTER_API_KEY`
 - Use: When Claude unavailable
 
 **Fallback 2: Ollama (Local)**
 - Endpoint: `http://localhost:11434`
-- Models: llama3, mistral, etc.
+- Models: llama3
 - Use: Offline mode
+
+**Image Generation: Gemini**
+- Model: `gemini-2.5-flash` / `gemini-3-pro-image-preview`
+- API Key: `GEMINI_API_KEY`
+- Use: Pitch deck images, visual content
 
 **Fallback Chain Logic:**
 ```typescript
@@ -340,6 +351,34 @@ try {
     return await callOllama();
   }
 }
+```
+
+### 5. AI Agent System
+
+The application includes a multi-agent orchestration system for complex task handling.
+
+**Agent Orchestrator** (`agent-orchestrator/`)
+- Manages agent sessions and task routing
+- Routes tasks to specialized sub-agents
+- Tracks task completion and status
+
+**Sub-Agents:**
+| Agent | Function | Purpose |
+|-------|----------|---------|
+| Calendar | `calendar-sub-agent` | Create calendar events, schedule tasks |
+| Briefing | `briefing-sub-agent` | Generate daily briefs, summaries |
+| Analysis | `analysis-sub-agent` | Deep document analysis, insights |
+| Creative | `creative-sub-agent` | Creative content, taglines, marketing |
+
+**Agent Flow:**
+```
+User Input → agent-translate → Classify Task Type
+                ↓
+        agent-orchestrator → Route to Sub-Agent
+                ↓
+        sub-agent (calendar/briefing/analysis/creative)
+                ↓
+        Execute Task → Update Timeline/Documents
 ```
 
 ---
@@ -1108,6 +1147,31 @@ psql $DATABASE_URL < backup.sql
 
 ### Change Log
 
+**v2.1.0 - January 24, 2026**
+- **CRITICAL FIX**: Pinned @supabase/supabase-js to v2.45.0 in all Edge Functions
+  - Latest v2.92.0 is incompatible with Supabase Edge Runtime
+  - Caused CORS/WORKER_ERROR on all function calls
+- Added AI Agent Orchestration System
+  - agent-orchestrator for task routing
+  - calendar-sub-agent for scheduling
+  - briefing-sub-agent for daily briefs
+  - analysis-sub-agent for document analysis
+  - creative-sub-agent for creative content
+- Added agent-translate for natural language task classification
+- Updated model configuration to claude-sonnet-4-5-20250929
+- Removed Dashboard from sidebar navigation
+- Removed redundant AIAssistantSidebar component
+- Added timezone support to agent system
+- Fixed document viewer horizontal overflow issues
+
+**v2.0.0 - December 2025**
+- Neumorphic design system implementation
+- Email confirmation flow
+- Pitch deck generation with AI images
+- Timeline extraction from documents
+- Google Calendar sync integration
+- Creative sub-agent with tool awareness
+
 **v1.0.0 - October 18, 2025**
 - Initial production release
 - Google Drive OAuth integration
@@ -1119,6 +1183,6 @@ psql $DATABASE_URL < backup.sql
 
 ---
 
-**Document Version**: 1.0.0
-**Last Updated**: October 18, 2025
+**Document Version**: 2.1.0
+**Last Updated**: January 24, 2026
 **Maintained By**: Thabonel

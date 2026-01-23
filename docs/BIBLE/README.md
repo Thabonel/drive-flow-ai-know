@@ -80,16 +80,24 @@ BIBLE/
 
 **Frontend**: React 18, TypeScript, Vite, Tailwind CSS, Shadcn/ui
 **Backend**: Supabase Edge Functions (Deno), PostgreSQL
-**AI Models**: Claude Opus 4.5 (primary), OpenRouter (fallback), Ollama (offline)
+**AI Models**: Claude Sonnet 4.5 (primary), OpenRouter (fallback), Ollama (offline)
+**AI Agents**: Multi-agent orchestration system (calendar, briefing, analysis, creative)
 **Design**: Neumorphic soft shadows, 6 theme variants (Navy & Gold default)
+
+**Critical**: All Edge Functions must use `@supabase/supabase-js@2.45.0` (latest versions incompatible)
 
 ---
 
 ## Last Updated
 
-**Date**: 2024-12-24
-**Version**: 2.0.0
-**Recent Changes**: Email confirmation system, neumorphic design implementation
+**Date**: 2026-01-24
+**Version**: 2.1.0
+**Recent Changes**:
+- Fixed Edge Functions CORS errors (pinned @supabase/supabase-js@2.45.0)
+- AI Agent Orchestration System (orchestrator + sub-agents)
+- Creative sub-agent with tool awareness
+- Calendar sub-agent with timezone support
+- Removed Dashboard from sidebar navigation
 
 ---
 

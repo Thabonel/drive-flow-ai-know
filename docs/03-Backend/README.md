@@ -30,11 +30,25 @@ All backend logic runs as **Supabase Edge Functions** - serverless Deno function
 
 All Edge Functions: `supabase/functions/*/index.ts`
 
+### Critical: Supabase JS Version
+
+**IMPORTANT**: All Edge Functions MUST use `@supabase/supabase-js@2.45.0`
+
+The latest version (v2.92.0+) is incompatible with the Supabase Edge Runtime and causes CORS/WORKER_ERROR on all function calls. Always pin to v2.45.0:
+
+```typescript
+// CORRECT - pinned version
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
+
+// WRONG - will pull latest and break
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+```
+
 ### Standard Function Structure
 
 ```typescript
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -94,7 +108,15 @@ serve(async (req) => {
 ```
 supabase/functions/
 ├── _shared/              # Shared utilities
-│   └── models.ts         # AI model configuration
+│   ├── models.ts         # AI model configuration
+│   └── token-tracking.ts # Usage tracking
+│
+├── agent-orchestrator/   # AI Agent task orchestration
+├── agent-translate/      # Natural language → task classification
+├── calendar-sub-agent/   # Calendar/scheduling tasks
+├── briefing-sub-agent/   # Daily briefs and summaries
+├── analysis-sub-agent/   # Document analysis tasks
+├── creative-sub-agent/   # Creative content generation
 │
 ├── ai-query/             # Main AI query handler
 ├── generate-pitch-deck/  # Pitch deck generation
@@ -125,6 +147,126 @@ supabase/functions/
 │
 └── [40+ other functions]
 ```
+
+---
+
+## AI Agent System
+
+The application includes a multi-agent orchestration system for handling complex tasks through natural language.
+
+### Architecture
+
+```
+User Input ("Schedule meeting with John tomorrow at 2pm")
+    │
+    ▼
+agent-translate/
+    │ Classifies task type and extracts structured data
+    │ Returns: { agent_type: 'calendar', title: 'Meeting with John', ... }
+    │
+    ▼
+agent-orchestrator/
+    │ Creates agent_tasks records
+    │ Routes to appropriate sub-agent
+    │
+    ▼
+Sub-Agent (calendar-sub-agent)
+    │ Executes specialized task
+    │ Creates timeline_items, calendar events, etc.
+    │
+    ▼
+Result returned to user
+```
+
+### Agent Functions
+
+#### `agent-translate/` - Task Classification
+
+**Purpose**: Convert natural language to structured task format
+
+**Request**:
+```typescript
+{
+  input: string;  // Natural language task description
+}
+```
+
+**Response**:
+```typescript
+{
+  title: string;
+  description: string;
+  agent_type: 'calendar' | 'briefing' | 'analysis' | 'creative';
+  priority: number;
+  estimated_duration: number;
+  timezone_offset?: number;
+}
+```
+
+#### `agent-orchestrator/` - Task Orchestration
+
+**Purpose**: Route tasks to specialized sub-agents
+
+**Process**:
+1. Get active session for user
+2. Fetch pending tasks
+3. Create sub-agent records
+4. Invoke appropriate sub-agent function
+5. Track execution status
+
+**Sub-Agent Mapping**:
+```typescript
+const AGENT_FUNCTION_MAP = {
+  calendar: 'calendar-sub-agent',
+  briefing: 'briefing-sub-agent',
+  analysis: 'analysis-sub-agent',
+  creative: 'creative-sub-agent',
+};
+```
+
+#### `calendar-sub-agent/` - Calendar & Scheduling
+
+**Purpose**: Create calendar events and timeline items
+
+**Features**:
+- Natural language date/time parsing
+- Timezone support
+- Recurring event creation
+- Google Calendar sync integration
+
+#### `briefing-sub-agent/` - Daily Briefs
+
+**Purpose**: Generate AI-powered daily summaries
+
+**Features**:
+- Aggregates upcoming tasks
+- Summarizes recent documents
+- Priority-based task ordering
+
+#### `analysis-sub-agent/` - Document Analysis
+
+**Purpose**: Deep analysis of documents
+
+**Features**:
+- Extract key insights
+- Generate summaries
+- Identify patterns and trends
+
+#### `creative-sub-agent/` - Creative Content
+
+**Purpose**: Generate creative content and marketing materials
+
+**Features**:
+- Taglines and slogans
+- Marketing copy
+- Pitch deck recommendations
+- Tool-aware (knows about available visual tools)
+
+### Database Tables
+
+**agent_sessions**: Active agent conversation sessions
+**agent_tasks**: Individual tasks with status tracking
+**agent_sub_agents**: Sub-agent execution records
 
 ---
 
@@ -823,30 +965,47 @@ const event = stripe.webhooks.constructEvent(
 
 **File**: `supabase/functions/_shared/models.ts`
 
-**Exports**:
+**Current Configuration (January 2026)**:
 ```typescript
 export const CLAUDE_MODELS = {
-  PRIMARY: 'claude-opus-4-5',      // Most capable
-  FAST: 'claude-sonnet-4-5',       // Balanced
-  CHEAP: 'claude-haiku-4-5',       // Cost-effective
+  PRIMARY: 'claude-sonnet-4-5-20250929',  // Balanced speed/capability
+  FAST: 'claude-sonnet-4-5-20250929',     // Same as primary
+  CHEAP: 'claude-haiku-4-5-20250929',     // Cost-effective
 };
 
 export const GEMINI_MODELS = {
   PRIMARY: 'google/gemini-2.5-flash',
-  IMAGE: 'gemini-3-pro-image-preview',
 };
 
 export const OPENROUTER_MODELS = {
   PRIMARY: 'openai/gpt-4o',
   FAST: 'openai/gpt-4o-mini',
 };
+
+export const LOCAL_MODELS = {
+  PRIMARY: 'llama3',
+};
 ```
 
 **Environment Overrides**:
 ```bash
-CLAUDE_PRIMARY_MODEL=claude-opus-4-5-20251101  # Pin specific version
-CLAUDE_FAST_MODEL=claude-sonnet-4-5
-GEMINI_MODEL=google/gemini-3-flash
+CLAUDE_PRIMARY_MODEL=claude-sonnet-4-5-20250929
+CLAUDE_FAST_MODEL=claude-sonnet-4-5-20250929
+CLAUDE_CHEAP_MODEL=claude-haiku-4-5-20250929
+OPENROUTER_MODEL=openai/gpt-4o
+GEMINI_MODEL=google/gemini-2.5-flash
+LOCAL_MODEL=llama3
+```
+
+**Helper Functions**:
+```typescript
+// Get model by tier
+getClaudeModel('PRIMARY')  // → 'claude-sonnet-4-5-20250929'
+getClaudeModel('CHEAP')    // → 'claude-haiku-4-5-20250929'
+
+// Get model by provider
+getModel('claude', 'PRIMARY')    // → 'claude-sonnet-4-5-20250929'
+getModel('openrouter', 'FAST')   // → 'openai/gpt-4o-mini'
 ```
 
 **Usage**:

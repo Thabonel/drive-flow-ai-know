@@ -1,7 +1,7 @@
 # AI Query Hub - Complete Documentation (THE BIBLE)
 
-**Last Updated**: 2026-01-18
-**Version**: 2.1.0
+**Last Updated**: 2026-01-24
+**Version**: 2.2.0
 **Status**: Comprehensive Reference
 
 ---
@@ -15,6 +15,22 @@ This is the complete, authoritative documentation for AI Query Hub. Every system
 ---
 
 ## Recent Updates (January 2026)
+
+### Edge Functions Fix & Agent System (2026-01-24)
+- **CRITICAL FIX**: Pinned `@supabase/supabase-js` to v2.45.0 in all Edge Functions
+  - Latest v2.92.0 incompatible with Supabase Edge Runtime
+  - Caused CORS/WORKER_ERROR on all function calls
+- **AI Agent Orchestration System** - Multi-agent task handling
+  - `agent-translate` - Natural language → structured task classification
+  - `agent-orchestrator` - Routes tasks to specialized sub-agents
+  - `calendar-sub-agent` - Calendar events with timezone support
+  - `briefing-sub-agent` - Daily briefs and summaries
+  - `analysis-sub-agent` - Deep document analysis
+  - `creative-sub-agent` - Creative content with tool awareness
+- Updated model configuration to `claude-sonnet-4-5-20250929`
+- Removed Dashboard from sidebar navigation
+- Removed redundant AIAssistantSidebar component
+- Fixed document viewer horizontal overflow
 
 ### Security Hardening (2026-01-18)
 - XSS prevention with DOMPurify sanitization
@@ -189,6 +205,12 @@ This is the complete, authoritative documentation for AI Query Hub. Every system
 
 **Key Functions**:
 - `ai-query` - Main AI query handler with multi-provider support
+- `agent-orchestrator` - AI Agent task orchestration
+- `agent-translate` - Natural language → task classification
+- `calendar-sub-agent` - Calendar events and scheduling
+- `briefing-sub-agent` - Daily briefs and summaries
+- `analysis-sub-agent` - Document analysis
+- `creative-sub-agent` - Creative content generation
 - `register-user` - User registration with email confirmation
 - `google-drive-sync` - Google Drive integration
 - `parse-document` - Multi-format document parsing
@@ -199,6 +221,15 @@ This is the complete, authoritative documentation for AI Query Hub. Every system
 - Error handling and logging
 - CORS configuration
 - Environment variable management
+
+**CRITICAL**: All Edge Functions must use `@supabase/supabase-js@2.45.0`:
+```typescript
+// CORRECT
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
+
+// WRONG - will break
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+```
 
 ---
 
@@ -274,11 +305,12 @@ This is the complete, authoritative documentation for AI Query Hub. Every system
   - Deep research capabilities
   - MCP server integration
 
-**Current Models**:
-- **PRIMARY**: claude-opus-4-5 (alias, auto-updates)
-- **FAST**: claude-sonnet-4-5
-- **CHEAP**: claude-haiku-4-5
+**Current Models** (January 2026):
+- **PRIMARY**: claude-sonnet-4-5-20250929
+- **FAST**: claude-sonnet-4-5-20250929
+- **CHEAP**: claude-haiku-4-5-20250929
 - **Fallback**: openai/gpt-4o (OpenRouter)
+- **Image**: gemini-2.5-flash / gemini-3-pro-image-preview
 - **Offline**: llama3 (Ollama)
 
 **Key Features**:
@@ -385,12 +417,15 @@ This is the complete, authoritative documentation for AI Query Hub. Every system
 **Total Coverage**:
 - **40+ React pages** documented
 - **155+ UI components** documented
-- **50+ Edge Functions** documented
+- **60+ Edge Functions** documented
 - **30+ database tables** documented
 - **6 theme variants** documented
 - **Multiple AI providers** documented
+- **4 specialized AI sub-agents** documented
 
 **Recent Additions**:
+- AI Agent System (Jan 2026) - Orchestrator + 4 sub-agents
+- Edge Functions fix (Jan 2026) - @supabase/supabase-js v2.45.0 pinning
 - Security hardening (Jan 2026) - XSS, CORS, rate limiting, CSP
 - Email confirmation system (Dec 2024)
 - Neumorphic design system (Dec 2024)
@@ -463,15 +498,17 @@ This is the complete, authoritative documentation for AI Query Hub. Every system
 ## Key Features
 
 1. **AI Query System** - Multi-provider AI with context retrieval
-2. **Knowledge Bases** - Document collections with AI summaries
-3. **Google Drive Integration** - Hierarchical sync and navigation
-4. **Email Confirmation** - Spam-optimized, auto-login flow
-5. **Neumorphic Design** - Soft shadows across 6 themes
-6. **Team Collaboration** - Shared documents and timelines
-7. **Pitch Deck Generator** - AI-powered presentations
-8. **Document Processing** - Multi-format parsing and analysis
-9. **Offline Mode** - Local Ollama integration
-10. **Research Agent** - Deep research capabilities (optional)
+2. **AI Agent Orchestration** - Multi-agent task handling (calendar, briefing, analysis, creative)
+3. **Knowledge Bases** - Document collections with AI summaries
+4. **Google Drive Integration** - Hierarchical sync and navigation
+5. **Email Confirmation** - Spam-optimized, auto-login flow
+6. **Neumorphic Design** - Soft shadows across 6 themes
+7. **Team Collaboration** - Shared documents and timelines
+8. **Pitch Deck Generator** - AI-powered presentations
+9. **Document Processing** - Multi-format parsing and analysis
+10. **Offline Mode** - Local Ollama integration
+11. **Timeline Management** - Task tracking with recurring events
+12. **Research Agent** - Deep research capabilities (optional)
 
 ---
 
@@ -493,7 +530,7 @@ This is the complete, authoritative documentation for AI Query Hub. Every system
 
 ## Maintenance
 
-**Last Updated**: 2024-12-24
+**Last Updated**: 2026-01-24
 
 **To Update**:
 1. Update specific section files when features change
@@ -502,6 +539,7 @@ This is the complete, authoritative documentation for AI Query Hub. Every system
 4. Keep CLAUDE.md in sync
 5. Document new Edge Functions
 6. Add new features to 07-FEATURES/
+7. **CRITICAL**: When adding Edge Functions, always use `@supabase/supabase-js@2.45.0`
 
 ---
 
