@@ -196,26 +196,63 @@ serve(async (req) => {
 
     // Check if task needs visuals
     const requiresVisuals = needsVisuals(taskTitle, taskDescription);
-    let visualRecommendation = '';
+    let visualContent: any = null;
+    let pitchDeckJobId: string | null = null;
 
+    // If visuals are needed, actually generate them using Pitch Deck
     if (requiresVisuals) {
-      const pitchDeckPrompt = generatePitchDeckPrompt(taskTitle, taskDescription);
-      visualRecommendation = `
+      const pitchDeckConfig = generatePitchDeckPrompt(taskTitle, taskDescription);
+      console.log(`Visual task detected - calling pitch deck generator with ${pitchDeckConfig.slides} slides`);
 
----
+      try {
+        const supabaseUrl = Deno.env.get('SUPABASE_URL');
+        const pitchDeckResponse = await fetch(`${supabaseUrl}/functions/v1/generate-pitch-deck`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            topic: pitchDeckConfig.topic,
+            style: pitchDeckConfig.style,
+            numberOfSlides: pitchDeckConfig.slides,
+            targetAudience: 'general business audience',
+            includeImages: true,
+            animateSlides: false, // Disable video for faster generation
+            async: false, // Synchronous for immediate results
+          }),
+        });
 
-## Visual Content Recommendation
+        if (pitchDeckResponse.ok) {
+          const pitchDeckResult = await pitchDeckResponse.json();
 
-This task involves visual content creation. For the best results, use **Pitch Deck**:
-
-**Recommended Configuration:**
-- **Topic**: ${pitchDeckPrompt.topic}
-- **Style**: ${pitchDeckPrompt.style}
-- **Number of Slides**: ${pitchDeckPrompt.slides}
-
-**Quick Link**: [Open Pitch Deck](${pitchDeckPrompt.deepLink})
-
-Pitch Deck can generate professional visuals with AI-powered image generation. Navigate to the Pitch Deck page and use the configuration above, or click the link to pre-fill the settings.`;
+          // Check if async mode returned a job ID
+          if (pitchDeckResult.job_id) {
+            pitchDeckJobId = pitchDeckResult.job_id;
+            console.log(`Pitch deck job started: ${pitchDeckJobId}`);
+          } else {
+            // Synchronous result - we have the slides
+            visualContent = {
+              title: pitchDeckResult.title,
+              subtitle: pitchDeckResult.subtitle,
+              slides: pitchDeckResult.slides?.map((slide: any) => ({
+                slideNumber: slide.slideNumber,
+                title: slide.title,
+                content: slide.content,
+                imageData: slide.imageData, // Base64 image
+                visualPrompt: slide.visualPrompt,
+              })) || [],
+              totalSlides: pitchDeckResult.totalSlides || pitchDeckResult.slides?.length || 0,
+            };
+            console.log(`Pitch deck generated: ${visualContent.totalSlides} slides with images`);
+          }
+        } else {
+          const errorText = await pitchDeckResponse.text();
+          console.error('Pitch deck generation failed:', errorText);
+        }
+      } catch (pitchDeckError) {
+        console.error('Error calling pitch deck generator:', pitchDeckError);
+      }
     }
 
     // Fetch user's recent documents for context (optional enhancement)
@@ -236,6 +273,11 @@ Pitch Deck can generate professional visuals with AI-powered image generation. N
       throw new Error('ANTHROPIC_API_KEY not configured');
     }
 
+    // Build the creative prompt - if visuals were generated, inform the AI
+    const visualsGeneratedNote = visualContent
+      ? `\n\n**NOTE:** Visual content has already been automatically generated for this task. ${visualContent.totalSlides} slides with AI-generated images are ready. Focus on the text/copy portions of the task.`
+      : '';
+
     const creativePrompt = `You are a creative content specialist helping with the following task.
 
 TASK: ${taskTitle}
@@ -245,16 +287,11 @@ ${getCreativeStyleGuidance(style)}
 
 ${getAntiAIGuidelines()}
 ${documentContext}
+${visualsGeneratedNote}
 
-**IMPORTANT SYSTEM AWARENESS:**
-You are part of the AI Query Hub system. If this task involves visual content (images, graphics, presentations), you should:
-1. Complete any text/strategy portions of the task
-2. Recommend using the Pitch Deck feature for visual generation
-3. The Pitch Deck is available at /pitch-deck and can generate AI-powered visuals
-
-Now complete the creative task. Provide:
+Complete the creative task. Provide:
 1. The requested content (taglines, copy, strategy, etc.)
-2. If visuals are mentioned, explain that Pitch Deck should be used for those
+2. Clear, actionable deliverables
 3. Any additional recommendations
 
 Format your response in clear markdown sections.`;
@@ -287,9 +324,9 @@ Format your response in clear markdown sections.`;
     const data = await response.json();
     let creativeContent = data.content[0].text;
 
-    // Append visual recommendation if needed
-    if (requiresVisuals && !creativeContent.includes('Pitch Deck')) {
-      creativeContent += visualRecommendation;
+    // If visuals were generated, append a summary
+    if (visualContent && visualContent.slides?.length > 0) {
+      creativeContent += `\n\n---\n\n## Generated Visuals\n\n**${visualContent.totalSlides} slides** have been automatically generated for this task.\n\nSlides:\n${visualContent.slides.map((s: any) => `${s.slideNumber}. ${s.title}`).join('\n')}\n\nThe visual content is ready to download or view in the results panel.`;
     }
 
     console.log('Generated creative content for:', taskTitle);
@@ -320,7 +357,7 @@ Format your response in clear markdown sections.`;
         importance: 4,
       });
 
-    // Update sub-agent to completed
+    // Update sub-agent to completed with visual content
     await supabase
       .from('sub_agents')
       .update({
@@ -329,7 +366,15 @@ Format your response in clear markdown sections.`;
           content: creativeContent,
           requires_visuals: requiresVisuals,
           style: style,
-          pitch_deck_recommended: requiresVisuals,
+          // Include generated visual content
+          visuals_generated: !!visualContent,
+          pitch_deck_job_id: pitchDeckJobId,
+          visual_content: visualContent ? {
+            title: visualContent.title,
+            subtitle: visualContent.subtitle,
+            totalSlides: visualContent.totalSlides,
+            slides: visualContent.slides,
+          } : null,
         },
         completed_at: new Date().toISOString(),
         duration_ms: Date.now() - startTime,
@@ -349,6 +394,9 @@ Format your response in clear markdown sections.`;
         message: 'Creative task completed successfully',
         content: creativeContent,
         requires_visuals: requiresVisuals,
+        visuals_generated: !!visualContent,
+        pitch_deck_job_id: pitchDeckJobId,
+        visual_content: visualContent,
         status: 'completed',
       }),
       {
