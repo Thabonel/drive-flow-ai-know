@@ -11,6 +11,7 @@ const AGENT_FUNCTION_MAP: Record<string, string> = {
   calendar: 'calendar-sub-agent',
   briefing: 'briefing-sub-agent',
   analysis: 'analysis-sub-agent',
+  creative: 'creative-sub-agent',
 };
 
 /**
@@ -72,7 +73,7 @@ interface AgentTask {
   structured_output: {
     title: string;
     description: string;
-    agent_type: 'calendar' | 'briefing' | 'analysis';
+    agent_type: 'calendar' | 'briefing' | 'analysis' | 'creative';
     priority: number;
     estimated_duration: number;
     timezone_offset?: number;
