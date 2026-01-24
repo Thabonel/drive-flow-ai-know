@@ -61,11 +61,13 @@ export function AgentChat({ session, userId, selectedTask, onCloseTaskDetail }: 
   const [revisionRequest, setRevisionRequest] = useState('');
   const [isRevising, setIsRevising] = useState(false);
   const [revisedVisualContent, setRevisedVisualContent] = useState<any>(null);
+  const [editingSlideIndex, setEditingSlideIndex] = useState<number | null>(null);
 
   // Reset revision state when selected task changes
   useEffect(() => {
     setRevisionRequest('');
     setRevisedVisualContent(null);
+    setEditingSlideIndex(null);
   }, [selectedTask?.id]);
 
   const {
@@ -301,6 +303,7 @@ export function AgentChat({ session, userId, selectedTask, onCloseTaskDetail }: 
         .eq('id', selectedTask.id);
 
       setRevisionRequest('');
+      setEditingSlideIndex(null);
       toast.success(`Slide ${slideNumber} revised successfully!`);
     } catch (error) {
       console.error('Slide revision error:', error);
@@ -545,19 +548,6 @@ export function AgentChat({ session, userId, selectedTask, onCloseTaskDetail }: 
                       </p>
                     )}
 
-                    {/* Revision Input */}
-                    <div className="mt-4 space-y-2">
-                      <Textarea
-                        placeholder="Describe changes you want (e.g., 'Make slide 2 more colorful' or 'Add more detail to the background')"
-                        value={revisionRequest}
-                        onChange={(e) => setRevisionRequest(e.target.value)}
-                        rows={2}
-                        className="text-sm"
-                      />
-                      <p className="text-xs text-muted-foreground">
-                        Enter your revision request above, then click "Revise" on any slide to update it
-                      </p>
-                    </div>
                   </CardHeader>
                   <CardContent>
                     <div className="grid gap-4">
@@ -590,20 +580,11 @@ export function AgentChat({ session, userId, selectedTask, onCloseTaskDetail }: 
                                 <Button
                                   size="sm"
                                   variant="secondary"
-                                  onClick={() => handleReviseSlide(slide.slideNumber || index + 1)}
-                                  disabled={isRevising || !revisionRequest.trim()}
+                                  onClick={() => setEditingSlideIndex(index)}
+                                  disabled={isRevising}
                                 >
-                                  {isRevising ? (
-                                    <>
-                                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                      Revising...
-                                    </>
-                                  ) : (
-                                    <>
-                                      <RefreshCw className="h-4 w-4 mr-2" />
-                                      Revise
-                                    </>
-                                  )}
+                                  <RefreshCw className="h-4 w-4 mr-2" />
+                                  Revise
                                 </Button>
                               </div>
                             </div>
@@ -612,33 +593,76 @@ export function AgentChat({ session, userId, selectedTask, onCloseTaskDetail }: 
                               <p className="text-sm text-muted-foreground">Image not available</p>
                             </div>
                           )}
-                          <div className="p-3 bg-muted/50 flex items-center justify-between">
-                            <div className="flex-1">
-                              <p className="font-medium text-sm">
-                                {slide.slideNumber || index + 1}. {slide.title || `Slide ${index + 1}`}
-                              </p>
-                              {slide.content && (
-                                <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                                  {Array.isArray(slide.content) ? slide.content.join(' - ') : slide.content}
+                          <div className="p-3 bg-muted/50">
+                            <div className="flex items-center justify-between">
+                              <div className="flex-1">
+                                <p className="font-medium text-sm">
+                                  {slide.slideNumber || index + 1}. {slide.title || `Slide ${index + 1}`}
                                 </p>
-                              )}
+                                {slide.content && (
+                                  <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                                    {Array.isArray(slide.content) ? slide.content.join(' - ') : slide.content}
+                                  </p>
+                                )}
+                              </div>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => setEditingSlideIndex(editingSlideIndex === index ? null : index)}
+                                disabled={isRevising}
+                                className="ml-2 flex-shrink-0"
+                              >
+                                <RefreshCw className="h-4 w-4 mr-1" />
+                                Revise
+                              </Button>
                             </div>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleReviseSlide(slide.slideNumber || index + 1)}
-                              disabled={isRevising || !revisionRequest.trim()}
-                              className="ml-2 flex-shrink-0"
-                            >
-                              {isRevising ? (
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                              ) : (
-                                <>
-                                  <RefreshCw className="h-4 w-4 mr-1" />
-                                  Revise
-                                </>
-                              )}
-                            </Button>
+
+                            {/* Inline Revision Input */}
+                            {editingSlideIndex === index && (
+                              <div className="mt-3 space-y-2 border-t pt-3">
+                                <Textarea
+                                  placeholder="Describe what you want to change (e.g., 'Make colors warmer' or 'Add more detail')"
+                                  value={revisionRequest}
+                                  onChange={(e) => setRevisionRequest(e.target.value)}
+                                  rows={2}
+                                  className="text-sm"
+                                  autoFocus
+                                />
+                                <div className="flex gap-2">
+                                  <Button
+                                    size="sm"
+                                    onClick={() => {
+                                      if (!revisionRequest.trim()) {
+                                        toast.error('Please describe what you want to change');
+                                        return;
+                                      }
+                                      handleReviseSlide(slide.slideNumber || index + 1);
+                                    }}
+                                    disabled={isRevising || !revisionRequest.trim()}
+                                  >
+                                    {isRevising ? (
+                                      <>
+                                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                        Revising...
+                                      </>
+                                    ) : (
+                                      'Apply Changes'
+                                    )}
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => {
+                                      setEditingSlideIndex(null);
+                                      setRevisionRequest('');
+                                    }}
+                                    disabled={isRevising}
+                                  >
+                                    Cancel
+                                  </Button>
+                                </div>
+                              </div>
+                            )}
                           </div>
                         </div>
                       ))}
