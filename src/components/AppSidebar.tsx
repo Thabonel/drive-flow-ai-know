@@ -1,4 +1,4 @@
-import { Home, FileText, BookOpen, Settings, LogOut, HelpCircle, Clock, Users, UserCog, Building2, Calendar, Bot, MessageSquare, Presentation, Plus } from 'lucide-react';
+import { Home, FileText, BookOpen, Settings, LogOut, HelpCircle, Clock, Users, UserCog, Building2, Calendar, MessageSquare, Presentation, Plus } from 'lucide-react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { usePresentationMode } from '@/contexts/PresentationModeContext';
@@ -49,12 +49,6 @@ const navigationItems = [
     url: '/pitch-deck',
     icon: Presentation,
     description: 'Create presentations'
-  },
-  {
-    title: 'AI Assistant',
-    url: '/agent',
-    icon: Bot,
-    description: 'Autonomous AI tasks'
   },
 ];
 
