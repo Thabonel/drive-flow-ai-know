@@ -292,6 +292,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         tasks,
+        session_id: sessionData?.id,
         metadata: {
           task_count: tasks.length,
           translation_duration_ms: translationDuration,
