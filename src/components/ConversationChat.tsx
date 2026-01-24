@@ -6,6 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Loader2, Send, Archive, Trash2, Edit2, Check, X, FileText, Calendar, Printer, Download, ChevronDown, ImageIcon, Cpu, Play } from 'lucide-react';
 import { arrayBufferToBase64 } from '@/lib/base64Utils';
 import {
@@ -65,6 +66,8 @@ interface TaskConfirmation {
   messageId: string;
   originalUserMessage: string;
   tasks: ExtractedTask[];
+  sessionId: string;
+  selectedTaskIndices: Set<number>;
 }
 
 interface ConversationChatProps {
@@ -311,11 +314,19 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
         return;
       }
 
-      // Show task confirmation dialog
+      if (!data?.session_id) {
+        console.error('No session_id returned from agent-translate');
+        toast.error('Failed to create task session. Please try again.');
+        return;
+      }
+
+      // Show task confirmation dialog with all tasks selected by default
       setTaskConfirmation({
         messageId,
         originalUserMessage,
         tasks: data.tasks,
+        sessionId: data.session_id,
+        selectedTaskIndices: new Set(data.tasks.map((_: ExtractedTask, i: number) => i)),
       });
     } catch (error) {
       console.error('Error extracting tasks:', error);
@@ -323,6 +334,23 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
     } finally {
       setIsExtractingTasks(false);
     }
+  };
+
+  // Toggle task selection in the confirmation dialog
+  const toggleTaskSelection = (index: number) => {
+    if (!taskConfirmation) return;
+
+    const newSelection = new Set(taskConfirmation.selectedTaskIndices);
+    if (newSelection.has(index)) {
+      newSelection.delete(index);
+    } else {
+      newSelection.add(index);
+    }
+
+    setTaskConfirmation({
+      ...taskConfirmation,
+      selectedTaskIndices: newSelection,
+    });
   };
 
   // Poll for sub-agent completion status
@@ -390,34 +418,49 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
   const handleConfirmAndExecuteTasks = async () => {
     if (!taskConfirmation || !user) return;
 
-    const { messageId } = taskConfirmation;
+    const { messageId, sessionId, selectedTaskIndices } = taskConfirmation;
+
+    // Validate at least one task is selected
+    if (selectedTaskIndices.size === 0) {
+      toast.error('Please select at least one task to execute');
+      return;
+    }
+
     setIsExecutingTasks(true);
-    setTaskConfirmation(null);
+    // DON'T close dialog yet - keep it open until success
 
     try {
-      // Call agent-orchestrator to spawn sub-agents
-      // Note: agent-translate already created the tasks, orchestrator picks them up
+      // Pass session_id to orchestrator so it knows which session to process
       const { data: orchestratorData, error: orchestratorError } = await supabase.functions.invoke(
         'agent-orchestrator',
-        { body: {} }
+        { body: { session_id: sessionId } }
       );
 
+      // Check for function invocation error
       if (orchestratorError) {
         throw new Error(orchestratorError.message || 'Failed to spawn agents');
+      }
+
+      // Check for error in response body (handles 404, "No active session", etc.)
+      if (orchestratorData?.error) {
+        throw new Error(orchestratorData.error);
       }
 
       const subAgentIds = orchestratorData?.agents?.map((a: any) => a.id) || [];
 
       if (subAgentIds.length === 0) {
-        toast.warning('No agents were spawned. Tasks may have been processed differently.');
-        return;
+        throw new Error('No agents were spawned. Please try again.');
       }
+
+      // SUCCESS - now close dialog
+      setTaskConfirmation(null);
 
       // Update message metadata to link to sub-agents
       const metadata: Message['agent_metadata'] = {
         sub_agent_ids: subAgentIds,
         task_ids: [],
         agent_executed: true,
+        agent_session_id: sessionId,
       };
 
       await updateMessageAgentMetadata(messageId, metadata);
@@ -435,7 +478,7 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
       toast.success(`${subAgentIds.length} agent(s) spawned! Processing tasks...`);
     } catch (error) {
       console.error('Error executing tasks:', error);
-      toast.error('Failed to execute tasks. Please try again.');
+      toast.error(error instanceof Error ? error.message : 'Failed to execute tasks. Please try again.');
     } finally {
       setIsExecutingTasks(false);
     }
@@ -1576,30 +1619,45 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
           {taskConfirmation && (
             <div className="space-y-3 max-h-[300px] overflow-y-auto">
               {taskConfirmation.tasks.map((task, index) => (
-                <div key={index} className="p-3 bg-muted rounded-lg border">
-                  <div className="flex items-start justify-between gap-2">
+                <div
+                  key={index}
+                  className={`p-3 rounded-lg border cursor-pointer transition-colors ${
+                    taskConfirmation.selectedTaskIndices.has(index)
+                      ? 'bg-primary/5 border-primary/30'
+                      : 'bg-muted/50 border-muted'
+                  }`}
+                  onClick={() => toggleTaskSelection(index)}
+                >
+                  <div className="flex items-start gap-3">
+                    <Checkbox
+                      checked={taskConfirmation.selectedTaskIndices.has(index)}
+                      onCheckedChange={() => toggleTaskSelection(index)}
+                      className="mt-1"
+                    />
                     <div className="flex-1">
-                      <p className="font-medium text-sm">{task.title}</p>
+                      <div className="flex items-start justify-between gap-2">
+                        <p className="font-medium text-sm">{task.title}</p>
+                        <Badge
+                          variant="outline"
+                          className={
+                            task.agent_type === 'creative'
+                              ? 'bg-orange-500/10 text-orange-600 border-orange-500/30'
+                              : task.agent_type === 'calendar'
+                              ? 'bg-blue-500/10 text-blue-600 border-blue-500/30'
+                              : task.agent_type === 'analysis'
+                              ? 'bg-purple-500/10 text-purple-600 border-purple-500/30'
+                              : 'bg-green-500/10 text-green-600 border-green-500/30'
+                          }
+                        >
+                          {task.agent_type}
+                        </Badge>
+                      </div>
                       <p className="text-xs text-muted-foreground mt-1">{task.description}</p>
+                      <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
+                        <span>Priority: {task.priority}/5</span>
+                        <span>Est: {task.estimated_duration} min</span>
+                      </div>
                     </div>
-                    <Badge
-                      variant="outline"
-                      className={
-                        task.agent_type === 'creative'
-                          ? 'bg-orange-500/10 text-orange-600 border-orange-500/30'
-                          : task.agent_type === 'calendar'
-                          ? 'bg-blue-500/10 text-blue-600 border-blue-500/30'
-                          : task.agent_type === 'analysis'
-                          ? 'bg-purple-500/10 text-purple-600 border-purple-500/30'
-                          : 'bg-green-500/10 text-green-600 border-green-500/30'
-                      }
-                    >
-                      {task.agent_type}
-                    </Badge>
-                  </div>
-                  <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
-                    <span>Priority: {task.priority}/5</span>
-                    <span>Est: {task.estimated_duration} min</span>
                   </div>
                 </div>
               ))}
@@ -1616,7 +1674,7 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
             </Button>
             <Button
               onClick={handleConfirmAndExecuteTasks}
-              disabled={isExecutingTasks}
+              disabled={isExecutingTasks || !taskConfirmation?.selectedTaskIndices?.size}
               className="gap-2"
             >
               {isExecutingTasks ? (
@@ -1627,7 +1685,7 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
               ) : (
                 <>
                   <Play className="h-4 w-4" />
-                  Execute {taskConfirmation?.tasks.length || 0} Task(s)
+                  Execute {taskConfirmation?.selectedTaskIndices?.size || 0} Task(s)
                 </>
               )}
             </Button>
