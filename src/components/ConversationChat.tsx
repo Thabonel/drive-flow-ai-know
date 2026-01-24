@@ -1,11 +1,12 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
-import { Loader2, Send, Archive, Trash2, Edit2, Check, X, FileText, MessageCircle, Calendar, Printer, Download, ChevronDown, ImageIcon } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Loader2, Send, Archive, Trash2, Edit2, Check, X, FileText, Calendar, Printer, Download, ChevronDown, ImageIcon, Cpu, Play } from 'lucide-react';
 import { arrayBufferToBase64 } from '@/lib/base64Utils';
 import {
   DropdownMenu,
@@ -19,11 +20,20 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { DictationButton } from '@/components/DictationButton';
 import { AIProgressIndicator } from '@/components/ai/AIProgressIndicator';
 import { ExtractToTimelineDialog } from '@/components/ai/ExtractToTimelineDialog';
+import { SubAgentResult, SubAgentResultsList } from '@/components/ai/SubAgentResultCard';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
@@ -33,6 +43,28 @@ interface Message {
   content: string;
   sequence_number: number;
   timestamp: string;
+  // Agent mode fields
+  agent_mode_available?: boolean;
+  agent_metadata?: {
+    sub_agent_ids?: string[];
+    task_ids?: string[];
+    agent_session_id?: string;
+    agent_executed?: boolean;
+  };
+}
+
+interface ExtractedTask {
+  title: string;
+  description: string;
+  agent_type: 'calendar' | 'briefing' | 'analysis' | 'creative';
+  priority: number;
+  estimated_duration: number;
+}
+
+interface TaskConfirmation {
+  messageId: string;
+  originalUserMessage: string;
+  tasks: ExtractedTask[];
 }
 
 interface ConversationChatProps {
@@ -69,6 +101,13 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
     fileName?: string;
   } | null>(null);
   const [isProcessingImage, setIsProcessingImage] = useState(false);
+
+  // Agent mode state
+  const [taskConfirmation, setTaskConfirmation] = useState<TaskConfirmation | null>(null);
+  const [isExtractingTasks, setIsExtractingTasks] = useState(false);
+  const [isExecutingTasks, setIsExecutingTasks] = useState(false);
+  const [subAgentResults, setSubAgentResults] = useState<Record<string, SubAgentResult[]>>({});
+  const pollingIntervalsRef = useRef<Record<string, NodeJS.Timeout>>({});
 
   useEffect(() => {
     // Don't load messages if we're actively submitting (prevents race condition)
@@ -236,6 +275,188 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
       setIsLoading(false);
       toast.info('Generation stopped');
     }
+  };
+
+  // ============================================================================
+  // AGENT MODE FUNCTIONS
+  // ============================================================================
+
+  // Get user's timezone offset in hours from UTC
+  const getTimezoneOffset = useCallback(() => {
+    return -(new Date().getTimezoneOffset() / 60);
+  }, []);
+
+  // Handle "Run as Task" button click - extract tasks from message
+  const handleRunAsTask = async (messageId: string, originalUserMessage: string) => {
+    if (!user) {
+      toast.error('Please log in to use Agent Mode');
+      return;
+    }
+
+    setIsExtractingTasks(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('agent-translate', {
+        body: {
+          unstructured_input: originalUserMessage,
+          timezone_offset: getTimezoneOffset(),
+        },
+      });
+
+      if (error) {
+        throw new Error(error.message || 'Failed to extract tasks');
+      }
+
+      if (!data?.tasks || data.tasks.length === 0) {
+        toast.info('No actionable tasks found in this message');
+        return;
+      }
+
+      // Show task confirmation dialog
+      setTaskConfirmation({
+        messageId,
+        originalUserMessage,
+        tasks: data.tasks,
+      });
+    } catch (error) {
+      console.error('Error extracting tasks:', error);
+      toast.error('Failed to extract tasks. Please try again.');
+    } finally {
+      setIsExtractingTasks(false);
+    }
+  };
+
+  // Poll for sub-agent completion status
+  const pollSubAgentStatus = useCallback(async (subAgentIds: string[], messageId: string) => {
+    if (subAgentIds.length === 0) return;
+
+    const { data: agents, error } = await supabase
+      .from('sub_agents')
+      .select('*')
+      .in('id', subAgentIds);
+
+    if (error) {
+      console.error('Error polling sub-agents:', error);
+      return;
+    }
+
+    // Update the results state
+    setSubAgentResults(prev => ({
+      ...prev,
+      [messageId]: (agents || []) as SubAgentResult[],
+    }));
+
+    // Check if all agents are completed or failed
+    const allDone = agents?.every(a => a.status === 'completed' || a.status === 'failed');
+
+    if (allDone && pollingIntervalsRef.current[messageId]) {
+      clearInterval(pollingIntervalsRef.current[messageId]);
+      delete pollingIntervalsRef.current[messageId];
+
+      const completed = agents?.filter(a => a.status === 'completed').length || 0;
+      const failed = agents?.filter(a => a.status === 'failed').length || 0;
+
+      if (failed > 0) {
+        toast.warning(`Tasks completed: ${completed} succeeded, ${failed} failed`);
+      } else {
+        toast.success(`All ${completed} task(s) completed!`);
+      }
+    }
+  }, []);
+
+  // Update message metadata in database
+  const updateMessageAgentMetadata = async (messageId: string, metadata: Message['agent_metadata']) => {
+    if (!conversationId) return;
+
+    try {
+      const { error } = await supabase
+        .from('messages')
+        .update({ agent_metadata: metadata })
+        .eq('id', messageId);
+
+      if (error) {
+        console.error('Error updating message metadata:', error);
+      }
+
+      // Update local state
+      setMessages(prev => prev.map(msg =>
+        msg.id === messageId ? { ...msg, agent_metadata: metadata } : msg
+      ));
+    } catch (error) {
+      console.error('Error updating message metadata:', error);
+    }
+  };
+
+  // Confirm and execute extracted tasks
+  const handleConfirmAndExecuteTasks = async () => {
+    if (!taskConfirmation || !user) return;
+
+    const { messageId } = taskConfirmation;
+    setIsExecutingTasks(true);
+    setTaskConfirmation(null);
+
+    try {
+      // Call agent-orchestrator to spawn sub-agents
+      // Note: agent-translate already created the tasks, orchestrator picks them up
+      const { data: orchestratorData, error: orchestratorError } = await supabase.functions.invoke(
+        'agent-orchestrator',
+        { body: {} }
+      );
+
+      if (orchestratorError) {
+        throw new Error(orchestratorError.message || 'Failed to spawn agents');
+      }
+
+      const subAgentIds = orchestratorData?.agents?.map((a: any) => a.id) || [];
+
+      if (subAgentIds.length === 0) {
+        toast.warning('No agents were spawned. Tasks may have been processed differently.');
+        return;
+      }
+
+      // Update message metadata to link to sub-agents
+      const metadata: Message['agent_metadata'] = {
+        sub_agent_ids: subAgentIds,
+        task_ids: [],
+        agent_executed: true,
+      };
+
+      await updateMessageAgentMetadata(messageId, metadata);
+
+      // Start polling for sub-agent completion
+      const pollInterval = setInterval(() => {
+        pollSubAgentStatus(subAgentIds, messageId);
+      }, 2000);
+
+      pollingIntervalsRef.current[messageId] = pollInterval;
+
+      // Initial poll
+      pollSubAgentStatus(subAgentIds, messageId);
+
+      toast.success(`${subAgentIds.length} agent(s) spawned! Processing tasks...`);
+    } catch (error) {
+      console.error('Error executing tasks:', error);
+      toast.error('Failed to execute tasks. Please try again.');
+    } finally {
+      setIsExecutingTasks(false);
+    }
+  };
+
+  // Cleanup polling intervals on unmount
+  useEffect(() => {
+    return () => {
+      Object.values(pollingIntervalsRef.current).forEach(clearInterval);
+    };
+  }, []);
+
+  // Helper to get the original user message for a given assistant message
+  const getOriginalUserMessage = (assistantMessageIndex: number): string => {
+    // Find the user message immediately before this assistant message
+    for (let i = assistantMessageIndex - 1; i >= 0; i--) {
+      if (messages[i].role === 'user') {
+        return messages[i].content;
+      }
+    }
+    return '';
   };
 
   // Auto-save long content as a document and return the doc ID
@@ -488,6 +709,7 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
       }
 
       const aiResponse = data?.response || 'Sorry, I could not process your request.';
+      const agentModeAvailable = data?.agent_mode_available || false;
 
       if (isTemporary) {
         // For temporary chats, just add the AI message to local state
@@ -497,13 +719,19 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
           content: aiResponse,
           sequence_number: messagesWithSavedUser.length,
           timestamp: new Date().toISOString(),
+          agent_mode_available: agentModeAvailable,
         };
         setMessages([...messagesWithSavedUser, tempAiMessage]);
       } else {
         // Save AI response - pass same conversation ID to ensure both messages in same conversation
         const savedAiMsg = await saveMessage('assistant', aiResponse, messagesWithSavedUser, currentConvId);
         if (savedAiMsg) {
-          setMessages([...messagesWithSavedUser, savedAiMsg as Message]);
+          // Add agent_mode_available to the saved message for UI
+          const messageWithAgentMode: Message = {
+            ...(savedAiMsg as Message),
+            agent_mode_available: agentModeAvailable,
+          };
+          setMessages([...messagesWithSavedUser, messageWithAgentMode]);
         }
       }
 
@@ -1226,10 +1454,10 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
           <Card className="flex-1 flex flex-col overflow-hidden mb-0">
             <div className="flex-1 min-h-0 p-4 overflow-y-auto" ref={scrollRef}>
               <div className="space-y-3">
-                {messages.map((message) => (
+                {messages.map((message, messageIndex) => (
                   <div
                     key={message.id}
-                    className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                    className={`flex flex-col ${message.role === 'user' ? 'items-end' : 'items-start'}`}
                   >
                     <div
                       className={`max-w-[80%] rounded-lg p-3 ${
@@ -1251,6 +1479,62 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
                         {new Date(message.timestamp).toLocaleTimeString()}
                       </p>
                     </div>
+
+                    {/* Agent Mode: "Run as Task" button */}
+                    {message.role === 'assistant' &&
+                      message.agent_mode_available &&
+                      !message.agent_metadata?.agent_executed && (
+                        <div className="mt-2 max-w-[80%]">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleRunAsTask(message.id, getOriginalUserMessage(messageIndex))}
+                            disabled={isExtractingTasks || isExecutingTasks}
+                            className="gap-2 border-orange-500/50 hover:bg-orange-500/10 text-orange-700 dark:text-orange-400"
+                          >
+                            {isExtractingTasks ? (
+                              <>
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                                Extracting Tasks...
+                              </>
+                            ) : (
+                              <>
+                                <Cpu className="h-4 w-4" />
+                                Run as Task
+                              </>
+                            )}
+                          </Button>
+                        </div>
+                      )}
+
+                    {/* Agent Mode: Sub-agent results */}
+                    {message.agent_metadata?.agent_executed && subAgentResults[message.id] && (
+                      <div className="mt-3 w-full max-w-[90%]">
+                        <SubAgentResultsList
+                          subAgents={subAgentResults[message.id]}
+                          onRevisionComplete={(updatedAgent) => {
+                            setSubAgentResults(prev => ({
+                              ...prev,
+                              [message.id]: prev[message.id].map(a =>
+                                a.id === updatedAgent.id ? updatedAgent : a
+                              ),
+                            }));
+                          }}
+                        />
+                      </div>
+                    )}
+
+                    {/* Agent Mode: Processing indicator */}
+                    {message.agent_metadata?.agent_executed &&
+                      message.agent_metadata.sub_agent_ids &&
+                      message.agent_metadata.sub_agent_ids.length > 0 &&
+                      (!subAgentResults[message.id] ||
+                        subAgentResults[message.id].some(a => a.status === 'pending' || a.status === 'running')) && (
+                        <div className="mt-2 flex items-center gap-2 text-sm text-muted-foreground">
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          <span>Processing {message.agent_metadata.sub_agent_ids.length} task(s)...</span>
+                        </div>
+                      )}
                   </div>
                 ))}
                 {isLoading && (
@@ -1274,6 +1558,82 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
         content={timelineContent}
         sourceType="ai-response"
       />
+
+      {/* Agent Mode: Task Confirmation Dialog */}
+      <Dialog open={!!taskConfirmation} onOpenChange={(open) => !open && setTaskConfirmation(null)}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Cpu className="h-5 w-5 text-orange-500" />
+              Execute Tasks
+            </DialogTitle>
+            <DialogDescription>
+              I found {taskConfirmation?.tasks.length || 0} actionable task(s) in your request.
+              Would you like me to execute them?
+            </DialogDescription>
+          </DialogHeader>
+
+          {taskConfirmation && (
+            <div className="space-y-3 max-h-[300px] overflow-y-auto">
+              {taskConfirmation.tasks.map((task, index) => (
+                <div key={index} className="p-3 bg-muted rounded-lg border">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1">
+                      <p className="font-medium text-sm">{task.title}</p>
+                      <p className="text-xs text-muted-foreground mt-1">{task.description}</p>
+                    </div>
+                    <Badge
+                      variant="outline"
+                      className={
+                        task.agent_type === 'creative'
+                          ? 'bg-orange-500/10 text-orange-600 border-orange-500/30'
+                          : task.agent_type === 'calendar'
+                          ? 'bg-blue-500/10 text-blue-600 border-blue-500/30'
+                          : task.agent_type === 'analysis'
+                          ? 'bg-purple-500/10 text-purple-600 border-purple-500/30'
+                          : 'bg-green-500/10 text-green-600 border-green-500/30'
+                      }
+                    >
+                      {task.agent_type}
+                    </Badge>
+                  </div>
+                  <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
+                    <span>Priority: {task.priority}/5</span>
+                    <span>Est: {task.estimated_duration} min</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              onClick={() => setTaskConfirmation(null)}
+              disabled={isExecutingTasks}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleConfirmAndExecuteTasks}
+              disabled={isExecutingTasks}
+              className="gap-2"
+            >
+              {isExecutingTasks ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Executing...
+                </>
+              ) : (
+                <>
+                  <Play className="h-4 w-4" />
+                  Execute {taskConfirmation?.tasks.length || 0} Task(s)
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
     </TooltipProvider>
   );

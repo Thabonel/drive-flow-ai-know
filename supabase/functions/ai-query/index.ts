@@ -1233,11 +1233,51 @@ ${productKnowledge}
       // Don't fail the main request if history saving fails
     }
 
+    // ==========================================================================
+    // TASK DETECTION: Check if the query looks like an actionable task/command
+    // ==========================================================================
+    // This enables the "Run as Task" button in AI Chat for agent mode capabilities
+    const taskVerbs = [
+      'create', 'generate', 'build', 'make', 'design', 'schedule', 'analyze',
+      'write', 'prepare', 'draft', 'plan', 'review', 'research', 'summarize',
+      'organize', 'set up', 'configure', 'develop', 'implement', 'send', 'book'
+    ];
+
+    const queryLower = query.toLowerCase().trim();
+
+    // Check if query starts with or contains a task verb (more robust detection)
+    const hasTaskVerb = taskVerbs.some(verb => {
+      // Check if starts with verb
+      if (queryLower.startsWith(verb + ' ') || queryLower.startsWith(verb + ',')) return true;
+      // Check if verb appears after common prefixes
+      if (queryLower.includes('please ' + verb) || queryLower.includes('can you ' + verb)) return true;
+      if (queryLower.includes('i need to ' + verb) || queryLower.includes('i want to ' + verb)) return true;
+      if (queryLower.includes('help me ' + verb)) return true;
+      return false;
+    });
+
+    // Additional heuristics for task-like queries
+    const hasTaskObject = query.length > 15; // Minimum length for meaningful task
+    const isNotQuestion = !queryLower.endsWith('?'); // Questions usually aren't tasks
+    const hasSpecificIntent = /\d+|tomorrow|today|next|meeting|event|visual|image|slide|deck|report|analysis/i.test(query);
+
+    // Determine if this is likely a task
+    const isLikelyTask = hasTaskVerb && hasTaskObject && (isNotQuestion || hasSpecificIntent);
+
+    console.log('Task detection:', {
+      hasTaskVerb,
+      hasTaskObject,
+      isNotQuestion,
+      hasSpecificIntent,
+      isLikelyTask
+    });
+
     return new Response(
       JSON.stringify({
         response: aiAnswer,
         context_documents_count: contextDocuments.length,
-        knowledge_base_used: !!knowledge_base_id
+        knowledge_base_used: !!knowledge_base_id,
+        agent_mode_available: isLikelyTask, // New flag for "Run as Task" button
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
