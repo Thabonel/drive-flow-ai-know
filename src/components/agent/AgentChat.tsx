@@ -6,7 +6,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { AIProgressIndicator } from '@/components/ai/AIProgressIndicator';
-import { Cpu, Archive, Download, Printer, X, Calendar, FileText, BarChart3, Clock, CheckCircle2, AlertCircle, ImageIcon } from 'lucide-react';
+import { Cpu, Archive, Download, Printer, X, Calendar, FileText, BarChart3, Clock, CheckCircle2, AlertCircle, ImageIcon, Loader2, RefreshCw } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -57,6 +58,15 @@ interface AgentChatProps {
 export function AgentChat({ session, userId, selectedTask, onCloseTaskDetail }: AgentChatProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [revisionRequest, setRevisionRequest] = useState('');
+  const [isRevising, setIsRevising] = useState(false);
+  const [revisedVisualContent, setRevisedVisualContent] = useState<any>(null);
+
+  // Reset revision state when selected task changes
+  useEffect(() => {
+    setRevisionRequest('');
+    setRevisedVisualContent(null);
+  }, [selectedTask?.id]);
 
   const {
     conversation,
@@ -224,6 +234,79 @@ export function AgentChat({ session, userId, selectedTask, onCloseTaskDetail }: 
       toast.error('Failed to process command');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // Handle revising a slide image
+  const handleReviseSlide = async (slideNumber: number) => {
+    if (!selectedTask?.result_data?.visual_content) {
+      toast.error('No visual content to revise');
+      return;
+    }
+
+    if (!revisionRequest.trim()) {
+      toast.error('Please describe what you want to change');
+      return;
+    }
+
+    setIsRevising(true);
+    try {
+      const visualContent = revisedVisualContent || selectedTask.result_data.visual_content;
+
+      // Build a current deck structure for the revision API
+      const currentDeck = {
+        title: visualContent.title || selectedTask.task_data?.title || 'Creative Visuals',
+        subtitle: visualContent.subtitle || '',
+        slides: visualContent.slides,
+      };
+
+      const { data, error } = await supabase.functions.invoke('generate-pitch-deck', {
+        body: {
+          topic: selectedTask.task_data?.title || 'Visual Content',
+          targetAudience: 'general audience',
+          style: selectedTask.result_data.style || 'professional',
+          includeImages: true,
+          revisionRequest,
+          currentDeck,
+          slideNumber,
+        }
+      });
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      // Update the local state with revised content
+      setRevisedVisualContent({
+        title: data.title,
+        subtitle: data.subtitle,
+        totalSlides: data.slides?.length || data.totalSlides,
+        slides: data.slides,
+      });
+
+      // Also update the sub_agent in the database
+      const updatedResultData = {
+        ...selectedTask.result_data,
+        visual_content: {
+          title: data.title,
+          subtitle: data.subtitle,
+          totalSlides: data.slides?.length || data.totalSlides,
+          slides: data.slides,
+        },
+      };
+
+      await supabase
+        .from('sub_agents')
+        .update({ result_data: updatedResultData })
+        .eq('id', selectedTask.id);
+
+      setRevisionRequest('');
+      toast.success(`Slide ${slideNumber} revised successfully!`);
+    } catch (error) {
+      console.error('Slide revision error:', error);
+      toast.error('Failed to revise slide. Please try again.');
+    } finally {
+      setIsRevising(false);
     }
   };
 
@@ -421,94 +504,149 @@ export function AgentChat({ session, userId, selectedTask, onCloseTaskDetail }: 
             )}
 
             {/* Visual Content - Generated Slides */}
-            {selectedTask.result_data?.visual_content?.slides && selectedTask.result_data.visual_content.slides.length > 0 && (
-              <Card>
-                <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-base flex items-center gap-2">
-                      <ImageIcon className="h-4 w-4 text-accent" />
-                      Generated Visuals ({selectedTask.result_data.visual_content.totalSlides || selectedTask.result_data.visual_content.slides.length} slides)
-                    </CardTitle>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => {
-                        const slides = selectedTask.result_data.visual_content.slides;
-                        slides.forEach((slide: any, index: number) => {
-                          if (slide.imageData) {
-                            const link = document.createElement('a');
-                            link.href = `data:image/png;base64,${slide.imageData}`;
-                            link.download = `slide-${index + 1}-${slide.title?.replace(/[^a-z0-9]/gi, '-') || 'visual'}.png`;
-                            document.body.appendChild(link);
-                            link.click();
-                            document.body.removeChild(link);
-                          }
-                        });
-                        toast.success(`Downloaded ${slides.filter((s: any) => s.imageData).length} images`);
-                      }}
-                    >
-                      <Download className="h-4 w-4 mr-2" />
-                      Download All
-                    </Button>
-                  </div>
-                  {selectedTask.result_data.visual_content.title && (
-                    <p className="text-sm text-muted-foreground mt-1">
-                      {selectedTask.result_data.visual_content.title}
-                      {selectedTask.result_data.visual_content.subtitle && ` - ${selectedTask.result_data.visual_content.subtitle}`}
-                    </p>
-                  )}
-                </CardHeader>
-                <CardContent>
-                  <div className="grid gap-4">
-                    {selectedTask.result_data.visual_content.slides.map((slide: any, index: number) => (
-                      <div key={index} className="border rounded-lg overflow-hidden">
-                        {slide.imageData ? (
-                          <div className="relative group">
-                            <img
-                              src={`data:image/png;base64,${slide.imageData}`}
-                              alt={slide.title || `Slide ${index + 1}`}
-                              className="w-full h-auto"
-                            />
-                            <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                              <Button
-                                size="sm"
-                                variant="secondary"
-                                onClick={() => {
-                                  const link = document.createElement('a');
-                                  link.href = `data:image/png;base64,${slide.imageData}`;
-                                  link.download = `slide-${index + 1}-${slide.title?.replace(/[^a-z0-9]/gi, '-') || 'visual'}.png`;
-                                  document.body.appendChild(link);
-                                  link.click();
-                                  document.body.removeChild(link);
-                                  toast.success('Image downloaded');
-                                }}
-                              >
-                                <Download className="h-4 w-4 mr-2" />
-                                Download
-                              </Button>
+            {(() => {
+              const visualContent = revisedVisualContent || selectedTask.result_data?.visual_content;
+              if (!visualContent?.slides || visualContent.slides.length === 0) return null;
+
+              return (
+                <Card>
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-base flex items-center gap-2">
+                        <ImageIcon className="h-4 w-4 text-accent" />
+                        Generated Visuals ({visualContent.totalSlides || visualContent.slides.length} slides)
+                      </CardTitle>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          const slides = visualContent.slides;
+                          slides.forEach((slide: any, index: number) => {
+                            if (slide.imageData) {
+                              const link = document.createElement('a');
+                              link.href = `data:image/png;base64,${slide.imageData}`;
+                              link.download = `slide-${index + 1}-${slide.title?.replace(/[^a-z0-9]/gi, '-') || 'visual'}.png`;
+                              document.body.appendChild(link);
+                              link.click();
+                              document.body.removeChild(link);
+                            }
+                          });
+                          toast.success(`Downloaded ${slides.filter((s: any) => s.imageData).length} images`);
+                        }}
+                      >
+                        <Download className="h-4 w-4 mr-2" />
+                        Download All
+                      </Button>
+                    </div>
+                    {visualContent.title && (
+                      <p className="text-sm text-muted-foreground mt-1">
+                        {visualContent.title}
+                        {visualContent.subtitle && ` - ${visualContent.subtitle}`}
+                      </p>
+                    )}
+
+                    {/* Revision Input */}
+                    <div className="mt-4 space-y-2">
+                      <Textarea
+                        placeholder="Describe changes you want (e.g., 'Make slide 2 more colorful' or 'Add more detail to the background')"
+                        value={revisionRequest}
+                        onChange={(e) => setRevisionRequest(e.target.value)}
+                        rows={2}
+                        className="text-sm"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Enter your revision request above, then click "Revise" on any slide to update it
+                      </p>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid gap-4">
+                      {visualContent.slides.map((slide: any, index: number) => (
+                        <div key={index} className="border rounded-lg overflow-hidden">
+                          {slide.imageData ? (
+                            <div className="relative group">
+                              <img
+                                src={`data:image/png;base64,${slide.imageData}`}
+                                alt={slide.title || `Slide ${index + 1}`}
+                                className="w-full h-auto"
+                              />
+                              <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                                <Button
+                                  size="sm"
+                                  variant="secondary"
+                                  onClick={() => {
+                                    const link = document.createElement('a');
+                                    link.href = `data:image/png;base64,${slide.imageData}`;
+                                    link.download = `slide-${index + 1}-${slide.title?.replace(/[^a-z0-9]/gi, '-') || 'visual'}.png`;
+                                    document.body.appendChild(link);
+                                    link.click();
+                                    document.body.removeChild(link);
+                                    toast.success('Image downloaded');
+                                  }}
+                                >
+                                  <Download className="h-4 w-4 mr-2" />
+                                  Download
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="secondary"
+                                  onClick={() => handleReviseSlide(slide.slideNumber || index + 1)}
+                                  disabled={isRevising || !revisionRequest.trim()}
+                                >
+                                  {isRevising ? (
+                                    <>
+                                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                      Revising...
+                                    </>
+                                  ) : (
+                                    <>
+                                      <RefreshCw className="h-4 w-4 mr-2" />
+                                      Revise
+                                    </>
+                                  )}
+                                </Button>
+                              </div>
                             </div>
-                          </div>
-                        ) : (
-                          <div className="h-48 bg-muted flex items-center justify-center">
-                            <p className="text-sm text-muted-foreground">Image not available</p>
-                          </div>
-                        )}
-                        <div className="p-3 bg-muted/50">
-                          <p className="font-medium text-sm">
-                            {slide.slideNumber || index + 1}. {slide.title || `Slide ${index + 1}`}
-                          </p>
-                          {slide.content && (
-                            <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                              {Array.isArray(slide.content) ? slide.content.join(' - ') : slide.content}
-                            </p>
+                          ) : (
+                            <div className="h-48 bg-muted flex items-center justify-center">
+                              <p className="text-sm text-muted-foreground">Image not available</p>
+                            </div>
                           )}
+                          <div className="p-3 bg-muted/50 flex items-center justify-between">
+                            <div className="flex-1">
+                              <p className="font-medium text-sm">
+                                {slide.slideNumber || index + 1}. {slide.title || `Slide ${index + 1}`}
+                              </p>
+                              {slide.content && (
+                                <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                                  {Array.isArray(slide.content) ? slide.content.join(' - ') : slide.content}
+                                </p>
+                              )}
+                            </div>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleReviseSlide(slide.slideNumber || index + 1)}
+                              disabled={isRevising || !revisionRequest.trim()}
+                              className="ml-2 flex-shrink-0"
+                            >
+                              {isRevising ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <>
+                                  <RefreshCw className="h-4 w-4 mr-1" />
+                                  Revise
+                                </>
+                              )}
+                            </Button>
+                          </div>
                         </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })()}
 
             {/* Error (if any) */}
             {selectedTask.error_message && (
