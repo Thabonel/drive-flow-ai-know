@@ -753,6 +753,9 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
 
       const aiResponse = data?.response || 'Sorry, I could not process your request.';
       const agentModeAvailable = data?.agent_mode_available || false;
+      const autoExecuteTaskType = data?.auto_execute_task_type || null;
+
+      let savedMessageId: string | null = null;
 
       if (isTemporary) {
         // For temporary chats, just add the AI message to local state
@@ -764,17 +767,97 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
           timestamp: new Date().toISOString(),
           agent_mode_available: agentModeAvailable,
         };
+        savedMessageId = tempAiMessage.id;
         setMessages([...messagesWithSavedUser, tempAiMessage]);
       } else {
         // Save AI response - pass same conversation ID to ensure both messages in same conversation
         const savedAiMsg = await saveMessage('assistant', aiResponse, messagesWithSavedUser, currentConvId);
         if (savedAiMsg) {
+          savedMessageId = savedAiMsg.id;
           // Add agent_mode_available to the saved message for UI
           const messageWithAgentMode: Message = {
             ...(savedAiMsg as Message),
             agent_mode_available: agentModeAvailable,
           };
           setMessages([...messagesWithSavedUser, messageWithAgentMode]);
+        }
+      }
+
+      // ==========================================================================
+      // AUTO-EXECUTE TASKS: Calendar, Briefing, Analysis tasks run immediately
+      // ==========================================================================
+      if (autoExecuteTaskType && savedMessageId) {
+        console.log(`Auto-executing ${autoExecuteTaskType} task...`);
+        toast.info(`Executing ${autoExecuteTaskType} task...`);
+
+        try {
+          // Step 1: Extract and plan tasks via agent-translate
+          const { data: translateData, error: translateError } = await supabase.functions.invoke('agent-translate', {
+            body: {
+              unstructured_input: originalMessage,
+              timezone_offset: getTimezoneOffset(),
+            },
+          });
+
+          if (translateError) {
+            throw new Error(translateError.message || 'Failed to process task');
+          }
+
+          if (!translateData?.tasks || translateData.tasks.length === 0) {
+            console.log('No actionable tasks found for auto-execution');
+            // Don't show error - the AI response already explained what to do
+            return;
+          }
+
+          if (!translateData?.session_id) {
+            throw new Error('Failed to create task session');
+          }
+
+          // Step 2: Execute via agent-orchestrator (skip confirmation dialog)
+          const { data: orchestratorData, error: orchestratorError } = await supabase.functions.invoke(
+            'agent-orchestrator',
+            { body: { session_id: translateData.session_id } }
+          );
+
+          if (orchestratorError) {
+            throw new Error(orchestratorError.message || 'Failed to execute task');
+          }
+
+          if (orchestratorData?.error) {
+            throw new Error(orchestratorData.error);
+          }
+
+          const subAgentIds = orchestratorData?.agents?.map((a: { id: string }) => a.id) || [];
+
+          if (subAgentIds.length === 0) {
+            throw new Error('No agents were spawned');
+          }
+
+          // Step 3: Update message metadata to link to sub-agents
+          const metadata: Message['agent_metadata'] = {
+            sub_agent_ids: subAgentIds,
+            task_ids: [],
+            agent_executed: true,
+            agent_session_id: translateData.session_id,
+          };
+
+          await updateMessageAgentMetadata(savedMessageId, metadata);
+
+          // Step 4: Start polling for sub-agent completion
+          const pollInterval = setInterval(() => {
+            pollSubAgentStatus(subAgentIds, savedMessageId!);
+          }, 2000);
+
+          pollingIntervalsRef.current[savedMessageId] = pollInterval;
+
+          // Initial poll
+          pollSubAgentStatus(subAgentIds, savedMessageId);
+
+          toast.success(`${subAgentIds.length} task(s) started!`);
+        } catch (autoExecError) {
+          console.error('Auto-execution error:', autoExecError);
+          toast.error(autoExecError instanceof Error ? autoExecError.message : 'Task execution failed');
+          // Don't fail silently - user can still use "Run as Task" button manually
         }
       }
 

@@ -914,12 +914,16 @@ KEY FEATURES YOU CAN HELP WITH:
    - Export to PDF/PPTX
    - Can revise existing decks
 
-2. AI ASSISTANT / AGENT MODE (Available at /agent)
-   - Autonomous AI agent that can perform multi-step tasks
-   - Creates and executes action plans
-   - Can research topics, analyze documents, and generate content
-   - Runs tasks in the background with progress tracking
-   - Different from AI Chat - this is for complex, multi-step autonomous work
+2. AGENT MODE / "RUN AS TASK" (In AI Chat)
+   - When users need complex tasks executed, they can use the "Run as Task" button below AI responses
+   - I CAN CREATE VISUALS, IMAGES, AND GRAPHICS via the creative sub-agent
+   - Types of tasks I can execute when user clicks "Run as Task":
+     * CREATIVE: Generate visuals, images, marketing graphics, infographics, pitch deck slides
+     * CALENDAR: Schedule meetings, create events, manage appointments
+     * BRIEFING: Generate reports, summaries, daily briefs
+     * ANALYSIS: Analyze data, create insights, research topics
+   - When asked to create visuals/images/graphics, I should tell users to click "Run as Task"
+   - Tasks run autonomously in the background with progress tracking
 
 3. AI CHAT (Available at /conversations) - THIS IS WHERE WE ARE NOW
    - Conversational AI interface for quick questions
@@ -980,7 +984,9 @@ SUBSCRIPTION TIERS:
 HOW TO HELP USERS:
 - If users ask about features, explain what they can do and where to find them
 - If users want to create presentations, suggest the Pitch Deck feature
-- If users have complex multi-step tasks, suggest AI Assistant/Agent Mode
+- If users ask to CREATE VISUALS/IMAGES/GRAPHICS: Tell them you CAN do this - they should click "Run as Task" below this response
+- If users have complex multi-step tasks, tell them to use the "Run as Task" button
+- NEVER say "I can't create images" - you CAN via the creative sub-agent when "Run as Task" is clicked
 - If users want to organize documents, suggest Knowledge Bases
 - If users need task planning, suggest Timeline with AI task breakdown
 - Always be helpful about the app's capabilities
@@ -1261,14 +1267,54 @@ ${productKnowledge}
     const isNotQuestion = !queryLower.endsWith('?'); // Questions usually aren't tasks
     const hasSpecificIntent = /\d+|tomorrow|today|next|meeting|event|visual|image|slide|deck|report|analysis/i.test(query);
 
+    // Explicit visual/image creation detection - should ALWAYS trigger agent mode
+    const isVisualCreationRequest = /\b(create|make|generate|design|build)\b/i.test(query) &&
+      /\b(visual|image|graphic|picture|illustration|infographic|slide|deck|poster|banner|logo|artwork)\b/i.test(query);
+
+    // ==========================================================================
+    // AUTO-EXECUTE TASK DETECTION
+    // Some task types should run immediately without user confirmation
+    // ==========================================================================
+
+    // Calendar tasks - scheduling, meetings, events, reminders
+    const isCalendarTask = /\b(schedule|book|meeting|appointment|event|remind|calendar)\b/i.test(query) &&
+      /\b(create|make|schedule|set|book|add|for|at|on|tomorrow|today|next|this)\b/i.test(query);
+
+    // Briefing tasks - reports, summaries, daily briefs
+    const isBriefingTask = /\b(brief|briefing|summary|report|daily|morning|update)\b/i.test(query) &&
+      /\b(create|make|generate|prepare|give|send|my)\b/i.test(query);
+
+    // Analysis tasks that are straightforward - these auto-execute
+    const isSimpleAnalysisTask = /\b(analyze|analyse|research|find|search)\b/i.test(query) &&
+      /\b(about|on|for|the|this|my)\b/i.test(query) &&
+      !isVisualCreationRequest; // Don't auto-execute if it also needs visuals
+
+    // Determine auto-execute task type (null if requires confirmation)
+    let autoExecuteTaskType: string | null = null;
+    if (isCalendarTask) {
+      autoExecuteTaskType = 'calendar';
+    } else if (isBriefingTask) {
+      autoExecuteTaskType = 'briefing';
+    } else if (isSimpleAnalysisTask) {
+      autoExecuteTaskType = 'analysis';
+    }
+    // Note: 'creative' tasks (visuals) require confirmation due to resource usage
+
     // Determine if this is likely a task
-    const isLikelyTask = hasTaskVerb && hasTaskObject && (isNotQuestion || hasSpecificIntent);
+    // Visual creation requests should ALWAYS be treated as tasks (for "Run as Task" button)
+    const isLikelyTask = isVisualCreationRequest || autoExecuteTaskType !== null ||
+      (hasTaskVerb && hasTaskObject && (isNotQuestion || hasSpecificIntent));
 
     console.log('Task detection:', {
       hasTaskVerb,
       hasTaskObject,
       isNotQuestion,
       hasSpecificIntent,
+      isVisualCreationRequest,
+      isCalendarTask,
+      isBriefingTask,
+      isSimpleAnalysisTask,
+      autoExecuteTaskType,
       isLikelyTask
     });
 
@@ -1277,7 +1323,8 @@ ${productKnowledge}
         response: aiAnswer,
         context_documents_count: contextDocuments.length,
         knowledge_base_used: !!knowledge_base_id,
-        agent_mode_available: isLikelyTask, // New flag for "Run as Task" button
+        agent_mode_available: isLikelyTask,
+        auto_execute_task_type: autoExecuteTaskType, // If set, frontend should auto-execute without confirmation
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
