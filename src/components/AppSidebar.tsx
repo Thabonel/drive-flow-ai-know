@@ -59,9 +59,6 @@ const navigationItems = [
 ];
 
 
-const executiveNavigationItems = [
-  { title: 'Human Assistant', url: '/assistants', icon: Bot },
-];
 
 export function AppSidebar() {
   const { state } = useSidebar();
@@ -252,39 +249,6 @@ export function AppSidebar() {
           </SidebarGroup>
         </FeatureGate>
 
-        {/* Executive Navigation - Only visible for Enterprise tier */}
-        <FeatureGate requiredTier="enterprise">
-          <SidebarGroup>
-            <SidebarGroupLabel>Executive</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {executiveNavigationItems.map((item) => (
-                  <SidebarMenuItem key={item.title}>
-                    {collapsed ? (
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <SidebarMenuButton asChild>
-                            <NavLink to={item.url} className={getNavCls}>
-                              <item.icon className="h-4 w-4" />
-                            </NavLink>
-                          </SidebarMenuButton>
-                        </TooltipTrigger>
-                        <TooltipContent side="right">{item.title}</TooltipContent>
-                      </Tooltip>
-                    ) : (
-                      <SidebarMenuButton asChild>
-                        <NavLink to={item.url} className={getNavCls}>
-                          <item.icon className="h-4 w-4" />
-                          <span>{item.title}</span>
-                        </NavLink>
-                      </SidebarMenuButton>
-                    )}
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        </FeatureGate>
       </SidebarContent>
 
       <SidebarFooter className="border-t border-sidebar-border p-4">
