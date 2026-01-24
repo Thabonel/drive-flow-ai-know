@@ -16,7 +16,8 @@ import {
   FileText,
   BarChart3,
   Sun,
-  History
+  History,
+  ImageIcon
 } from 'lucide-react';
 
 interface AgentMemory {
@@ -212,6 +213,8 @@ export function AgentRightPane({ userId, onTaskSelect, selectedTaskId }: AgentRi
         return <FileText className="h-4 w-4" />;
       case 'analysis':
         return <BarChart3 className="h-4 w-4" />;
+      case 'creative':
+        return <ImageIcon className="h-4 w-4 text-orange-500" />;
       default:
         return <Activity className="h-4 w-4" />;
     }

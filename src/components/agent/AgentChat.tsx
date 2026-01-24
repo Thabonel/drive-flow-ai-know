@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { AIProgressIndicator } from '@/components/ai/AIProgressIndicator';
-import { Cpu, Archive, Download, Printer, X, Calendar, FileText, BarChart3, Clock, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Cpu, Archive, Download, Printer, X, Calendar, FileText, BarChart3, Clock, CheckCircle2, AlertCircle, ImageIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -273,6 +273,8 @@ export function AgentChat({ session, userId, selectedTask, onCloseTaskDetail }: 
         return <FileText className="h-5 w-5 text-green-500" />;
       case 'analysis':
         return <BarChart3 className="h-5 w-5 text-purple-500" />;
+      case 'creative':
+        return <ImageIcon className="h-5 w-5 text-orange-500" />;
       default:
         return <Cpu className="h-5 w-5 text-accent" />;
     }
@@ -395,6 +397,16 @@ export function AgentChat({ session, userId, selectedTask, onCloseTaskDetail }: 
                       {selectedTask.result_data.message}
                     </p>
                   )}
+
+                  {/* Creative Content Results */}
+                  {selectedTask.result_data.content && (
+                    <div className="prose prose-sm max-w-none dark:prose-invert mt-4">
+                      <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                        {selectedTask.result_data.content}
+                      </ReactMarkdown>
+                    </div>
+                  )}
+
                   {/* Show raw result data for debugging/transparency */}
                   <details className="mt-4">
                     <summary className="text-xs text-muted-foreground cursor-pointer hover:text-foreground">
@@ -404,6 +416,96 @@ export function AgentChat({ session, userId, selectedTask, onCloseTaskDetail }: 
                       {JSON.stringify(selectedTask.result_data, null, 2)}
                     </pre>
                   </details>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Visual Content - Generated Slides */}
+            {selectedTask.result_data?.visual_content?.slides && selectedTask.result_data.visual_content.slides.length > 0 && (
+              <Card>
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <ImageIcon className="h-4 w-4 text-accent" />
+                      Generated Visuals ({selectedTask.result_data.visual_content.totalSlides || selectedTask.result_data.visual_content.slides.length} slides)
+                    </CardTitle>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        const slides = selectedTask.result_data.visual_content.slides;
+                        slides.forEach((slide: any, index: number) => {
+                          if (slide.imageData) {
+                            const link = document.createElement('a');
+                            link.href = `data:image/png;base64,${slide.imageData}`;
+                            link.download = `slide-${index + 1}-${slide.title?.replace(/[^a-z0-9]/gi, '-') || 'visual'}.png`;
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+                          }
+                        });
+                        toast.success(`Downloaded ${slides.filter((s: any) => s.imageData).length} images`);
+                      }}
+                    >
+                      <Download className="h-4 w-4 mr-2" />
+                      Download All
+                    </Button>
+                  </div>
+                  {selectedTask.result_data.visual_content.title && (
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {selectedTask.result_data.visual_content.title}
+                      {selectedTask.result_data.visual_content.subtitle && ` - ${selectedTask.result_data.visual_content.subtitle}`}
+                    </p>
+                  )}
+                </CardHeader>
+                <CardContent>
+                  <div className="grid gap-4">
+                    {selectedTask.result_data.visual_content.slides.map((slide: any, index: number) => (
+                      <div key={index} className="border rounded-lg overflow-hidden">
+                        {slide.imageData ? (
+                          <div className="relative group">
+                            <img
+                              src={`data:image/png;base64,${slide.imageData}`}
+                              alt={slide.title || `Slide ${index + 1}`}
+                              className="w-full h-auto"
+                            />
+                            <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                              <Button
+                                size="sm"
+                                variant="secondary"
+                                onClick={() => {
+                                  const link = document.createElement('a');
+                                  link.href = `data:image/png;base64,${slide.imageData}`;
+                                  link.download = `slide-${index + 1}-${slide.title?.replace(/[^a-z0-9]/gi, '-') || 'visual'}.png`;
+                                  document.body.appendChild(link);
+                                  link.click();
+                                  document.body.removeChild(link);
+                                  toast.success('Image downloaded');
+                                }}
+                              >
+                                <Download className="h-4 w-4 mr-2" />
+                                Download
+                              </Button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="h-48 bg-muted flex items-center justify-center">
+                            <p className="text-sm text-muted-foreground">Image not available</p>
+                          </div>
+                        )}
+                        <div className="p-3 bg-muted/50">
+                          <p className="font-medium text-sm">
+                            {slide.slideNumber || index + 1}. {slide.title || `Slide ${index + 1}`}
+                          </p>
+                          {slide.content && (
+                            <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                              {Array.isArray(slide.content) ? slide.content.join(' - ') : slide.content}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </CardContent>
               </Card>
             )}
