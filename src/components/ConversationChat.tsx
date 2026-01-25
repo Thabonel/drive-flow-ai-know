@@ -127,6 +127,9 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
   const [subAgentResults, setSubAgentResults] = useState<Record<string, SubAgentResult[]>>({});
   const pollingIntervalsRef = useRef<Record<string, NodeJS.Timeout>>({});
 
+  // Track messages currently being auto-executed (to hide "Run as Task" button)
+  const [autoExecutingMessageIds, setAutoExecutingMessageIds] = useState<Set<string>>(new Set());
+
   // Interactive options state - tracks selected options per message
   const [selectedOptions, setSelectedOptions] = useState<Record<string, Set<string>>>({});
 
@@ -879,6 +882,9 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
         console.log(`Auto-executing ${autoExecuteTaskType} task...`);
         toast.info(`Executing ${autoExecuteTaskType} task...`);
 
+        // Mark this message as auto-executing (hides "Run as Task" button)
+        setAutoExecutingMessageIds(prev => new Set(prev).add(savedMessageId));
+
         try {
           // Step 1: Extract and plan tasks via agent-translate
           const { data: translateData, error: translateError } = await supabase.functions.invoke('agent-translate', {
@@ -946,7 +952,12 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
         } catch (autoExecError) {
           console.error('Auto-execution error:', autoExecError);
           toast.error(autoExecError instanceof Error ? autoExecError.message : 'Task execution failed');
-          // Don't fail silently - user can still use "Run as Task" button manually
+          // Remove from auto-executing set so "Run as Task" button appears as fallback
+          setAutoExecutingMessageIds(prev => {
+            const newSet = new Set(prev);
+            newSet.delete(savedMessageId);
+            return newSet;
+          });
         }
       }
 
@@ -1753,10 +1764,11 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
                         </div>
                       )}
 
-                    {/* Agent Mode: "Run as Task" button */}
+                    {/* Agent Mode: "Run as Task" button - hidden if auto-executing or already executed */}
                     {message.role === 'assistant' &&
                       message.agent_mode_available &&
-                      !message.agent_metadata?.agent_executed && (
+                      !message.agent_metadata?.agent_executed &&
+                      !autoExecutingMessageIds.has(message.id) && (
                         <div className="mt-2 max-w-[80%]">
                           <Button
                             size="sm"
