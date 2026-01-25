@@ -859,6 +859,12 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
           clarifying_options: clarifyingOptions,
         };
         savedMessageId = tempAiMessage.id;
+
+        // If auto-executing, mark it BEFORE rendering the message (prevents button flash)
+        if (autoExecuteTaskType) {
+          setAutoExecutingMessageIds(prev => new Set(prev).add(tempAiMessage.id));
+        }
+
         setMessages([...messagesWithSavedUser, tempAiMessage]);
       } else {
         // Save AI response - pass same conversation ID to ensure both messages in same conversation
@@ -871,6 +877,12 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
             agent_mode_available: agentModeAvailable,
             clarifying_options: clarifyingOptions,
           };
+
+          // If auto-executing, mark it BEFORE rendering the message (prevents button flash)
+          if (autoExecuteTaskType) {
+            setAutoExecutingMessageIds(prev => new Set(prev).add(savedAiMsg.id));
+          }
+
           setMessages([...messagesWithSavedUser, messageWithExtras]);
         }
       }
@@ -881,9 +893,6 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
       if (autoExecuteTaskType && savedMessageId) {
         console.log(`Auto-executing ${autoExecuteTaskType} task...`);
         toast.info(`Executing ${autoExecuteTaskType} task...`);
-
-        // Mark this message as auto-executing (hides "Run as Task" button)
-        setAutoExecutingMessageIds(prev => new Set(prev).add(savedMessageId));
 
         try {
           // Step 1: Extract and plan tasks via agent-translate
