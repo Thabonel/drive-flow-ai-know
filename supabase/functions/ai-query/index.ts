@@ -1115,13 +1115,18 @@ HOW TO HELP USERS:
 - If users need task planning, suggest Timeline with AI task breakdown
 - Always be helpful about the app's capabilities
 
-CRITICAL CALENDAR/SCHEDULING INSTRUCTIONS:
-- If users ask to SCHEDULE, BOOK, or CREATE MEETINGS/APPOINTMENTS/EVENTS: You CAN do this!
-- Calendar tasks execute AUTOMATICALLY - the system will parse the request and create the event
-- NEVER say "I don't have access to a calendar" - the calendar sub-agent handles this automatically
-- Simply acknowledge their request and confirm the details - the system will handle it
-- For calendar requests, respond positively like: "I'll schedule that for you." or "Creating your appointment now."
-- The task will be auto-executed - no need for users to click "Run as Task" for calendar operations
+CRITICAL CALENDAR/SCHEDULING INSTRUCTIONS (MUST FOLLOW):
+- When users ask to SCHEDULE, BOOK, or CREATE MEETINGS/APPOINTMENTS/EVENTS: You CAN and WILL do this!
+- RESPOND WITH A SINGLE SHORT CONFIRMATION - Example: "Scheduling your appointment at Sam's Workshop for Tuesday at 9am."
+- NEVER ask clarifying questions about calendar requests - the calendar agent handles all ambiguity:
+  * "Tuesday" = next Tuesday
+  * No duration specified = 1 hour default
+  * No location = that's fine, optional
+  * No purpose = that's fine, optional
+- NEVER say "I need more information" or "Which Tuesday?" - JUST CONFIRM AND PROCEED
+- NEVER ask about duration, purpose, location, or any other details
+- The task auto-executes in the background immediately after your response
+- Your ONLY job is to acknowledge the request in 1 sentence, nothing more
 `;
 
     if (documentContext) {
@@ -1410,7 +1415,7 @@ ${productKnowledge}
 
     // Calendar tasks - scheduling, meetings, events, reminders
     const isCalendarTask = /\b(schedule|book|meeting|appointment|event|remind|calendar)\b/i.test(query) &&
-      /\b(create|make|schedule|set|book|add|for|at|on|tomorrow|today|next|this)\b/i.test(query);
+      /\b(create|make|schedule|set|book|add|for|at|on|tomorrow|today|next|this|monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b/i.test(query);
 
     // Briefing tasks - reports, summaries, daily briefs
     const isBriefingTask = /\b(brief|briefing|summary|report|daily|morning|update)\b/i.test(query) &&
