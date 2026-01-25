@@ -783,10 +783,17 @@ async function generateSlideImageForJob(visualPrompt: string, visualType: string
         body: JSON.stringify({
           contents: [{
             parts: [{
-              text: `Generate a 16:9 presentation slide image.
+              text: `Generate a 16:9 illustration or graphic. DO NOT INCLUDE ANY TEXT, WORDS, LETTERS, OR NUMBERS IN THE IMAGE.
 
 Visual Type: ${visualType}
-Description: ${visualPrompt}
+Concept to illustrate: ${visualPrompt}
+
+CRITICAL REQUIREMENTS:
+- NO text of any kind - no titles, labels, captions, or watermarks
+- NO letters, words, numbers, or symbols that look like writing
+- This is a VISUAL GRAPHIC only - text will be added separately by the presentation software
+- Create an abstract or symbolic visual representation of the concept
+- Focus on shapes, colors, illustrations, icons, and imagery
 
 Style: Professional, clean, modern. Use warm earth tones (terracotta, sage green, cream, navy). No purple or neon colors. High quality, suitable for business presentations.`
             }]
