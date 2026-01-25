@@ -101,6 +101,8 @@ function parseRecurrenceFromText(text: string): RecurrencePattern | null {
 
 /**
  * Parse specific dates like "January 23", "Friday", "tomorrow", "today"
+ * IMPORTANT: This function works with "fake UTC" dates where UTC methods return local time.
+ * All date manipulations use UTC methods to preserve the timezone offset.
  */
 function parseStartDate(text: string, referenceDate: Date = new Date()): Date {
   const lowerText = text.toLowerCase();
@@ -113,7 +115,7 @@ function parseStartDate(text: string, referenceDate: Date = new Date()): Date {
   // Tomorrow
   if (lowerText.includes('tomorrow')) {
     const tomorrow = new Date(referenceDate);
-    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
     return tomorrow;
   }
 
@@ -129,10 +131,10 @@ function parseStartDate(text: string, referenceDate: Date = new Date()): Date {
     };
     const month = monthNames[monthMatch[1].toLowerCase()];
     const day = parseInt(monthMatch[2], 10);
-    const year = monthMatch[3] ? parseInt(monthMatch[3], 10) : referenceDate.getFullYear();
+    const year = monthMatch[3] ? parseInt(monthMatch[3], 10) : referenceDate.getUTCFullYear();
 
     const result = new Date(referenceDate);
-    result.setFullYear(year, month, day);
+    result.setUTCFullYear(year, month, day);
     return result;
   }
 
@@ -145,12 +147,12 @@ function parseStartDate(text: string, referenceDate: Date = new Date()): Date {
       'thursday': 4, 'friday': 5, 'saturday': 6
     };
     const targetDay = dayNames[dayMatch[1].toLowerCase()];
-    const currentDay = referenceDate.getDay();
+    const currentDay = referenceDate.getUTCDay();
     let daysToAdd = targetDay - currentDay;
     if (daysToAdd <= 0) daysToAdd += 7; // Always go to next occurrence
 
     const result = new Date(referenceDate);
-    result.setDate(result.getDate() + daysToAdd);
+    result.setUTCDate(result.getUTCDate() + daysToAdd);
     return result;
   }
 
@@ -159,23 +161,37 @@ function parseStartDate(text: string, referenceDate: Date = new Date()): Date {
 }
 
 /**
- * Get current date in user's timezone
+ * Get current date in user's timezone as a "fake UTC" Date object.
+ * The returned Date's getUTCHours(), getUTCDate(), etc. methods will return
+ * values that correspond to the user's local time.
+ *
+ * IMPORTANT: Use getUTC*() methods on the returned Date, not get*() methods.
  */
 function getNowInTimezone(timezoneOffset: number): Date {
   const now = new Date();
-  // Adjust for timezone offset (offset is in hours, e.g., +2 for Africa/Johannesburg)
-  const utcTime = now.getTime() + (now.getTimezoneOffset() * 60000);
-  return new Date(utcTime + (timezoneOffset * 3600000));
+  // Create a "fake UTC" date where UTC methods return local time values
+  // Add the offset so that getUTCHours() returns the local hour
+  return new Date(now.getTime() + (timezoneOffset * 3600000));
 }
 
 /**
- * Convert local time to UTC for storage
- * @param localDate - Date in user's local timezone
+ * Set hours/minutes on a "fake UTC" Date object.
+ * Use this instead of setHours() to ensure correct behavior with our timezone handling.
+ */
+function setLocalTime(fakeUtcDate: Date, hours: number, minutes: number): Date {
+  const result = new Date(fakeUtcDate);
+  result.setUTCHours(hours, minutes, 0, 0);
+  return result;
+}
+
+/**
+ * Convert a "fake UTC" Date back to real UTC for storage.
+ * @param fakeUtcDate - Date where UTC methods return local time values
  * @param timezoneOffset - User's timezone offset in hours (e.g., +2 for Africa/Johannesburg)
  */
-function localToUTC(localDate: Date, timezoneOffset: number): Date {
-  // Subtract the timezone offset to get UTC
-  return new Date(localDate.getTime() - (timezoneOffset * 3600000));
+function localToUTC(fakeUtcDate: Date, timezoneOffset: number): Date {
+  // Subtract the timezone offset to get real UTC
+  return new Date(fakeUtcDate.getTime() - (timezoneOffset * 3600000));
 }
 
 /**
@@ -290,20 +306,21 @@ async function createTimelineItems(
 }
 
 /**
- * Calculate next occurrence based on recurrence pattern
+ * Calculate next occurrence based on recurrence pattern.
+ * Uses UTC methods since input dates are in UTC.
  */
 function getNextOccurrence(currentDate: Date, pattern: RecurrencePattern): Date {
   const next = new Date(currentDate);
 
   switch (pattern.frequency) {
     case 'daily':
-      next.setDate(next.getDate() + pattern.interval);
+      next.setUTCDate(next.getUTCDate() + pattern.interval);
       break;
     case 'weekly':
-      next.setDate(next.getDate() + (7 * pattern.interval));
+      next.setUTCDate(next.getUTCDate() + (7 * pattern.interval));
       break;
     case 'monthly':
-      next.setMonth(next.getMonth() + pattern.interval);
+      next.setUTCMonth(next.getUTCMonth() + pattern.interval);
       break;
   }
 
@@ -338,18 +355,22 @@ async function handleCreateEvent(
 
     console.log(`Parsed time from "${fullText}": ${parsedTime.hours}:${parsedTime.minutes.toString().padStart(2, '0')}`);
 
-    // Get "now" in user's local timezone for date parsing
+    // Get "now" in user's local timezone as a "fake UTC" Date
+    // (where getUTCHours() etc. return local time values)
     const nowLocal = getNowInTimezone(timezoneOffset);
 
     // Parse start date (default to today in user's timezone)
-    const startDateLocal = parseStartDate(fullText, nowLocal);
+    let startDateLocal = parseStartDate(fullText, nowLocal);
 
-    // Set the time on the start date (in user's local time)
-    startDateLocal.setHours(parsedTime.hours, parsedTime.minutes, 0, 0);
+    // Set the time on the start date using UTC methods (since our Date is "fake UTC")
+    startDateLocal = setLocalTime(startDateLocal, parsedTime.hours, parsedTime.minutes);
 
-    console.log(`Local time: ${startDateLocal.toISOString()} (offset: UTC+${timezoneOffset})`);
+    // Log the local time (use UTC methods since it's "fake UTC")
+    const localHour = startDateLocal.getUTCHours().toString().padStart(2, '0');
+    const localMinute = startDateLocal.getUTCMinutes().toString().padStart(2, '0');
+    console.log(`Local time: ${localHour}:${localMinute} (offset: UTC+${timezoneOffset})`);
 
-    // Convert to UTC for storage
+    // Convert to real UTC for storage
     const startDate = localToUTC(startDateLocal, timezoneOffset);
 
     console.log(`UTC time for storage: ${startDate.toISOString()}`);

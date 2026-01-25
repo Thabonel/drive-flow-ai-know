@@ -404,13 +404,37 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
       const completed = agents?.filter(a => a.status === 'completed').length || 0;
       const failed = agents?.filter(a => a.status === 'failed').length || 0;
 
+      // Check if any completed agents are calendar agents with event data
+      const calendarAgent = agents?.find(
+        (a) => a.status === 'completed' && a.agent_type === 'calendar' && a.result_data?.event_start
+      );
+
       if (failed > 0) {
         toast.warning(`Tasks completed: ${completed} succeeded, ${failed} failed`);
+      } else if (calendarAgent?.result_data?.event_start) {
+        // Calendar task completed - show toast with View in Timeline action
+        const eventDate = new Date(calendarAgent.result_data.event_start);
+        const formattedDate = eventDate.toLocaleDateString('en-US', {
+          weekday: 'short',
+          month: 'short',
+          day: 'numeric',
+          hour: 'numeric',
+          minute: '2-digit',
+        });
+        // Store event date so Timeline page can auto-navigate to it
+        localStorage.setItem('timeline-navigate-to-date', calendarAgent.result_data.event_start);
+        toast.success(`Event scheduled for ${formattedDate}`, {
+          action: {
+            label: 'View in Timeline',
+            onClick: () => navigate('/timeline'),
+          },
+          duration: 8000,
+        });
       } else {
         toast.success(`All ${completed} task(s) completed!`);
       }
     }
-  }, []);
+  }, [navigate]);
 
   // Update message metadata in database
   const updateMessageAgentMetadata = async (messageId: string, metadata: Message['agent_metadata']) => {

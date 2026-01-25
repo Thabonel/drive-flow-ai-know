@@ -5,8 +5,16 @@ import { supabase } from '@/integrations/supabase/client';
 import { RealtimeChannel } from '@supabase/supabase-js';
 import { useAuth } from './useAuth';
 
+interface TimelineItemPayload {
+  id: string;
+  title: string;
+  start_time: string;
+  [key: string]: unknown;
+}
+
 interface TimelineSyncCallbacks {
   onItemsChange?: () => void;
+  onItemInsert?: (item: TimelineItemPayload) => void;
   onLayersChange?: () => void;
   onSettingsChange?: () => void;
   onParkedItemsChange?: () => void;
@@ -48,7 +56,7 @@ export function useTimelineSync(callbacks: TimelineSyncCallbacks) {
     };
 
     // Subscribe to timeline_items changes
-    if (callbacksRef.current.onItemsChange) {
+    if (callbacksRef.current.onItemsChange || callbacksRef.current.onItemInsert) {
       const itemsChannel = supabase
         .channel('timeline_items_changes')
         .on(
@@ -59,7 +67,14 @@ export function useTimelineSync(callbacks: TimelineSyncCallbacks) {
             table: 'timeline_items',
             filter: `user_id=eq.${user.id}`,
           },
-          debounce(() => callbacksRef.current.onItemsChange?.(), itemsDebounceTimer, 150)
+          (payload) => {
+            // For INSERT events, call onItemInsert with the new item data
+            if (payload.eventType === 'INSERT' && payload.new && callbacksRef.current.onItemInsert) {
+              callbacksRef.current.onItemInsert(payload.new as TimelineItemPayload);
+            }
+            // Always call onItemsChange for all events (debounced)
+            debounce(() => callbacksRef.current.onItemsChange?.(), itemsDebounceTimer, 150)();
+          }
         )
         .subscribe();
 

@@ -1,9 +1,10 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Calendar, FileText, BarChart3, ImageIcon, Download, RefreshCw, Loader2, CheckCircle2, Clock, X, FileDown, Presentation, FileImage } from 'lucide-react';
+import { Calendar, FileText, BarChart3, ImageIcon, Download, RefreshCw, Loader2, CheckCircle2, Clock, FileDown, Presentation, FileImage, ExternalLink } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { toast } from 'sonner';
@@ -26,6 +27,12 @@ export interface SubAgentResult {
     message?: string;
     content?: string;
     timeline_items_created?: number;
+    event_summary?: string;
+    event_start?: string;
+    recurrence?: string;
+    series_id?: string;
+    google_synced?: boolean;
+    google_event_link?: string;
     events?: Array<{
       title: string;
       start_time: string;
@@ -258,6 +265,7 @@ async function exportImagesAsZip(visualContent: VisualContent, deckTitle: string
 }
 
 export function SubAgentResultCard({ subAgent, onRevisionComplete, compact = false }: SubAgentResultCardProps) {
+  const navigate = useNavigate();
   const [editingSlideIndex, setEditingSlideIndex] = useState<number | null>(null);
   const [revisionRequest, setRevisionRequest] = useState('');
   const [isRevising, setIsRevising] = useState(false);
@@ -394,14 +402,95 @@ export function SubAgentResultCard({ subAgent, onRevisionComplete, compact = fal
     const { result_data } = subAgent;
     if (!result_data) return null;
 
+    // Format the scheduled date/time nicely
+    const formatScheduledTime = (isoString: string): { text: string; isFuture: boolean } => {
+      const date = new Date(isoString);
+      const today = new Date();
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+
+      // Get the start of the current week (Monday)
+      const startOfWeek = new Date(today);
+      const dayOfWeek = today.getDay();
+      const daysFromMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+      startOfWeek.setDate(today.getDate() - daysFromMonday);
+      startOfWeek.setHours(0, 0, 0, 0);
+
+      // Get end of current week (Sunday)
+      const endOfWeek = new Date(startOfWeek);
+      endOfWeek.setDate(startOfWeek.getDate() + 6);
+      endOfWeek.setHours(23, 59, 59, 999);
+
+      // Check if it's today or tomorrow
+      const isToday = date.toDateString() === today.toDateString();
+      const isTomorrow = date.toDateString() === tomorrow.toDateString();
+      const isThisWeek = date >= startOfWeek && date <= endOfWeek;
+
+      const timeStr = date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+      const dateStr = date.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+
+      if (isToday) return { text: `Today at ${timeStr}`, isFuture: false };
+      if (isTomorrow) return { text: `Tomorrow at ${timeStr}`, isFuture: false };
+      return { text: `${dateStr} at ${timeStr}`, isFuture: !isThisWeek };
+    };
+
+    // Get formatted time info
+    const scheduledInfo = result_data.event_start ? formatScheduledTime(result_data.event_start) : null;
+
     return (
       <div className="space-y-3">
-        {result_data.timeline_items_created !== undefined && (
-          <div className="flex items-center gap-2 text-sm">
-            <Calendar className="h-4 w-4 text-blue-500" />
-            <span>{result_data.timeline_items_created} timeline item(s) created</span>
+        {/* Main scheduled item info */}
+        {result_data.event_summary && scheduledInfo && (
+          <div className="p-3 bg-blue-50 dark:bg-blue-950/30 rounded-lg border border-blue-200 dark:border-blue-900">
+            <p className="font-medium text-blue-900 dark:text-blue-100">{result_data.event_summary}</p>
+            <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
+              📅 {scheduledInfo.text}
+            </p>
+            {result_data.recurrence && (
+              <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+                🔄 {result_data.recurrence}
+              </p>
+            )}
+            {result_data.google_synced && result_data.google_event_link && (
+              <a
+                href={result_data.google_event_link}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-blue-600 dark:text-blue-400 hover:underline mt-1 inline-block"
+              >
+                View in Google Calendar →
+              </a>
+            )}
+            {/* View in Calendar button - navigates to Timeline with the event date */}
+            {result_data.event_start && (
+              <div className="mt-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="gap-2 text-blue-600 border-blue-300 hover:bg-blue-50 dark:text-blue-400 dark:border-blue-700 dark:hover:bg-blue-950"
+                  onClick={() => {
+                    const eventDate = new Date(result_data.event_start!);
+                    const dateStr = eventDate.toISOString().split('T')[0]; // YYYY-MM-DD format
+                    navigate(`/timeline?date=${dateStr}&view=calendar`);
+                  }}
+                >
+                  <ExternalLink className="h-3 w-3" />
+                  View in Calendar
+                </Button>
+              </div>
+            )}
           </div>
         )}
+
+        {/* Timeline items created count */}
+        {result_data.timeline_items_created !== undefined && result_data.timeline_items_created > 0 && (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Calendar className="h-4 w-4 text-blue-500" />
+            <span>{result_data.timeline_items_created} item{result_data.timeline_items_created > 1 ? 's' : ''} added to your Timeline</span>
+          </div>
+        )}
+
+        {/* Legacy events list (for backwards compatibility) */}
         {result_data.events && result_data.events.length > 0 && (
           <div className="space-y-2">
             {result_data.events.map((event, idx) => (
@@ -418,7 +507,9 @@ export function SubAgentResultCard({ subAgent, onRevisionComplete, compact = fal
             ))}
           </div>
         )}
-        {result_data.message && (
+
+        {/* Message (only if no event details shown) */}
+        {result_data.message && !result_data.event_summary && (
           <p className="text-sm text-muted-foreground">{result_data.message}</p>
         )}
       </div>
