@@ -1,6 +1,7 @@
 // Main Timeline Manager Component
 
 import { useState, useEffect, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { TimelineCanvas } from './TimelineCanvas';
 import { TimelineControls } from './TimelineControls';
@@ -96,11 +97,37 @@ export function TimelineManager({ onCanvasReady }: TimelineManagerProps = {}) {
     refetch: refetchTasks,
   } = useTasks();
 
-  // Real-time sync
+  // Real-time sync with callback for newly inserted items
   useTimelineSync({
     onItemsChange: refetchItems,
+    onItemInsert: (newItem) => {
+      // When a new item is inserted (e.g., via AI Chat), show toast and navigate if needed
+      if (viewType === 'calendar' && newItem.start_time) {
+        const itemDate = new Date(newItem.start_time);
+
+        // Check if item is outside current calendar view
+        const currentWeekStart = new Date(calendarViewDate);
+        currentWeekStart.setDate(currentWeekStart.getDate() - currentWeekStart.getDay() + 1);
+        const currentWeekEnd = new Date(currentWeekStart);
+        currentWeekEnd.setDate(currentWeekEnd.getDate() + 6);
+
+        const isOutsideCurrentView =
+          viewMode === 'day' ? itemDate.toDateString() !== calendarViewDate.toDateString() :
+            viewMode === 'week' ? itemDate < currentWeekStart || itemDate > currentWeekEnd :
+              itemDate.getMonth() !== calendarViewDate.getMonth() || itemDate.getFullYear() !== calendarViewDate.getFullYear();
+
+        if (isOutsideCurrentView) {
+          // Navigate to the item's date and show toast
+          setCalendarViewDate(itemDate);
+          toast.success(`"${newItem.title}" added - Calendar navigated to ${format(itemDate, 'EEEE, MMM d')}`);
+        } else {
+          // Item is in current view, just show confirmation
+          toast.success(`"${newItem.title}" added to your calendar`);
+        }
+      }
+    },
     onLayersChange: refetchLayers,
-    onSettingsChange: () => {}, // Settings are managed by useTimeline
+    onSettingsChange: () => { }, // Settings are managed by useTimeline
     onParkedItemsChange: refetchParkedItems,
   });
 
@@ -126,6 +153,61 @@ export function TimelineManager({ onCanvasReady }: TimelineManagerProps = {}) {
   const [jumpToDate, setJumpToDate] = useState<string>('');
   const [calendarViewDate, setCalendarViewDate] = useState<Date>(new Date());
 
+  // URL search params for deep linking to specific dates (e.g., from AI Chat)
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Handle date parameter from URL (e.g., /timeline?date=2024-01-15&view=calendar)
+  useEffect(() => {
+    const dateParam = searchParams.get('date');
+    const viewParam = searchParams.get('view');
+
+    if (dateParam) {
+      const targetDate = new Date(dateParam);
+      if (!isNaN(targetDate.getTime())) {
+        // Set calendar view date to the target date
+        setCalendarViewDate(targetDate);
+
+        // If view=calendar param is set, switch to calendar view
+        if (viewParam === 'calendar') {
+          setViewType('calendar');
+        }
+
+        // Clear the URL params after processing (so refresh doesn't keep jumping)
+        searchParams.delete('date');
+        searchParams.delete('view');
+        setSearchParams(searchParams, { replace: true });
+
+        toast.info(`Showing ${targetDate.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}`);
+      }
+    }
+  }, [searchParams, setSearchParams]);
+
+  // Handle navigation from AI Chat via localStorage (e.g., when clicking "View in Timeline" toast)
+  useEffect(() => {
+    const navigateToDate = localStorage.getItem('timeline-navigate-to-date');
+    if (navigateToDate) {
+      const targetDate = new Date(navigateToDate);
+      if (!isNaN(targetDate.getTime())) {
+        // Switch to calendar view and navigate to date
+        setViewType('calendar');
+        setCalendarViewDate(targetDate);
+
+        // Clear the storage to prevent repeated navigation
+        localStorage.removeItem('timeline-navigate-to-date');
+
+        toast.info(`Calendar navigated to ${targetDate.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}`);
+      }
+    }
+  }, []);
+
+  // Track previous items count to detect new items added externally (e.g., via AI Chat)
+  const prevItemsCountRef = useRef<number>(0);
+  const prevItemIdsRef = useRef<Set<string>>(new Set());
+  // Track previous view type to detect switching to calendar view
+  const prevViewTypeRef = useRef<ViewType>(viewType);
+  // Track if we've done the initial navigation check (for calendar view on page load)
+  const hasCheckedInitialLoadRef = useRef<boolean>(false);
+
   const { populateRoutinesForDay } = useRoutines();
   const { isCompactMode, setIsCompactMode } = useCompactMode();
 
@@ -133,6 +215,117 @@ export function TimelineManager({ onCanvasReady }: TimelineManagerProps = {}) {
   useEffect(() => {
     localStorage.setItem('timeline-view-type', viewType);
   }, [viewType]);
+
+  // Auto-navigate calendar to show newly added items (e.g., from AI Chat)
+  // This detects when items are added externally and navigates to show them
+  useEffect(() => {
+    if (items.length === 0) {
+      prevItemIdsRef.current = new Set();
+      prevItemsCountRef.current = 0;
+      prevViewTypeRef.current = viewType;
+      return;
+    }
+
+    // Build current set of item IDs
+    const currentIds = new Set(items.map(item => item.id));
+
+    // Find new items (IDs that weren't in the previous set)
+    const newItems = items.filter(item => !prevItemIdsRef.current.has(item.id));
+
+    // Detect if we just switched TO calendar view
+    const justSwitchedToCalendar = viewType === 'calendar' && prevViewTypeRef.current !== 'calendar';
+
+    // Helper to check if a date is outside the current calendar view
+    const currentViewStart = calendarViewDate;
+    const currentWeekStart = new Date(currentViewStart);
+    currentWeekStart.setDate(currentWeekStart.getDate() - currentWeekStart.getDay() + 1); // Monday
+    const currentWeekEnd = new Date(currentWeekStart);
+    currentWeekEnd.setDate(currentWeekEnd.getDate() + 6); // Sunday
+
+    const isDateOutsideCurrentView = (date: Date) => {
+      return viewMode === 'day' ? date.toDateString() !== currentViewStart.toDateString() :
+        viewMode === 'week' ? date < currentWeekStart || date > currentWeekEnd :
+          date.getMonth() !== currentViewStart.getMonth() || date.getFullYear() !== currentViewStart.getFullYear();
+    };
+
+    // If there are new items and we're in calendar view, navigate to show them
+    if (newItems.length > 0 && viewType === 'calendar' && prevItemsCountRef.current > 0) {
+      // Find the earliest new item's date
+      const earliestNewItem = newItems.reduce((earliest, item) => {
+        const itemDate = new Date(item.start_time);
+        return itemDate < earliest ? itemDate : earliest;
+      }, new Date(newItems[0].start_time));
+
+      const newItemDate = new Date(earliestNewItem);
+
+      if (isDateOutsideCurrentView(newItemDate)) {
+        setCalendarViewDate(newItemDate);
+        toast.info(`Calendar navigated to ${newItemDate.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}`);
+      }
+    }
+
+    // When switching TO calendar view, check for items outside current view and navigate
+    if (justSwitchedToCalendar && items.length > 0) {
+      const now = new Date();
+
+      // Find future items that are outside the current calendar view
+      const futureItemsOutsideView = items.filter(item => {
+        const itemDate = new Date(item.start_time);
+        return itemDate >= now && isDateOutsideCurrentView(itemDate);
+      });
+
+      if (futureItemsOutsideView.length > 0) {
+        // Navigate to the nearest future item
+        const nearestFutureItem = futureItemsOutsideView.reduce((nearest, item) => {
+          const itemDate = new Date(item.start_time);
+          const nearestDate = new Date(nearest.start_time);
+          return itemDate < nearestDate ? item : nearest;
+        }, futureItemsOutsideView[0]);
+
+        const nearestDate = new Date(nearestFutureItem.start_time);
+        setCalendarViewDate(nearestDate);
+        toast.info(`Showing items scheduled for ${nearestDate.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}`);
+      }
+    }
+
+    // On INITIAL page load with calendar view, check for recently created items
+    // This handles the case where user navigates from AI Chat to Timeline
+    const isInitialLoad = prevItemsCountRef.current === 0 && !hasCheckedInitialLoadRef.current;
+    if (isInitialLoad && viewType === 'calendar' && items.length > 0) {
+      const now = new Date();
+      const twoMinutesAgo = new Date(now.getTime() - 2 * 60 * 1000);
+
+      // Find items that were recently created (within last 2 minutes) and are in the future
+      const recentlyCreatedItems = items.filter(item => {
+        const createdAt = item.created_at ? new Date(item.created_at) : null;
+        const itemDate = new Date(item.start_time);
+        return createdAt && createdAt > twoMinutesAgo && itemDate >= now && isDateOutsideCurrentView(itemDate);
+      });
+
+      if (recentlyCreatedItems.length > 0) {
+        // Navigate to the earliest recently created item
+        const earliestItem = recentlyCreatedItems.reduce((earliest, item) => {
+          const itemDate = new Date(item.start_time);
+          const earliestDate = new Date(earliest.start_time);
+          return itemDate < earliestDate ? item : earliest;
+        }, recentlyCreatedItems[0]);
+
+        const itemDate = new Date(earliestItem.start_time);
+        setCalendarViewDate(itemDate);
+        toast.info(`Showing recently scheduled item on ${itemDate.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}`);
+      }
+    }
+
+    // Mark that we've checked initial load
+    if (isInitialLoad) {
+      hasCheckedInitialLoadRef.current = true;
+    }
+
+    // Update refs for next comparison
+    prevItemIdsRef.current = currentIds;
+    prevItemsCountRef.current = items.length;
+    prevViewTypeRef.current = viewType;
+  }, [items, viewType, viewMode, calendarViewDate]);
 
   const animationFrameRef = useRef<number>();
   const lastTickRef = useRef<number>(Date.now());
@@ -754,7 +947,7 @@ export function TimelineManager({ onCanvasReady }: TimelineManagerProps = {}) {
                   </PopoverContent>
                 </Popover>
               </DropdownMenuItem>
-              </DropdownMenuContent>
+            </DropdownMenuContent>
           </DropdownMenu>
 
           {/* View Type and Mode Switchers */}
