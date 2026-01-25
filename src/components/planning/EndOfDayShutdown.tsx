@@ -60,6 +60,12 @@ export function EndOfDayShutdown({ open, onClose }: EndOfDayShutdownProps) {
     }
   }, [open]);
 
+  const handleNext = () => {
+    if (currentStep === 0) setCurrentStep(1);
+    else if (currentStep === 1) setCurrentStep(2);
+    else if (currentStep === 2) handleComplete();
+  };
+
   const handleComplete = async () => {
     await createShutdownSession({
       tasksCompleted: completedItems.length,
@@ -120,8 +126,8 @@ export function EndOfDayShutdown({ open, onClose }: EndOfDayShutdownProps) {
                       {completedItems.length === 0
                         ? 'No tasks completed'
                         : completedItems.length === 1
-                        ? 'task completed'
-                        : 'tasks completed'}
+                          ? 'task completed'
+                          : 'tasks completed'}
                     </div>
 
                     {todayItems.length > 0 && (
@@ -178,7 +184,7 @@ export function EndOfDayShutdown({ open, onClose }: EndOfDayShutdownProps) {
               </CardContent>
             </Card>
 
-            <Button onClick={() => setCurrentStep(1)} className="w-full" size="lg">
+            <Button onClick={handleNext} className="w-full" size="lg" type="submit">
               Continue
               <ArrowRight className="h-4 w-4 ml-2" />
             </Button>
@@ -208,17 +214,17 @@ export function EndOfDayShutdown({ open, onClose }: EndOfDayShutdownProps) {
               ))}
 
               {wins.length < 5 && (
-                <Button variant="outline" onClick={addWin} className="w-full">
+                <Button variant="outline" onClick={addWin} className="w-full" type="button">
                   + Add Another Win
                 </Button>
               )}
             </div>
 
             <div className="flex gap-3">
-              <Button variant="ghost" onClick={() => setCurrentStep(0)}>
+              <Button variant="ghost" onClick={() => setCurrentStep(0)} type="button">
                 Back
               </Button>
-              <Button onClick={() => setCurrentStep(2)} className="flex-1">
+              <Button type="submit" className="flex-1">
                 Continue
                 <ArrowRight className="h-4 w-4 ml-2" />
               </Button>
@@ -245,11 +251,10 @@ export function EndOfDayShutdown({ open, onClose }: EndOfDayShutdownProps) {
                 {incompleteTasks.map((item) => (
                   <Card
                     key={item.id}
-                    className={`cursor-pointer transition-all ${
-                      movedToTomorrow.includes(item.id)
+                    className={`cursor-pointer transition-all ${movedToTomorrow.includes(item.id)
                         ? 'border-2 border-blue-500 bg-blue-50 dark:bg-blue-950/20'
                         : ''
-                    }`}
+                      }`}
                     onClick={() => {
                       if (movedToTomorrow.includes(item.id)) {
                         setMovedToTomorrow(movedToTomorrow.filter(id => id !== item.id));
@@ -278,10 +283,10 @@ export function EndOfDayShutdown({ open, onClose }: EndOfDayShutdownProps) {
             )}
 
             <div className="flex gap-3">
-              <Button variant="ghost" onClick={() => setCurrentStep(1)}>
+              <Button variant="ghost" onClick={() => setCurrentStep(1)} type="button">
                 Back
               </Button>
-              <Button onClick={handleComplete} className="flex-1 gap-2">
+              <Button type="submit" className="flex-1 gap-2">
                 <Moon className="h-4 w-4" />
                 Finish Day
               </Button>
@@ -355,7 +360,9 @@ export function EndOfDayShutdown({ open, onClose }: EndOfDayShutdownProps) {
         </VisuallyHidden>
 
         <div className="min-h-[500px]">
-          {renderStep()}
+          <form onSubmit={(e) => { e.preventDefault(); handleNext(); }}>
+            {renderStep()}
+          </form>
         </div>
       </DialogContent>
     </Dialog>

@@ -274,6 +274,14 @@ async function searchAustralianRetail(query: string): Promise<string> {
     'david jones': 'site:davidjones.com',
     'the good guys': 'site:thegoodguys.com.au',
     'good guys': 'site:thegoodguys.com.au',
+    'bcf': 'site:bcf.com.au',
+    'anaconda': 'site:anaconda.com.au',
+    'tentworld': 'site:tentworld.com.au',
+    'snowys': 'site:snowys.com.au',
+    'camping world': 'site:campingworld.com.au',
+    'campingworld': 'site:campingworld.com.au',
+    'outback equipment': 'site:outbackequipment.com.au',
+    'caravan rv central': 'site:caravanrvcentral.com.au',
   };
 
   // Detect retailer from query
@@ -288,10 +296,22 @@ async function searchAustralianRetail(query: string): Promise<string> {
     }
   }
 
-  // If no specific retailer detected, search major AU retailers
+  // If no specific retailer detected, check for category keywords
   if (!siteRestriction) {
-    siteRestriction = 'site:jbhifi.com.au OR site:harveynorman.com.au OR site:officeworks.com.au OR site:thegoodguys.com.au';
-    console.log('No specific retailer detected, searching all major AU retailers');
+    const isCampingQuery = /\b(camping|outdoor|caravan|rv|4wd|tent|omnia|portable oven)\b/i.test(query);
+    const isElectronicsQuery = /\b(electronics|tv|laptop|computer|phone|camera|appliance)\b/i.test(query);
+
+    if (isCampingQuery) {
+      siteRestriction = 'site:bcf.com.au OR site:anaconda.com.au OR site:tentworld.com.au OR site:snowys.com.au OR site:outbackequipment.com.au';
+      console.log('Camping/Outdoor query detected, searching specialty retailers');
+    } else if (isElectronicsQuery) {
+      siteRestriction = 'site:jbhifi.com.au OR site:harveynorman.com.au OR site:thegoodguys.com.au OR site:officeworks.com.au';
+      console.log('Electronics query detected, searching major tech retailers');
+    } else {
+      // General fallback including both major and specialty
+      siteRestriction = 'site:jbhifi.com.au OR site:harveynorman.com.au OR site:bunnings.com.au OR site:bcf.com.au OR site:anaconda.com.au';
+      console.log('No specific category detected, searching broad major AU retailers');
+    }
   }
 
   const enhancedQuery = `${query} ${siteRestriction} price`;
@@ -436,7 +456,7 @@ async function claudeCompletion(
     },
     {
       name: "australian_retail_search",
-      description: "Search Australian retail stores specifically: JB Hi-Fi, Harvey Norman, Officeworks, Bunnings, Kmart, Big W, Myer, The Good Guys. Use when the user mentions these stores or asks about Australian retail prices. More reliable than general web search for these retailers.",
+      description: "Search Australian retail stores specifically: JB Hi-Fi, Harvey Norman, Officeworks, Bunnings, Kmart, Big W, Myer, The Good Guys, BCF, Anaconda, Tentworld, and Snowys. Use when the user mentions these stores or asks about Australian prices for electronics, camping, outdoor, or caravan gear. More reliable than general web search for these retailers.",
       input_schema: {
         type: "object",
         properties: {
@@ -700,11 +720,11 @@ serve(async (req) => {
 
   try {
     console.log('AI Query function called');
-    
+
     // Get authorization header
     const authHeader = req.headers.get('authorization');
     console.log('Auth header present:', !!authHeader);
-    
+
     if (!authHeader) {
       throw new Error('Authorization header is required');
     }
@@ -718,9 +738,9 @@ serve(async (req) => {
     // Extract user from JWT token
     const token = authHeader.replace('Bearer ', '');
     const { data: { user }, error: userError } = await supabaseService.auth.getUser(token);
-    
+
     console.log('User authentication result:', { user: !!user, error: userError?.message });
-    
+
     if (userError || !user) {
       throw new Error(`User not authenticated: ${userError?.message || 'No user found'}`);
     }
@@ -874,7 +894,7 @@ serve(async (req) => {
 
     if (shouldFetchDocuments && knowledge_base_id) {
       console.log('Searching for specific knowledge base:', knowledge_base_id);
-      
+
       // Get specific knowledge base content (personal OR team)
       const { data: knowledgeBase, error: kbError } = await supabaseService
         .from('knowledge_bases')
@@ -894,7 +914,7 @@ serve(async (req) => {
       // Get documents from the knowledge base  
       if (knowledgeBase.source_document_ids && knowledgeBase.source_document_ids.length > 0) {
         console.log('Fetching documents from knowledge base, count:', knowledgeBase.source_document_ids.length);
-        
+
         // Fetch documents (personal OR team)
         const { data: documents, error: docsError } = await supabaseService
           .from('knowledge_documents')
@@ -918,50 +938,50 @@ serve(async (req) => {
       }
     } else if (shouldFetchDocuments) {
       console.log('Searching all user documents');
-      
+
       // First, get total document count for this user
       const { count: totalDocs, error: countError } = await supabaseService
         .from('knowledge_documents')
         .select('id', { count: 'exact' })
         .eq('user_id', user_id);
-        
+
       console.log('Total documents for user:', totalDocs, 'Count error:', countError?.message);
 
       // Search all user's documents with more robust logic
       const queryLower = query.toLowerCase();
       console.log('Query keywords:', queryLower);
-      
+
       // Check for marketing-related terms
-      const isMarketingQuery = queryLower.includes('marketing') || queryLower.includes('market') || 
-                             queryLower.includes('campaign') || queryLower.includes('brand') || 
-                             queryLower.includes('promotion') || queryLower.includes('wheels') || 
-                             queryLower.includes('wins');
-      
+      const isMarketingQuery = queryLower.includes('marketing') || queryLower.includes('market') ||
+        queryLower.includes('campaign') || queryLower.includes('brand') ||
+        queryLower.includes('promotion') || queryLower.includes('wheels') ||
+        queryLower.includes('wins');
+
       console.log('Is marketing query:', isMarketingQuery);
-      
+
       if (isMarketingQuery) {
         console.log('Searching for marketing documents...');
-        
+
         // Cast query for marketing documents with broader search (personal OR team)
-        const { data: marketingDocs, error: marketingError} = await supabaseService
+        const { data: marketingDocs, error: marketingError } = await supabaseService
           .from('knowledge_documents')
           .select('title, content, ai_summary, tags, file_type, user_id, team_id')
           .or(teamIds.length > 0
             ? `and(user_id.eq.${user_id},or(title.ilike.%marketing%,content.ilike.%marketing%,tags.cs.["marketing"],title.ilike.%wheels%,title.ilike.%wins%,file_type.eq.json)),and(team_id.in.(${teamIds.join(',')}),visibility.eq.team,or(title.ilike.%marketing%,content.ilike.%marketing%,tags.cs.["marketing"]))`
             : `user_id.eq.${user_id},or(title.ilike.%marketing%,content.ilike.%marketing%,tags.cs.["marketing"],title.ilike.%wheels%,title.ilike.%wins%,file_type.eq.json)`)
           .limit(30);
-        
+
         console.log('Marketing documents found:', marketingDocs?.length || 0, 'Error:', marketingError?.message);
-        
+
         if (!marketingError && marketingDocs && marketingDocs.length > 0) {
           contextDocuments = marketingDocs;
         }
       }
-      
+
       // If no marketing docs or general query, get recent documents
       if (contextDocuments.length === 0) {
         console.log('Getting recent documents as fallback...');
-        
+
         // Get recent documents (personal OR team)
         const { data: documents, error: docsError } = await supabaseService
           .from('knowledge_documents')
@@ -1220,7 +1240,7 @@ ${productKnowledge}
     if (userMemories.length > 0) {
       const memoryContext = userMemories.map(m => {
         const typeLabel = m.memory_type === 'user_fact' ? 'About user' :
-                         m.memory_type === 'preference' ? 'Preference' : 'Context';
+          m.memory_type === 'preference' ? 'Preference' : 'Context';
         return `- [${typeLabel}] ${m.content}`;
       }).join('\n');
 
@@ -1479,7 +1499,7 @@ ${productKnowledge}
     console.error('Error in ai-query function:', error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
     return new Response(
-      JSON.stringify({ 
+      JSON.stringify({
         error: errorMessage,
         response: "Sorry, I encountered an error processing your query. Please try again."
       }),
