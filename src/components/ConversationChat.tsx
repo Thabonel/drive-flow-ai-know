@@ -38,6 +38,18 @@ import { SubAgentResult, SubAgentResultsList } from '@/components/ai/SubAgentRes
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
+interface ClarifyingOption {
+  id: string;
+  label: string;
+  description?: string;
+}
+
+interface ClarifyingQuestion {
+  question: string;
+  options: ClarifyingOption[];
+  multiSelect: boolean;
+}
+
 interface Message {
   id: string;
   role: 'user' | 'assistant';
@@ -52,6 +64,9 @@ interface Message {
     agent_session_id?: string;
     agent_executed?: boolean;
   };
+  // Interactive options for clarifying questions
+  clarifying_options?: ClarifyingQuestion;
+  options_answered?: boolean; // Track if user already answered
 }
 
 interface ExtractedTask {
@@ -111,6 +126,9 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
   const [isExecutingTasks, setIsExecutingTasks] = useState(false);
   const [subAgentResults, setSubAgentResults] = useState<Record<string, SubAgentResult[]>>({});
   const pollingIntervalsRef = useRef<Record<string, NodeJS.Timeout>>({});
+
+  // Interactive options state - tracks selected options per message
+  const [selectedOptions, setSelectedOptions] = useState<Record<string, Set<string>>>({});
 
   useEffect(() => {
     // Don't load messages if we're actively submitting (prevents race condition)
@@ -502,6 +520,74 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
     return '';
   };
 
+  // ============================================================================
+  // INTERACTIVE OPTIONS HANDLERS
+  // ============================================================================
+
+  // Toggle an option selection for a specific message
+  const toggleOptionSelection = (messageId: string, optionId: string, multiSelect: boolean) => {
+    setSelectedOptions(prev => {
+      const currentSelection = prev[messageId] || new Set<string>();
+      const newSelection = new Set(currentSelection);
+
+      if (multiSelect) {
+        // Multi-select: toggle the option
+        if (newSelection.has(optionId)) {
+          newSelection.delete(optionId);
+        } else {
+          newSelection.add(optionId);
+        }
+      } else {
+        // Single-select: replace selection
+        newSelection.clear();
+        newSelection.add(optionId);
+      }
+
+      return { ...prev, [messageId]: newSelection };
+    });
+  };
+
+  // Send selected options as a user response
+  const handleSendSelectedOptions = async (messageId: string, options: ClarifyingQuestion) => {
+    const selected = selectedOptions[messageId];
+    if (!selected || selected.size === 0) {
+      toast.error('Please select at least one option');
+      return;
+    }
+
+    // Build the response text from selected options
+    const selectedLabels = options.options
+      .filter(opt => selected.has(opt.id))
+      .map(opt => opt.label);
+
+    const responseText = selectedLabels.length === 1
+      ? selectedLabels[0]
+      : selectedLabels.join(', ');
+
+    // Mark this message's options as answered
+    setMessages(prev => prev.map(msg =>
+      msg.id === messageId ? { ...msg, options_answered: true } : msg
+    ));
+
+    // Clear the selection state
+    setSelectedOptions(prev => {
+      const newState = { ...prev };
+      delete newState[messageId];
+      return newState;
+    });
+
+    // Submit as a new user message
+    setInput(responseText);
+
+    // Small delay to let state update, then trigger submit
+    setTimeout(() => {
+      const form = document.querySelector('form');
+      if (form) {
+        form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+      }
+    }, 50);
+  };
+
   // Auto-save long content as a document and return the doc ID
   const autoSaveAsDocument = async (content: string): Promise<string | null> => {
     if (!user) {
@@ -754,6 +840,7 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
       const aiResponse = data?.response || 'Sorry, I could not process your request.';
       const agentModeAvailable = data?.agent_mode_available || false;
       const autoExecuteTaskType = data?.auto_execute_task_type || null;
+      const clarifyingOptions = data?.clarifying_options || null;
 
       let savedMessageId: string | null = null;
 
@@ -766,6 +853,7 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
           sequence_number: messagesWithSavedUser.length,
           timestamp: new Date().toISOString(),
           agent_mode_available: agentModeAvailable,
+          clarifying_options: clarifyingOptions,
         };
         savedMessageId = tempAiMessage.id;
         setMessages([...messagesWithSavedUser, tempAiMessage]);
@@ -774,12 +862,13 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
         const savedAiMsg = await saveMessage('assistant', aiResponse, messagesWithSavedUser, currentConvId);
         if (savedAiMsg) {
           savedMessageId = savedAiMsg.id;
-          // Add agent_mode_available to the saved message for UI
-          const messageWithAgentMode: Message = {
+          // Add agent_mode_available and clarifying_options to the saved message for UI
+          const messageWithExtras: Message = {
             ...(savedAiMsg as Message),
             agent_mode_available: agentModeAvailable,
+            clarifying_options: clarifyingOptions,
           };
-          setMessages([...messagesWithSavedUser, messageWithAgentMode]);
+          setMessages([...messagesWithSavedUser, messageWithExtras]);
         }
       }
 
@@ -1605,6 +1694,64 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
                         {new Date(message.timestamp).toLocaleTimeString()}
                       </p>
                     </div>
+
+                    {/* Interactive Options: Clickable checkboxes for clarifying questions */}
+                    {message.role === 'assistant' &&
+                      message.clarifying_options &&
+                      !message.options_answered && (
+                        <div className="mt-3 max-w-[80%] p-3 rounded-lg border border-primary/20 bg-primary/5">
+                          <p className="text-sm font-medium mb-2 text-primary">
+                            Select your choice{message.clarifying_options.multiSelect ? 's' : ''}:
+                          </p>
+                          <div className="space-y-2">
+                            {message.clarifying_options.options.map((option) => {
+                              const isSelected = selectedOptions[message.id]?.has(option.id) || false;
+                              return (
+                                <div
+                                  key={option.id}
+                                  className={`flex items-start gap-3 p-2 rounded-md cursor-pointer transition-colors ${
+                                    isSelected
+                                      ? 'bg-primary/10 border border-primary/30'
+                                      : 'hover:bg-muted border border-transparent'
+                                  }`}
+                                  onClick={() => toggleOptionSelection(
+                                    message.id,
+                                    option.id,
+                                    message.clarifying_options?.multiSelect || false
+                                  )}
+                                >
+                                  <Checkbox
+                                    checked={isSelected}
+                                    onCheckedChange={() => toggleOptionSelection(
+                                      message.id,
+                                      option.id,
+                                      message.clarifying_options?.multiSelect || false
+                                    )}
+                                    className="mt-0.5"
+                                  />
+                                  <div className="flex-1">
+                                    <p className="text-sm font-medium">{option.label}</p>
+                                    {option.description && (
+                                      <p className="text-xs text-muted-foreground mt-0.5">
+                                        {option.description}
+                                      </p>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                          <Button
+                            size="sm"
+                            className="mt-3 w-full"
+                            disabled={!selectedOptions[message.id] || selectedOptions[message.id].size === 0}
+                            onClick={() => handleSendSelectedOptions(message.id, message.clarifying_options!)}
+                          >
+                            <Send className="h-4 w-4 mr-2" />
+                            Send Selection{(selectedOptions[message.id]?.size || 0) > 1 ? 's' : ''}
+                          </Button>
+                        </div>
+                      )}
 
                     {/* Agent Mode: "Run as Task" button */}
                     {message.role === 'assistant' &&

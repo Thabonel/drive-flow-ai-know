@@ -10,6 +10,130 @@ const anthropicApiKey = Deno.env.get('ANTHROPIC_API_KEY');
 const braveSearchApiKey = Deno.env.get('BRAVE_SEARCH_API_KEY');
 const rapidApiKey = Deno.env.get('RAPIDAPI_KEY');
 
+// ============================================================================
+// INTERACTIVE OPTIONS DETECTION
+// Parses AI responses to detect numbered/bulleted options for interactive UI
+// ============================================================================
+
+interface ClarifyingQuestion {
+  question: string;
+  options: Array<{
+    id: string;
+    label: string;
+    description?: string;
+  }>;
+  multiSelect: boolean;
+}
+
+/**
+ * Detects if the AI response contains a clarifying question with selectable options
+ * Returns structured options for interactive checkbox rendering
+ */
+function parseClarifyingOptions(response: string): ClarifyingQuestion | null {
+  // Look for patterns that indicate a question with options:
+  // - Question followed by numbered list (1. 2. 3.)
+  // - Question followed by bulleted list (- or *)
+  // - "Which of these", "Select from", "Choose from" patterns
+
+  const lines = response.split('\n').map(l => l.trim()).filter(l => l);
+
+  // Find question patterns
+  const questionPatterns = [
+    /which\s+(of\s+these|would\s+you|do\s+you|features?|options?)/i,
+    /what\s+(would\s+you|do\s+you|features?)/i,
+    /select\s+(from|the|which)/i,
+    /choose\s+(from|which|the)/i,
+    /would\s+you\s+like\s+me\s+to/i,
+    /do\s+you\s+want/i,
+    /please\s+(select|choose|pick)/i,
+    /\?\s*$/,  // Ends with question mark
+  ];
+
+  let questionLine = '';
+  let questionLineIndex = -1;
+
+  // Find the question line
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (questionPatterns.some(p => p.test(line))) {
+      questionLine = line;
+      questionLineIndex = i;
+      break;
+    }
+  }
+
+  if (questionLineIndex === -1) {
+    return null;
+  }
+
+  // Look for options after the question
+  const options: Array<{ id: string; label: string; description?: string }> = [];
+
+  // Patterns for numbered options: "1. Option" or "1) Option"
+  const numberedPattern = /^(\d+)[.\)]\s*\*{0,2}(.+?)\*{0,2}(?:\s*[-–:]\s*(.+))?$/;
+
+  // Patterns for bulleted options: "- Option" or "* Option"
+  const bulletPattern = /^[-*•]\s*\*{0,2}(.+?)\*{0,2}(?:\s*[-–:]\s*(.+))?$/;
+
+  for (let i = questionLineIndex + 1; i < lines.length; i++) {
+    const line = lines[i];
+
+    // Stop if we hit an empty line or another question
+    if (!line || line.endsWith('?')) {
+      break;
+    }
+
+    // Try numbered pattern
+    const numberedMatch = line.match(numberedPattern);
+    if (numberedMatch) {
+      options.push({
+        id: numberedMatch[1],
+        label: numberedMatch[2].trim(),
+        description: numberedMatch[3]?.trim(),
+      });
+      continue;
+    }
+
+    // Try bullet pattern
+    const bulletMatch = line.match(bulletPattern);
+    if (bulletMatch) {
+      options.push({
+        id: String(options.length + 1),
+        label: bulletMatch[1].trim(),
+        description: bulletMatch[2]?.trim(),
+      });
+      continue;
+    }
+
+    // Stop if we hit non-option content (paragraph of text)
+    if (options.length > 0 && line.length > 80) {
+      break;
+    }
+  }
+
+  // Only return if we found at least 2 options
+  if (options.length < 2) {
+    return null;
+  }
+
+  // Detect if multi-select is appropriate
+  const multiSelectIndicators = [
+    /which\s+(of\s+these|features?|options?)/i,
+    /select\s+(all|any|the\s+ones?)/i,
+    /choose\s+(all|any|the\s+ones?)/i,
+    /would\s+you\s+like/i,
+    /do\s+you\s+want/i,
+  ];
+
+  const multiSelect = multiSelectIndicators.some(p => p.test(questionLine));
+
+  return {
+    question: questionLine,
+    options,
+    multiSelect,
+  };
+}
+
 // Web search function using Brave Search API
 async function searchWeb(query: string): Promise<string> {
   if (!braveSearchApiKey) {
@@ -1318,6 +1442,12 @@ ${productKnowledge}
       isLikelyTask
     });
 
+    // Detect clarifying questions with selectable options for interactive UI
+    const clarifyingOptions = parseClarifyingOptions(aiAnswer);
+    if (clarifyingOptions) {
+      console.log('Detected clarifying options:', clarifyingOptions.options.length, 'options');
+    }
+
     return new Response(
       JSON.stringify({
         response: aiAnswer,
@@ -1325,6 +1455,7 @@ ${productKnowledge}
         knowledge_base_used: !!knowledge_base_id,
         agent_mode_available: isLikelyTask,
         auto_execute_task_type: autoExecuteTaskType, // If set, frontend should auto-execute without confirmation
+        clarifying_options: clarifyingOptions, // Interactive options for checkbox UI
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
