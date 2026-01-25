@@ -1,6 +1,12 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
-import { getCorsHeaders, handleCorsPreflightRequest } from '../_shared/cors.ts';
+
+// Simple CORS headers - allow all origins for this function
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+};
 
 // Map agent types to their Edge Function names
 const AGENT_FUNCTION_MAP: Record<string, string> = {
@@ -78,13 +84,10 @@ interface AgentTask {
 }
 
 serve(async (req) => {
-  // Handle CORS preflight requests with origin checking
-  const preflightResponse = handleCorsPreflightRequest(req);
-  if (preflightResponse) return preflightResponse;
-
-  // Get CORS headers for this request's origin
-  const origin = req.headers.get('origin');
-  const corsHeaders = getCorsHeaders(origin);
+  // Handle CORS preflight
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
 
   try {
     // Verify authentication
