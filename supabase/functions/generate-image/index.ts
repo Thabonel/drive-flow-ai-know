@@ -24,6 +24,14 @@ interface ImageGenerationResponse {
 const DESIGN_SYSTEM_PROMPT = `
 DESIGN GUIDELINES - STRICT REQUIREMENTS:
 
+CRITICAL - NO TEXT IN IMAGES:
+- DO NOT include any text, words, letters, or numbers in the generated image
+- NO titles, labels, captions, watermarks, or any written content
+- NO letters or symbols that look like writing
+- This is a VISUAL GRAPHIC only - text will be added separately by the application
+- Create abstract or symbolic visual representations of concepts
+- Focus on shapes, colors, illustrations, icons, and imagery
+
 COLORS - AVOID:
 - Purple, violet, indigo, lavender tones
 - Gold, metallic gold, champagne accents
