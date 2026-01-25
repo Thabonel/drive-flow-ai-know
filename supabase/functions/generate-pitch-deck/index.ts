@@ -783,19 +783,31 @@ async function generateSlideImageForJob(visualPrompt: string, visualType: string
         body: JSON.stringify({
           contents: [{
             parts: [{
-              text: `Generate a 16:9 illustration or graphic. DO NOT INCLUDE ANY TEXT, WORDS, LETTERS, OR NUMBERS IN THE IMAGE.
+              text: `Generate a 16:9 visual illustration. ABSOLUTELY NO TEXT OF ANY KIND.
 
 Visual Type: ${visualType}
-Concept to illustrate: ${visualPrompt}
+Concept: ${visualPrompt}
 
-CRITICAL REQUIREMENTS:
-- NO text of any kind - no titles, labels, captions, or watermarks
-- NO letters, words, numbers, or symbols that look like writing
-- This is a VISUAL GRAPHIC only - text will be added separately by the presentation software
-- Create an abstract or symbolic visual representation of the concept
-- Focus on shapes, colors, illustrations, icons, and imagery
+## CRITICAL - DO NOT GENERATE ANY OF THESE:
+- NO axis labels, tick marks with numbers, or data labels
+- NO chart legends or titles
+- NO watermarks, captions, or annotations
+- NO letters, words, numbers, symbols, or ANY characters
+- If this is a chart/graph concept, show ONLY the visual shape/trend line with NO labels
+- NO text that might appear as part of a scene (signs, labels, headers)
 
-Style: Professional, clean, modern. Use warm earth tones (terracotta, sage green, cream, navy). No purple or neon colors. High quality, suitable for business presentations.`
+## THIS IMAGE WILL HAVE TEXT ADDED PROGRAMMATICALLY - GENERATE ONLY:
+- Abstract shapes, colors, and visual elements
+- Icons and symbolic imagery (no text in icons)
+- Trend lines and visual patterns WITHOUT any labels
+- Pure visual representations of data (bars, lines, areas) with NO numbers or axes
+
+## STYLE REQUIREMENTS:
+- Professional, clean, modern aesthetic
+- Warm earth tones: terracotta, sage green, cream, navy, charcoal
+- NO purple, violet, gold, or neon colors
+- High quality, suitable for business presentations
+- Human-crafted feel, not generic AI aesthetic`
             }]
           }],
           generationConfig: {

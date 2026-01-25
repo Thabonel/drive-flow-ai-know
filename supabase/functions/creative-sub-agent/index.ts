@@ -100,6 +100,7 @@ function needsVisuals(title: string, description: string): boolean {
 
 /**
  * Generate a Pitch Deck prompt based on the creative task
+ * Adds explicit VISUAL-ONLY instruction to prevent text in generated images
  */
 function generatePitchDeckPrompt(title: string, description: string): {
   topic: string;
@@ -108,7 +109,11 @@ function generatePitchDeckPrompt(title: string, description: string): {
   deepLink: string;
 } {
   // Extract topic from task
-  const topic = title.replace(/^(create|make|design|prep|prepare|draft)\s+/i, '').trim();
+  const rawTopic = title.replace(/^(create|make|design|prep|prepare|draft)\s+/i, '').trim();
+
+  // Add explicit visual-only instruction to prevent text in images
+  // This is critical because AI image generators often add text to charts/graphs
+  const topic = `${rawTopic} [VISUAL ILLUSTRATION ONLY - NO TEXT/LABELS/NUMBERS IN IMAGES]`;
 
   // Determine appropriate style
   let style = 'professional';
@@ -120,9 +125,9 @@ function generatePitchDeckPrompt(title: string, description: string): {
   const slideMatch = description.match(/(\d+)\s*(?:visuals?|slides?|images?)/i);
   const slides = slideMatch ? parseInt(slideMatch[1]) : 5;
 
-  // Build deep link
+  // Build deep link (use raw topic for URL readability)
   const params = new URLSearchParams({
-    topic: topic,
+    topic: rawTopic,
     style: style,
     slides: slides.toString(),
   });

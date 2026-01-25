@@ -305,9 +305,31 @@ serve(async (req) => {
     );
   } catch (error) {
     console.error('Error in agent-translate function:', error);
+    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack');
+
+    // Provide more specific error messages for debugging
+    let errorMessage = 'Internal server error';
+    let errorDetails = {};
+
+    if (error instanceof Error) {
+      errorMessage = error.message;
+
+      // Check for common issues
+      if (error.message.includes('ANTHROPIC_API_KEY')) {
+        errorDetails = { hint: 'ANTHROPIC_API_KEY environment variable may not be configured' };
+      } else if (error.message.includes('Claude API')) {
+        errorDetails = { hint: 'Claude API request failed - check API key and model availability' };
+      } else if (error.message.includes('parse')) {
+        errorDetails = { hint: 'Failed to parse AI response as JSON' };
+      } else if (error.message.includes('Unauthorized')) {
+        errorDetails = { hint: 'User authentication failed' };
+      }
+    }
+
     return new Response(
       JSON.stringify({
-        error: error.message || 'Internal server error',
+        error: errorMessage,
+        ...errorDetails,
       }),
       {
         status: 500,

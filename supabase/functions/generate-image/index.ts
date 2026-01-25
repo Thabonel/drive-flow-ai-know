@@ -24,13 +24,16 @@ interface ImageGenerationResponse {
 const DESIGN_SYSTEM_PROMPT = `
 DESIGN GUIDELINES - STRICT REQUIREMENTS:
 
-CRITICAL - NO TEXT IN IMAGES:
-- DO NOT include any text, words, letters, or numbers in the generated image
-- NO titles, labels, captions, watermarks, or any written content
-- NO letters or symbols that look like writing
-- This is a VISUAL GRAPHIC only - text will be added separately by the application
-- Create abstract or symbolic visual representations of concepts
-- Focus on shapes, colors, illustrations, icons, and imagery
+## CRITICAL - ABSOLUTELY NO TEXT IN IMAGES:
+- DO NOT include ANY text, words, letters, numbers, or characters
+- NO titles, labels, captions, watermarks, or annotations
+- NO axis labels, tick marks, data labels, or legends
+- NO chart titles, graph labels, or percentage indicators
+- NO letters, symbols, or anything that resembles writing
+- If generating a chart/graph: show ONLY visual elements (bars, lines, areas) with NO text/numbers
+- This is a VISUAL GRAPHIC only - text will be added programmatically
+- Create abstract or symbolic visual representations
+- Focus on shapes, colors, illustrations, icons, and imagery ONLY
 
 COLORS - AVOID:
 - Purple, violet, indigo, lavender tones

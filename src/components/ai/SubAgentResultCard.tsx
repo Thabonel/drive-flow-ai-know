@@ -3,11 +3,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Calendar, FileText, BarChart3, ImageIcon, Download, RefreshCw, Loader2, CheckCircle2, Clock, X } from 'lucide-react';
+import { Calendar, FileText, BarChart3, ImageIcon, Download, RefreshCw, Loader2, CheckCircle2, Clock, X, FileDown, Presentation, FileImage } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import pptxgen from 'pptxgenjs';
+import jsPDF from 'jspdf';
+import JSZip from 'jszip';
 
 export interface SubAgentResult {
   id: string;
@@ -53,6 +56,205 @@ interface SubAgentResultCardProps {
   subAgent: SubAgentResult;
   onRevisionComplete?: (updatedSubAgent: SubAgentResult) => void;
   compact?: boolean;
+}
+
+// Slide interface for export functions
+interface SlideData {
+  slideNumber?: number;
+  title?: string;
+  content?: string | string[];
+  imageData?: string;
+  speakerNotes?: string;
+}
+
+interface VisualContent {
+  title?: string;
+  subtitle?: string;
+  totalSlides?: number;
+  slides?: SlideData[];
+}
+
+/**
+ * Export slides to PowerPoint format
+ * Uses native text boxes (not embedded in images) for perfect text rendering
+ */
+async function exportToPowerPoint(visualContent: VisualContent, deckTitle: string): Promise<void> {
+  const pptx = new pptxgen();
+
+  // Set presentation properties
+  pptx.title = visualContent.title || deckTitle;
+  pptx.author = 'AI Query Hub';
+  pptx.layout = 'LAYOUT_16x9';
+
+  const slides = visualContent.slides || [];
+
+  for (const slide of slides) {
+    const pptxSlide = pptx.addSlide();
+
+    // Add image as background (if available)
+    if (slide.imageData) {
+      pptxSlide.addImage({
+        data: `data:image/png;base64,${slide.imageData}`,
+        x: 0,
+        y: 0,
+        w: '100%',
+        h: '100%',
+      });
+
+      // Add semi-transparent overlay for text readability
+      pptxSlide.addShape('rect', {
+        x: 0,
+        y: 4.2,
+        w: '100%',
+        h: 1.3,
+        fill: { color: '000000', transparency: 50 },
+      });
+    }
+
+    // Add title as native text (NOT embedded in image - renders perfectly)
+    pptxSlide.addText(slide.title || `Slide ${slide.slideNumber || 1}`, {
+      x: 0.5,
+      y: 0.3,
+      w: 9,
+      h: 0.8,
+      fontSize: 28,
+      bold: true,
+      color: slide.imageData ? 'FFFFFF' : '0A2342',
+      shadow: slide.imageData ? { type: 'outer', blur: 4, color: '000000', offset: 2, angle: 45 } : undefined,
+    });
+
+    // Add content as native text (perfect rendering)
+    if (slide.content) {
+      const contentText = Array.isArray(slide.content) ? slide.content.join('\n') : slide.content;
+      pptxSlide.addText(contentText, {
+        x: 0.5,
+        y: 4.3,
+        w: 9,
+        h: 1.1,
+        fontSize: 16,
+        color: slide.imageData ? 'FFFFFF' : '333333',
+        valign: 'middle',
+        wrap: true,
+      });
+    }
+
+    // Add speaker notes if available
+    if (slide.speakerNotes) {
+      pptxSlide.addNotes(slide.speakerNotes);
+    }
+  }
+
+  // Generate and download
+  const fileName = `${visualContent.title || deckTitle || 'visuals'}.pptx`.replace(/[^a-z0-9.\-_]/gi, '-');
+  await pptx.writeFile({ fileName });
+}
+
+/**
+ * Export slides to PDF format
+ * Uses native PDF text layers (not embedded in images) for perfect text rendering
+ */
+async function exportToPDF(visualContent: VisualContent, deckTitle: string): Promise<void> {
+  // Create landscape PDF in 16:9 aspect ratio
+  const pdf = new jsPDF({
+    orientation: 'landscape',
+    unit: 'in',
+    format: [16, 9],
+  });
+
+  const slides = visualContent.slides || [];
+
+  for (let i = 0; i < slides.length; i++) {
+    const slide = slides[i];
+
+    if (i > 0) {
+      pdf.addPage([16, 9], 'landscape');
+    }
+
+    // Add image as background (if available)
+    if (slide.imageData) {
+      try {
+        pdf.addImage(`data:image/png;base64,${slide.imageData}`, 'PNG', 0, 0, 16, 9);
+
+        // Add dark gradient overlay at bottom for text readability
+        // Using GState for transparency
+        const gState = pdf.GState({ opacity: 0.7 });
+        pdf.setGState(gState);
+        pdf.setFillColor(0, 0, 0);
+        pdf.rect(0, 6.5, 16, 2.5, 'F');
+        // Reset to full opacity
+        const fullOpacity = pdf.GState({ opacity: 1 });
+        pdf.setGState(fullOpacity);
+      } catch (error) {
+        console.error('Failed to add image to PDF:', error);
+        // Continue without the overlay if it fails
+      }
+    }
+
+    // Add title as native PDF text (perfect rendering, searchable, selectable)
+    pdf.setFontSize(28);
+    pdf.setTextColor(slide.imageData ? 255 : 10, slide.imageData ? 255 : 35, slide.imageData ? 255 : 66);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text(slide.title || `Slide ${slide.slideNumber || i + 1}`, 0.5, 0.8);
+
+    // Add content as native PDF text
+    if (slide.content) {
+      const contentText = Array.isArray(slide.content) ? slide.content.join('\n') : slide.content;
+      pdf.setFontSize(16);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setTextColor(slide.imageData ? 255 : 51, slide.imageData ? 255 : 51, slide.imageData ? 255 : 51);
+
+      // Word wrap and position at bottom
+      const lines = pdf.splitTextToSize(contentText, 15);
+      pdf.text(lines.slice(0, 3), 0.5, 7.5);
+    }
+  }
+
+  // Download PDF
+  const fileName = `${visualContent.title || deckTitle || 'visuals'}.pdf`.replace(/[^a-z0-9.\-_]/gi, '-');
+  pdf.save(fileName);
+}
+
+/**
+ * Export all images as a ZIP file
+ */
+async function exportImagesAsZip(visualContent: VisualContent, deckTitle: string): Promise<void> {
+  const zip = new JSZip();
+  const slides = visualContent.slides || [];
+
+  let imageCount = 0;
+  for (const slide of slides) {
+    if (slide.imageData) {
+      const fileName = `slide-${slide.slideNumber || imageCount + 1}-${(slide.title || 'visual').replace(/[^a-z0-9]/gi, '-')}.png`;
+
+      // Convert base64 to binary
+      const binaryString = atob(slide.imageData);
+      const bytes = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+
+      zip.file(fileName, bytes);
+      imageCount++;
+    }
+  }
+
+  if (imageCount === 0) {
+    toast.error('No images to download');
+    return;
+  }
+
+  // Generate and download ZIP
+  const content = await zip.generateAsync({ type: 'blob' });
+  const url = URL.createObjectURL(content);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `${visualContent.title || deckTitle || 'visuals'}-images.zip`.replace(/[^a-z0-9.\-_]/gi, '-');
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+
+  toast.success(`Downloaded ${imageCount} images as ZIP`);
 }
 
 export function SubAgentResultCard({ subAgent, onRevisionComplete, compact = false }: SubAgentResultCardProps) {
@@ -237,52 +439,118 @@ export function SubAgentResultCard({ subAgent, onRevisionComplete, compact = fal
     );
   };
 
-  // Render creative/visual results
+  // Render creative/visual results with text overlay and export options
   const renderVisualResults = () => {
     const visualContent = revisedVisualContent || subAgent.result_data?.visual_content;
     if (!visualContent?.slides || visualContent.slides.length === 0) return null;
 
+    const deckTitle = subAgent.task_data?.title || 'Creative Visuals';
+
+    // Export handlers
+    const handleExportPowerPoint = async () => {
+      try {
+        toast.loading('Generating PowerPoint...');
+        await exportToPowerPoint(visualContent, deckTitle);
+        toast.dismiss();
+        toast.success('PowerPoint downloaded successfully!');
+      } catch (error) {
+        console.error('PowerPoint export error:', error);
+        toast.dismiss();
+        toast.error('Failed to export PowerPoint');
+      }
+    };
+
+    const handleExportPDF = async () => {
+      try {
+        toast.loading('Generating PDF...');
+        await exportToPDF(visualContent, deckTitle);
+        toast.dismiss();
+        toast.success('PDF downloaded successfully!');
+      } catch (error) {
+        console.error('PDF export error:', error);
+        toast.dismiss();
+        toast.error('Failed to export PDF');
+      }
+    };
+
+    const handleExportImagesZip = async () => {
+      try {
+        await exportImagesAsZip(visualContent, deckTitle);
+      } catch (error) {
+        console.error('ZIP export error:', error);
+        toast.error('Failed to export images');
+      }
+    };
+
     return (
       <div className="space-y-4">
-        <div className="flex items-center justify-between">
+        {/* Header with title and export buttons */}
+        <div className="flex flex-col gap-3">
           <p className="text-sm font-medium">
             {visualContent.title}
             {visualContent.subtitle && ` - ${visualContent.subtitle}`}
           </p>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => {
-              const slides = visualContent.slides;
-              slides.forEach((slide: any, index: number) => {
-                if (slide.imageData) {
-                  const link = document.createElement('a');
-                  link.href = `data:image/png;base64,${slide.imageData}`;
-                  link.download = `slide-${index + 1}-${slide.title?.replace(/[^a-z0-9]/gi, '-') || 'visual'}.png`;
-                  document.body.appendChild(link);
-                  link.click();
-                  document.body.removeChild(link);
-                }
-              });
-              toast.success(`Downloaded ${slides.filter((s: any) => s.imageData).length} images`);
-            }}
-          >
-            <Download className="h-4 w-4 mr-2" />
-            Download All
-          </Button>
+
+          {/* Export buttons - prominent download options */}
+          <div className="flex flex-wrap gap-2">
+            <Button
+              size="sm"
+              variant="default"
+              onClick={handleExportPowerPoint}
+              className="flex items-center gap-2"
+            >
+              <Presentation className="h-4 w-4" />
+              PowerPoint
+            </Button>
+            <Button
+              size="sm"
+              variant="default"
+              onClick={handleExportPDF}
+              className="flex items-center gap-2"
+            >
+              <FileDown className="h-4 w-4" />
+              PDF
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleExportImagesZip}
+              className="flex items-center gap-2"
+            >
+              <FileImage className="h-4 w-4" />
+              Images (ZIP)
+            </Button>
+          </div>
         </div>
 
+        {/* Slide gallery with text overlay */}
         <div className="grid gap-4">
-          {visualContent.slides.map((slide: any, index: number) => (
+          {visualContent.slides.map((slide: SlideData, index: number) => (
             <div key={index} className="border rounded-lg overflow-hidden">
+              {/* Image with text overlay - text is rendered as HTML, not embedded in image */}
               {slide.imageData ? (
-                <div className="relative group">
+                <div className="relative group aspect-video">
+                  {/* Background image */}
                   <img
                     src={`data:image/png;base64,${slide.imageData}`}
                     alt={slide.title || `Slide ${index + 1}`}
-                    className="w-full h-auto"
+                    className="w-full h-full object-cover"
                   />
-                  <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+
+                  {/* Text overlay - rendered as crisp HTML text, not part of image */}
+                  <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent p-4 pt-12">
+                    <h3 className="text-white text-lg font-bold drop-shadow-lg">
+                      {slide.title || `Slide ${index + 1}`}
+                    </h3>
+                    {slide.content && (
+                      <p className="text-white/90 text-sm mt-1 line-clamp-2 drop-shadow-md">
+                        {Array.isArray(slide.content) ? slide.content.join(' - ') : slide.content}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Hover actions */}
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                     <Button
                       size="sm"
                       variant="secondary"
@@ -315,6 +583,8 @@ export function SubAgentResultCard({ subAgent, onRevisionComplete, compact = fal
                   <p className="text-sm text-muted-foreground">Image not available</p>
                 </div>
               )}
+
+              {/* Slide info and revision controls */}
               <div className="p-3 bg-muted/50">
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
