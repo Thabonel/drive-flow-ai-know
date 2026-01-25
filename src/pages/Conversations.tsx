@@ -185,17 +185,17 @@ export default function Conversations() {
                 {!sidebarCollapsed && <CardTitle>Conversations</CardTitle>}
                 {!sidebarCollapsed && (
                   <PageHelp
-                    title="AI Assistant Help"
-                    description="The AI Assistant allows you to have multi-turn conversations with AI. All conversations are automatically saved to your history."
+                    title="AI Chat Help"
+                    description="AI Chat can answer questions, analyze documents, AND execute tasks like scheduling meetings, creating visuals, and generating reports."
                     tips={[
-                      "All conversations are automatically saved and appear in your history",
-                      "Use the document toggle to control whether AI has access to your documents",
+                      "ASK AI TO CREATE VISUALS: Say 'create 3 marketing graphics' - click 'Run as Task' to generate images",
+                      "INSTANT TASKS: Calendar, briefing, and analysis requests execute automatically - just ask!",
+                      "Examples: 'Schedule a meeting tomorrow at 2pm', 'Create my daily brief', 'Analyze market trends'",
+                      "Use 'Docs: ON/OFF' toggle to control whether AI can access your documents",
+                      "All conversations are automatically saved to your history",
                       "Use 'Add to Timeline' to extract tasks from AI responses",
-                      "Choose to schedule items immediately or save as unscheduled tasks",
-                      "Delete unwanted conversations anytime using the trash icon",
-                      "Archive completed conversations to keep your active list organized",
-                      "Convert archived conversations to documents using the file icon - choose AI summary, full transcript, or both",
-                      "Search through conversations using keywords or tags"
+                      "Archive completed conversations to keep your list organized",
+                      "Convert archived conversations to documents using the file icon"
                     ]}
                   />
                 )}
