@@ -298,49 +298,6 @@ export function TimelineCanvas({
         ))}
       </g>
 
-      {/* NOW line */}
-      <g className="now-line">
-        <line
-          x1={nowLineX}
-          y1={0}
-          x2={nowLineX}
-          y2={totalHeight}
-          stroke="#ef4444"
-          strokeWidth={3}
-          opacity={0.8}
-          filter="url(#now-line-glow)"
-        />
-        {/* Date label */}
-        <text
-          x={nowLineX + 5}
-          y={15}
-          fontSize="10"
-          fill="#ef4444"
-        >
-          {formatDate(nowTime.toISOString())}
-        </text>
-        {/* Time label */}
-        <text
-          x={nowLineX + 5}
-          y={30}
-          fontSize="12"
-          fontWeight="500"
-          fill="#ef4444"
-        >
-          {formatTime(nowTime.toISOString())}
-        </text>
-        {/* NOW label */}
-        <text
-          x={nowLineX + 5}
-          y={45}
-          fontSize="12"
-          fontWeight="bold"
-          fill="#ef4444"
-        >
-          NOW
-        </text>
-      </g>
-
       {/* Layer backgrounds and labels */}
       {visibleLayers.map((layer, index) => {
         const y = calculateLayerY(index, layerHeight, TIMELINE_HEADER_HEIGHT);
@@ -423,6 +380,49 @@ export function TimelineCanvas({
           );
         })
       )}
+
+      {/* NOW line - rendered last to appear on top of all layers and items */}
+      <g className="now-line">
+        <line
+          x1={nowLineX}
+          y1={0}
+          x2={nowLineX}
+          y2={totalHeight}
+          stroke="#ef4444"
+          strokeWidth={3}
+          opacity={0.8}
+          filter="url(#now-line-glow)"
+        />
+        {/* Date label */}
+        <text
+          x={nowLineX + 5}
+          y={15}
+          fontSize="10"
+          fill="#ef4444"
+        >
+          {formatDate(nowTime.toISOString())}
+        </text>
+        {/* Time label */}
+        <text
+          x={nowLineX + 5}
+          y={30}
+          fontSize="12"
+          fontWeight="500"
+          fill="#ef4444"
+        >
+          {formatTime(nowTime.toISOString())}
+        </text>
+        {/* NOW label */}
+        <text
+          x={nowLineX + 5}
+          y={45}
+          fontSize="12"
+          fontWeight="bold"
+          fill="#ef4444"
+        >
+          NOW
+        </text>
+      </g>
     </svg>
   );
 }
