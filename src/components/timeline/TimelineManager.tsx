@@ -665,27 +665,54 @@ export function TimelineManager({ onCanvasReady }: TimelineManagerProps = {}) {
         {/* Combined Header Row - Title and Action Buttons on Same Line */}
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <div className="flex items-center gap-2">
-            <Clock className={isCompactMode ? 'h-6 w-6' : 'h-8 w-8'} />
-            <h1 className={isCompactMode ? 'text-2xl font-bold' : 'text-3xl font-bold'}>Timeline Manager</h1>
+            {viewType === 'calendar' ? (
+              <CalIcon className={isCompactMode ? 'h-6 w-6' : 'h-8 w-8'} />
+            ) : (
+              <Clock className={isCompactMode ? 'h-6 w-6' : 'h-8 w-8'} />
+            )}
+            <h1 className={isCompactMode ? 'text-2xl font-bold' : 'text-3xl font-bold'}>
+              {viewType === 'calendar' ? 'Calendar View' : 'Timeline Manager'}
+            </h1>
             <TimelinePhilosophy mode="dialog" trigger="icon" />
-            <PageHelp
-              title="Timeline Manager Help"
-              description="The Timeline Manager helps you visualize and manage your tasks on a flowing timeline. Items move towards the NOW line, and become 'logjammed' (red pulsing) when overdue. You can drag items to reschedule, resize them to adjust duration, or park them for later."
-              tips={[
-                "Drag items horizontally to reschedule them",
-                "Drag the right edge to resize duration (like Google Calendar)",
-                "Click items to mark done, reschedule, park, or delete",
-                "Double-click empty space to create a new item at that time",
-                "Use arrow buttons to jump forward/backward by day, week, or month",
-                "Use layers to organize different types of tasks",
-                "Lock/unlock to enable auto-scrolling with real time",
-                "Use 'Plan Day' for AI planning, templates, and routines",
-                "Schedule project plans directly from the 'Plans' dropdown",
-                "Sync with Google Calendar using the Calendar button",
-                "Use unscheduled tasks panel to save items for later scheduling",
-                "Switch view modes (Day/Week/Month) for different perspectives"
-              ]}
-            />
+{viewType === 'calendar' ? (
+              <PageHelp
+                title="Calendar View Help"
+                description="The Calendar View displays your timeline items in a familiar Google Calendar-style layout. Create events by clicking or dragging on the grid, view your schedule by day, week, or month, and manage items with intuitive controls."
+                tips={[
+                  "Click on any time slot to quick-add an event",
+                  "Drag vertically to create events with specific durations",
+                  "Click on events to edit, reschedule, or delete them",
+                  "Drag events to move them to different times or days",
+                  "Drag the bottom edge of events to resize duration",
+                  "Switch between Day, Week, and Month views for different perspectives",
+                  "Use arrow buttons to navigate forward/backward in time",
+                  "The red line shows the current time (on today's view)",
+                  "Events snap to 15-minute intervals for precise scheduling",
+                  "Use layers to organize different types of events",
+                  "Sync with Google Calendar using the Calendar button",
+                  "Switch to Timeline view for a flowing, scrollable timeline"
+                ]}
+              />
+            ) : (
+              <PageHelp
+                title="Timeline Manager Help"
+                description="The Timeline Manager helps you visualize and manage your tasks on a flowing timeline. Items move towards the NOW line, and become 'logjammed' (red pulsing) when overdue. You can drag items to reschedule, resize them to adjust duration, or park them for later."
+                tips={[
+                  "Drag items horizontally to reschedule them",
+                  "Drag the right edge to resize duration (like Google Calendar)",
+                  "Click items to mark done, reschedule, park, or delete",
+                  "Double-click empty space to create a new item at that time",
+                  "Use arrow buttons to jump forward/backward by day, week, or month",
+                  "Use layers to organize different types of tasks",
+                  "Lock/unlock to enable auto-scrolling with real time",
+                  "Use 'Plan Day' for AI planning, templates, and routines",
+                  "Schedule project plans directly from the 'Plans' dropdown",
+                  "Sync with Google Calendar using the Calendar button",
+                  "Use unscheduled tasks panel to save items for later scheduling",
+                  "Switch view modes (Day/Week/Month) for different perspectives"
+                ]}
+              />
+            )}
           </div>
 
           {/* Compact Mode Toggle */}
