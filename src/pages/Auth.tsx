@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Brain, Eye, EyeOff, AlertCircle, Mail, CheckCircle, Gift } from 'lucide-react';
+import { Brain, Eye, EyeOff, AlertCircle, Mail, CheckCircle, Gift, Loader2 } from 'lucide-react';
 import { validatePassword, validateEmail, validateFullName, getPasswordStrength } from '@/lib/validation';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { PasswordRequirements } from '@/components/PasswordRequirements';
@@ -29,6 +29,9 @@ const Auth = () => {
     fullName?: string;
     confirmPassword?: string;
   }>({});
+  const [showUnconfirmedAlert, setShowUnconfirmedAlert] = useState(false);
+  const [isResending, setIsResending] = useState(false);
+  const { resendConfirmationEmail } = useAuth();
 
   // Get invite token from URL
   const inviteToken = searchParams.get('invite');
@@ -41,8 +44,22 @@ const Auth = () => {
     const email = formData.get('email') as string;
     const password = formData.get('password') as string;
 
-    await signIn(email, password);
+    setShowUnconfirmedAlert(false);
+    const { error } = await signIn(email, password);
+
+    if (error?.message?.toLowerCase()?.includes('email not confirmed')) {
+      setShowUnconfirmedAlert(true);
+      setSignUpEmail(email);
+    }
+
     setIsLoading(false);
+  };
+
+  const handleResendConfirmation = async () => {
+    if (!signUpEmail) return;
+    setIsResending(true);
+    await resendConfirmationEmail(signUpEmail);
+    setIsResending(false);
   };
 
   const handleSignUp = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -114,14 +131,14 @@ const Auth = () => {
           <Brain className="h-8 w-8 text-primary mr-2" />
           <h1 className="text-2xl font-bold text-foreground">AI Query Hub</h1>
         </div>
-        
+
         <Tabs defaultValue="signin" className="w-full">
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="signin">Sign In</TabsTrigger>
             <TabsTrigger value="signup">Sign Up</TabsTrigger>
             <TabsTrigger value="reset">Reset</TabsTrigger>
           </TabsList>
-          
+
           <TabsContent value="signin">
             <Card>
               <CardHeader>
@@ -131,6 +148,31 @@ const Auth = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
+                {showUnconfirmedAlert && (
+                  <Alert variant="destructive" className="mb-4">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription className="flex flex-col gap-2">
+                      <p>Your email is not confirmed yet. Please check your inbox.</p>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-fit"
+                        onClick={handleResendConfirmation}
+                        disabled={isResending}
+                        type="button"
+                      >
+                        {isResending ? (
+                          <>
+                            <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                            Sending...
+                          </>
+                        ) : (
+                          'Resend Confirmation Email'
+                        )}
+                      </Button>
+                    </AlertDescription>
+                  </Alert>
+                )}
                 <form onSubmit={handleSignIn} className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="signin-email">Email</Label>
@@ -173,7 +215,7 @@ const Auth = () => {
               </CardContent>
             </Card>
           </TabsContent>
-          
+
           <TabsContent value="signup">
             <Card>
               <CardHeader>
@@ -245,126 +287,126 @@ const Auth = () => {
                   </div>
                 ) : (
                   <form onSubmit={handleSignUp} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-name">Full Name</Label>
-                    <Input
-                      id="signup-name"
-                      name="fullName"
-                      type="text"
-                      placeholder="Enter your full name"
-                      required
-                      className={validationErrors.fullName ? 'border-red-500' : ''}
-                    />
-                    {validationErrors.fullName && (
-                      <p className="text-sm text-red-500">{validationErrors.fullName}</p>
-                    )}
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-email">Email</Label>
-                    <Input
-                      id="signup-email"
-                      name="email"
-                      type="email"
-                      placeholder="Enter your email"
-                      required
-                      className={validationErrors.email ? 'border-red-500' : ''}
-                    />
-                    {validationErrors.email && (
-                      <p className="text-sm text-red-500">{validationErrors.email}</p>
-                    )}
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-password">Password</Label>
-                    <div className="relative">
+                    <div className="space-y-2">
+                      <Label htmlFor="signup-name">Full Name</Label>
                       <Input
-                        id="signup-password"
-                        name="password"
-                        type={showSignUpPassword ? "text" : "password"}
-                        placeholder="Create a password"
+                        id="signup-name"
+                        name="fullName"
+                        type="text"
+                        placeholder="Enter your full name"
                         required
-                        value={signUpPassword}
-                        onChange={(e) => setSignUpPassword(e.target.value)}
-                        className={`pr-10 ${validationErrors.password ? 'border-red-500' : ''}`}
+                        className={validationErrors.fullName ? 'border-red-500' : ''}
                       />
-                      <button
-                        type="button"
-                        onClick={() => setShowSignUpPassword(!showSignUpPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                      >
-                        {showSignUpPassword ? (
-                          <EyeOff className="h-4 w-4" />
-                        ) : (
-                          <Eye className="h-4 w-4" />
-                        )}
-                      </button>
+                      {validationErrors.fullName && (
+                        <p className="text-sm text-red-500">{validationErrors.fullName}</p>
+                      )}
                     </div>
-
-                    {/* Password requirements checklist */}
-                    <PasswordRequirements password={signUpPassword} />
-
-                    {/* Password strength indicator */}
-                    {signUpPassword && (
-                      <div className="space-y-1 mt-3">
-                        <div className="flex items-center justify-between text-xs">
-                          <span className="text-muted-foreground">Password strength:</span>
-                          <span
-                            className="font-medium capitalize"
-                            style={{ color: getPasswordStrength(signUpPassword).color }}
-                          >
-                            {getPasswordStrength(signUpPassword).strength.replace('-', ' ')}
-                          </span>
-                        </div>
-                        <div className="h-1.5 w-full bg-gray-200 rounded-full overflow-hidden">
-                          <div
-                            className="h-full transition-all duration-300"
-                            style={{
-                              width: `${getPasswordStrength(signUpPassword).percentage}%`,
-                              backgroundColor: getPasswordStrength(signUpPassword).color
-                            }}
-                          />
-                        </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="signup-email">Email</Label>
+                      <Input
+                        id="signup-email"
+                        name="email"
+                        type="email"
+                        placeholder="Enter your email"
+                        required
+                        className={validationErrors.email ? 'border-red-500' : ''}
+                      />
+                      {validationErrors.email && (
+                        <p className="text-sm text-red-500">{validationErrors.email}</p>
+                      )}
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="signup-password">Password</Label>
+                      <div className="relative">
+                        <Input
+                          id="signup-password"
+                          name="password"
+                          type={showSignUpPassword ? "text" : "password"}
+                          placeholder="Create a password"
+                          required
+                          value={signUpPassword}
+                          onChange={(e) => setSignUpPassword(e.target.value)}
+                          className={`pr-10 ${validationErrors.password ? 'border-red-500' : ''}`}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowSignUpPassword(!showSignUpPassword)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                        >
+                          {showSignUpPassword ? (
+                            <EyeOff className="h-4 w-4" />
+                          ) : (
+                            <Eye className="h-4 w-4" />
+                          )}
+                        </button>
                       </div>
-                    )}
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-confirm-password">Confirm Password</Label>
-                    <div className="relative">
-                      <Input
-                        id="signup-confirm-password"
-                        name="confirmPassword"
-                        type={showConfirmPassword ? "text" : "password"}
-                        placeholder="Confirm your password"
-                        required
-                        value={confirmPassword}
-                        onChange={(e) => setConfirmPassword(e.target.value)}
-                        className={`pr-10 ${validationErrors.confirmPassword ? 'border-red-500' : ''}`}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                      >
-                        {showConfirmPassword ? (
-                          <EyeOff className="h-4 w-4" />
-                        ) : (
-                          <Eye className="h-4 w-4" />
-                        )}
-                      </button>
+
+                      {/* Password requirements checklist */}
+                      <PasswordRequirements password={signUpPassword} />
+
+                      {/* Password strength indicator */}
+                      {signUpPassword && (
+                        <div className="space-y-1 mt-3">
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="text-muted-foreground">Password strength:</span>
+                            <span
+                              className="font-medium capitalize"
+                              style={{ color: getPasswordStrength(signUpPassword).color }}
+                            >
+                              {getPasswordStrength(signUpPassword).strength.replace('-', ' ')}
+                            </span>
+                          </div>
+                          <div className="h-1.5 w-full bg-gray-200 rounded-full overflow-hidden">
+                            <div
+                              className="h-full transition-all duration-300"
+                              style={{
+                                width: `${getPasswordStrength(signUpPassword).percentage}%`,
+                                backgroundColor: getPasswordStrength(signUpPassword).color
+                              }}
+                            />
+                          </div>
+                        </div>
+                      )}
                     </div>
-                    {validationErrors.confirmPassword && (
-                      <p className="text-sm text-red-500">{validationErrors.confirmPassword}</p>
-                    )}
-                    {/* Show match indicator when both fields have values */}
-                    {signUpPassword && confirmPassword && !validationErrors.confirmPassword && (
-                      <p className={`text-sm ${signUpPassword === confirmPassword ? 'text-green-600' : 'text-red-500'}`}>
-                        {signUpPassword === confirmPassword ? '✓ Passwords match' : '✗ Passwords do not match'}
-                      </p>
-                    )}
-                  </div>
-                  <Button type="submit" className="w-full" disabled={isLoading}>
-                    {isLoading ? 'Creating account...' : 'Sign Up'}
-                  </Button>
-                </form>
+                    <div className="space-y-2">
+                      <Label htmlFor="signup-confirm-password">Confirm Password</Label>
+                      <div className="relative">
+                        <Input
+                          id="signup-confirm-password"
+                          name="confirmPassword"
+                          type={showConfirmPassword ? "text" : "password"}
+                          placeholder="Confirm your password"
+                          required
+                          value={confirmPassword}
+                          onChange={(e) => setConfirmPassword(e.target.value)}
+                          className={`pr-10 ${validationErrors.confirmPassword ? 'border-red-500' : ''}`}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                        >
+                          {showConfirmPassword ? (
+                            <EyeOff className="h-4 w-4" />
+                          ) : (
+                            <Eye className="h-4 w-4" />
+                          )}
+                        </button>
+                      </div>
+                      {validationErrors.confirmPassword && (
+                        <p className="text-sm text-red-500">{validationErrors.confirmPassword}</p>
+                      )}
+                      {/* Show match indicator when both fields have values */}
+                      {signUpPassword && confirmPassword && !validationErrors.confirmPassword && (
+                        <p className={`text-sm ${signUpPassword === confirmPassword ? 'text-green-600' : 'text-red-500'}`}>
+                          {signUpPassword === confirmPassword ? '✓ Passwords match' : '✗ Passwords do not match'}
+                        </p>
+                      )}
+                    </div>
+                    <Button type="submit" className="w-full" disabled={isLoading}>
+                      {isLoading ? 'Creating account...' : 'Sign Up'}
+                    </Button>
+                  </form>
                 )}
               </CardContent>
             </Card>
@@ -414,7 +456,7 @@ const Auth = () => {
           </TabsContent>
         </Tabs>
       </div>
-    </div>
+    </div >
   );
 };
 
