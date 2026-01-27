@@ -233,6 +233,48 @@ serve(async (req) => {
       )
     }
 
+    // CONFIRM_EMAIL: Manually confirm a user's email (useful for lifetime_free grants)
+    if (method === 'CONFIRM_EMAIL') {
+      if (!userId) {
+        throw new Error('userId is required')
+      }
+
+      // Get the user first to check if email is already confirmed
+      const { data: authUser, error: getUserError } = await supabaseAdmin.auth.admin.getUserById(userId)
+
+      if (getUserError || !authUser) {
+        throw new Error('User not found')
+      }
+
+      if (authUser.user.email_confirmed_at) {
+        return new Response(
+          JSON.stringify({ success: true, message: 'Email already confirmed', alreadyConfirmed: true }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+
+      // Update user to confirm email
+      const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
+        userId,
+        {
+          email_confirm: true
+        }
+      )
+
+      if (updateError) {
+        throw new Error(`Failed to confirm email: ${updateError.message}`)
+      }
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          message: `Email confirmed for user ${authUser.user.email}`,
+          email: authUser.user.email
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
     throw new Error('Invalid method')
   } catch (error) {
     console.error('Admin users error:', error)

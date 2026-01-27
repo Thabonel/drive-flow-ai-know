@@ -435,6 +435,27 @@ export default function Admin() {
     }
   };
 
+  const confirmUserEmail = async (userId: string, email: string) => {
+    try {
+      const { data, error } = await supabase.functions.invoke('admin-users', {
+        body: { method: 'CONFIRM_EMAIL', userId }
+      });
+
+      if (error) throw error;
+
+      if (data?.alreadyConfirmed) {
+        toast.info('Email already confirmed');
+      } else {
+        toast.success(`Email confirmed for ${email}`);
+      }
+
+      fetchUsers(); // Refresh the list
+    } catch (error) {
+      console.error('Error confirming email:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to confirm email');
+    }
+  };
+
   const getPlanBadgeVariant = (tier: string) => {
     switch (tier) {
       case 'executive': return 'default';
@@ -952,8 +973,18 @@ export default function Admin() {
                               <div className="flex items-center gap-2">
                                 <Mail className="h-4 w-4 text-muted-foreground" />
                                 <span>{adminUser.email}</span>
-                                {adminUser.email_confirmed && (
+                                {adminUser.email_confirmed ? (
                                   <UserCheck className="h-4 w-4 text-green-500" title="Email verified" />
+                                ) : (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-6 px-2 text-xs text-orange-600 hover:text-orange-700 hover:bg-orange-50"
+                                    onClick={() => confirmUserEmail(adminUser.id, adminUser.email)}
+                                    title="Manually confirm email"
+                                  >
+                                    Confirm Email
+                                  </Button>
                                 )}
                               </div>
                             </TableCell>
