@@ -30,7 +30,7 @@ import {
 import { TimelineLayer, getRandomItemColor, TimelineItem } from '@/lib/timelineUtils';
 import { QUICK_ADD_DURATIONS } from '@/lib/timelineConstants';
 import { TimeEstimateInput } from './TimeEstimateInput';
-import { StartTimeSelector } from './StartTimeSelector';
+import { DateTimePicker } from '@/components/ui/date-time-picker';
 import { useAITimeIntelligence } from '@/hooks/useAITimeIntelligence';
 import { useTeam } from '@/hooks/useTeam';
 import { useTeamMembers } from '@/hooks/useTeamMembers';
@@ -85,7 +85,8 @@ export function AddItemForm({
   const { members } = useTeamMembers(team?.id);
 
   const [title, setTitle] = useState('');
-  const [hoursFromNow, setHoursFromNow] = useState(1);
+  const [startTime, setStartTime] = useState<Date>(new Date());
+  const [endTime, setEndTime] = useState<Date>(new Date(Date.now() + 3600000));
   const [duration, setDuration] = useState(60);
   const [plannedDuration, setPlannedDuration] = useState<number>(30); // Default 30 min estimate
   const [isMeeting, setIsMeeting] = useState(false);
@@ -113,11 +114,11 @@ export function AddItemForm({
   // Set initial values when provided (from double-click)
   useEffect(() => {
     if (initialStartTime && initialLayerId) {
-      // Calculate hours from now based on initial start time
-      const now = new Date();
-      const targetTime = new Date(initialStartTime);
-      const hoursDiff = (targetTime.getTime() - now.getTime()) / (1000 * 60 * 60);
-      setHoursFromNow(Number(hoursDiff.toFixed(2)));
+      const start = new Date(initialStartTime);
+      setStartTime(start);
+      // Set end time 1 hour after start
+      setEndTime(new Date(start.getTime() + 60 * 60 * 1000));
+      setDuration(60);
       setSelectedLayerId(initialLayerId);
     }
   }, [initialStartTime, initialLayerId]);
@@ -128,8 +129,15 @@ export function AddItemForm({
       setTitle(editingItem.title);
       setSelectedLayerId(editingItem.layer_id);
       setColor(editingItem.color);
-      setDuration(editingItem.duration_minutes);
-      setPlannedDuration(editingItem.planned_duration_minutes || editingItem.duration_minutes);
+
+      const start = new Date(editingItem.start_time);
+      const dur = editingItem.duration_minutes;
+      const end = new Date(start.getTime() + dur * 60 * 1000);
+
+      setStartTime(start);
+      setEndTime(end);
+      setDuration(dur);
+      setPlannedDuration(editingItem.planned_duration_minutes || dur);
       setIsMeeting(editingItem.is_meeting || false);
       setIsFlexible(editingItem.is_flexible !== undefined ? editingItem.is_flexible : true);
 
@@ -137,18 +145,15 @@ export function AddItemForm({
       const hasDifferentDurations = editingItem.planned_duration_minutes &&
         editingItem.planned_duration_minutes !== editingItem.duration_minutes;
       setShowAdvanced(!!hasDifferentDurations);
-
-      // Calculate hours from now
-      const now = new Date();
-      const startTime = new Date(editingItem.start_time);
-      const hoursDiff = (startTime.getTime() - now.getTime()) / (1000 * 60 * 60);
-      setHoursFromNow(Number(hoursDiff.toFixed(2)));
     } else {
       // Reset form when not editing
       setTitle('');
-      setHoursFromNow(1);
+      const start = new Date();
+      start.setHours(start.getHours() + 1, 0, 0, 0);
+      setStartTime(start);
+      setEndTime(new Date(start.getTime() + 60 * 60 * 1000));
       setDuration(60);
-      setPlannedDuration(60); // Match duration by default
+      setPlannedDuration(60);
       setIsMeeting(false);
       setIsFlexible(true);
       setShowAdvanced(false);
@@ -197,9 +202,7 @@ export function AddItemForm({
       return;
     }
 
-    // Calculate start time
-    const startTime = new Date();
-    startTime.setHours(startTime.getHours() + hoursFromNow);
+    // startTime and duration are already in state
 
     if (isEditMode && editingItem && onUpdateItem) {
       // Prepare updates
@@ -245,7 +248,10 @@ export function AddItemForm({
 
     // Reset form
     setTitle('');
-    setHoursFromNow(1);
+    const start = new Date();
+    start.setHours(start.getHours() + 1, 0, 0, 0);
+    setStartTime(start);
+    setEndTime(new Date(start.getTime() + 60 * 60 * 1000));
     setDuration(60);
     setPlannedDuration(60);
     setIsMeeting(false);
@@ -269,7 +275,10 @@ export function AddItemForm({
 
     // Reset form
     setTitle('');
-    setHoursFromNow(1);
+    const start = new Date();
+    start.setHours(start.getHours() + 1, 0, 0, 0);
+    setStartTime(start);
+    setEndTime(new Date(start.getTime() + 60 * 60 * 1000));
     setDuration(60);
     setPlannedDuration(60);
     setIsMeeting(false);
@@ -293,7 +302,10 @@ export function AddItemForm({
 
     // Reset form
     setTitle('');
-    setHoursFromNow(1);
+    const start = new Date();
+    start.setHours(start.getHours() + 1, 0, 0, 0);
+    setStartTime(start);
+    setEndTime(new Date(start.getTime() + 60 * 60 * 1000));
     setDuration(60);
     setPlannedDuration(60);
     setIsMeeting(false);
@@ -307,8 +319,24 @@ export function AddItemForm({
     onClose();
   };
 
+  const handleStartTimeChange = (newStart: Date | undefined) => {
+    if (!newStart) return;
+    setStartTime(newStart);
+    // Maintain duration by moving end time
+    setEndTime(new Date(newStart.getTime() + duration * 60 * 1000));
+  };
+
+  const handleEndTimeChange = (newEnd: Date | undefined) => {
+    if (!newEnd) return;
+    setEndTime(newEnd);
+    // Update duration based on new end time
+    const newDuration = Math.max(15, Math.round((newEnd.getTime() - startTime.getTime()) / 60000));
+    setDuration(newDuration);
+  };
+
   const handleQuickDuration = (minutes: number) => {
     setDuration(minutes);
+    setEndTime(new Date(startTime.getTime() + minutes * 60 * 1000));
     // When not in advanced mode, keep both values in sync
     if (!showAdvanced) {
       setPlannedDuration(minutes);
@@ -351,11 +379,17 @@ export function AddItemForm({
             />
           </div>
 
-          {/* Start Time */}
-          <StartTimeSelector
-            hoursFromNow={hoursFromNow}
-            onHoursFromNowChange={setHoursFromNow}
-          />
+          {/* Time Picker */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Start Time</Label>
+              <DateTimePicker value={startTime} onChange={handleStartTimeChange} />
+            </div>
+            <div className="space-y-2">
+              <Label>End Time</Label>
+              <DateTimePicker value={endTime} onChange={handleEndTimeChange} />
+            </div>
+          </div>
 
           {/* Duration (actual timeline block size) */}
           <div className="space-y-2">

@@ -299,7 +299,9 @@ export function CalendarGrid({
 
     const rect = (e.target as HTMLElement).getBoundingClientRect();
     const relativeY = e.clientY - rect.top;
-    const minuteOffset = Math.floor((relativeY / rowHeight) * 60);
+
+    // Snap to 15 minute intervals
+    const minuteOffset = Math.floor((relativeY / rowHeight) * 4) * 15;
 
     // Store initial position to detect drag vs click
     mouseDownPos.current = { x: e.clientX, y: e.clientY, day, hour, rect };
@@ -323,7 +325,9 @@ export function CalendarGrid({
 
     const rect = gridEl.getBoundingClientRect();
     const relativeY = e.clientY - rect.top + (scrollRef.current?.scrollTop || 0);
-    const totalMinutes = Math.floor((relativeY / rowHeight) * 60) + dayStartHour * 60;
+
+    // Snap to 15 minute intervals
+    const totalMinutes = Math.floor((relativeY / rowHeight) * 4) * 15 + dayStartHour * 60;
     const endHour = Math.floor(totalMinutes / 60);
     const endMinutes = totalMinutes % 60;
 
@@ -351,9 +355,9 @@ export function CalendarGrid({
 
       // Check for double-click (within 300ms, same day and hour)
       if (lastClickRef.current &&
-          now - lastClickRef.current.time < 300 &&
-          isSameDay(clickDay, lastClickRef.current.day) &&
-          clickHour === lastClickRef.current.hour) {
+        now - lastClickRef.current.time < 300 &&
+        isSameDay(clickDay, lastClickRef.current.day) &&
+        clickHour === lastClickRef.current.hour) {
         // Double-click - open full editor immediately
         if (onOpenFullEditor && defaultLayerId) {
           const startTime = new Date(clickDay);
