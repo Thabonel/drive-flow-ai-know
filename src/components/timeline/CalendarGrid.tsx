@@ -303,14 +303,6 @@ export function CalendarGrid({
     // But since the cell itself is 15 mins now, we just use passed minutes
     const minuteOffset = minutes;
 
-    // DEBUG: Log what time we're clicking
-    console.log('🔵 CalendarGrid: Cell clicked', {
-      hour,
-      minutes,
-      formattedTime: `${hour}:${minutes.toString().padStart(2, '0')}`,
-      cellElement: e.target,
-    });
-
     // Store initial position to detect drag vs click
     mouseDownPos.current = { x: e.clientX, y: e.clientY, day, hour, minutes, rect };
 
@@ -397,14 +389,6 @@ export function CalendarGrid({
       const endTime = new Date(startTime);
       endTime.setHours(endTime.getHours() + 1);
 
-      // DEBUG: Log quick-add popup time
-      console.log('🟡 CalendarGrid: Quick-add popup (single click)', {
-        clickHour,
-        clickMinutes,
-        startTime: startTime.toISOString(),
-        startTimeFormatted: format(startTime, 'MMM d, yyyy h:mm a'),
-      });
-
       // Position relative to grid content
       const gridRect = gridRef.current?.getBoundingClientRect();
       const popupY = (clickHour - dayStartHour) * rowHeight + (clickMinutes / 60) * rowHeight;
@@ -430,18 +414,6 @@ export function CalendarGrid({
       if (endTime <= startTime) {
         endTime.setMinutes(startTime.getMinutes() + 30);
       }
-
-      // DEBUG: Log quick-add popup time for drag
-      console.log('🟡 CalendarGrid: Quick-add popup (drag)', {
-        startHour: dragCreate.startHour,
-        startMinutes: dragCreate.startMinutes,
-        endHour: dragCreate.endHour,
-        endMinutes: dragCreate.endMinutes,
-        startTime: startTime.toISOString(),
-        startTimeFormatted: format(startTime, 'MMM d, yyyy h:mm a'),
-        endTime: endTime.toISOString(),
-        endTimeFormatted: format(endTime, 'MMM d, yyyy h:mm a'),
-      });
 
       // Position relative to grid content
       const dayIndex = visibleDays.findIndex(d => isSameDay(d, dragCreate.day!));
@@ -484,17 +456,6 @@ export function CalendarGrid({
     }
 
     const durationMinutes = Math.round((quickAdd.endTime.getTime() - quickAdd.startTime.getTime()) / 60000);
-
-    // DEBUG: Log what we're saving
-    console.log('🟢 CalendarGrid: Saving event', {
-      title: quickAddTitle.trim(),
-      startTime: quickAdd.startTime.toISOString(),
-      startTimeFormatted: format(quickAdd.startTime, 'MMM d, yyyy h:mm a'),
-      endTime: quickAdd.endTime.toISOString(),
-      endTimeFormatted: format(quickAdd.endTime, 'MMM d, yyyy h:mm a'),
-      durationMinutes,
-      layerId: defaultLayerId,
-    });
 
     if (onQuickAdd) {
       await onQuickAdd(quickAddTitle.trim(), quickAdd.startTime.toISOString(), durationMinutes, defaultLayerId);
@@ -764,13 +725,15 @@ export function CalendarGrid({
                   const hourOffset = Math.floor(i / 4);
                   const minuteOffset = (i % 4) * 15;
                   const isHour = minuteOffset === 0;
+                  const isLastCell = i === hours * 4 - 1;
 
                   return (
                     <div
                       key={i}
                       className={cn(
                         "cursor-pointer hover:bg-muted/30 transition-colors bg-transparent",
-                        isHour ? "border-b border-border/60" : "border-b border-border/20 border-dotted"
+                        isHour ? "border-t border-border/60" : "border-t border-border/20 border-dotted",
+                        isLastCell && "border-b border-border/60"
                       )}
                       style={{ height: rowHeight / 4 }}
                       onMouseDown={(e) => handleCellMouseDown(e, day, dayStartHour + hourOffset, minuteOffset)}
