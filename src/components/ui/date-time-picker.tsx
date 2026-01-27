@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Calendar } from '@/components/ui/calendar';
 import { TimePicker } from '@/components/ui/time-picker';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -13,6 +13,11 @@ interface DateTimePickerProps {
 
 export function DateTimePicker({ value, onChange }: DateTimePickerProps) {
   const [date, setDate] = useState<Date | undefined>(value);
+
+  // Update internal state when value prop changes
+  useEffect(() => {
+    setDate(value);
+  }, [value]);
 
   const handleDateSelect = (selectedDate: Date | undefined) => {
     if (selectedDate) {
