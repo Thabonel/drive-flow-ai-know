@@ -261,7 +261,7 @@ export function CalendarGrid({
   }, [quickAdd.visible]);
 
   // Track mouse position for distinguishing click vs drag
-  const mouseDownPos = useRef<{ x: number; y: number; day: Date; hour: number; rect: DOMRect } | null>(null);
+  const mouseDownPos = useRef<{ x: number; y: number; day: Date; hour: number; minutes: number; rect: DOMRect } | null>(null);
 
   // Track last click for double-click detection
   const lastClickRef = useRef<{ time: number; day: Date; hour: number } | null>(null);
@@ -304,15 +304,15 @@ export function CalendarGrid({
     const minuteOffset = minutes;
 
     // Store initial position to detect drag vs click
-    mouseDownPos.current = { x: e.clientX, y: e.clientY, day, hour, rect };
+    mouseDownPos.current = { x: e.clientX, y: e.clientY, day, hour, minutes, rect };
 
     setDragCreate({
       isDragging: true,
       day,
       startHour: hour,
-      startMinutes: minuteOffset,
+      startMinutes: minutes,
       endHour: hour,
-      endMinutes: minuteOffset + 30, // Minimum 30 min
+      endMinutes: minutes + 15, // Selected the 15-min slice they clicked on
     });
   };
 
@@ -326,8 +326,10 @@ export function CalendarGrid({
     const rect = gridEl.getBoundingClientRect();
     const relativeY = e.clientY - rect.top;
 
-    // Snap to 15 minute intervals
-    const totalMinutes = Math.floor((relativeY / rowHeight) * 4) * 15 + dayStartHour * 60;
+    // Calculate which 15-minute slice the mouse is CURRENTLY in
+    const currentSlice = Math.floor((relativeY / rowHeight) * 4);
+    const totalMinutes = currentSlice * 15 + dayStartHour * 60;
+
     const endHour = Math.floor(totalMinutes / 60);
     const endMinutes = totalMinutes % 60;
 
@@ -380,16 +382,23 @@ export function CalendarGrid({
       // Single click - show quick add popup
       lastClickRef.current = { time: now, day: clickDay, hour: clickHour };
 
+      const clickMinutes = mouseDownPos.current.minutes;
       const startTime = new Date(clickDay);
-      startTime.setHours(clickHour, 0, 0, 0);
+      startTime.setHours(clickHour, clickMinutes, 0, 0);
 
       const endTime = new Date(startTime);
       endTime.setHours(endTime.getHours() + 1);
 
+      // Position relative to grid content
+      const gridRect = gridRef.current?.getBoundingClientRect();
+      const popupY = (clickHour - dayStartHour) * rowHeight + (clickMinutes / 60) * rowHeight;
+      const dayIndex = visibleDays.findIndex(d => isSameDay(d, clickDay));
+      const popupX = dayIndex * dayColumnWidth;
+
       setQuickAdd({
         visible: true,
-        x: mouseDownPos.current.rect.left,
-        y: mouseDownPos.current.rect.top,
+        x: popupX,
+        y: popupY,
         startTime,
         endTime,
       });
@@ -406,10 +415,15 @@ export function CalendarGrid({
         endTime.setMinutes(startTime.getMinutes() + 30);
       }
 
+      // Position relative to grid content
+      const dayIndex = visibleDays.findIndex(d => isSameDay(d, dragCreate.day!));
+      const popupX = dayIndex * dayColumnWidth;
+      const popupY = (dragCreate.startHour - dayStartHour) * rowHeight + (dragCreate.startMinutes / 60) * rowHeight;
+
       setQuickAdd({
         visible: true,
-        x: 100,
-        y: (dragCreate.startHour - dayStartHour) * rowHeight,
+        x: popupX,
+        y: popupY,
         startTime,
         endTime,
       });
@@ -704,7 +718,7 @@ export function CalendarGrid({
                   "flex-1 relative border-r last:border-r-0",
                   isCurrentDay && "bg-primary/[0.02]"
                 )}
-                style={{ minHeight: (hours + 1) * rowHeight }}
+                style={{ minHeight: hours * rowHeight }}
               >
                 {/* Grid lines - 15 minute intervals */}
                 {Array.from({ length: hours * 4 }, (_, i) => {
@@ -791,10 +805,10 @@ export function CalendarGrid({
           {/* Quick add popup */}
           {quickAdd.visible && quickAdd.startTime && (
             <div
-              className="absolute z-50 bg-background border rounded-lg shadow-lg p-3 min-w-[250px]"
+              className="absolute z-50 bg-background border rounded-lg shadow-lg p-3 min-w-[280px]"
               style={{
-                left: Math.min(quickAdd.x, window.innerWidth - 280),
-                top: Math.min(quickAdd.y, window.innerHeight - 150),
+                left: quickAdd.x + (dayColumnWidth > 300 ? 20 : 5), // Offset slightly from edge
+                top: quickAdd.y,
               }}
             >
               <form onSubmit={handleQuickAddSubmit} className="space-y-2">
