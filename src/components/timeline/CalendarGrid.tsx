@@ -324,7 +324,7 @@ export function CalendarGrid({
     if (!gridEl) return;
 
     const rect = gridEl.getBoundingClientRect();
-    const relativeY = e.clientY - rect.top + (scrollRef.current?.scrollTop || 0);
+    const relativeY = e.clientY - rect.top;
 
     // Snap to 15 minute intervals
     const totalMinutes = Math.floor((relativeY / rowHeight) * 4) * 15 + dayStartHour * 60;
