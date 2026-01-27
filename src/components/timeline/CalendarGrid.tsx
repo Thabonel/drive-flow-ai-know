@@ -293,15 +293,15 @@ export function CalendarGrid({
   };
 
   // Handle mouse down for drag-to-create
-  const handleCellMouseDown = (e: React.MouseEvent, day: Date, hour: number) => {
+  const handleCellMouseDown = (e: React.MouseEvent, day: Date, hour: number, minutes: number = 0) => {
     if (e.button !== 0) return; // Only left click
     e.preventDefault(); // Prevent text selection
 
     const rect = (e.target as HTMLElement).getBoundingClientRect();
-    const relativeY = e.clientY - rect.top;
 
-    // Snap to 15 minute intervals
-    const minuteOffset = Math.floor((relativeY / rowHeight) * 4) * 15;
+    // Use the passed minutes as the floor, and add fine-grained snap within the cell if needed
+    // But since the cell itself is 15 mins now, we just use passed minutes
+    const minuteOffset = minutes;
 
     // Store initial position to detect drag vs click
     mouseDownPos.current = { x: e.clientX, y: e.clientY, day, hour, rect };
@@ -706,15 +706,24 @@ export function CalendarGrid({
                 )}
                 style={{ minHeight: (hours + 1) * rowHeight }}
               >
-                {/* Hour grid lines - click/drag to create */}
-                {Array.from({ length: hours + 1 }, (_, i) => (
-                  <div
-                    key={i}
-                    className="border-b border-dashed border-border/60 cursor-pointer hover:bg-muted/30 transition-colors"
-                    style={{ height: rowHeight }}
-                    onMouseDown={(e) => handleCellMouseDown(e, day, dayStartHour + i)}
-                  />
-                ))}
+                {/* Grid lines - 15 minute intervals */}
+                {Array.from({ length: hours * 4 }, (_, i) => {
+                  const hourOffset = Math.floor(i / 4);
+                  const minuteOffset = (i % 4) * 15;
+                  const isHour = minuteOffset === 0;
+
+                  return (
+                    <div
+                      key={i}
+                      className={cn(
+                        "cursor-pointer hover:bg-muted/30 transition-colors bg-transparent",
+                        isHour ? "border-b border-border/60" : "border-b border-border/20 border-dotted"
+                      )}
+                      style={{ height: rowHeight / 4 }}
+                      onMouseDown={(e) => handleCellMouseDown(e, day, dayStartHour + hourOffset, minuteOffset)}
+                    />
+                  );
+                })}
 
                 {/* Drag-to-create preview overlay */}
                 {isDragDay && (() => {
