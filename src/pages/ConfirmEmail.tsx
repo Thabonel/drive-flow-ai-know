@@ -14,47 +14,68 @@ const ConfirmEmail = () => {
   useEffect(() => {
     const handleEmailConfirmation = async () => {
       try {
-        const { data: { session }, error } = await supabase.auth.getSession();
+        // Try to get session immediately
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
 
-        if (error) throw error;
+        if (sessionError) throw sessionError;
 
         if (session) {
           setStatus('success');
           setMessage('Email confirmed successfully!');
-
           toast({
             title: "Email Confirmed",
             description: "Redirecting to your dashboard...",
           });
-
-          setTimeout(() => {
-            navigate('/conversations');
-          }, 2000);
-        } else {
-          throw new Error('Invalid confirmation link');
+          setTimeout(() => navigate('/conversations'), 2000);
+          return;
         }
+
+        // If no session yet, listen for auth changes (common for PKCE)
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+          if (event === 'SIGNED_IN' && session) {
+            setStatus('success');
+            setMessage('Email confirmed successfully!');
+            toast({
+              title: "Email Confirmed",
+              description: "Redirecting to your dashboard...",
+            });
+            setTimeout(() => navigate('/conversations'), 2000);
+            subscription.unsubscribe();
+          }
+        });
+
+        // Fail if no success after a timeout
+        setTimeout(() => {
+          if (status === 'loading') {
+            subscription.unsubscribe();
+            setStatus('error');
+            setMessage('Confirmation timed out or link is invalid. Please try logging in.');
+          }
+        }, 10000);
+
       } catch (error: any) {
+        console.error('Confirmation error:', error);
         setStatus('error');
 
         if (error.message?.includes('expired')) {
-          setMessage('This confirmation link has expired. Please sign up again.');
+          setMessage('This confirmation link has expired. Please try resending the confirmation email from the login page.');
         } else if (error.message?.includes('already confirmed')) {
           setMessage('Your email is already confirmed. Redirecting to login...');
           setTimeout(() => navigate('/auth'), 3000);
         } else {
-          setMessage('Invalid confirmation link. Please try again or contact support.');
+          setMessage(error.message || 'Invalid confirmation link. Please try again or contact support.');
         }
 
         toast({
           title: "Confirmation Failed",
-          description: message,
+          description: error.message || "Failed to confirm email",
           variant: "destructive",
         });
       }
     };
 
     handleEmailConfirmation();
-  }, [navigate, message]);
+  }, [navigate]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
