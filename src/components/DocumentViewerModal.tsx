@@ -291,88 +291,12 @@ export const DocumentViewerModal = ({ document, isOpen, onClose }: DocumentViewe
     }
   };
 
-  // Helper function to convert HTML to plain text
-  const htmlToText = (html: string): string => {
-    if (!html) return '';
-    const doc = new DOMParser().parseFromString(html, 'text/html');
-    return doc.body.textContent || '';
-  };
-
-  // Helper function to convert HTML to markdown
-  const htmlToMarkdown = (html: string): string => {
-    if (!html) return '';
-    const doc = new DOMParser().parseFromString(html, 'text/html');
-    let markdown = '';
-
-    const processNode = (node: Node) => {
-      if (node.nodeType === Node.TEXT_NODE) {
-        const text = node.textContent?.trim();
-        if (text) markdown += text + ' ';
-      } else if (node.nodeType === Node.ELEMENT_NODE) {
-        const element = node as HTMLElement;
-        const text = element.textContent?.trim() || '';
-
-        switch (element.tagName) {
-          case 'H1':
-            markdown += `\n# ${text}\n\n`;
-            break;
-          case 'H2':
-            markdown += `\n## ${text}\n\n`;
-            break;
-          case 'H3':
-            markdown += `\n### ${text}\n\n`;
-            break;
-          case 'H4':
-            markdown += `\n#### ${text}\n\n`;
-            break;
-          case 'P':
-            node.childNodes.forEach(processNode);
-            markdown += '\n\n';
-            break;
-          case 'BR':
-            markdown += '\n';
-            break;
-          case 'STRONG':
-          case 'B':
-            markdown += `**${text}**`;
-            break;
-          case 'EM':
-          case 'I':
-            markdown += `*${text}*`;
-            break;
-          case 'UL':
-            element.querySelectorAll('li').forEach((li) => {
-              markdown += `- ${li.textContent?.trim()}\n`;
-            });
-            markdown += '\n';
-            break;
-          case 'OL':
-            element.querySelectorAll('li').forEach((li, i) => {
-              markdown += `${i + 1}. ${li.textContent?.trim()}\n`;
-            });
-            markdown += '\n';
-            break;
-          case 'TABLE':
-            // Basic table support - extract as plain text rows
-            element.querySelectorAll('tr').forEach((tr) => {
-              const cells = Array.from(tr.querySelectorAll('td, th'));
-              markdown += '| ' + cells.map(c => c.textContent?.trim()).join(' | ') + ' |\n';
-            });
-            markdown += '\n';
-            break;
-          default:
-            node.childNodes.forEach(processNode);
-        }
-      }
-    };
-
-    doc.body.childNodes.forEach(processNode);
-    return markdown.trim();
-  };
-
-  const handleDownload = async (format: 'txt' | 'md' | 'html' | 'pdf' | 'docx' = 'txt') => {
+  const handleDownload = async (format: 'pdf' | 'docx' = 'pdf') => {
     try {
-      const fileName = formData.title.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+      const safeTitle = formData.title && formData.title.trim()
+        ? formData.title.trim()
+        : 'Document';
+      const fileName = safeTitle.replace(/[^a-z0-9]/gi, '_').toLowerCase();
 
       // PDF export using @react-pdf/renderer
       if (format === 'pdf') {
@@ -412,127 +336,6 @@ export const DocumentViewerModal = ({ document, isOpen, onClose }: DocumentViewe
         return;
       }
 
-      // Detect if content is HTML using the same logic as display
-      const isHTMLContent = shouldRenderAsHTML(formData.content, document?.metadata);
-
-      // Convert content based on original format and target format
-      let processedContent = formData.content;
-      if (isHTMLContent) {
-        // Content is HTML, convert to target format
-        switch (format) {
-          case 'txt':
-            processedContent = htmlToText(formData.content);
-            break;
-          case 'md':
-            processedContent = htmlToMarkdown(formData.content);
-            break;
-          case 'html':
-            // Keep as HTML
-            processedContent = formData.content;
-            break;
-        }
-      }
-
-      let content = '';
-      let mimeType = 'text/plain';
-      let extension = 'txt';
-
-      // Build final content with metadata
-      switch (format) {
-        case 'txt':
-          content = `${formData.title}\n${'='.repeat(formData.title.length)}\n\nCategory: ${formData.category || 'Uncategorized'}\nTags: ${formData.tags.join(', ')}\n\n${processedContent}`;
-          mimeType = 'text/plain';
-          extension = 'txt';
-          break;
-
-        case 'md':
-          content = `# ${formData.title}\n\n`;
-          content += `**Category:** ${formData.category || 'Uncategorized'}  \n`;
-          content += `**Tags:** ${formData.tags.join(', ')}\n\n`;
-          content += `---\n\n${processedContent}`;
-          mimeType = 'text/markdown';
-          extension = 'md';
-          break;
-
-        case 'html':
-          content = `<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <title>${formData.title}</title>
-  <style>
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      line-height: 1.6;
-      max-width: 800px;
-      margin: 0 auto;
-      padding: 20px;
-      color: #333;
-    }
-    h1 {
-      color: #0A2342;
-      border-bottom: 3px solid #FFC300;
-      padding-bottom: 10px;
-    }
-    .metadata {
-      background: #f5f5f5;
-      padding: 15px;
-      border-radius: 8px;
-      margin: 20px 0;
-    }
-    .content {
-      white-space: pre-wrap;
-      word-wrap: break-word;
-    }
-    .tag {
-      display: inline-block;
-      background: #FFC300;
-      color: #0A2342;
-      padding: 4px 12px;
-      border-radius: 4px;
-      margin: 2px;
-      font-size: 14px;
-    }
-  </style>
-</head>
-<body>
-  <h1>${formData.title}</h1>
-  <div class="metadata">
-    <p><strong>Category:</strong> ${formData.category || 'Uncategorized'}</p>
-    <p><strong>Tags:</strong> ${formData.tags.map(tag => `<span class="tag">${tag}</span>`).join(' ')}</p>
-  </div>
-  <div class="content">${processedContent}</div>
-</body>
-</html>`;
-          mimeType = 'text/html';
-          extension = 'html';
-          break;
-      }
-
-      // Validate content is not empty
-      if (!content || content.trim().length === 0) {
-        toast({
-          title: 'Error',
-          description: 'Cannot download empty document',
-          variant: 'destructive',
-        });
-        return;
-      }
-
-      const blob = new Blob([content], { type: mimeType });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `${fileName}.${extension}`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-
-      toast({
-        title: 'Downloaded',
-        description: `Document downloaded as ${extension.toUpperCase()}.`,
-      });
     } catch (error) {
       console.error('Download error:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to download document';
@@ -745,15 +548,6 @@ export const DocumentViewerModal = ({ document, isOpen, onClose }: DocumentViewe
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => handleDownload('txt')}>
-                        Plain Text (.txt)
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleDownload('md')}>
-                        Markdown (.md)
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleDownload('html')}>
-                        HTML (.html)
-                      </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => handleDownload('pdf')}>
                         PDF (.pdf)
                       </DropdownMenuItem>
