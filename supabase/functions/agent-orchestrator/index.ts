@@ -108,25 +108,58 @@ serve(async (req) => {
       throw new Error('Unauthorized');
     }
 
-    // Get active session for user
-    const { data: sessionData, error: sessionError } = await supabase
-      .from('agent_sessions')
-      .select('*')
-      .eq('user_id', user.id)
-      .eq('status', 'active')
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
+    // Parse request body to get session_id
+    const body = await req.json();
+    const requestedSessionId = body.session_id;
 
-    if (sessionError) throw sessionError;
-    if (!sessionData) {
-      return new Response(
-        JSON.stringify({ error: 'No active session found' }),
-        {
-          status: 404,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
-      );
+    let sessionData = null;
+
+    // If session_id provided, use that specific session
+    if (requestedSessionId) {
+      const { data, error: sessionError } = await supabase
+        .from('agent_sessions')
+        .select('*')
+        .eq('id', requestedSessionId)
+        .eq('user_id', user.id)  // Security: ensure user owns session
+        .single();
+
+      if (sessionError || !data) {
+        return new Response(
+          JSON.stringify({
+            error: 'Invalid or unauthorized session_id',
+            session_id: requestedSessionId
+          }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      sessionData = data;
+      console.log('Using requested session:', requestedSessionId);
+    } else {
+      // Fallback: fetch most recent active session (backward compatibility)
+      const { data, error: sessionError } = await supabase
+        .from('agent_sessions')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('status', 'active')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (sessionError) throw sessionError;
+
+      if (!data) {
+        return new Response(
+          JSON.stringify({ error: 'No active session found' }),
+          {
+            status: 404,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          }
+        );
+      }
+
+      sessionData = data;
+      console.log('Using most recent active session:', data.id);
     }
 
     // Fetch pending tasks for this session
@@ -182,11 +215,11 @@ serve(async (req) => {
         continue;
       }
 
-      // Update task status to "assigned"
+      // Update task status to "in_progress" and link to sub-agent
       const { error: updateError } = await supabase
         .from('agent_tasks')
         .update({
-          status: 'assigned',
+          status: 'in_progress',
           assigned_agent_id: subAgent.id,
         })
         .eq('id', task.id);
@@ -222,8 +255,26 @@ serve(async (req) => {
         agentType === 'calendar' ? 'create_event' : undefined
       );
 
-      // Update sub-agent with execution result if it failed during invocation
-      if (!invocationResult.success) {
+      // Update task status based on execution result
+      if (invocationResult.success) {
+        // Mark task as completed
+        await supabase
+          .from('agent_tasks')
+          .update({
+            status: 'completed',
+          })
+          .eq('id', task.id);
+
+        console.log(`Task ${task.id} marked as completed`);
+      } else {
+        // Mark task as failed
+        await supabase
+          .from('agent_tasks')
+          .update({
+            status: 'failed',
+          })
+          .eq('id', task.id);
+
         console.error(`Sub-agent ${agentType} invocation failed:`, invocationResult.error);
         // The sub-agent function itself handles status updates, but log the error
         await supabase
