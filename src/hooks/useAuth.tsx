@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, useCallback, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
@@ -12,6 +12,7 @@ interface AuthContextType {
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error: any }>;
   resendConfirmationEmail: (email: string) => Promise<{ error: any }>;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -219,6 +220,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { error: null };
   };
 
+  const refreshUser = useCallback(async () => {
+    const { data } = await supabase.auth.getUser();
+    if (data.user) {
+      setUser(data.user);
+    }
+  }, []);
+
   return (
     <AuthContext.Provider value={{
       user,
@@ -229,6 +237,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       signOut,
       resetPassword,
       resendConfirmationEmail,
+      refreshUser,
     }}>
       {children}
     </AuthContext.Provider>
