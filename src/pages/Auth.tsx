@@ -33,8 +33,16 @@ const Auth = () => {
   const [isResending, setIsResending] = useState(false);
   const { resendConfirmationEmail } = useAuth();
 
-  // Get invite token from URL
+  // Get invite token and error from URL
   const inviteToken = searchParams.get('invite');
+  const errorParam = searchParams.get('error');
+
+  // Show unconfirmed alert if redirected from ProtectedRoute
+  useEffect(() => {
+    if (errorParam === 'email_not_confirmed') {
+      setShowUnconfirmedAlert(true);
+    }
+  }, [errorParam]);
 
   const handleSignIn = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,8 +10,42 @@ const ConfirmEmail = () => {
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
   const [message, setMessage] = useState('Confirming your email...');
   const navigate = useNavigate();
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const authSubscriptionRef = useRef<{ unsubscribe: () => void } | null>(null);
 
   useEffect(() => {
+    // Create abort controller for cleanup
+    abortControllerRef.current = new AbortController();
+    const signal = abortControllerRef.current.signal;
+
+    let retryCount = 0;
+    const maxRetries = 4; // 3s, 6s, 12s, 24s = 45s total
+
+    const verifyEmailConfirmation = async (session: any) => {
+      // Verify email is actually confirmed
+      if (session?.user?.email_confirmed_at) {
+        if (signal.aborted) return;
+
+        setStatus('success');
+        setMessage('Email confirmed successfully!');
+        toast({
+          title: "Email Confirmed",
+          description: "Redirecting to your dashboard...",
+        });
+
+        // Force a session refresh to get latest user data
+        await supabase.auth.refreshSession();
+
+        setTimeout(() => {
+          if (!signal.aborted) {
+            navigate('/conversations');
+          }
+        }, 2000);
+        return true;
+      }
+      return false;
+    };
+
     const handleEmailConfirmation = async () => {
       try {
         // Try to get session immediately
@@ -19,41 +53,56 @@ const ConfirmEmail = () => {
 
         if (sessionError) throw sessionError;
 
-        if (session) {
-          setStatus('success');
-          setMessage('Email confirmed successfully!');
-          toast({
-            title: "Email Confirmed",
-            description: "Redirecting to your dashboard...",
-          });
-          setTimeout(() => navigate('/conversations'), 2000);
+        if (session && await verifyEmailConfirmation(session)) {
           return;
         }
 
         // If no session yet, listen for auth changes (common for PKCE)
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+          if (signal.aborted) return;
+
           if (event === 'SIGNED_IN' && session) {
-            setStatus('success');
-            setMessage('Email confirmed successfully!');
-            toast({
-              title: "Email Confirmed",
-              description: "Redirecting to your dashboard...",
-            });
-            setTimeout(() => navigate('/conversations'), 2000);
-            subscription.unsubscribe();
+            await verifyEmailConfirmation(session);
           }
         });
 
-        // Fail if no success after a timeout
-        setTimeout(() => {
-          if (status === 'loading') {
-            subscription.unsubscribe();
-            setStatus('error');
-            setMessage('Confirmation timed out or link is invalid. Please try logging in.');
+        authSubscriptionRef.current = subscription;
+
+        // Retry with exponential backoff
+        const scheduleRetry = () => {
+          if (signal.aborted) return;
+
+          if (retryCount >= maxRetries) {
+            if (status === 'loading') {
+              setStatus('error');
+              setMessage('Confirmation timed out. The link may be invalid or expired. Please try logging in or resend the confirmation email.');
+            }
+            return;
           }
-        }, 10000);
+
+          const delay = Math.pow(2, retryCount) * 3000; // 3s, 6s, 12s, 24s
+          retryCount++;
+
+          setTimeout(async () => {
+            if (signal.aborted || status !== 'loading') return;
+
+            // Check session status and retry
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session && await verifyEmailConfirmation(session)) {
+              return;
+            }
+
+            // Schedule next retry
+            scheduleRetry();
+          }, delay);
+        };
+
+        // Start retry chain
+        scheduleRetry();
 
       } catch (error: any) {
+        if (signal.aborted) return;
+
         console.error('Confirmation error:', error);
         setStatus('error');
 
@@ -61,7 +110,11 @@ const ConfirmEmail = () => {
           setMessage('This confirmation link has expired. Please try resending the confirmation email from the login page.');
         } else if (error.message?.includes('already confirmed')) {
           setMessage('Your email is already confirmed. Redirecting to login...');
-          setTimeout(() => navigate('/auth'), 3000);
+          setTimeout(() => {
+            if (!signal.aborted) {
+              navigate('/auth');
+            }
+          }, 3000);
         } else {
           setMessage(error.message || 'Invalid confirmation link. Please try again or contact support.');
         }
@@ -75,7 +128,13 @@ const ConfirmEmail = () => {
     };
 
     handleEmailConfirmation();
-  }, [navigate]);
+
+    // Cleanup function
+    return () => {
+      abortControllerRef.current?.abort();
+      authSubscriptionRef.current?.unsubscribe();
+    };
+  }, [navigate, status]); // Added status dependency
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">

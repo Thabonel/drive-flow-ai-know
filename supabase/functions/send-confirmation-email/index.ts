@@ -53,7 +53,7 @@ const handler = async (req: Request): Promise<Response> => {
                 box-shadow: 0 2px 8px rgba(0,0,0,0.1);
               }
               .header {
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                background: linear-gradient(135deg, #0A2342 0%, #FFC300 100%);
                 padding: 40px 20px;
                 text-align: center;
                 color: white;
@@ -68,7 +68,7 @@ const handler = async (req: Request): Promise<Response> => {
               }
               .button {
                 display: inline-block;
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                background: linear-gradient(135deg, #0A2342 0%, #FFC300 100%);
                 color: white !important;
                 text-decoration: none;
                 padding: 14px 32px;
@@ -89,7 +89,7 @@ const handler = async (req: Request): Promise<Response> => {
                 border-top: 1px solid #e0e0e0;
               }
               .footer a {
-                color: #667eea;
+                color: #0A2342;
                 text-decoration: none;
               }
             </style>

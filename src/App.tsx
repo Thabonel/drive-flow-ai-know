@@ -85,7 +85,7 @@ function AppLayout({ children }: { children: React.ReactNode }) {
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
-  
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -93,11 +93,20 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
       </div>
     );
   }
-  
+
   if (!user) {
     return <Navigate to="/auth" replace />;
   }
-  
+
+  // Check email confirmation (with legacy account grace period)
+  // @ts-ignore - email_confirmed_at exists on User type but TypeScript may not recognize it
+  const emailConfirmed = user.email_confirmed_at || user.confirmed_at;
+  const isLegacyAccount = user.created_at && new Date(user.created_at) < new Date('2024-01-01');
+
+  if (!emailConfirmed && !isLegacyAccount) {
+    return <Navigate to="/auth?error=email_not_confirmed" replace />;
+  }
+
   return <AppLayout>{children}</AppLayout>;
 }
 
