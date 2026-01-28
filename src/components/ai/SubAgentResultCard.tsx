@@ -52,6 +52,14 @@ export interface SubAgentResult {
       }>;
     };
     style?: string;
+    // Generic fields that any agent might return
+    analysis?: string;
+    summary?: string;
+    response?: string;
+    findings?: string;
+    recommendations?: string[] | any[];
+    metrics?: Record<string, any>;
+    [key: string]: any; // Allow any additional fields
   };
   error_message?: string;
   completed_at?: string;
@@ -530,6 +538,97 @@ export function SubAgentResultCard({ subAgent, onRevisionComplete, compact = fal
     );
   };
 
+  // Render generic agent results - extracts useful fields from JSON
+  const renderGenericResults = () => {
+    const { result_data } = subAgent;
+    if (!result_data) return null;
+
+    // Extract common fields that agents might return
+    const analysis = result_data.analysis;
+    const summary = result_data.summary;
+    const response = result_data.response;
+    const findings = result_data.findings;
+    const recommendations = result_data.recommendations;
+    const metrics = result_data.metrics;
+
+    // If we have markdown content in any of these fields, render it
+    const markdownContent = analysis || summary || response || findings;
+
+    return (
+      <div className="space-y-4">
+        {/* Main content - render as markdown if it's a string */}
+        {typeof markdownContent === 'string' && (
+          <div className="prose prose-sm max-w-none dark:prose-invert">
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+              {markdownContent}
+            </ReactMarkdown>
+          </div>
+        )}
+
+        {/* Metrics section if present */}
+        {metrics && typeof metrics === 'object' && (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 p-4 bg-muted/50 rounded-lg">
+            {Object.entries(metrics).map(([key, value]) => (
+              <div key={key} className="text-center">
+                <div className="text-2xl font-bold text-primary">
+                  {typeof value === 'number' ? value : String(value)}
+                </div>
+                <div className="text-xs text-muted-foreground capitalize">
+                  {key.replace(/_/g, ' ')}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Recommendations section if present */}
+        {recommendations && Array.isArray(recommendations) && recommendations.length > 0 && (
+          <div className="space-y-2">
+            <h4 className="text-sm font-semibold">Recommendations</h4>
+            <ul className="space-y-2">
+              {recommendations.map((rec, idx) => (
+                <li key={idx} className="flex items-start gap-2">
+                  <span className="text-primary mt-1">•</span>
+                  <span className="text-sm">{typeof rec === 'string' ? rec : JSON.stringify(rec)}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* Fallback - if no recognized fields, show a formatted view of the data */}
+        {!markdownContent && !metrics && !recommendations && (
+          <div className="space-y-2">
+            {Object.entries(result_data).map(([key, value]) => {
+              // Skip empty or null values
+              if (value === null || value === undefined || value === '') return null;
+
+              // Skip internal fields
+              if (key === 'message' || key === 'content' || key === 'visual_content') return null;
+
+              return (
+                <div key={key} className="border-l-2 border-primary/30 pl-3">
+                  <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">
+                    {key.replace(/_/g, ' ')}
+                  </div>
+                  <div className="text-sm">
+                    {typeof value === 'object' ? (
+                      <pre className="text-xs bg-muted p-2 rounded overflow-auto">
+                        {JSON.stringify(value, null, 2)}
+                      </pre>
+                    ) : (
+                      String(value)
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   // Render creative/visual results with text overlay and export options
   const renderVisualResults = () => {
     const visualContent = revisedVisualContent || subAgent.result_data?.visual_content;
@@ -817,18 +916,26 @@ export function SubAgentResultCard({ subAgent, onRevisionComplete, compact = fal
         {(subAgent.agent_type === 'briefing' || subAgent.agent_type === 'analysis') && renderContentResults()}
         {subAgent.agent_type === 'creative' && renderVisualResults()}
 
-        {/* Generic message fallback */}
-        {subAgent.result_data?.message && subAgent.agent_type !== 'calendar' && (
+        {/* Generic results for unknown agent types */}
+        {!['calendar', 'briefing', 'analysis', 'creative'].includes(subAgent.agent_type) && renderGenericResults()}
+
+        {/* Generic message fallback (only if no other content shown) */}
+        {subAgent.result_data?.message &&
+         !subAgent.result_data?.content &&
+         !subAgent.result_data?.analysis &&
+         !subAgent.result_data?.summary &&
+         !subAgent.result_data?.response &&
+         subAgent.agent_type !== 'calendar' && (
           <p className="text-sm text-muted-foreground mt-2">{subAgent.result_data.message}</p>
         )}
 
-        {/* Show raw data toggle for debugging */}
+        {/* Show raw data toggle for debugging - now less prominent */}
         {!compact && (
           <details className="mt-4">
-            <summary className="text-xs text-muted-foreground cursor-pointer hover:text-foreground">
-              View raw data
+            <summary className="text-xs text-muted-foreground/60 cursor-pointer hover:text-foreground">
+              View raw data (debug)
             </summary>
-            <pre className="mt-2 p-2 bg-muted rounded text-xs overflow-auto max-h-40">
+            <pre className="mt-2 p-2 bg-muted/50 rounded text-xs overflow-auto max-h-40 font-mono">
               {JSON.stringify(subAgent.result_data, null, 2)}
             </pre>
           </details>
