@@ -91,7 +91,7 @@ To become the **intelligent layer** between users and their information, enablin
 - Rich preview for all file types
 - Markdown rendering
 - HTML sanitization (Word docs via Mammoth.js)
-- Export capabilities
+- Export as PDF or Word Document (DOCX)
 
 ### 2. Knowledge Bases 📚
 
@@ -130,7 +130,7 @@ To become the **intelligent layer** between users and their information, enablin
 **Conversation Management**
 - Save and resume conversations
 - Auto-summarization
-- Export conversations (TXT, MD, HTML, PDF)
+- Export conversations as TXT, MD, HTML, or PDF
 - Search conversation history
 
 ### 4. Autonomous Agent System 🤖
@@ -481,6 +481,8 @@ User Notification
 - Content detection via `shouldRenderAsHTML()`
 - DOMPurify sanitization
 - ReactMarkdown rendering
+- Export as PDF or DOCX (Word Document)
+- Print functionality with formatted output
 
 #### 4. **DocumentVisualizationPanel** (`src/components/DocumentVisualizationPanel.tsx`)
 - Document metadata display
