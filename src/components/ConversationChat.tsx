@@ -63,6 +63,8 @@ interface Message {
     task_ids?: string[];
     agent_session_id?: string;
     agent_executed?: boolean;
+    auto_execute_type?: string;
+    execution_timestamp?: string;
   };
   // Interactive options for clarifying questions
   clarifying_options?: ClarifyingQuestion;
@@ -941,6 +943,13 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
         console.log(`Auto-executing ${autoExecuteTaskType} task...`);
         toast.info(`Executing ${autoExecuteTaskType} task...`);
 
+        // Mark as executed immediately to prevent "Run as Task" button from showing
+        const earlyMetadata: Message['agent_metadata'] = {
+          agent_executed: true,
+          auto_execute_type: autoExecuteTaskType,
+        };
+        await updateMessageAgentMetadata(savedMessageId, earlyMetadata);
+
         try {
           // Step 1: Extract and plan tasks via agent-translate
           const { data: translateData, error: translateError } = await supabase.functions.invoke('agent-translate', {
@@ -984,12 +993,14 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
             throw new Error('No agents were spawned');
           }
 
-          // Step 3: Update message metadata to link to sub-agents
+          // Step 3: Update message metadata to link to sub-agents (merge with existing)
           const metadata: Message['agent_metadata'] = {
             sub_agent_ids: subAgentIds,
             task_ids: [],
             agent_executed: true,
+            auto_execute_type: autoExecuteTaskType,
             agent_session_id: translateData.session_id,
+            execution_timestamp: new Date().toISOString(),
           };
 
           await updateMessageAgentMetadata(savedMessageId, metadata);
@@ -1323,10 +1334,19 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
 
     try {
       const formatDate = (timestamp: string) => {
-        return new Date(timestamp).toLocaleString();
+        try {
+          return new Date(timestamp).toLocaleString();
+        } catch {
+          return 'Unknown date';
+        }
       };
 
-      const fileName = conversationTitle.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+      // Use a safe default title if conversationTitle is empty
+      const safeTitle = conversationTitle && conversationTitle.trim()
+        ? conversationTitle.trim()
+        : 'Conversation';
+
+      const fileName = safeTitle.replace(/[^a-z0-9]/gi, '_').toLowerCase();
 
       if (format === 'pdf') {
         handlePrint();
@@ -1340,10 +1360,11 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
 
       switch (format) {
         case 'txt':
-          content = `${conversationTitle}\n${'='.repeat(conversationTitle.length)}\n\n`;
+          content = `${safeTitle}\n${'='.repeat(safeTitle.length)}\n\n`;
           messages.forEach((msg, index) => {
+            const messageContent = msg.content || '[Empty message]';
             content += `[${msg.role === 'user' ? 'You' : 'AI Assistant'}] - ${formatDate(msg.timestamp)}\n`;
-            content += `${msg.content}\n\n`;
+            content += `${messageContent}\n\n`;
             if (index < messages.length - 1) {
               content += '---\n\n';
             }
@@ -1353,12 +1374,13 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
           break;
 
         case 'md':
-          content = `# ${conversationTitle}\n\n`;
+          content = `# ${safeTitle}\n\n`;
           messages.forEach((msg) => {
             const role = msg.role === 'user' ? '👤 You' : '🤖 AI Assistant';
+            const messageContent = msg.content || '[Empty message]';
             content += `### ${role}\n`;
             content += `*${formatDate(msg.timestamp)}*\n\n`;
-            content += `${msg.content}\n\n`;
+            content += `${messageContent}\n\n`;
             content += `---\n\n`;
           });
           mimeType = 'text/markdown';
@@ -1366,21 +1388,31 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
           break;
 
         case 'html':
-          const messagesHtml = messages.map(msg => `
+          const messagesHtml = messages.map(msg => {
+            const messageContent = (msg.content || '[Empty message]')
+              .replace(/&/g, '&amp;')
+              .replace(/</g, '&lt;')
+              .replace(/>/g, '&gt;')
+              .replace(/"/g, '&quot;')
+              .replace(/'/g, '&#039;')
+              .replace(/\n/g, '<br>');
+
+            return `
             <div class="message ${msg.role}">
               <div class="message-header">
                 <strong>${msg.role === 'user' ? '👤 You' : '🤖 AI Assistant'}</strong>
                 <span class="timestamp">${formatDate(msg.timestamp)}</span>
               </div>
-              <div class="message-content">${msg.content.replace(/\n/g, '<br>')}</div>
+              <div class="message-content">${messageContent}</div>
             </div>
-          `).join('');
+          `;
+          }).join('');
 
           content = `<!DOCTYPE html>
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>${conversationTitle}</title>
+  <title>${safeTitle}</title>
   <style>
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -1426,7 +1458,7 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
   </style>
 </head>
 <body>
-  <h1>${conversationTitle}</h1>
+  <h1>${safeTitle}</h1>
   <div class="messages">
     ${messagesHtml}
   </div>
@@ -1437,19 +1469,28 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
           break;
       }
 
+      // Create and download the file
       const blob = new Blob([content], { type: mimeType });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
       link.download = `${fileName}_conversation.${extension}`;
+
+      // Add to DOM, click, and cleanup
       document.body.appendChild(link);
       link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
+
+      // Small delay before cleanup to ensure download starts
+      setTimeout(() => {
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      }, 100);
 
       toast.success(`Conversation downloaded as ${extension.toUpperCase()}`);
     } catch (error) {
-      toast.error('Failed to download conversation');
+      console.error('Download error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      toast.error(`Failed to download: ${errorMessage}`);
     }
   };
 
@@ -1820,11 +1861,14 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
                         </div>
                       )}
 
-                    {/* Agent Mode: "Run as Task" button - hidden if auto-executing or already executed */}
+                    {/* Agent Mode: "Run as Task" button - hidden if auto-executing, already executed, or has results */}
                     {message.role === 'assistant' &&
                       message.agent_mode_available &&
                       !message.agent_metadata?.agent_executed &&
-                      !autoExecutingMessageIds.has(message.id) && (
+                      !message.agent_metadata?.sub_agent_ids &&
+                      !autoExecutingMessageIds.has(message.id) &&
+                      !subAgentResults[message.id] &&
+                      !isExecutingTasks && (
                         <div className="mt-2 max-w-[80%]">
                           <Button
                             size="sm"

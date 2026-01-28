@@ -1,177 +1,311 @@
-# Supabase CLI
+# AI Query Hub
 
-[![Coverage Status](https://coveralls.io/repos/github/supabase/cli/badge.svg?branch=main)](https://coveralls.io/github/supabase/cli?branch=main) [![Bitbucket Pipelines](https://img.shields.io/bitbucket/pipelines/supabase-cli/setup-cli/master?style=flat-square&label=Bitbucket%20Canary)](https://bitbucket.org/supabase-cli/setup-cli/pipelines) [![Gitlab Pipeline Status](https://img.shields.io/gitlab/pipeline-status/sweatybridge%2Fsetup-cli?label=Gitlab%20Canary)
-](https://gitlab.com/sweatybridge/setup-cli/-/pipelines)
+**Intelligent Knowledge Management with Autonomous AI Agents**
 
-[Supabase](https://supabase.io) is an open source Firebase alternative. We're building the features of Firebase using enterprise-grade open source tools.
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue.svg)](https://www.typescriptlang.org/)
+[![React](https://img.shields.io/badge/React-18.3-blue.svg)](https://reactjs.org/)
+[![Supabase](https://img.shields.io/badge/Supabase-Backend-green.svg)](https://supabase.com/)
+[![Claude](https://img.shields.io/badge/AI-Claude%20Opus%204.5-purple.svg)](https://www.anthropic.com/)
 
-This repository contains all the functionality for Supabase CLI.
+Transform how you interact with your documents and data through AI-powered conversations and autonomous agents. AI Query Hub syncs your Google Drive, creates searchable knowledge bases, and executes tasks through intelligent AI assistants.
 
-- [x] Running Supabase locally
-- [x] Managing database migrations
-- [x] Creating and deploying Supabase Functions
-- [x] Generating types directly from your database schema
-- [x] Making authenticated HTTP requests to [Management API](https://supabase.com/docs/reference/api/introduction)
+---
 
-## Getting started
+## ✨ Key Features
 
-### Install the CLI
+- 📄 **Google Drive Sync** - Automatic document syncing and processing
+- 🤖 **AI Conversations** - Natural language queries with document context
+- 🏗️ **Knowledge Bases** - Organize documents into queryable collections
+- 🚀 **Autonomous Agents** - AI assistants for scheduling, briefings, analysis, and creative work
+- 👥 **Team Collaboration** - Share knowledge bases and collaborate on insights
+- 🎨 **Neumorphic Design** - Modern, professional UI with 6 theme variants
 
-Available via [NPM](https://www.npmjs.com) as dev dependency. To install:
+---
 
-```bash
-npm i supabase --save-dev
-```
+## 🚀 Quick Start
 
-When installing with yarn 4, you need to disable experimental fetch with the following nodejs config.
+### Prerequisites
 
-```
-NODE_OPTIONS=--no-experimental-fetch yarn add supabase
-```
+- Node.js 18+ and npm
+- Supabase account (for backend)
+- Anthropic API key (for Claude AI)
 
-> **Note**
-For Bun versions below v1.0.17, you must add `supabase` as a [trusted dependency](https://bun.sh/guides/install/trusted) before running `bun add -D supabase`.
-
-<details>
-  <summary><b>macOS</b></summary>
-
-  Available via [Homebrew](https://brew.sh). To install:
-
-  ```sh
-  brew install supabase/tap/supabase
-  ```
-
-  To install the beta release channel:
-  
-  ```sh
-  brew install supabase/tap/supabase-beta
-  brew link --overwrite supabase-beta
-  ```
-  
-  To upgrade:
-
-  ```sh
-  brew upgrade supabase
-  ```
-</details>
-
-<details>
-  <summary><b>Windows</b></summary>
-
-  Available via [Scoop](https://scoop.sh). To install:
-
-  ```powershell
-  scoop bucket add supabase https://github.com/supabase/scoop-bucket.git
-  scoop install supabase
-  ```
-
-  To upgrade:
-
-  ```powershell
-  scoop update supabase
-  ```
-</details>
-
-<details>
-  <summary><b>Linux</b></summary>
-
-  Available via [Homebrew](https://brew.sh) and Linux packages.
-
-  #### via Homebrew
-
-  To install:
-
-  ```sh
-  brew install supabase/tap/supabase
-  ```
-
-  To upgrade:
-
-  ```sh
-  brew upgrade supabase
-  ```
-
-  #### via Linux packages
-
-  Linux packages are provided in [Releases](https://github.com/supabase/cli/releases). To install, download the `.apk`/`.deb`/`.rpm`/`.pkg.tar.zst` file depending on your package manager and run the respective commands.
-
-  ```sh
-  sudo apk add --allow-untrusted <...>.apk
-  ```
-
-  ```sh
-  sudo dpkg -i <...>.deb
-  ```
-
-  ```sh
-  sudo rpm -i <...>.rpm
-  ```
-
-  ```sh
-  sudo pacman -U <...>.pkg.tar.zst
-  ```
-</details>
-
-<details>
-  <summary><b>Other Platforms</b></summary>
-
-  You can also install the CLI via [go modules](https://go.dev/ref/mod#go-install) without the help of package managers.
-
-  ```sh
-  go install github.com/supabase/cli@latest
-  ```
-
-  Add a symlink to the binary in `$PATH` for easier access:
-
-  ```sh
-  ln -s "$(go env GOPATH)/bin/cli" /usr/bin/supabase
-  ```
-
-  This works on other non-standard Linux distros.
-</details>
-
-<details>
-  <summary><b>Community Maintained Packages</b></summary>
-
-  Available via [pkgx](https://pkgx.sh/). Package script [here](https://github.com/pkgxdev/pantry/blob/main/projects/supabase.com/cli/package.yml).
-  To install in your working directory:
-
-  ```bash
-  pkgx install supabase
-  ```
-
-  Available via [Nixpkgs](https://nixos.org/). Package script [here](https://github.com/NixOS/nixpkgs/blob/master/pkgs/development/tools/supabase-cli/default.nix).
-</details>
-
-### Run the CLI
+### Installation
 
 ```bash
-supabase bootstrap
+# Clone the repository
+git clone https://github.com/yourusername/aiqueryhub.git
+cd aiqueryhub
+
+# Install dependencies
+npm install
+
+# Set up environment variables
+cp .env.example .env
+# Edit .env with your Supabase and API credentials
+
+# Start development server
+npm run dev
+
+# Open browser to http://localhost:8080
 ```
 
-Or using npx:
+### First Steps
 
+1. **Sign up** - Create your account
+2. **Connect Google Drive** - Settings → Google Drive → Connect
+3. **Wait for sync** - Initial sync takes 1-5 minutes
+4. **Start querying** - Dashboard → AI Query → Ask anything!
+
+---
+
+## 📚 Documentation
+
+### 🎯 Start Here
+- **[Complete Platform Overview](docs/AI_QUERY_HUB_OVERVIEW.md)** - Everything about AI Query Hub
+- **[Documentation Index](docs/INDEX.md)** - Find what you need quickly
+- **[CLAUDE.md](CLAUDE.md)** - Developer guide and project instructions
+
+### 📖 Key Documentation
+- **[Architecture](docs/AI_QUERY_HUB_OVERVIEW.md#architecture-overview)** - System design and data flow
+- **[Features](docs/AI_QUERY_HUB_OVERVIEW.md#core-features)** - Detailed feature documentation
+- **[Design System](docs/BIBLE/09-REFERENCE/DESIGN_SYSTEM.md)** - Neumorphic UI guidelines
+- **[Email Confirmation](docs/BIBLE/05-SECURITY/EMAIL_CONFIRMATION.md)** - Security implementation
+- **[Deployment](DEPLOYMENT_READY.md)** - Latest deployment status
+
+---
+
+## 🏗️ Architecture
+
+```
+Frontend (React + TypeScript)
+    ↓
+Supabase Backend (Edge Functions + PostgreSQL)
+    ↓
+AI Providers (Claude Opus 4.5 → OpenRouter → Ollama)
+    ↓
+External Services (Google Drive, Brave Search)
+```
+
+**Tech Stack**:
+- **Frontend**: React 18, TypeScript, Vite, Tailwind CSS, shadcn-ui
+- **Backend**: Supabase, PostgreSQL, Edge Functions (Deno)
+- **AI**: Claude Opus 4.5 (primary), OpenRouter (fallback), Ollama (offline)
+- **Integrations**: Google Drive API, Brave Search API, Resend SMTP
+
+---
+
+## 🤖 Autonomous Agent System
+
+AI Query Hub includes four specialized AI agents:
+
+1. **📅 Calendar Agent** - Schedule meetings, find time slots, send invites
+2. **📊 Briefing Agent** - Generate daily briefings, summarize updates
+3. **🔍 Analysis Agent** - Data analysis, competitor research, insights
+4. **🎨 Creative Agent** - Content creation, pitch decks, marketing copy
+
+**Example**:
+```
+User: "Schedule a product sync with Sarah next Tuesday at 2pm"
+  ↓
+Calendar Agent automatically:
+  - Finds optimal time slot
+  - Creates calendar event
+  - Sends meeting invite
+  - Notifies user when complete
+```
+
+---
+
+## 🎨 Design System
+
+**Neumorphic UI** - Soft shadows instead of borders for depth
+- 6 theme variants (Deep Corporate Navy & Gold is default)
+- Responsive design (mobile, tablet, desktop)
+- WCAG AA accessibility compliance
+- Dark mode support
+
+See [Design System Documentation](docs/BIBLE/09-REFERENCE/DESIGN_SYSTEM.md) for details.
+
+---
+
+## 🔒 Security & Privacy
+
+- **Row-Level Security (RLS)** - Database-level access control
+- **Email Confirmation** - Required for new signups
+- **OAuth 2.0** - Secure Google Drive integration
+- **Data Privacy** - Your documents stay yours, only excerpts sent to AI
+- **Team Permissions** - Role-based access (viewer, editor, admin)
+
+---
+
+## 🚀 Deployment
+
+### Frontend
 ```bash
-npx supabase bootstrap
+npm run build
+# Deploy to Vercel, Netlify, or your hosting provider
 ```
 
-The bootstrap command will guide you through the process of setting up a Supabase project using one of the [starter](https://github.com/supabase-community/supabase-samples/blob/main/samples.json) templates.
-
-## Docs
-
-Command & config reference can be found [here](https://supabase.com/docs/reference/cli/about).
-
-## Breaking changes
-
-We follow semantic versioning for changes that directly impact CLI commands, flags, and configurations.
-
-However, due to dependencies on other service images, we cannot guarantee that schema migrations, seed.sql, and generated types will always work for the same CLI major version. If you need such guarantees, we encourage you to pin a specific version of CLI in package.json.
-
-## Developing
-
-To run from source:
-
-```sh
-# Go >= 1.22
-go run . help
+### Backend (Edge Functions)
+```bash
+npx supabase functions deploy ai-query
+npx supabase functions deploy agent-orchestrator
+npx supabase functions deploy agent-translate
+# ... other functions
 ```
+
+See [Deployment Guide](docs/BIBLE/06-DEPLOYMENT/) for complete instructions.
+
+---
+
+## 📊 Performance
+
+**Targets**:
+- Lighthouse Performance: > 90
+- API Response Time: < 200ms (95th percentile)
+- LCP (Largest Contentful Paint): < 2.5s
+- Bundle Size: < 500KB gzipped
+
+**Scalability**:
+- Edge Functions: Auto-scaling (0 to ∞)
+- Database: Vertical scaling + read replicas
+- Users: Unlimited (Supabase scales automatically)
+
+---
+
+## 🗺️ Roadmap
+
+### Q1 2026
+- [ ] Advanced document search with filters
+- [ ] Knowledge graph visualization
+- [ ] Custom agent creation
+- [ ] Bulk document upload
+
+### Q2 2026
+- [ ] Mobile app (React Native)
+- [ ] Desktop app (Electron)
+- [ ] SSO (SAML, OIDC)
+- [ ] API for third-party integrations
+
+### Q3 2026
+- [ ] Multi-modal chat (images, videos)
+- [ ] Agent marketplace
+- [ ] Code understanding and generation
+- [ ] Automated workflows
+
+See [Full Roadmap](docs/AI_QUERY_HUB_OVERVIEW.md#future-roadmap) for details.
+
+---
+
+## 🧑‍💻 Development
+
+### Project Structure
+```
+aiqueryhub/
+├── src/                      # Frontend source code
+│   ├── pages/               # Page components
+│   ├── components/          # Reusable UI components
+│   ├── hooks/               # Custom React hooks
+│   ├── lib/                 # Utilities and helpers
+│   └── integrations/        # Supabase client
+├── supabase/
+│   ├── functions/           # Edge Functions (Deno)
+│   └── migrations/          # Database migrations
+├── docs/                    # Documentation
+│   ├── BIBLE/              # Comprehensive docs
+│   ├── AI_QUERY_HUB_OVERVIEW.md
+│   └── INDEX.md
+├── CLAUDE.md               # AI development guide
+└── package.json
+```
+
+### Development Commands
+```bash
+npm run dev          # Start dev server
+npm run build        # Build for production
+npm run build:dev    # Build in dev mode
+npm run lint         # Lint codebase
+npm run preview      # Preview production build
+```
+
+### Key Files to Review
+- `CLAUDE.md` - Project instructions and coding standards
+- `docs/AI_QUERY_HUB_OVERVIEW.md` - Complete platform overview
+- `src/App.tsx` - Main application entry
+- `supabase/functions/ai-query/index.ts` - Main AI query handler
+
+---
+
+## 🤝 Contributing
+
+We welcome contributions! Here's how to get started:
+
+1. **Fork** the repository
+2. **Create** a feature branch (`git checkout -b feature/amazing-feature`)
+3. **Commit** your changes (`git commit -m 'Add amazing feature'`)
+4. **Push** to the branch (`git push origin feature/amazing-feature`)
+5. **Open** a Pull Request
+
+**Before submitting**:
+- Follow coding standards in `CLAUDE.md`
+- Ensure tests pass (when available)
+- Update documentation if needed
+- Add screenshots for UI changes
+
+---
+
+## 📝 License
+
+This project is proprietary software. All rights reserved.
+
+---
+
+## 🙏 Acknowledgments
+
+- **Anthropic** - Claude AI models
+- **Supabase** - Backend infrastructure
+- **shadcn-ui** - Beautiful UI components
+- **React Team** - Amazing framework
+- **Open Source Community** - Countless dependencies
+
+---
+
+## 📞 Support & Community
+
+- **Documentation**: [docs/INDEX.md](docs/INDEX.md)
+- **GitHub Issues**: Bug reports and feature requests
+- **Email**: support@aiqueryhub.com (planned)
+- **Discord**: Coming soon
+- **Twitter**: [@aiqueryhub](https://twitter.com/aiqueryhub) (planned)
+
+---
+
+## 🔗 Links
+
+- **Website**: https://aiqueryhub.com (coming soon)
+- **Supabase Project**: https://fskwutnoxbbflzqrphro.supabase.co
+- **Documentation**: [docs/AI_QUERY_HUB_OVERVIEW.md](docs/AI_QUERY_HUB_OVERVIEW.md)
+- **Design System**: [docs/BIBLE/09-REFERENCE/DESIGN_SYSTEM.md](docs/BIBLE/09-REFERENCE/DESIGN_SYSTEM.md)
+
+---
+
+## ⚡ Quick Links
+
+| For... | Start Here |
+|--------|------------|
+| **Users** | [Getting Started Guide](docs/AI_QUERY_HUB_OVERVIEW.md#for-users) |
+| **Developers** | [Architecture Overview](docs/AI_QUERY_HUB_OVERVIEW.md#architecture-overview) |
+| **Designers** | [Design System](docs/BIBLE/09-REFERENCE/DESIGN_SYSTEM.md) |
+| **Product Managers** | [User Personas & Use Cases](docs/AI_QUERY_HUB_OVERVIEW.md#user-personas--use-cases) |
+| **DevOps** | [Deployment Guide](docs/BIBLE/06-DEPLOYMENT/) |
+
+---
+
+**Built with ❤️ using Claude AI assistance**
+
+**Version**: 1.0.0
+**Last Updated**: January 28, 2026
+**Status**: Production Ready
+
+🚀 **AI Query Hub - Your Intelligent Knowledge Partner**

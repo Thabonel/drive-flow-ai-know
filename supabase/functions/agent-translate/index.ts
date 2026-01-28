@@ -164,57 +164,48 @@ serve(async (req) => {
     const data = await response.json();
     const translationDuration = Date.now() - startTime;
 
-    // Get session ID for token tracking (before processing tasks)
-    let { data: sessionData } = await supabase
+    // ALWAYS create a new session for each action (no reuse) to prevent task cross-contamination
+    console.log('Creating unique session for user action:', user.id);
+    const { data: newSession, error: sessionError } = await supabase
       .from('agent_sessions')
+      .insert({
+        user_id: user.id,
+        status: 'active',
+        tokens_used: 0,
+        tokens_budget: 100000,
+        metadata: {
+          original_message: unstructured_input.slice(0, 200),  // First 200 chars for debugging
+          created_from: 'agent-translate',
+          timestamp: new Date().toISOString(),
+        }
+      })
       .select('id')
-      .eq('user_id', user.id)
-      .eq('status', 'active')
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
+      .single();
 
-    // Auto-create session if none exists
-    if (!sessionData) {
-      console.log('No active session found, creating new session for user:', user.id);
-      const { data: newSession, error: sessionError } = await supabase
-        .from('agent_sessions')
-        .insert({
-          user_id: user.id,
-          status: 'active',
-          tokens_used: 0,
-          tokens_budget: 100000,
-        })
-        .select('id')
-        .single();
-
-      if (sessionError) {
-        console.error('Failed to create agent session:', sessionError);
-        // Continue without session - tasks won't be stored but translation still works
-      } else {
-        sessionData = newSession;
-        console.log('Created new agent session:', newSession.id);
-      }
+    if (sessionError || !newSession) {
+      console.error('Failed to create agent session:', sessionError);
+      throw new Error(`Failed to create session: ${sessionError?.message}`);
     }
 
-    // Track token usage
-    if (sessionData) {
-      const tokensUsed = extractTokensFromClaudeResponse(data);
-      const tokenUpdate = await updateTokenUsage(sessionData.id, tokensUsed);
+    const sessionData = newSession;
+    console.log('Created new agent session:', newSession.id);
 
-      if (tokenUpdate.budgetExceeded) {
-        console.warn(`Token budget exceeded. Session paused. Tokens remaining: ${tokenUpdate.tokensRemaining}`);
-        return new Response(
-          JSON.stringify({
-            error: 'Token budget exceeded. Session has been paused.',
-            budget_exceeded: true,
-          }),
-          {
-            status: 429,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          }
-        );
-      }
+    // Track token usage
+    const tokensUsed = extractTokensFromClaudeResponse(data);
+    const tokenUpdate = await updateTokenUsage(sessionData.id, tokensUsed);
+
+    if (tokenUpdate.budgetExceeded) {
+      console.warn(`Token budget exceeded. Session paused. Tokens remaining: ${tokenUpdate.tokensRemaining}`);
+      return new Response(
+        JSON.stringify({
+          error: 'Token budget exceeded. Session has been paused.',
+          budget_exceeded: true,
+        }),
+        {
+          status: 429,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
     }
 
     // Extract tasks from Claude's response with defensive access
@@ -242,57 +233,53 @@ serve(async (req) => {
       throw new Error('Invalid response format: expected array of tasks');
     }
 
-    // Store tasks in agent_tasks table (sessionData already fetched above for token tracking)
-    if (sessionData) {
-      // Store each task - include timezone_offset for sub-agents to use
-      const taskInserts = tasks.map(task => ({
-        session_id: sessionData.id,
-        user_id: user.id,
-        original_input: unstructured_input,
-        structured_output: {
-          ...task,
-          timezone_offset: timezone_offset ?? 2, // Default to UTC+2 if not provided
-        },
-        status: 'pending',
-      }));
+    // Store tasks in agent_tasks table
+    // Store each task - include timezone_offset for sub-agents to use
+    const taskInserts = tasks.map(task => ({
+      session_id: sessionData.id,
+      user_id: user.id,
+      original_input: unstructured_input,
+      structured_output: {
+        ...task,
+        timezone_offset: timezone_offset ?? 2, // Default to UTC+2 if not provided
+      },
+      status: 'pending',
+    }));
 
-      const { error: insertError } = await supabase
-        .from('agent_tasks')
-        .insert(taskInserts);
+    const { error: insertError } = await supabase
+      .from('agent_tasks')
+      .insert(taskInserts);
 
-      if (insertError) {
-        console.error('Error storing tasks:', insertError);
-      }
+    if (insertError) {
+      console.error('Error storing tasks:', insertError);
     }
 
     // Log translation to agent memory
-    if (sessionData) {
-      const { error: memoryError } = await supabase
-        .from('agent_memory')
-        .insert({
-          session_id: sessionData.id,
-          user_id: user.id,
-          memory_type: 'action_log',
-          content: {
-            action: 'translation_completed',
-            input: unstructured_input,
-            task_count: tasks.length,
-            duration_ms: translationDuration,
-            timezone: context?.timezone || 'UTC',
-          },
-          importance: 3,
-        });
+    const { error: memoryError } = await supabase
+      .from('agent_memory')
+      .insert({
+        session_id: sessionData.id,
+        user_id: user.id,
+        memory_type: 'action_log',
+        content: {
+          action: 'translation_completed',
+          input: unstructured_input,
+          task_count: tasks.length,
+          duration_ms: translationDuration,
+          timezone: context?.timezone || 'UTC',
+        },
+        importance: 3,
+      });
 
-      if (memoryError) {
-        console.error('Error logging to agent_memory:', memoryError);
-        // Continue - not fatal, but log it for debugging
-      }
+    if (memoryError) {
+      console.error('Error logging to agent_memory:', memoryError);
+      // Continue - not fatal, but log it for debugging
     }
 
     return new Response(
       JSON.stringify({
         tasks,
-        session_id: sessionData?.id,
+        session_id: sessionData.id,
         metadata: {
           task_count: tasks.length,
           translation_duration_ms: translationDuration,
