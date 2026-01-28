@@ -45,7 +45,7 @@
 **Import/Export Logic**:
 - Users keep existing storage providers (low switching cost)
 - Documents sync bidirectionally (changes in Drive reflect in app)
-- Export: Conversations downloadable as TXT, MD, HTML, PDF
+- Export: Documents downloadable as PDF, DOCX (Word); Conversations downloadable as TXT, MD, HTML, PDF
 - Pitch decks exportable as PPTX
 - No vendor lock-in on document storage
 

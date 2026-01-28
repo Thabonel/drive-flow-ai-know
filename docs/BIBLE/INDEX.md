@@ -1,7 +1,7 @@
 # AI Query Hub - Complete Documentation (THE BIBLE)
 
-**Last Updated**: 2026-01-24
-**Version**: 2.2.0
+**Last Updated**: 2026-01-29
+**Version**: 2.2.1
 **Status**: Comprehensive Reference
 
 ---
@@ -15,6 +15,15 @@ This is the complete, authoritative documentation for AI Query Hub. Every system
 ---
 
 ## Recent Updates (January 2026)
+
+### Document Export Simplification (2026-01-29)
+- **Document Viewer**: Removed broken TXT/MD/HTML download formats
+  - Kept only working formats: PDF and DOCX (Word Document)
+  - Removed ~210 lines of buggy content building logic
+  - Added safe title handling with "Document" fallback
+  - Simplified handleDownload function to 'pdf' | 'docx' only
+- **Result**: Cleaner UX with 2 reliable export options instead of 5 (3 broken)
+- **Files Modified**: `src/components/DocumentViewerModal.tsx`
 
 ### Edge Functions Fix & Agent System (2026-01-24)
 - **CRITICAL FIX**: Pinned `@supabase/supabase-js` to v2.45.0 in all Edge Functions
