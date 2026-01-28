@@ -1469,6 +1469,12 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
           break;
       }
 
+      // Validate content before creating blob
+      if (!content || content.trim().length === 0) {
+        toast.error('Cannot download empty conversation');
+        return;
+      }
+
       // Create and download the file
       const blob = new Blob([content], { type: mimeType });
       const url = URL.createObjectURL(blob);
@@ -1476,21 +1482,25 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
       link.href = url;
       link.download = `${fileName}_conversation.${extension}`;
 
-      // Add to DOM, click, and cleanup
+      // Add to DOM, click, and immediate cleanup
       document.body.appendChild(link);
       link.click();
-
-      // Small delay before cleanup to ensure download starts
-      setTimeout(() => {
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-      }, 100);
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
 
       toast.success(`Conversation downloaded as ${extension.toUpperCase()}`);
     } catch (error) {
       console.error('Download error:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      toast.error(`Failed to download: ${errorMessage}`);
+
+      // Provide browser-specific guidance
+      if (errorMessage.includes('SecurityError')) {
+        toast.error('Download blocked by browser security. Please check settings.');
+      } else if (errorMessage.includes('NotAllowedError')) {
+        toast.error('Download permission denied. Try allowing downloads in browser settings.');
+      } else {
+        toast.error(`Failed to download: ${errorMessage}`);
+      }
     }
   };
 
