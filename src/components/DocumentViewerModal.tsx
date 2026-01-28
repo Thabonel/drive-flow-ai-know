@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
+import MarkdownIt from 'markdown-it';
 import DOMPurify from 'dompurify';
+import { pdf } from '@react-pdf/renderer';
+import { saveAs } from 'file-saver';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -33,6 +36,8 @@ import { ExtractToTimelineDialog } from '@/components/ai/ExtractToTimelineDialog
 // CRITICAL: Do not remove - handles HTML vs Markdown detection for document rendering
 // See src/lib/content-detection.ts for documentation
 import { shouldRenderAsHTML } from '@/lib/content-detection';
+import { PDFDocument } from '@/components/PDFDocument';
+import { generateWordDocument } from '@/lib/document-export';
 
 interface DocumentViewerModalProps {
   document: any;
@@ -136,94 +141,306 @@ export const DocumentViewerModal = ({ document, isOpen, onClose }: DocumentViewe
   };
 
   const handlePrint = () => {
-    // Create a print-friendly version of the document
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) {
+    // Wrap in try-catch for error handling
+    try {
+      // Create a print-friendly version of the document
+      const printWindow = window.open('', '_blank');
+      if (!printWindow) {
+        toast({
+          title: 'Error',
+          description: 'Please allow popups to print documents.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      // Detect if content is HTML (same logic as download)
+      const isHTMLContent = shouldRenderAsHTML(formData.content, document?.metadata);
+
+      let printableContent;
+      if (isHTMLContent) {
+        // Keep HTML as-is
+        printableContent = formData.content;
+      } else {
+        // Use markdown-it to convert markdown to HTML (client-side, no React)
+        const md = new MarkdownIt({
+          html: true,        // Enable HTML tags in source
+          linkify: true,     // Auto-convert URLs to links
+          typographer: true  // Enable smart quotes and other nice typography
+        });
+        printableContent = md.render(formData.content);
+      }
+
+      // Enhanced print HTML with Navy/Gold theme
+      const printContent = `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <title>${formData.title}</title>
+            <style>
+              body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                line-height: 1.6;
+                max-width: 800px;
+                margin: 0 auto;
+                padding: 20px;
+                color: #333;
+              }
+              h1 {
+                font-size: 28px;
+                font-weight: bold;
+                color: #0A2342;
+                margin-bottom: 10px;
+                border-bottom: 3px solid #FFC300;
+                padding-bottom: 10px;
+              }
+              h2 {
+                font-size: 22px;
+                font-weight: bold;
+                color: #0A2342;
+                margin-top: 20px;
+                margin-bottom: 10px;
+              }
+              h3 {
+                font-size: 18px;
+                font-weight: bold;
+                color: #0A2342;
+                margin-top: 15px;
+                margin-bottom: 8px;
+              }
+              p {
+                margin-bottom: 10px;
+              }
+              strong {
+                font-weight: bold;
+              }
+              em {
+                font-style: italic;
+              }
+              ul, ol {
+                margin: 10px 0;
+                padding-left: 30px;
+              }
+              li {
+                margin: 5px 0;
+              }
+              code {
+                background: #f5f5f5;
+                padding: 2px 6px;
+                border-radius: 3px;
+                font-family: 'Courier New', monospace;
+              }
+              pre {
+                background: #f5f5f5;
+                padding: 15px;
+                border-radius: 8px;
+                overflow-x: auto;
+              }
+              pre code {
+                background: none;
+                padding: 0;
+              }
+              .metadata {
+                background: #f5f5f5;
+                padding: 15px;
+                border-radius: 8px;
+                margin: 20px 0;
+                font-size: 14px;
+              }
+              .content {
+                word-wrap: break-word;
+              }
+              @media print {
+                body { padding: 0; }
+              }
+            </style>
+          </head>
+          <body>
+            <h1>${formData.title}</h1>
+            <div class="metadata">
+              <p><strong>Category:</strong> ${formData.category || 'Uncategorized'}</p>
+              <p><strong>Tags:</strong> ${formData.tags.join(', ')}</p>
+            </div>
+            <div class="content">
+              ${printableContent}
+            </div>
+          </body>
+        </html>
+      `;
+
+      printWindow.document.write(printContent);
+      printWindow.document.close();
+
+      // Wait for content to load before triggering print
+      printWindow.onload = () => {
+        printWindow.print();
+      };
+
+      toast({
+        title: 'Print Dialog Opened',
+        description: 'Print preview is ready.',
+      });
+
+    } catch (error) {
+      console.error('Print error:', error);
       toast({
         title: 'Error',
-        description: 'Please allow popups to print documents.',
+        description: error instanceof Error ? error.message : 'Failed to open print dialog',
         variant: 'destructive',
       });
-      return;
     }
-
-    const printContent = `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <title>${formData.title}</title>
-          <style>
-            body {
-              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-              line-height: 1.6;
-              max-width: 800px;
-              margin: 0 auto;
-              padding: 20px;
-            }
-            h1 {
-              font-size: 24px;
-              margin-bottom: 20px;
-              border-bottom: 2px solid #333;
-              padding-bottom: 10px;
-            }
-            .metadata {
-              color: #666;
-              font-size: 12px;
-              margin-bottom: 20px;
-            }
-            .content {
-              white-space: pre-wrap;
-              word-wrap: break-word;
-            }
-            @media print {
-              body { padding: 0; }
-            }
-          </style>
-        </head>
-        <body>
-          <h1>${formData.title}</h1>
-          <div class="metadata">
-            Category: ${formData.category || 'Uncategorized'}
-            ${formData.tags.length > 0 ? `| Tags: ${formData.tags.join(', ')}` : ''}
-          </div>
-          <div class="content">${formData.content.replace(/\n/g, '<br>')}</div>
-        </body>
-      </html>
-    `;
-
-    printWindow.document.write(printContent);
-    printWindow.document.close();
-    printWindow.onload = () => {
-      printWindow.print();
-    };
-
-    toast({
-      title: 'Print Dialog Opened',
-      description: 'Print preview is ready.',
-    });
   };
 
-  const handleDownload = (format: 'txt' | 'md' | 'html' | 'pdf' = 'txt') => {
+  // Helper function to convert HTML to plain text
+  const htmlToText = (html: string): string => {
+    if (!html) return '';
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+    return doc.body.textContent || '';
+  };
+
+  // Helper function to convert HTML to markdown
+  const htmlToMarkdown = (html: string): string => {
+    if (!html) return '';
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+    let markdown = '';
+
+    const processNode = (node: Node) => {
+      if (node.nodeType === Node.TEXT_NODE) {
+        const text = node.textContent?.trim();
+        if (text) markdown += text + ' ';
+      } else if (node.nodeType === Node.ELEMENT_NODE) {
+        const element = node as HTMLElement;
+        const text = element.textContent?.trim() || '';
+
+        switch (element.tagName) {
+          case 'H1':
+            markdown += `\n# ${text}\n\n`;
+            break;
+          case 'H2':
+            markdown += `\n## ${text}\n\n`;
+            break;
+          case 'H3':
+            markdown += `\n### ${text}\n\n`;
+            break;
+          case 'H4':
+            markdown += `\n#### ${text}\n\n`;
+            break;
+          case 'P':
+            node.childNodes.forEach(processNode);
+            markdown += '\n\n';
+            break;
+          case 'BR':
+            markdown += '\n';
+            break;
+          case 'STRONG':
+          case 'B':
+            markdown += `**${text}**`;
+            break;
+          case 'EM':
+          case 'I':
+            markdown += `*${text}*`;
+            break;
+          case 'UL':
+            element.querySelectorAll('li').forEach((li) => {
+              markdown += `- ${li.textContent?.trim()}\n`;
+            });
+            markdown += '\n';
+            break;
+          case 'OL':
+            element.querySelectorAll('li').forEach((li, i) => {
+              markdown += `${i + 1}. ${li.textContent?.trim()}\n`;
+            });
+            markdown += '\n';
+            break;
+          case 'TABLE':
+            // Basic table support - extract as plain text rows
+            element.querySelectorAll('tr').forEach((tr) => {
+              const cells = Array.from(tr.querySelectorAll('td, th'));
+              markdown += '| ' + cells.map(c => c.textContent?.trim()).join(' | ') + ' |\n';
+            });
+            markdown += '\n';
+            break;
+          default:
+            node.childNodes.forEach(processNode);
+        }
+      }
+    };
+
+    doc.body.childNodes.forEach(processNode);
+    return markdown.trim();
+  };
+
+  const handleDownload = async (format: 'txt' | 'md' | 'html' | 'pdf' | 'docx' = 'txt') => {
     try {
       const fileName = formData.title.replace(/[^a-z0-9]/gi, '_').toLowerCase();
 
+      // PDF export using @react-pdf/renderer
       if (format === 'pdf') {
-        // Use print for PDF generation
-        handlePrint();
+        const blob = await pdf(
+          <PDFDocument
+            title={formData.title}
+            category={formData.category}
+            tags={formData.tags}
+            content={formData.content}
+            metadata={document?.metadata}
+          />
+        ).toBlob();
+
+        saveAs(blob, `${fileName}.pdf`);
+
         toast({
-          title: 'PDF Generation',
-          description: 'Use the print dialog to save as PDF.',
+          title: 'Downloaded',
+          description: 'PDF generated successfully.',
         });
         return;
+      }
+
+      // Word document export
+      if (format === 'docx') {
+        await generateWordDocument(
+          formData.title,
+          formData.category,
+          formData.tags,
+          formData.content,
+          document?.metadata
+        );
+
+        toast({
+          title: 'Downloaded',
+          description: 'Word document generated successfully.',
+        });
+        return;
+      }
+
+      // Detect if content is HTML using the same logic as display
+      const isHTMLContent = shouldRenderAsHTML(formData.content, document?.metadata);
+
+      // Convert content based on original format and target format
+      let processedContent = formData.content;
+      if (isHTMLContent) {
+        // Content is HTML, convert to target format
+        switch (format) {
+          case 'txt':
+            processedContent = htmlToText(formData.content);
+            break;
+          case 'md':
+            processedContent = htmlToMarkdown(formData.content);
+            break;
+          case 'html':
+            // Keep as HTML
+            processedContent = formData.content;
+            break;
+        }
       }
 
       let content = '';
       let mimeType = 'text/plain';
       let extension = 'txt';
 
+      // Build final content with metadata
       switch (format) {
         case 'txt':
-          content = `${formData.title}\n${'='.repeat(formData.title.length)}\n\nCategory: ${formData.category || 'Uncategorized'}\nTags: ${formData.tags.join(', ')}\n\n${formData.content}`;
+          content = `${formData.title}\n${'='.repeat(formData.title.length)}\n\nCategory: ${formData.category || 'Uncategorized'}\nTags: ${formData.tags.join(', ')}\n\n${processedContent}`;
           mimeType = 'text/plain';
           extension = 'txt';
           break;
@@ -232,7 +449,7 @@ export const DocumentViewerModal = ({ document, isOpen, onClose }: DocumentViewe
           content = `# ${formData.title}\n\n`;
           content += `**Category:** ${formData.category || 'Uncategorized'}  \n`;
           content += `**Tags:** ${formData.tags.join(', ')}\n\n`;
-          content += `---\n\n${formData.content}`;
+          content += `---\n\n${processedContent}`;
           mimeType = 'text/markdown';
           extension = 'md';
           break;
@@ -284,12 +501,22 @@ export const DocumentViewerModal = ({ document, isOpen, onClose }: DocumentViewe
     <p><strong>Category:</strong> ${formData.category || 'Uncategorized'}</p>
     <p><strong>Tags:</strong> ${formData.tags.map(tag => `<span class="tag">${tag}</span>`).join(' ')}</p>
   </div>
-  <div class="content">${formData.content.replace(/\n/g, '<br>')}</div>
+  <div class="content">${processedContent}</div>
 </body>
 </html>`;
           mimeType = 'text/html';
           extension = 'html';
           break;
+      }
+
+      // Validate content is not empty
+      if (!content || content.trim().length === 0) {
+        toast({
+          title: 'Error',
+          description: 'Cannot download empty document',
+          variant: 'destructive',
+        });
+        return;
       }
 
       const blob = new Blob([content], { type: mimeType });
@@ -307,9 +534,11 @@ export const DocumentViewerModal = ({ document, isOpen, onClose }: DocumentViewe
         description: `Document downloaded as ${extension.toUpperCase()}.`,
       });
     } catch (error) {
+      console.error('Download error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to download document';
       toast({
         title: 'Error',
-        description: 'Failed to download document.',
+        description: errorMessage,
         variant: 'destructive',
       });
     }
@@ -526,7 +755,10 @@ export const DocumentViewerModal = ({ document, isOpen, onClose }: DocumentViewe
                         HTML (.html)
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => handleDownload('pdf')}>
-                        PDF (via Print)
+                        PDF (.pdf)
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleDownload('docx')}>
+                        Word Document (.docx)
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
