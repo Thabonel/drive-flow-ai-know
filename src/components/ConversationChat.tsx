@@ -234,6 +234,29 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
 
       return sortedData as Message[];
     });
+
+    // Fetch sub-agent results for messages that have them
+    // This prevents "Processing..." from showing for completed agents
+    if (data) {
+      const messagesWithAgents = data.filter(
+        msg => msg.agent_metadata?.sub_agent_ids && msg.agent_metadata.sub_agent_ids.length > 0
+      );
+
+      for (const message of messagesWithAgents) {
+        const subAgentIds = message.agent_metadata.sub_agent_ids;
+        const { data: agents } = await supabase
+          .from('sub_agents')
+          .select('*')
+          .in('id', subAgentIds);
+
+        if (agents) {
+          setSubAgentResults(prev => ({
+            ...prev,
+            [message.id]: agents as SubAgentResult[],
+          }));
+        }
+      }
+    }
   };
 
   const createConversation = async () => {
