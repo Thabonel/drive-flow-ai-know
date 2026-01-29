@@ -386,6 +386,7 @@ async function claudeCompletion(
   messages: Message[],
   systemMessage: string,
   userId: string,
+  token: string,
   imageData?: { base64: string; media_type: string }
 ) {
   if (!anthropicApiKey) {
@@ -562,7 +563,7 @@ async function claudeCompletion(
   ];
 
   // Helper function to call Google Sheets API
-  async function callGoogleSheetsAPI(userId: string, action: string, params: any) {
+  async function callGoogleSheetsAPI(token: string, action: string, params: any) {
     try {
       // Call our google-sheets-api Edge Function
       const supabaseClient = createClient(
@@ -573,7 +574,7 @@ async function claudeCompletion(
       const { data, error } = await supabaseClient.functions.invoke('google-sheets-api', {
         body: { action, ...params },
         headers: {
-          Authorization: `Bearer ${userId}` // Use user ID for auth
+          Authorization: `Bearer ${token}` // Use JWT token for auth
         }
       });
 
@@ -595,7 +596,7 @@ async function claudeCompletion(
   }
 
   // Helper function to process tool uses recursively (with depth limit)
-  async function processWithTools(currentMessages: any[], userId: string, depth: number = 0): Promise<string> {
+  async function processWithTools(currentMessages: any[], userId: string, token: string, depth: number = 0): Promise<string> {
     const MAX_TOOL_DEPTH = 5; // Allow more searches for thorough research
 
     if (depth >= MAX_TOOL_DEPTH) {
@@ -697,7 +698,7 @@ async function claudeCompletion(
           });
         } else if (toolUse.name === 'list_sheets') {
           console.log('Processing list_sheets request');
-          const sheetsResult = await callGoogleSheetsAPI(userId, 'list', {});
+          const sheetsResult = await callGoogleSheetsAPI(token, 'list', {});
           toolResults.push({
             type: 'tool_result',
             tool_use_id: toolUse.id,
@@ -705,7 +706,7 @@ async function claudeCompletion(
           });
         } else if (toolUse.name === 'read_sheet') {
           console.log('Processing read_sheet:', toolUse.input.sheet_id, toolUse.input.range);
-          const readResult = await callGoogleSheetsAPI(userId, 'read', {
+          const readResult = await callGoogleSheetsAPI(token, 'read', {
             sheet_id: toolUse.input.sheet_id,
             range: toolUse.input.range
           });
@@ -716,7 +717,7 @@ async function claudeCompletion(
           });
         } else if (toolUse.name === 'write_sheet') {
           console.log('Processing write_sheet:', toolUse.input.sheet_id);
-          const writeResult = await callGoogleSheetsAPI(userId, 'write', {
+          const writeResult = await callGoogleSheetsAPI(token, 'write', {
             sheet_id: toolUse.input.sheet_id,
             data: toolUse.input.data,
             range: toolUse.input.range
@@ -728,7 +729,7 @@ async function claudeCompletion(
           });
         } else if (toolUse.name === 'create_sheet') {
           console.log('Processing create_sheet:', toolUse.input.title);
-          const createResult = await callGoogleSheetsAPI(userId, 'create', {
+          const createResult = await callGoogleSheetsAPI(token, 'create', {
             title: toolUse.input.title,
             headers: toolUse.input.headers
           });
@@ -739,7 +740,7 @@ async function claudeCompletion(
           });
         } else if (toolUse.name === 'analyze_sheet') {
           console.log('Processing analyze_sheet:', toolUse.input.sheet_id);
-          const analyzeResult = await callGoogleSheetsAPI(userId, 'metadata', {
+          const analyzeResult = await callGoogleSheetsAPI(token, 'metadata', {
             sheet_id: toolUse.input.sheet_id
           });
           toolResults.push({
@@ -772,7 +773,7 @@ async function claudeCompletion(
       ];
 
       // Recursively process (in case Claude wants to use more tools)
-      return processWithTools(followUpMessages, userId, depth + 1);
+      return processWithTools(followUpMessages, userId, token, depth + 1);
     }
 
     // No tool use - extract text response
@@ -787,7 +788,7 @@ async function claudeCompletion(
   }
 
   // Start processing with initial messages
-  return processWithTools(userMessages, userId, 0);
+  return processWithTools(userMessages, userId, token, 0);
 }
 
 
@@ -818,6 +819,7 @@ export async function getLLMResponse(
   messages: Message[],
   systemMessage: string,
   userId: string,
+  token: string,
   providerOverride?: string,
   imageData?: { base64: string; media_type: string }
 ) {
@@ -862,7 +864,7 @@ export async function getLLMResponse(
             console.log('Anthropic API key not available, skipping');
             continue;
           }
-          return await claudeCompletion(messages, systemMessage, userId, imageData);
+          return await claudeCompletion(messages, systemMessage, userId, token, imageData);
         case 'openrouter':
           if (!openRouterApiKey) {
             console.log('OpenRouter API key not available, skipping');
@@ -1499,7 +1501,7 @@ ${productKnowledge}
     console.log('Calling AI model for response generation with', messages.length, 'messages...');
     let aiAnswer;
     try {
-      aiAnswer = await getLLMResponse(messages, systemMessage, user_id, providerOverride, image);
+      aiAnswer = await getLLMResponse(messages, systemMessage, user_id, token, providerOverride, image);
       console.log('AI response generated successfully:', aiAnswer ? 'Yes' : 'No', 'Length:', aiAnswer?.length || 0);
     } catch (aiError) {
       console.error('AI model error details:', {

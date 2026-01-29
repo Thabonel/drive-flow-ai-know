@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useGoogleOAuth } from '@/hooks/useGoogleOAuth';
 
 export interface GoogleSheet {
   id: string;
@@ -34,194 +35,210 @@ export interface SheetMetadata {
 }
 
 export const useGoogleSheets = () => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [sheets, setSheets] = useState<GoogleSheet[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSigningIn, setIsSigningIn] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
 
-  // Check if we have a valid Google token (reuse Drive token with extended scope)
-  const checkConnection = useCallback(async () => {
-    if (!user) {
-      setIsAuthenticated(false);
-      return false;
-    }
+  // Use secure OAuth utility
+  const {
+    isAuthenticated,
+    initiateGoogleOAuth,
+    checkConnection,
+    disconnect: disconnectOAuth,
+  } = useGoogleOAuth();
 
-    try {
-      // Check if there's a provider token in the current session
-      const { data: { session } } = await supabase.auth.getSession();
-
-      if (session?.provider_token) {
-        setIsAuthenticated(true);
-        return true;
-      }
-
-      // Fall back to checking stored tokens
-      const { data: storedToken } = await supabase
-        .from('user_google_tokens')
-        .select('access_token, expires_at, scope')
-        .eq('user_id', user.id)
-        .maybeSingle();
-
-      if (storedToken?.access_token) {
-        // Check if token has Sheets scope
-        const hasSheetScope = storedToken.scope?.includes('spreadsheets');
-        const expiresAt = new Date(storedToken.expires_at);
-
-        if (expiresAt > new Date() && hasSheetScope) {
-          setIsAuthenticated(true);
-          return true;
-        }
-      }
-
-      setIsAuthenticated(false);
-      return false;
-    } catch (error) {
-      console.error('Error checking Sheets connection:', error);
-      setIsAuthenticated(false);
-      return false;
-    }
-  }, [user]);
-
-  // Check connection on mount and when user changes
+  // Initialize connection check from secure OAuth utility
   useEffect(() => {
-    checkConnection();
-  }, [checkConnection]);
+    if (user) {
+      checkConnection();
+    }
+  }, [user, checkConnection]);
 
-  // Call Google Sheets API via our Edge Function
+  // Call Google Sheets API via our secure Edge Function
   const callSheetsAPI = useCallback(async (action: string, params: any = {}) => {
+    if (!user) {
+      throw new Error('User not authenticated');
+    }
+
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('No authentication session');
+      }
+
       const { data, error } = await supabase.functions.invoke('google-sheets-api', {
-        body: { action, ...params }
+        body: { action, ...params },
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
       });
 
       if (error) {
-        throw new Error(error.message || 'Google Sheets API call failed');
+        throw new Error(`API call failed: ${error.message}`);
       }
 
       if (data?.error) {
         throw new Error(data.error);
       }
 
-      return data?.data;
+      return data?.data || data;
     } catch (error) {
-      console.error(`Google Sheets API error (${action}):`, error);
+      console.error('Sheets API error:', error);
+
+      // Handle specific error cases
+      if (error.message.includes('No Google Sheets access token')) {
+        toast({
+          title: 'Google Sheets Not Connected',
+          description: 'Please connect your Google account first.',
+          variant: 'destructive',
+        });
+        return null;
+      }
+
       throw error;
     }
-  }, []);
+  }, [user, toast]);
 
-  // List user's Google Sheets
+  // List all Google Sheets
   const listSheets = useCallback(async () => {
     if (!isAuthenticated) {
-      toast({
-        title: 'Not Connected',
-        description: 'Please connect Google Sheets first',
-        variant: 'destructive',
-      });
+      console.log('Not authenticated, cannot list sheets');
       return;
     }
 
     setIsLoading(true);
     try {
       const sheetsData = await callSheetsAPI('list');
-      setSheets(sheetsData || []);
+      if (sheetsData) {
+        setSheets(sheetsData);
+      }
     } catch (error) {
+      console.error('Error listing sheets:', error);
       toast({
-        title: 'Error',
-        description: 'Failed to load Google Sheets',
+        title: 'Failed to Load Sheets',
+        description: error instanceof Error ? error.message : 'Unknown error occurred',
         variant: 'destructive',
       });
+      setSheets([]);
     } finally {
       setIsLoading(false);
     }
   }, [isAuthenticated, callSheetsAPI, toast]);
 
-  // Get sheet metadata
-  const getSheetMetadata = useCallback(async (sheetId: string): Promise<SheetMetadata | null> => {
-    try {
-      return await callSheetsAPI('metadata', { sheet_id: sheetId });
-    } catch (error) {
+  // Read data from a specific sheet
+  const readSheet = useCallback(async (sheetId: string, range?: string): Promise<SheetData | null> => {
+    if (!isAuthenticated) {
       toast({
-        title: 'Error',
-        description: 'Failed to get sheet information',
+        title: 'Google Sheets Not Connected',
+        description: 'Please connect your Google account first.',
         variant: 'destructive',
       });
       return null;
     }
-  }, [callSheetsAPI, toast]);
 
-  // Read data from a sheet
-  const readSheetData = useCallback(async (sheetId: string, range?: string): Promise<SheetData | null> => {
     try {
-      return await callSheetsAPI('read', { sheet_id: sheetId, range });
+      const data = await callSheetsAPI('read', { sheet_id: sheetId, range });
+      return data as SheetData;
     } catch (error) {
+      console.error('Error reading sheet:', error);
       toast({
-        title: 'Error',
-        description: 'Failed to read sheet data',
+        title: 'Failed to Read Sheet',
+        description: error instanceof Error ? error.message : 'Unknown error occurred',
         variant: 'destructive',
       });
       return null;
     }
-  }, [callSheetsAPI, toast]);
+  }, [isAuthenticated, callSheetsAPI, toast]);
 
-  // Write data to a sheet
-  const writeSheetData = useCallback(async (
-    sheetId: string,
-    data: any[][],
-    range?: string
-  ): Promise<boolean> => {
-    try {
-      await callSheetsAPI('write', { sheet_id: sheetId, data, range });
+  // Write data to a specific sheet
+  const writeSheet = useCallback(async (sheetId: string, data: any[][], range?: string): Promise<boolean> => {
+    if (!isAuthenticated) {
       toast({
-        title: 'Success',
-        description: 'Sheet updated successfully',
-      });
-      return true;
-    } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to update sheet',
+        title: 'Google Sheets Not Connected',
+        description: 'Please connect your Google account first.',
         variant: 'destructive',
       });
       return false;
     }
-  }, [callSheetsAPI, toast]);
+
+    try {
+      await callSheetsAPI('write', { sheet_id: sheetId, data, range });
+      toast({
+        title: 'Sheet Updated',
+        description: 'Data has been written to the sheet successfully.',
+      });
+      return true;
+    } catch (error) {
+      console.error('Error writing sheet:', error);
+      toast({
+        title: 'Failed to Write Sheet',
+        description: error instanceof Error ? error.message : 'Unknown error occurred',
+        variant: 'destructive',
+      });
+      return false;
+    }
+  }, [isAuthenticated, callSheetsAPI, toast]);
 
   // Create a new sheet
-  const createSheet = useCallback(async (
-    title: string,
-    headers?: string[]
-  ): Promise<GoogleSheet | null> => {
-    try {
-      const result = await callSheetsAPI('create', { title, headers });
+  const createSheet = useCallback(async (title: string, headers?: string[]): Promise<GoogleSheet | null> => {
+    if (!isAuthenticated) {
       toast({
-        title: 'Success',
-        description: `Sheet "${title}" created successfully`,
-      });
-
-      // Refresh sheets list
-      await listSheets();
-
-      // Return the created sheet info
-      return {
-        id: result.spreadsheetId,
-        name: title,
-        createdTime: new Date().toISOString(),
-        modifiedTime: new Date().toISOString(),
-        webViewLink: result.spreadsheetUrl || `https://docs.google.com/spreadsheets/d/${result.spreadsheetId}`
-      };
-    } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to create new sheet',
+        title: 'Google Sheets Not Connected',
+        description: 'Please connect your Google account first.',
         variant: 'destructive',
       });
       return null;
     }
-  }, [callSheetsAPI, toast, listSheets]);
 
-  // Sign in uses the same Google OAuth as Drive (with extended scope)
+    try {
+      const newSheet = await callSheetsAPI('create', { title, headers });
+      toast({
+        title: 'Sheet Created',
+        description: `"${title}" has been created successfully.`,
+      });
+
+      // Refresh the sheets list
+      await listSheets();
+      return newSheet as GoogleSheet;
+    } catch (error) {
+      console.error('Error creating sheet:', error);
+      toast({
+        title: 'Failed to Create Sheet',
+        description: error instanceof Error ? error.message : 'Unknown error occurred',
+        variant: 'destructive',
+      });
+      return null;
+    }
+  }, [isAuthenticated, callSheetsAPI, toast, listSheets]);
+
+  // Get sheet metadata
+  const getSheetMetadata = useCallback(async (sheetId: string): Promise<SheetMetadata | null> => {
+    if (!isAuthenticated) {
+      toast({
+        title: 'Google Sheets Not Connected',
+        description: 'Please connect your Google account first.',
+        variant: 'destructive',
+      });
+      return null;
+    }
+
+    try {
+      const metadata = await callSheetsAPI('metadata', { sheet_id: sheetId });
+      return metadata as SheetMetadata;
+    } catch (error) {
+      console.error('Error getting sheet metadata:', error);
+      toast({
+        title: 'Failed to Get Sheet Info',
+        description: error instanceof Error ? error.message : 'Unknown error occurred',
+        variant: 'destructive',
+      });
+      return null;
+    }
+  }, [isAuthenticated, callSheetsAPI, toast]);
+
+  // Sign in using secure OAuth with PKCE
   const signIn = useCallback(async () => {
     if (!user) {
       toast({
@@ -235,111 +252,51 @@ export const useGoogleSheets = () => {
     setIsSigningIn(true);
 
     try {
-      // Use Google Identity Services for token-only flow
-      const clientId = '1050361175911-2caa9uiuf4tmi5pvqlt0arl1h592hurm.apps.googleusercontent.com';
+      // Use secure OAuth with Google Drive and Sheets scopes
+      await initiateGoogleOAuth('https://www.googleapis.com/auth/drive.readonly https://www.googleapis.com/auth/spreadsheets');
 
-      // Load Google Identity Services script if not loaded
-      if (!window.google?.accounts?.oauth2) {
-        await new Promise<void>((resolve, reject) => {
-          const script = document.createElement('script');
-          script.src = 'https://accounts.google.com/gsi/client';
-          script.onload = () => resolve();
-          script.onerror = () => reject(new Error('Failed to load Google Identity Services'));
-          document.head.appendChild(script);
-        });
-      }
-
-      // Request access token with Sheets scope
-      const tokenClient = window.google.accounts.oauth2.initTokenClient({
-        client_id: clientId,
-        scope: 'https://www.googleapis.com/auth/drive.readonly https://www.googleapis.com/auth/spreadsheets',
-        callback: async (response: any) => {
-          if (response.error) {
-            console.error('Google OAuth error:', response.error);
-            toast({
-              title: 'Connection Failed',
-              description: response.error_description || 'Failed to connect to Google',
-              variant: 'destructive',
-            });
-            setIsSigningIn(false);
-            return;
-          }
-
-          // Got access token - store it via edge function
-          try {
-            const { data, error } = await supabase.functions.invoke('store-google-tokens', {
-              body: {
-                access_token: response.access_token,
-                refresh_token: null,
-                token_type: 'Bearer',
-                expires_in: response.expires_in || 3600,
-                scope: 'https://www.googleapis.com/auth/drive.readonly https://www.googleapis.com/auth/spreadsheets',
-              }
-            });
-
-            if (error || data?.error) {
-              throw new Error(error?.message || data?.error || 'Failed to store token');
-            }
-
-            setIsAuthenticated(true);
-            toast({
-              title: 'Connected Successfully!',
-              description: 'Google Sheets is now connected.',
-            });
-
-            // Automatically load sheets after successful authentication
-            await listSheets();
-          } catch (storeError: any) {
-            console.error('Error storing token:', storeError);
-            toast({
-              title: 'Storage Error',
-              description: `Failed to save token: ${storeError.message}`,
-              variant: 'destructive',
-            });
-          }
-          setIsSigningIn(false);
-        },
-      });
-
-      // Request the token (opens popup)
-      tokenClient.requestAccessToken({ prompt: 'consent' });
-
+      // Automatically load sheets after successful authentication
+      setTimeout(() => {
+        listSheets();
+      }, 1000); // Small delay to ensure token is properly stored
     } catch (error) {
-      console.error('Error connecting to Google Sheets:', error);
+      console.error('Google sign in error:', error);
       toast({
-        title: 'Connection Error',
+        title: 'Connection Failed',
         description: error instanceof Error ? error.message : 'Failed to connect to Google Sheets',
         variant: 'destructive',
       });
+    } finally {
       setIsSigningIn(false);
     }
-  }, [user, toast, listSheets]);
+  }, [user, toast, listSheets, initiateGoogleOAuth]);
 
-  // Disconnect (clear stored token)
+  // Disconnect Google Sheets
   const disconnect = useCallback(async () => {
     try {
-      if (user) {
-        await supabase
-          .from('user_google_tokens')
-          .delete()
-          .eq('user_id', user.id);
-      }
-
-      setIsAuthenticated(false);
+      await disconnectOAuth();
       setSheets([]);
 
       toast({
         title: 'Disconnected',
-        description: 'Google Sheets connection removed',
+        description: 'Google Sheets has been disconnected.',
       });
     } catch (error) {
+      console.error('Error disconnecting Google Sheets:', error);
       toast({
-        title: 'Error',
-        description: 'Failed to disconnect Google Sheets',
+        title: 'Disconnection Failed',
+        description: error instanceof Error ? error.message : 'Failed to disconnect Google Sheets',
         variant: 'destructive',
       });
     }
-  }, [user, toast]);
+  }, [disconnectOAuth, toast]);
+
+  // Auto-load sheets when authenticated
+  useEffect(() => {
+    if (isAuthenticated && sheets.length === 0) {
+      listSheets();
+    }
+  }, [isAuthenticated, sheets.length, listSheets]);
 
   return {
     // State
@@ -352,10 +309,10 @@ export const useGoogleSheets = () => {
     signIn,
     disconnect,
     listSheets,
-    getSheetMetadata,
-    readSheetData,
-    writeSheetData,
+    readSheet,
+    writeSheet,
     createSheet,
+    getSheetMetadata,
     checkConnection,
   };
 };
