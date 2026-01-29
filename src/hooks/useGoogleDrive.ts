@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useGoogleOAuth } from '@/hooks/useGoogleOAuth';
 import { DriveItem } from '@/types/googleDrive';
 
 export const useGoogleDrive = () => {
