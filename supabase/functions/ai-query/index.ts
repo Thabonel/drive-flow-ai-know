@@ -385,6 +385,7 @@ function getProviderTokenLimit(providerName: string): number {
 async function claudeCompletion(
   messages: Message[],
   systemMessage: string,
+  userId: string,
   imageData?: { base64: string; media_type: string }
 ) {
   if (!anthropicApiKey) {
@@ -467,11 +468,134 @@ async function claudeCompletion(
         },
         required: ["query"]
       }
+    },
+    {
+      name: "list_sheets",
+      description: "List all Google Sheets that the user has access to. Use this when the user asks about their sheets, wants to see what sheets they have, or needs to select a sheet for further operations.",
+      input_schema: {
+        type: "object",
+        properties: {},
+        required: []
+      }
+    },
+    {
+      name: "read_sheet",
+      description: "Read data from a specific Google Sheet. Returns the sheet contents in a structured format. Use this when the user asks about data in a specific sheet, wants to analyze sheet contents, or needs to see what's in a sheet.",
+      input_schema: {
+        type: "object",
+        properties: {
+          sheet_id: {
+            type: "string",
+            description: "The ID of the Google Sheet to read from"
+          },
+          range: {
+            type: "string",
+            description: "Optional cell range to read (e.g., 'A1:E10', 'Sheet2!A:C'). If not specified, reads the entire first sheet."
+          }
+        },
+        required: ["sheet_id"]
+      }
+    },
+    {
+      name: "write_sheet",
+      description: "Write or append data to a Google Sheet. Use this when the user wants to add data, update values, or insert new rows into a sheet.",
+      input_schema: {
+        type: "object",
+        properties: {
+          sheet_id: {
+            type: "string",
+            description: "The ID of the Google Sheet to write to"
+          },
+          data: {
+            type: "array",
+            description: "Array of rows, where each row is an array of cell values",
+            items: {
+              type: "array",
+              items: {
+                type: "string"
+              }
+            }
+          },
+          range: {
+            type: "string",
+            description: "Optional cell range to write to (e.g., 'A1', 'B2:D4'). If not specified, appends to the end of existing data."
+          }
+        },
+        required: ["sheet_id", "data"]
+      }
+    },
+    {
+      name: "create_sheet",
+      description: "Create a new Google Sheet. Use this when the user wants to create a new spreadsheet for tracking data, organizing information, or starting a new project.",
+      input_schema: {
+        type: "object",
+        properties: {
+          title: {
+            type: "string",
+            description: "The title/name for the new Google Sheet"
+          },
+          headers: {
+            type: "array",
+            description: "Optional array of column headers to create in the first row",
+            items: {
+              type: "string"
+            }
+          }
+        },
+        required: ["title"]
+      }
+    },
+    {
+      name: "analyze_sheet",
+      description: "Get metadata and structure information about a Google Sheet, including sheet names, row/column counts, and basic statistics. Use this when you need to understand the structure of a sheet before performing operations.",
+      input_schema: {
+        type: "object",
+        properties: {
+          sheet_id: {
+            type: "string",
+            description: "The ID of the Google Sheet to analyze"
+          }
+        },
+        required: ["sheet_id"]
+      }
     }
   ];
 
+  // Helper function to call Google Sheets API
+  async function callGoogleSheetsAPI(userId: string, action: string, params: any) {
+    try {
+      // Call our google-sheets-api Edge Function
+      const supabaseClient = createClient(
+        Deno.env.get('SUPABASE_URL') ?? '',
+        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+      );
+
+      const { data, error } = await supabaseClient.functions.invoke('google-sheets-api', {
+        body: { action, ...params },
+        headers: {
+          Authorization: `Bearer ${userId}` // Use user ID for auth
+        }
+      });
+
+      if (error) {
+        console.error('Google Sheets API error:', error);
+        throw new Error(`Google Sheets API error: ${error.message}`);
+      }
+
+      if (data?.error) {
+        console.error('Google Sheets function error:', data.error);
+        throw new Error(`Google Sheets error: ${data.error}`);
+      }
+
+      return data?.data || data;
+    } catch (error) {
+      console.error('callGoogleSheetsAPI error:', error);
+      throw error;
+    }
+  }
+
   // Helper function to process tool uses recursively (with depth limit)
-  async function processWithTools(currentMessages: any[], depth: number = 0): Promise<string> {
+  async function processWithTools(currentMessages: any[], userId: string, depth: number = 0): Promise<string> {
     const MAX_TOOL_DEPTH = 5; // Allow more searches for thorough research
 
     if (depth >= MAX_TOOL_DEPTH) {
@@ -545,7 +669,7 @@ async function claudeCompletion(
       }
 
       // Process all tool uses and collect results
-      const toolResults = [];
+      const toolResults: Array<{type: string; tool_use_id: any; content: string}> = [];
       for (const toolUse of toolUseBlocks) {
         if (toolUse.name === 'web_search') {
           console.log('Processing web search:', toolUse.input.query);
@@ -570,6 +694,58 @@ async function claudeCompletion(
             type: 'tool_result',
             tool_use_id: toolUse.id,
             content: retailResults
+          });
+        } else if (toolUse.name === 'list_sheets') {
+          console.log('Processing list_sheets request');
+          const sheetsResult = await callGoogleSheetsAPI(userId, 'list', {});
+          toolResults.push({
+            type: 'tool_result',
+            tool_use_id: toolUse.id,
+            content: JSON.stringify(sheetsResult)
+          });
+        } else if (toolUse.name === 'read_sheet') {
+          console.log('Processing read_sheet:', toolUse.input.sheet_id, toolUse.input.range);
+          const readResult = await callGoogleSheetsAPI(userId, 'read', {
+            sheet_id: toolUse.input.sheet_id,
+            range: toolUse.input.range
+          });
+          toolResults.push({
+            type: 'tool_result',
+            tool_use_id: toolUse.id,
+            content: JSON.stringify(readResult)
+          });
+        } else if (toolUse.name === 'write_sheet') {
+          console.log('Processing write_sheet:', toolUse.input.sheet_id);
+          const writeResult = await callGoogleSheetsAPI(userId, 'write', {
+            sheet_id: toolUse.input.sheet_id,
+            data: toolUse.input.data,
+            range: toolUse.input.range
+          });
+          toolResults.push({
+            type: 'tool_result',
+            tool_use_id: toolUse.id,
+            content: JSON.stringify(writeResult)
+          });
+        } else if (toolUse.name === 'create_sheet') {
+          console.log('Processing create_sheet:', toolUse.input.title);
+          const createResult = await callGoogleSheetsAPI(userId, 'create', {
+            title: toolUse.input.title,
+            headers: toolUse.input.headers
+          });
+          toolResults.push({
+            type: 'tool_result',
+            tool_use_id: toolUse.id,
+            content: JSON.stringify(createResult)
+          });
+        } else if (toolUse.name === 'analyze_sheet') {
+          console.log('Processing analyze_sheet:', toolUse.input.sheet_id);
+          const analyzeResult = await callGoogleSheetsAPI(userId, 'metadata', {
+            sheet_id: toolUse.input.sheet_id
+          });
+          toolResults.push({
+            type: 'tool_result',
+            tool_use_id: toolUse.id,
+            content: JSON.stringify(analyzeResult)
           });
         } else {
           // Unknown tool - return empty result
@@ -596,7 +772,7 @@ async function claudeCompletion(
       ];
 
       // Recursively process (in case Claude wants to use more tools)
-      return processWithTools(followUpMessages, depth + 1);
+      return processWithTools(followUpMessages, userId, depth + 1);
     }
 
     // No tool use - extract text response
@@ -611,7 +787,7 @@ async function claudeCompletion(
   }
 
   // Start processing with initial messages
-  return processWithTools(userMessages, 0);
+  return processWithTools(userMessages, userId, 0);
 }
 
 
@@ -641,6 +817,7 @@ async function openRouterCompletion(messages: Message[], systemMessage: string) 
 export async function getLLMResponse(
   messages: Message[],
   systemMessage: string,
+  userId: string,
   providerOverride?: string,
   imageData?: { base64: string; media_type: string }
 ) {
@@ -685,7 +862,7 @@ export async function getLLMResponse(
             console.log('Anthropic API key not available, skipping');
             continue;
           }
-          return await claudeCompletion(messages, systemMessage, imageData);
+          return await claudeCompletion(messages, systemMessage, userId, imageData);
         case 'openrouter':
           if (!openRouterApiKey) {
             console.log('OpenRouter API key not available, skipping');
@@ -1322,7 +1499,7 @@ ${productKnowledge}
     console.log('Calling AI model for response generation with', messages.length, 'messages...');
     let aiAnswer;
     try {
-      aiAnswer = await getLLMResponse(messages, systemMessage, providerOverride, image);
+      aiAnswer = await getLLMResponse(messages, systemMessage, user_id, providerOverride, image);
       console.log('AI response generated successfully:', aiAnswer ? 'Yes' : 'No', 'Length:', aiAnswer?.length || 0);
     } catch (aiError) {
       console.error('AI model error details:', {
