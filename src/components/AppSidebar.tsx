@@ -1,4 +1,4 @@
-import { Home, FileText, BookOpen, Settings, LogOut, HelpCircle, Clock, Users, UserCog, Building2, Calendar, MessageSquare, Presentation, Plus } from 'lucide-react';
+import { Home, FileText, BookOpen, Settings, LogOut, HelpCircle, Clock, Users, UserCog, Building2, Calendar, MessageSquare, Presentation, Plus, FileSpreadsheet } from 'lucide-react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { usePresentationMode } from '@/contexts/PresentationModeContext';
@@ -43,6 +43,12 @@ const navigationItems = [
     url: '/documents',
     icon: FileText,
     description: 'Browse & manage files'
+  },
+  {
+    title: 'Google Sheets',
+    url: '/sheets',
+    icon: FileSpreadsheet,
+    description: 'Connect & query spreadsheets'
   },
   {
     title: 'Pitch Deck',
