@@ -1,7 +1,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
-import { getCorsHeaders, handleCorsPreflightRequest } from '../_shared/cors.ts';
-import { validateEnvVars } from '../_shared/env-validation.ts';
+import { getCorsHeaders, handleCorsPreflightRequest } from './_shared/cors.ts';
+import { validateEnvVars } from './_shared/env-validation.ts';
 
 // Map agent types to their Edge Function names
 const AGENT_FUNCTION_MAP: Record<string, string> = {
