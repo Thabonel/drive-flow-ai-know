@@ -18,6 +18,7 @@ import Auth from "./pages/Auth";
 import ResetPassword from "./pages/ResetPassword";
 import ConfirmEmail from "./pages/ConfirmEmail";
 import GoogleDrive from "./pages/GoogleDrive";
+import GoogleSheets from "./pages/GoogleSheets";
 import Documents from "./pages/Documents";
 import AddDocuments from "./pages/AddDocuments";
 import KnowledgeBases from "./pages/KnowledgeBases";
@@ -162,6 +163,11 @@ const App = () => (
             <Route path="/drive" element={
               <ProtectedRoute>
                 <GoogleDrive />
+              </ProtectedRoute>
+            } />
+            <Route path="/sheets" element={
+              <ProtectedRoute>
+                <GoogleSheets />
               </ProtectedRoute>
             } />
             <Route path="/documents" element={
