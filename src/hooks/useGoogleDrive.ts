@@ -72,7 +72,7 @@ export const useGoogleDrive = () => {
           refresh_token: session.provider_refresh_token || null,
           token_type: 'Bearer',
           expires_in: 3600,
-          scope: 'https://www.googleapis.com/auth/drive.readonly',
+          scope: 'https://www.googleapis.com/auth/drive.readonly https://www.googleapis.com/auth/spreadsheets',
         }
       });
 
@@ -205,7 +205,7 @@ export const useGoogleDrive = () => {
       // Request access token via popup (doesn't change Supabase session)
       const tokenClient = window.google.accounts.oauth2.initTokenClient({
         client_id: clientId,
-        scope: 'https://www.googleapis.com/auth/drive.readonly',
+        scope: 'https://www.googleapis.com/auth/drive.readonly https://www.googleapis.com/auth/spreadsheets',
         callback: async (response: any) => {
           if (response.error) {
             console.error('Google OAuth error:', response.error);
@@ -226,7 +226,7 @@ export const useGoogleDrive = () => {
                 refresh_token: null, // Token client doesn't provide refresh tokens
                 token_type: 'Bearer',
                 expires_in: response.expires_in || 3600,
-                scope: 'https://www.googleapis.com/auth/drive.readonly',
+                scope: 'https://www.googleapis.com/auth/drive.readonly https://www.googleapis.com/auth/spreadsheets',
               }
             });
 
