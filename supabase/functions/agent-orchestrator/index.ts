@@ -1,6 +1,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
 import { getCorsHeaders, handleCorsPreflightRequest } from '../_shared/cors.ts';
+import { validateEnvVars } from '../_shared/env-validation.ts';
 
 // Map agent types to their Edge Function names
 const AGENT_FUNCTION_MAP: Record<string, string> = {
@@ -87,6 +88,16 @@ serve(async (req) => {
     const origin = req.headers.get('origin');
     const corsHeaders = getCorsHeaders(origin);
 
+    // Validate environment variables
+    const envError = validateEnvVars(['SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY']);
+    if (envError) {
+      console.error('Environment validation failed:', envError);
+      return new Response(
+        JSON.stringify({ error: 'Server configuration error' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     // Verify authentication
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
@@ -94,8 +105,8 @@ serve(async (req) => {
     }
 
     const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
 
     const token = authHeader.replace('Bearer ', '');
@@ -182,8 +193,9 @@ serve(async (req) => {
     }
 
     const createdAgents = [];
+    const subAgentInvocationPromises = [];
 
-    // Create sub-agent for each pending task
+    // Create sub-agents and collect their invocation promises in parallel
     for (const task of pendingTasks as AgentTask[]) {
       const agentType = task.structured_output.agent_type;
 
@@ -244,53 +256,57 @@ serve(async (req) => {
           importance: 3,
         });
 
-      // EXECUTE: Invoke the sub-agent immediately
-      const invocationResult = await invokeSubAgent(
+      // EXECUTE: Invoke the sub-agent immediately, but in parallel
+      // Don't await here - collect promises to await all at once
+      const invocationPromise = invokeSubAgent(
         agentType,
         subAgent.id,
         token,
         agentType === 'calendar' ? 'create_event' : undefined
-      );
+      ).then(async (invocationResult) => {
+        // Update task status based on execution result
+        if (invocationResult.success) {
+          // Mark task as completed
+          await supabase
+            .from('agent_tasks')
+            .update({ status: 'completed' })
+            .eq('id', task.id);
 
-      // Update task status based on execution result
-      if (invocationResult.success) {
-        // Mark task as completed
-        await supabase
-          .from('agent_tasks')
-          .update({
-            status: 'completed',
-          })
-          .eq('id', task.id);
+          console.log(`Task ${task.id} marked as completed`);
+        } else {
+          // Mark task as failed
+          await supabase
+            .from('agent_tasks')
+            .update({ status: 'failed' })
+            .eq('id', task.id);
 
-        console.log(`Task ${task.id} marked as completed`);
-      } else {
-        // Mark task as failed
-        await supabase
-          .from('agent_tasks')
-          .update({
-            status: 'failed',
-          })
-          .eq('id', task.id);
+          console.error(`Sub-agent ${agentType} invocation failed:`, invocationResult.error);
+          // The sub-agent function itself handles status updates, but log the error
+          await supabase
+            .from('agent_memory')
+            .insert({
+              session_id: task.session_id,
+              user_id: task.user_id,
+              memory_type: 'action_log',
+              content: {
+                action: 'sub_agent_invocation_failed',
+                agent_id: subAgent.id,
+                agent_type: agentType,
+                error: invocationResult.error,
+                timestamp: new Date().toISOString(),
+              },
+              importance: 4,
+            });
+        }
 
-        console.error(`Sub-agent ${agentType} invocation failed:`, invocationResult.error);
-        // The sub-agent function itself handles status updates, but log the error
-        await supabase
-          .from('agent_memory')
-          .insert({
-            session_id: task.session_id,
-            user_id: task.user_id,
-            memory_type: 'action_log',
-            content: {
-              action: 'sub_agent_invocation_failed',
-              agent_id: subAgent.id,
-              agent_type: agentType,
-              error: invocationResult.error,
-              timestamp: new Date().toISOString(),
-            },
-            importance: 4,
-          });
-      }
+        return { taskId: task.id, success: invocationResult.success };
+      });
+
+      subAgentInvocationPromises.push(invocationPromise);
     }
+
+    // Wait for all sub-agent invocations to complete (parallel execution)
+    await Promise.allSettled(subAgentInvocationPromises);
 
     // Update session metrics
     const { error: sessionUpdateError } = await supabase
