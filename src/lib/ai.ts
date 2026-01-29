@@ -4,13 +4,28 @@ export function offlineEnabled() {
   return localStorage.getItem('offline-mode') === 'true' || !navigator.onLine;
 }
 
-export async function callLLM(prompt: string, knowledgeBaseId?: string): Promise<string> {
+export interface LLMResponse {
+  response: string;
+  imageData?: string;
+}
+
+export async function callLLM(prompt: string, knowledgeBaseId?: string): Promise<string | LLMResponse> {
   if (!offlineEnabled()) {
     try {
       const { data, error } = await supabase.functions.invoke('ai-query', {
         body: { query: prompt, knowledge_base_id: knowledgeBaseId }
       });
-      if (!error && data?.response) return data.response;
+      if (!error && data?.response) {
+        // Return enhanced response object if imageData is present
+        if (data.imageData) {
+          return {
+            response: data.response,
+            imageData: data.imageData
+          };
+        }
+        // Return just the string for backward compatibility
+        return data.response;
+      }
     } catch (err) {
       console.warn('Online LLM call failed', err);
     }

@@ -5,9 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Loader2, Send, Archive, Trash2, Edit2, Check, X, FileText, Calendar, Printer, Download, ChevronDown, ImageIcon, Cpu, Play } from 'lucide-react';
+import { Loader2, Send, Archive, Trash2, Edit2, Check, X, FileText, Calendar, Printer, Download, ChevronDown, ImageIcon } from 'lucide-react';
 import { arrayBufferToBase64 } from '@/lib/base64Utils';
 import {
   DropdownMenu,
@@ -56,6 +55,8 @@ interface Message {
   content: string;
   sequence_number: number;
   timestamp: string;
+  // Image data for generated graphics
+  imageData?: string;
   // Agent mode fields
   agent_mode_available?: boolean;
   agent_metadata?: {
@@ -71,21 +72,7 @@ interface Message {
   options_answered?: boolean; // Track if user already answered
 }
 
-interface ExtractedTask {
-  title: string;
-  description: string;
-  agent_type: 'calendar' | 'briefing' | 'analysis' | 'creative';
-  priority: number;
-  estimated_duration: number;
-}
 
-interface TaskConfirmation {
-  messageId: string;
-  originalUserMessage: string;
-  tasks: ExtractedTask[];
-  sessionId: string;
-  selectedTaskIndices: Set<number>;
-}
 
 interface ConversationChatProps {
   conversationId?: string;
@@ -123,17 +110,15 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
   const [isProcessingImage, setIsProcessingImage] = useState(false);
 
   // Agent mode state
-  const [taskConfirmation, setTaskConfirmation] = useState<TaskConfirmation | null>(null);
-  const [isExtractingTasks, setIsExtractingTasks] = useState(false);
-  const [isExecutingTasks, setIsExecutingTasks] = useState(false);
   const [subAgentResults, setSubAgentResults] = useState<Record<string, SubAgentResult[]>>({});
   const pollingIntervalsRef = useRef<Record<string, NodeJS.Timeout>>({});
 
-  // Track messages currently being auto-executed (to hide "Run as Task" button)
-  const [autoExecutingMessageIds, setAutoExecutingMessageIds] = useState<Set<string>>(new Set());
 
   // Interactive options state - tracks selected options per message
   const [selectedOptions, setSelectedOptions] = useState<Record<string, Set<string>>>({});
+
+  // Track messages currently being auto-executed for UI state
+  const [autoExecutingMessageIds, setAutoExecutingMessageIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     // Don't load messages if we're actively submitting (prevents race condition)
@@ -335,69 +320,7 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
     return -(new Date().getTimezoneOffset() / 60);
   }, []);
 
-  // Handle "Run as Task" button click - extract tasks from message
-  const handleRunAsTask = async (messageId: string, originalUserMessage: string) => {
-    if (!user) {
-      toast.error('Please log in to use Agent Mode');
-      return;
-    }
 
-    setIsExtractingTasks(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('agent-translate', {
-        body: {
-          unstructured_input: originalUserMessage,
-          timezone_offset: getTimezoneOffset(),
-        },
-      });
-
-      if (error) {
-        throw new Error(error.message || 'Failed to extract tasks');
-      }
-
-      if (!data?.tasks || data.tasks.length === 0) {
-        toast.info('No actionable tasks found in this message');
-        return;
-      }
-
-      if (!data?.session_id) {
-        console.error('No session_id returned from agent-translate');
-        toast.error('Failed to create task session. Please try again.');
-        return;
-      }
-
-      // Show task confirmation dialog with all tasks selected by default
-      setTaskConfirmation({
-        messageId,
-        originalUserMessage,
-        tasks: data.tasks,
-        sessionId: data.session_id,
-        selectedTaskIndices: new Set(data.tasks.map((_: ExtractedTask, i: number) => i)),
-      });
-    } catch (error) {
-      console.error('Error extracting tasks:', error);
-      toast.error('Failed to extract tasks. Please try again.');
-    } finally {
-      setIsExtractingTasks(false);
-    }
-  };
-
-  // Toggle task selection in the confirmation dialog
-  const toggleTaskSelection = (index: number) => {
-    if (!taskConfirmation) return;
-
-    const newSelection = new Set(taskConfirmation.selectedTaskIndices);
-    if (newSelection.has(index)) {
-      newSelection.delete(index);
-    } else {
-      newSelection.add(index);
-    }
-
-    setTaskConfirmation({
-      ...taskConfirmation,
-      selectedTaskIndices: newSelection,
-    });
-  };
 
   // Poll for sub-agent completion status
   const pollSubAgentStatus = useCallback(async (subAgentIds: string[], messageId: string) => {
@@ -484,75 +407,6 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
     }
   };
 
-  // Confirm and execute extracted tasks
-  const handleConfirmAndExecuteTasks = async () => {
-    if (!taskConfirmation || !user) return;
-
-    const { messageId, sessionId, selectedTaskIndices } = taskConfirmation;
-
-    // Validate at least one task is selected
-    if (selectedTaskIndices.size === 0) {
-      toast.error('Please select at least one task to execute');
-      return;
-    }
-
-    setIsExecutingTasks(true);
-    // DON'T close dialog yet - keep it open until success
-
-    try {
-      // Pass session_id to orchestrator so it knows which session to process
-      const { data: orchestratorData, error: orchestratorError } = await supabase.functions.invoke(
-        'agent-orchestrator',
-        { body: { session_id: sessionId } }
-      );
-
-      // Check for function invocation error
-      if (orchestratorError) {
-        throw new Error(orchestratorError.message || 'Failed to spawn agents');
-      }
-
-      // Check for error in response body (handles 404, "No active session", etc.)
-      if (orchestratorData?.error) {
-        throw new Error(orchestratorData.error);
-      }
-
-      const subAgentIds = orchestratorData?.agents?.map((a: any) => a.id) || [];
-
-      if (subAgentIds.length === 0) {
-        throw new Error('No agents were spawned. Please try again.');
-      }
-
-      // SUCCESS - now close dialog
-      setTaskConfirmation(null);
-
-      // Update message metadata to link to sub-agents
-      const metadata: Message['agent_metadata'] = {
-        sub_agent_ids: subAgentIds,
-        task_ids: [],
-        agent_executed: true,
-        agent_session_id: sessionId,
-      };
-
-      await updateMessageAgentMetadata(messageId, metadata);
-
-      // Start polling for sub-agent completion
-      const pollInterval = setInterval(() => {
-        pollSubAgentStatus(subAgentIds, messageId);
-      }, 2000);
-
-      pollingIntervalsRef.current[messageId] = pollInterval;
-
-      // Initial poll
-      pollSubAgentStatus(subAgentIds, messageId);
-
-      toast.success(`${subAgentIds.length} agent(s) spawned! Processing tasks...`);
-    } catch (error) {
-      console.error('Error executing tasks:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to execute tasks. Please try again.');
-    } finally {
-      setIsExecutingTasks(false);
-    }
-  };
 
   // Cleanup polling intervals on unmount
   useEffect(() => {
@@ -561,16 +415,6 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
     };
   }, []);
 
-  // Helper to get the original user message for a given assistant message
-  const getOriginalUserMessage = (assistantMessageIndex: number): string => {
-    // Find the user message immediately before this assistant message
-    for (let i = assistantMessageIndex - 1; i >= 0; i--) {
-      if (messages[i].role === 'user') {
-        return messages[i].content;
-      }
-    }
-    return '';
-  };
 
   // ============================================================================
   // INTERACTIVE OPTIONS HANDLERS
@@ -893,6 +737,7 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
       const agentModeAvailable = data?.agent_mode_available || false;
       const autoExecuteTaskType = data?.auto_execute_task_type || null;
       const clarifyingOptions = data?.clarifying_options || null;
+      const responseImageData = data?.imageData || null;
 
       let savedMessageId: string | null = null;
 
@@ -906,6 +751,7 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
           timestamp: new Date().toISOString(),
           agent_mode_available: agentModeAvailable,
           clarifying_options: clarifyingOptions,
+          imageData: responseImageData,
         };
         savedMessageId = tempAiMessage.id;
 
@@ -925,6 +771,7 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
             ...(savedAiMsg as Message),
             agent_mode_available: agentModeAvailable,
             clarifying_options: clarifyingOptions,
+            imageData: responseImageData,
           };
 
           // If auto-executing, mark it BEFORE rendering the message (prevents button flash)
@@ -1808,6 +1655,19 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
                       ) : (
                         <p className="whitespace-pre-wrap">{message.content}</p>
                       )}
+
+                      {/* Inline Image Display */}
+                      {message.imageData && (
+                        <div className="mt-4 mb-2">
+                          <img
+                            src={`data:image/png;base64,${message.imageData}`}
+                            alt="AI generated image"
+                            className="max-w-full rounded-lg shadow-neu-raised hover:shadow-neu-flat transition-shadow duration-200"
+                            style={{ maxHeight: '400px', objectFit: 'contain' }}
+                          />
+                        </div>
+                      )}
+
                       <p className="text-xs opacity-70 mt-1">
                         {new Date(message.timestamp).toLocaleTimeString()}
                       </p>
@@ -1871,36 +1731,6 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
                         </div>
                       )}
 
-                    {/* Agent Mode: "Run as Task" button - hidden if auto-executing, already executed, or has results */}
-                    {message.role === 'assistant' &&
-                      message.agent_mode_available &&
-                      !message.agent_metadata?.agent_executed &&
-                      !message.agent_metadata?.sub_agent_ids &&
-                      !autoExecutingMessageIds.has(message.id) &&
-                      !subAgentResults[message.id] &&
-                      !isExecutingTasks && (
-                        <div className="mt-2 max-w-[80%]">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleRunAsTask(message.id, getOriginalUserMessage(messageIndex))}
-                            disabled={isExtractingTasks || isExecutingTasks}
-                            className="gap-2 border-orange-500/50 hover:bg-orange-500/10 text-orange-700 dark:text-orange-400"
-                          >
-                            {isExtractingTasks ? (
-                              <>
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                                Extracting Tasks...
-                              </>
-                            ) : (
-                              <>
-                                <Cpu className="h-4 w-4" />
-                                Run as Task
-                              </>
-                            )}
-                          </Button>
-                        </div>
-                      )}
 
                     {/* Agent Mode: Sub-agent results */}
                     {message.agent_metadata?.agent_executed && subAgentResults[message.id] && (
@@ -1954,96 +1784,6 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
         sourceType="ai-response"
       />
 
-      {/* Agent Mode: Task Confirmation Dialog */}
-      <Dialog open={!!taskConfirmation} onOpenChange={(open) => !open && setTaskConfirmation(null)}>
-        <DialogContent className="sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Cpu className="h-5 w-5 text-orange-500" />
-              Execute Tasks
-            </DialogTitle>
-            <DialogDescription>
-              I found {taskConfirmation?.tasks.length || 0} actionable task(s) in your request.
-              Would you like me to execute them?
-            </DialogDescription>
-          </DialogHeader>
-
-          {taskConfirmation && (
-            <div className="space-y-3 max-h-[300px] overflow-y-auto">
-              {taskConfirmation.tasks.map((task, index) => (
-                <div
-                  key={index}
-                  className={`p-3 rounded-lg border cursor-pointer transition-colors ${
-                    taskConfirmation.selectedTaskIndices.has(index)
-                      ? 'bg-primary/5 border-primary/30'
-                      : 'bg-muted/50 border-muted'
-                  }`}
-                  onClick={() => toggleTaskSelection(index)}
-                >
-                  <div className="flex items-start gap-3">
-                    <Checkbox
-                      checked={taskConfirmation.selectedTaskIndices.has(index)}
-                      onCheckedChange={() => toggleTaskSelection(index)}
-                      className="mt-1"
-                    />
-                    <div className="flex-1">
-                      <div className="flex items-start justify-between gap-2">
-                        <p className="font-medium text-sm">{task.title}</p>
-                        <Badge
-                          variant="outline"
-                          className={
-                            task.agent_type === 'creative'
-                              ? 'bg-orange-500/10 text-orange-600 border-orange-500/30'
-                              : task.agent_type === 'calendar'
-                              ? 'bg-blue-500/10 text-blue-600 border-blue-500/30'
-                              : task.agent_type === 'analysis'
-                              ? 'bg-purple-500/10 text-purple-600 border-purple-500/30'
-                              : 'bg-green-500/10 text-green-600 border-green-500/30'
-                          }
-                        >
-                          {task.agent_type}
-                        </Badge>
-                      </div>
-                      <p className="text-xs text-muted-foreground mt-1">{task.description}</p>
-                      <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
-                        <span>Priority: {task.priority}/5</span>
-                        <span>Est: {task.estimated_duration} min</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          <DialogFooter className="gap-2 sm:gap-0">
-            <Button
-              variant="outline"
-              onClick={() => setTaskConfirmation(null)}
-              disabled={isExecutingTasks}
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleConfirmAndExecuteTasks}
-              disabled={isExecutingTasks || !taskConfirmation?.selectedTaskIndices?.size}
-              className="gap-2"
-            >
-              {isExecutingTasks ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Executing...
-                </>
-              ) : (
-                <>
-                  <Play className="h-4 w-4" />
-                  Execute {taskConfirmation?.selectedTaskIndices?.size || 0} Task(s)
-                </>
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
     </TooltipProvider>
   );
