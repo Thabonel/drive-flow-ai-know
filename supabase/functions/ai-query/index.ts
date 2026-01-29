@@ -1603,9 +1603,43 @@ ${productKnowledge}
     const isNotQuestion = !queryLower.endsWith('?'); // Questions usually aren't tasks
     const hasSpecificIntent = /\d+|tomorrow|today|next|meeting|event|visual|image|slide|deck|report|analysis/i.test(query);
 
-    // Explicit visual/image creation detection - should ALWAYS trigger agent mode
-    const isVisualCreationRequest = /\b(create|make|generate|design|build)\b/i.test(query) &&
-      /\b(visual|image|graphic|picture|illustration|infographic|slide|deck|poster|banner|logo|artwork)\b/i.test(query);
+    // Explicit visual/image creation detection - enhanced for better detection
+    const isVisualCreationRequest = (
+      // Direct creation requests
+      (/\b(create|make|generate|design|build|draw)\b/i.test(query) &&
+       /\b(visual|image|graphic|picture|illustration|infographic|diagram|chart|icon|logo|artwork|poster|banner)\b/i.test(query)) ||
+      // Show/visualize requests
+      /\b(show me|draw|illustrate|visualize|sketch)\b/i.test(query) ||
+      // Specific graphic types
+      /\b(infographic|flowchart|diagram|mockup|wireframe|concept art)\b/i.test(query)
+    );
+
+    // ==========================================================================
+    // IMAGE GENERATION FOR VISUAL CREATION REQUESTS
+    // ==========================================================================
+    // Generate image directly if this is a visual creation request
+    let imageData;
+    if (isVisualCreationRequest) {
+      console.log('Graphics request detected, generating image...');
+      try {
+        const { data: imageResponse } = await supabaseService.functions.invoke('generate-image', {
+          body: {
+            prompt: query,
+            style: 'illustration' // Default style, could be enhanced to detect from query
+          }
+        });
+
+        if (imageResponse?.imageData) {
+          imageData = imageResponse.imageData;
+          console.log('Image generated successfully');
+        } else {
+          console.log('Image generation failed - no image data returned');
+        }
+      } catch (imageError) {
+        console.error('Image generation error:', imageError);
+        // Don't fail the main request if image generation fails
+      }
+    }
 
     // ==========================================================================
     // AUTO-EXECUTE TASK DETECTION
@@ -1668,6 +1702,7 @@ ${productKnowledge}
         agent_mode_available: isLikelyTask,
         auto_execute_task_type: autoExecuteTaskType, // If set, frontend should auto-execute without confirmation
         clarifying_options: clarifyingOptions, // Interactive options for checkbox UI
+        imageData: imageData, // Base64 image data if generated
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
