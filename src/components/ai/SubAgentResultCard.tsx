@@ -9,9 +9,10 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import pptxgen from 'pptxgenjs';
-import jsPDF from 'jspdf';
-import JSZip from 'jszip';
+// Heavy libraries loaded dynamically to reduce bundle size
+// import pptxgen from 'pptxgenjs';
+// import jsPDF from 'jspdf';
+import JSZip from 'jszip'; // Keep JSZip for now as it's used in multiple places
 
 export interface SubAgentResult {
   id: string;
@@ -94,6 +95,8 @@ interface VisualContent {
  * Uses native text boxes (not embedded in images) for perfect text rendering
  */
 async function exportToPowerPoint(visualContent: VisualContent, deckTitle: string): Promise<void> {
+  // Dynamically import pptxgenjs to reduce bundle size
+  const { default: pptxgen } = await import('pptxgenjs');
   const pptx = new pptxgen();
 
   // Set presentation properties
@@ -169,6 +172,9 @@ async function exportToPowerPoint(visualContent: VisualContent, deckTitle: strin
  * Uses native PDF text layers (not embedded in images) for perfect text rendering
  */
 async function exportToPDF(visualContent: VisualContent, deckTitle: string): Promise<void> {
+  // Dynamically import jsPDF to reduce bundle size
+  const { default: jsPDF } = await import('jspdf');
+
   // Create landscape PDF in 16:9 aspect ratio
   const pdf = new jsPDF({
     orientation: 'landscape',
