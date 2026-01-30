@@ -58,28 +58,37 @@ export const useGoogleOAuth = () => {
 
   // Fetch OAuth configuration securely from backend
   const fetchOAuthConfig = useCallback(async (): Promise<OAuthConfig | null> => {
-    if (!user) {
-      console.log('No user authenticated, cannot fetch OAuth config');
-      return null;
-    }
-
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        throw new Error('No authentication session');
-      }
-
-      const response = await supabase.functions.invoke('oauth-config', {
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-        },
-      });
+      // Use the working get-google-config function instead of oauth-config
+      // This avoids CORS issues and doesn't require authentication
+      const response = await supabase.functions.invoke('get-google-config');
 
       if (response.error) {
         throw new Error(`OAuth config error: ${response.error.message}`);
       }
 
-      return response.data as OAuthConfig;
+      const googleConfig = response.data;
+      if (!googleConfig?.clientId) {
+        throw new Error('Google client ID not available');
+      }
+
+      // Construct the full OAuth config format expected by the rest of the code
+      const currentOrigin = window.location.origin;
+      return {
+        google: {
+          client_id: googleConfig.clientId,
+          redirect_uri: `${currentOrigin}/auth/google/callback`,
+        },
+        microsoft: {
+          client_id: '', // Not needed for Google Sheets
+          tenant_id: 'common',
+          redirect_uri: `${currentOrigin}/auth/microsoft/callback`,
+        },
+        dropbox: {
+          client_id: '', // Not needed for Google Sheets
+          redirect_uri: `${currentOrigin}/auth/dropbox/callback`,
+        },
+      } as OAuthConfig;
     } catch (error) {
       console.error('Failed to fetch OAuth configuration:', error);
       toast({
@@ -89,14 +98,14 @@ export const useGoogleOAuth = () => {
       });
       return null;
     }
-  }, [user, toast]);
+  }, [toast]);
 
   // Initialize OAuth configuration on mount
   useEffect(() => {
-    if (user && !oauthConfig) {
+    if (!oauthConfig) {
       fetchOAuthConfig().then(setOAuthConfig);
     }
-  }, [user, oauthConfig, fetchOAuthConfig]);
+  }, [oauthConfig, fetchOAuthConfig]);
 
   // Load Google Identity Services script securely
   const loadGoogleScript = useCallback((): Promise<void> => {
