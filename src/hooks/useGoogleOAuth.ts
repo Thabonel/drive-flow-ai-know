@@ -73,11 +73,12 @@ export const useGoogleOAuth = () => {
       }
 
       // Construct the full OAuth config format expected by the rest of the code
+      // Note: Google Identity Services initTokenClient() uses popup-based OAuth, not redirect
       const currentOrigin = window.location.origin;
       return {
         google: {
           client_id: googleConfig.clientId,
-          redirect_uri: `${currentOrigin}/auth/google/callback`,
+          // No redirect_uri needed for popup-based OAuth flow
         },
         microsoft: {
           client_id: '', // Not needed for Google Sheets
