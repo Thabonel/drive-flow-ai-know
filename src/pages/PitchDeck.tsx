@@ -28,9 +28,10 @@ import { Loader2, Presentation, Download, Eye, FileText, Layers, Share2, X, Arch
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { arrayBufferToBase64 } from '@/lib/base64Utils';
 import { useQuery } from '@tanstack/react-query';
-import jsPDF from 'jspdf';
-import pptxgen from 'pptxgenjs';
-import JSZip from 'jszip';
+// Heavy libraries loaded dynamically to reduce bundle size
+// import jsPDF from 'jspdf';
+// import pptxgen from 'pptxgenjs';
+import JSZip from 'jszip'; // Keep JSZip for now as it's used in multiple places
 import { PageHelp } from '@/components/PageHelp';
 import PresenterView from '@/components/PresenterView';
 import PresentationSettings from '@/components/PresentationSettings';
@@ -923,6 +924,9 @@ export default function PitchDeck() {
     if (!pitchDeck) return;
 
     try {
+      // Dynamically import jsPDF to reduce bundle size
+      const { default: jsPDF } = await import('jspdf');
+
       // Create PDF with landscape orientation (16:9 presentation format)
       // A4 landscape: 297mm x 210mm
       const pdf = new jsPDF({
@@ -1047,6 +1051,8 @@ export default function PitchDeck() {
     if (!pitchDeck) return;
 
     try {
+      // Dynamically import pptxgenjs to reduce bundle size
+      const { default: pptxgen } = await import('pptxgenjs');
       const pptx = new pptxgen();
 
       // Set presentation properties

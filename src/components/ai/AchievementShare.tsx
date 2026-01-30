@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { Achievement } from './AISuccessStory';
-import html2canvas from 'html2canvas';
+// Lazy load html2canvas to reduce bundle size
 import { toast } from '@/hooks/use-toast';
 
 interface AchievementShareProps {
@@ -55,9 +55,10 @@ export function AchievementShare({ achievement, open, onClose }: AchievementShar
 
     setDownloading(true);
     try {
+      // Dynamically import html2canvas only when needed
+      const { default: html2canvas } = await import('html2canvas');
       const canvas = await html2canvas(cardRef.current, {
-        backgroundColor: null,
-        scale: 2,
+        useCORS: true,
       });
 
       const link = document.createElement('a');

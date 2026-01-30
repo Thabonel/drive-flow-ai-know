@@ -1,3 +1,4 @@
+import React, { Suspense } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -13,46 +14,48 @@ import { BackgroundTasksProvider } from "@/contexts/BackgroundTasksContext";
 import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
 import { PresentationModeProvider } from "@/contexts/PresentationModeContext";
 import Header from "./layout/Header";
-import Index from "./pages/Index";
-import Auth from "./pages/Auth";
-import ResetPassword from "./pages/ResetPassword";
-import ConfirmEmail from "./pages/ConfirmEmail";
-import GoogleDrive from "./pages/GoogleDrive";
-import GoogleSheets from "./pages/GoogleSheets";
-import Documents from "./pages/Documents";
-import AddDocuments from "./pages/AddDocuments";
-import KnowledgeBases from "./pages/KnowledgeBases";
-import PitchDeck from "./pages/PitchDeck";
-import SyncStatus from "./pages/SyncStatus";
-import Settings from "./pages/Settings";
-import NotFound from "./pages/NotFound";
-import Footer from "./layout/Footer";
-import Landing from "./pages/Landing";
-import Admin from "./pages/Admin";
-import CustomerInvites from "./pages/Admin/CustomerInvites";
-import DocumentList from "./components/DocumentList";
-import Conversations from "./pages/Conversations";
-import MicrosoftCallback from "./pages/MicrosoftCallback";
-import DropboxCallback from "./pages/auth/DropboxCallback";
-import Terms from "./pages/Terms";
-import Privacy from "./pages/Privacy";
-import Disclaimer from "./pages/Disclaimer";
-import DataPolicy from "./pages/DataPolicy";
-import AcceptableUse from "./pages/AcceptableUse";
-import Support from "./pages/Support";
-import AdminSupportTickets from "./pages/AdminSupportTickets";
-import Timeline from "./pages/Timeline";
-import BookingPage from "./pages/BookingPage";
-import BookingLinks from "./pages/BookingLinks";
-import DailyBrief from "./pages/DailyBrief";
-import EmailToTask from "./pages/EmailToTask";
-import TeamSettings from "./pages/Team/Settings";
-import TeamMembers from "./pages/Team/Members";
-import TeamDocuments from "./pages/Team/Documents";
-import TeamTimeline from "./pages/Team/TeamTimeline";
-import CreateTeam from "./pages/Team/CreateTeam";
-import AcceptInvite from "./pages/Team/AcceptInvite";
-import PresentationAudience from "./pages/PresentationAudience";
+
+// Lazy load page components for better performance
+const Index = React.lazy(() => import("./pages/Index"));
+const Auth = React.lazy(() => import("./pages/Auth"));
+const ResetPassword = React.lazy(() => import("./pages/ResetPassword"));
+const ConfirmEmail = React.lazy(() => import("./pages/ConfirmEmail"));
+const GoogleDrive = React.lazy(() => import("./pages/GoogleDrive"));
+const GoogleSheets = React.lazy(() => import("./pages/GoogleSheets"));
+const Documents = React.lazy(() => import("./pages/Documents"));
+const AddDocuments = React.lazy(() => import("./pages/AddDocuments"));
+const KnowledgeBases = React.lazy(() => import("./pages/KnowledgeBases"));
+const PitchDeck = React.lazy(() => import("./pages/PitchDeck"));
+const SyncStatus = React.lazy(() => import("./pages/SyncStatus"));
+const Settings = React.lazy(() => import("./pages/Settings"));
+const NotFound = React.lazy(() => import("./pages/NotFound"));
+const Footer = React.lazy(() => import("./layout/Footer"));
+const Landing = React.lazy(() => import("./pages/Landing"));
+const Admin = React.lazy(() => import("./pages/Admin"));
+const CustomerInvites = React.lazy(() => import("./pages/Admin/CustomerInvites"));
+const DocumentList = React.lazy(() => import("./components/DocumentList"));
+const Conversations = React.lazy(() => import("./pages/Conversations"));
+const MicrosoftCallback = React.lazy(() => import("./pages/MicrosoftCallback"));
+const DropboxCallback = React.lazy(() => import("./pages/auth/DropboxCallback"));
+const Terms = React.lazy(() => import("./pages/Terms"));
+const Privacy = React.lazy(() => import("./pages/Privacy"));
+const Disclaimer = React.lazy(() => import("./pages/Disclaimer"));
+const DataPolicy = React.lazy(() => import("./pages/DataPolicy"));
+const AcceptableUse = React.lazy(() => import("./pages/AcceptableUse"));
+const Support = React.lazy(() => import("./pages/Support"));
+const AdminSupportTickets = React.lazy(() => import("./pages/AdminSupportTickets"));
+const Timeline = React.lazy(() => import("./pages/Timeline"));
+const BookingPage = React.lazy(() => import("./pages/BookingPage"));
+const BookingLinks = React.lazy(() => import("./pages/BookingLinks"));
+const DailyBrief = React.lazy(() => import("./pages/DailyBrief"));
+const EmailToTask = React.lazy(() => import("./pages/EmailToTask"));
+const TeamSettings = React.lazy(() => import("./pages/Team/Settings"));
+const TeamMembers = React.lazy(() => import("./pages/Team/Members"));
+const TeamDocuments = React.lazy(() => import("./pages/Team/Documents"));
+const TeamTimeline = React.lazy(() => import("./pages/Team/TeamTimeline"));
+const CreateTeam = React.lazy(() => import("./pages/Team/CreateTeam"));
+const AcceptInvite = React.lazy(() => import("./pages/Team/AcceptInvite"));
+const PresentationAudience = React.lazy(() => import("./pages/PresentationAudience"));
 
 const queryClient = new QueryClient();
 
@@ -75,7 +78,13 @@ function AppLayout({ children }: { children: React.ReactNode }) {
           <main className="flex-1 overflow-x-hidden">
             <Header />
             <div className={`${location.pathname === '/conversations' ? '' : 'p-6'} max-w-full overflow-x-hidden`}>
-              {children}
+              <Suspense fallback={
+                <div className="min-h-screen flex items-center justify-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                </div>
+              }>
+                {children}
+              </Suspense>
             </div>
           </main>
         </div>
