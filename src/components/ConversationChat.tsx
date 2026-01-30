@@ -1372,7 +1372,7 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
     try {
       const base64 = await fileToBase64(file);
       setPendingImage({ base64, mimeType: file.type, fileName: file.name });
-      toast.success('Image ready to send');
+      // Image preview indicator in the form shows the image is ready
     } catch (error) {
       console.error('Image processing error:', error);
       toast.error('Failed to process image');
