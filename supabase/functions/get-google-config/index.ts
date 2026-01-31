@@ -15,14 +15,27 @@ serve(async (req) => {
     const googleApiKey = Deno.env.get('GOOGLE_API_KEY');
     const googleClientId = Deno.env.get('GOOGLE_CLIENT_ID');
 
+    // ADD DIAGNOSTIC LOGGING FOR TROUBLESHOOTING
+    console.log('Google OAuth config check:', {
+      hasApiKey: !!googleApiKey,
+      hasClientId: !!googleClientId,
+      apiKeyLength: googleApiKey?.length || 0,
+      clientIdPrefix: googleClientId?.substring(0, 20) || 'none',
+      timestamp: new Date().toISOString()
+    });
+
     if (!googleApiKey || !googleClientId) {
+      console.error('Missing Google credentials:', {
+        apiKey: !!googleApiKey,
+        clientId: !!googleClientId
+      });
       throw new Error('Google API credentials not configured');
     }
 
     return new Response(
       JSON.stringify({
-        apiKey: googleApiKey,
-        clientId: googleClientId,
+        apiKey: googleApiKey?.trim(),
+        clientId: googleClientId?.trim(),
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
