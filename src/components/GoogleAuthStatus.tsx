@@ -70,7 +70,7 @@ const GoogleAuthStatus = () => {
 
   // Listen for auth state changes
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, _session) => {
       if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
         // Refresh status after a short delay
         setTimeout(checkTokenStatus, 500);
@@ -120,6 +120,16 @@ const GoogleAuthStatus = () => {
           <div className="text-sm text-muted-foreground">
             <p>Token expires: {new Date(tokenInfo.expires_at).toLocaleString()}</p>
             <p>Scope: {tokenInfo.scope}</p>
+          </div>
+        )}
+
+        {/* ADD DEBUG INFO FOR TROUBLESHOOTING */}
+        {process.env.NODE_ENV === 'development' && (
+          <div className="text-xs text-gray-500 mt-2 p-2 bg-gray-50 rounded">
+            <p>Debug Info:</p>
+            <p>User ID: {user?.id?.substring(0, 8)}...</p>
+            <p>Token Status: {tokenStatus}</p>
+            <p>Has Token Info: {!!tokenInfo}</p>
           </div>
         )}
 

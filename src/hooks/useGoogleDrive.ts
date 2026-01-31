@@ -6,7 +6,6 @@ import { useGoogleOAuth } from '@/hooks/useGoogleOAuth';
 import { DriveItem } from '@/types/googleDrive';
 
 export const useGoogleDrive = () => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [driveItems, setDriveItems] = useState<DriveItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSigningIn, setIsSigningIn] = useState(false);
@@ -17,282 +16,39 @@ export const useGoogleDrive = () => {
   const { toast } = useToast();
   const { user } = useAuth();
 
-  // Check if we have a valid Google token in session or stored
-  const checkConnection = useCallback(async () => {
-    if (!user) {
-      setIsAuthenticated(false);
-      return false;
-    }
+  // Use secure OAuth utility
+  const {
+    isAuthenticated,
+    initiateGoogleOAuth,
+    checkConnection,
+    disconnect: disconnectOAuth,
+  } = useGoogleOAuth();
 
-    try {
-      // First check if there's a provider token in the current session
-      const { data: { session } } = await supabase.auth.getSession();
-
-      if (session?.provider_token) {
-        setIsAuthenticated(true);
-        return true;
-      }
-
-      // Fall back to checking stored tokens
-      const { data: storedToken } = await supabase
-        .from('user_google_tokens')
-        .select('access_token, expires_at')
-        .eq('user_id', user.id)
-        .maybeSingle();
-
-      if (storedToken?.access_token) {
-        const expiresAt = new Date(storedToken.expires_at);
-        if (expiresAt > new Date()) {
-          setIsAuthenticated(true);
-          return true;
-        }
-      }
-
-      setIsAuthenticated(false);
-      return false;
-    } catch (error) {
-      console.error('Error checking connection:', error);
-      setIsAuthenticated(false);
-      return false;
-    }
-  }, [user]);
-
-  // Check connection on mount and when user changes
+  // Initialize connection check from secure OAuth utility
   useEffect(() => {
-    checkConnection();
-  }, [checkConnection]);
-
-  // Store provider token using edge function (bypasses RLS)
-  const storeProviderToken = useCallback(async (session: any) => {
-    if (!session?.provider_token || !session?.user?.id) return;
-
-    try {
-      const { data, error } = await supabase.functions.invoke('store-google-tokens', {
-        body: {
-          access_token: session.provider_token,
-          refresh_token: session.provider_refresh_token || null,
-          token_type: 'Bearer',
-          expires_in: 3600,
-          scope: 'https://www.googleapis.com/auth/drive.readonly https://www.googleapis.com/auth/spreadsheets',
-        }
-      });
-
-      if (error) {
-        console.error('Error storing provider token');
-        toast({
-          title: 'Storage Error',
-          description: error.message || 'Failed to store Google token',
-          variant: 'destructive',
-        });
-      } else {
-        setIsAuthenticated(true);
-        toast({
-          title: 'Connected Successfully!',
-          description: 'Google Drive is now connected',
-        });
-      }
-    } catch (error) {
-      console.error('Error storing provider token');
-      toast({
-        title: 'Connection Error',
-        description: error instanceof Error ? error.message : 'Failed to store Google token',
-        variant: 'destructive',
-      });
-    }
-  }, [toast]);
-
-  // Check for provider token on mount (handles redirect from Google)
-  useEffect(() => {
-    const checkForProviderToken = async () => {
-      // Check if we're returning from OAuth (URL might have hash with tokens)
-      const hashParams = new URLSearchParams(window.location.hash.substring(1));
-      const urlAccessToken = hashParams.get('access_token');
-      const urlProviderToken = hashParams.get('provider_token');
-
-      if (urlAccessToken || urlProviderToken) {
-        // Give Supabase a moment to process the URL hash
-        await new Promise(resolve => setTimeout(resolve, 500));
-
-        // Security: Clear tokens from URL to prevent exposure in browser history
-        // This removes the hash fragment containing sensitive tokens
-        if (window.history && window.history.replaceState) {
-          window.history.replaceState(
-            {},
-            document.title,
-            window.location.pathname + window.location.search
-          );
-        }
-      }
-
-      const { data: { session } } = await supabase.auth.getSession();
-
-      if (session?.provider_token) {
-        await storeProviderToken(session);
-      } else if (session?.user) {
-        // User is logged in but no provider token - check stored tokens
-        await checkConnection();
-      }
-    };
-    checkForProviderToken();
-  }, [storeProviderToken, checkConnection]);
-
-  // Listen for auth state changes (handles redirect back from Google)
-  useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      // Check for provider token on any auth event
-      if (session?.provider_token) {
-        await storeProviderToken(session);
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, [storeProviderToken]);
-
-  // Get the current access token (from session or stored)
-  const getAccessToken = useCallback(async (): Promise<string | null> => {
-    // First try session
-    const { data: { session } } = await supabase.auth.getSession();
-    if (session?.provider_token) {
-      return session.provider_token;
-    }
-
-    // Fall back to stored token
     if (user) {
-      const { data: storedToken } = await supabase
-        .from('user_google_tokens')
-        .select('access_token, expires_at')
-        .eq('user_id', user.id)
-        .maybeSingle();
+      checkConnection();
+    }
+  }, [user, checkConnection]);
 
-      if (storedToken?.access_token) {
-        const expiresAt = new Date(storedToken.expires_at);
-        if (expiresAt > new Date()) {
-          return storedToken.access_token;
-        }
+  // Get the current access token (from stored tokens)
+  const getAccessToken = useCallback(async (): Promise<string | null> => {
+    if (!user) return null;
+
+    const { data: storedToken } = await supabase
+      .from('user_google_tokens')
+      .select('access_token, expires_at')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (storedToken?.access_token) {
+      const expiresAt = new Date(storedToken.expires_at);
+      if (expiresAt > new Date()) {
+        return storedToken.access_token;
       }
     }
-
     return null;
   }, [user]);
-
-  // Connect Google Drive using Google Identity Services (popup, no session change)
-  const signIn = useCallback(async () => {
-    if (!user) {
-      toast({
-        title: 'Not Logged In',
-        description: 'Please log in first before connecting Google Drive.',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    setIsSigningIn(true);
-
-    try {
-      // Use Google Identity Services for token-only flow (doesn't affect Supabase session)
-      const clientId = '1050361175911-2caa9uiuf4tmi5pvqlt0arl1h592hurm.apps.googleusercontent.com';
-
-      // Load Google Identity Services script if not loaded
-      if (!window.google?.accounts?.oauth2) {
-        await new Promise<void>((resolve, reject) => {
-          const script = document.createElement('script');
-          script.src = 'https://accounts.google.com/gsi/client';
-          script.onload = () => resolve();
-          script.onerror = () => reject(new Error('Failed to load Google Identity Services'));
-          document.head.appendChild(script);
-        });
-      }
-
-      // Request access token via popup (doesn't change Supabase session)
-      const tokenClient = window.google.accounts.oauth2.initTokenClient({
-        client_id: clientId,
-        scope: 'https://www.googleapis.com/auth/drive.readonly https://www.googleapis.com/auth/spreadsheets',
-        callback: async (response: any) => {
-          if (response.error) {
-            console.error('Google OAuth error:', response.error);
-            toast({
-              title: 'Connection Failed',
-              description: response.error_description || 'Failed to connect to Google',
-              variant: 'destructive',
-            });
-            setIsSigningIn(false);
-            return;
-          }
-
-          // Got access token - store it via edge function
-          try {
-            const { data, error } = await supabase.functions.invoke('store-google-tokens', {
-              body: {
-                access_token: response.access_token,
-                refresh_token: null, // Token client doesn't provide refresh tokens
-                token_type: 'Bearer',
-                expires_in: response.expires_in || 3600,
-                scope: 'https://www.googleapis.com/auth/drive.readonly https://www.googleapis.com/auth/spreadsheets',
-              }
-            });
-
-            // Check for function-level error (network, auth, or 500)
-            if (error) {
-              console.error('Function invoke error');
-              // Try to get the actual error message from the response body
-              let errorMessage = error.message || 'Function call failed';
-              try {
-                // FunctionsHttpError has context with the response
-                if (error.context) {
-                  const errorBody = await error.context.json();
-                  errorMessage = errorBody.error || errorMessage;
-                }
-              } catch {
-                // Could not parse error body
-              }
-              throw new Error(errorMessage);
-            }
-
-            // Check for application-level error in response body
-            if (data?.error) {
-              console.error('Application error from function');
-              throw new Error(data.error);
-            }
-
-            if (!data?.success) {
-              console.error('Unexpected response from server');
-              throw new Error('Unexpected response from server');
-            }
-
-            setIsAuthenticated(true);
-            toast({
-              title: 'Connected Successfully!',
-              description: 'Google Drive is now connected.',
-            });
-
-            // Automatically load drive items after successful authentication
-            await loadDriveItems('root');
-          } catch (storeError: any) {
-            console.error('Error storing token');
-            const errorMessage = storeError?.message || 'Unknown error';
-            toast({
-              title: 'Storage Error',
-              description: `Failed to save token: ${errorMessage}`,
-              variant: 'destructive',
-            });
-          }
-          setIsSigningIn(false);
-        },
-      });
-
-      // Request the token (opens popup)
-      tokenClient.requestAccessToken({ prompt: 'consent' });
-
-    } catch (error) {
-      console.error('Error connecting to Google:', error);
-      toast({
-        title: 'Connection Error',
-        description: error instanceof Error ? error.message : 'Failed to connect to Google Drive',
-        variant: 'destructive',
-      });
-      setIsSigningIn(false);
-    }
-  }, [user, toast]);
 
   // Load Drive items using the access token
   const loadDriveItems = useCallback(async (folderId: string = 'root') => {
@@ -343,7 +99,62 @@ export const useGoogleDrive = () => {
     }
   }, [getAccessToken, toast]);
 
-  // Initialize is now a no-op (Supabase handles everything)
+  // Sign in using secure OAuth with PKCE
+  const signIn = useCallback(async () => {
+    if (!user) {
+      toast({
+        title: 'Not Logged In',
+        description: 'Please log in first before connecting Google Drive.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsSigningIn(true);
+
+    try {
+      // Use secure OAuth with Google Drive and Sheets scopes
+      await initiateGoogleOAuth('https://www.googleapis.com/auth/drive.readonly https://www.googleapis.com/auth/spreadsheets');
+
+      // Automatically load drive items after successful authentication
+      setTimeout(() => {
+        loadDriveItems('root');
+      }, 1000); // Small delay to ensure token is properly stored
+    } catch (error) {
+      console.error('Google sign in error:', error);
+      toast({
+        title: 'Connection Failed',
+        description: error instanceof Error ? error.message : 'Failed to connect to Google Drive',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSigningIn(false);
+    }
+  }, [user, toast, loadDriveItems, initiateGoogleOAuth]);
+
+  // Disconnect Google Drive
+  const disconnect = useCallback(async () => {
+    try {
+      await disconnectOAuth();
+      setDriveItems([]);
+      setBreadcrumbs([{ id: 'root', name: 'My Drive' }]);
+      setCurrentFolder('root');
+
+      toast({
+        title: 'Disconnected',
+        description: 'Google Drive has been disconnected.',
+      });
+    } catch (error) {
+      console.error('Error disconnecting Google Drive:', error);
+      toast({
+        title: 'Disconnection Failed',
+        description: error instanceof Error ? error.message : 'Failed to disconnect Google Drive',
+        variant: 'destructive',
+      });
+    }
+  }, [disconnectOAuth, toast]);
+
+  // Initialize Google Drive by checking connection
   const initializeGoogleDrive = useCallback(async () => {
     await checkConnection();
   }, [checkConnection]);
@@ -371,6 +182,7 @@ export const useGoogleDrive = () => {
     breadcrumbs,
     initializeGoogleDrive,
     signIn,
+    disconnect,
     loadDriveItems,
     navigateToFolder,
     navigateToBreadcrumb,

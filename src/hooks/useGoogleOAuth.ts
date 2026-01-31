@@ -77,7 +77,7 @@ export const useGoogleOAuth = () => {
       const currentOrigin = window.location.origin;
       return {
         google: {
-          client_id: googleConfig.clientId,
+          client_id: googleConfig.clientId?.trim(),
           // No redirect_uri needed for popup-based OAuth flow
         },
         microsoft: {
@@ -92,9 +92,18 @@ export const useGoogleOAuth = () => {
       } as OAuthConfig;
     } catch (error) {
       console.error('Failed to fetch OAuth configuration:', error);
+
+      // Provide more specific error messages based on error type
+      let userMessage = 'Failed to load OAuth configuration. Please refresh and try again.';
+      if (error.message.includes('Google API credentials not configured')) {
+        userMessage = 'Google integration not configured. Please contact support.';
+      } else if (error.message.includes('Network Error') || error.message.includes('Failed to fetch')) {
+        userMessage = 'Network error loading Google configuration. Check your internet connection.';
+      }
+
       toast({
         title: 'Configuration Error',
-        description: 'Failed to load OAuth configuration. Please refresh and try again.',
+        description: userMessage,
         variant: 'destructive',
       });
       return null;
@@ -112,15 +121,30 @@ export const useGoogleOAuth = () => {
   const loadGoogleScript = useCallback((): Promise<void> => {
     return new Promise((resolve, reject) => {
       if (window.google?.accounts?.oauth2) {
+        console.log('Google Identity Services already loaded');
         resolve();
         return;
       }
 
+      console.log('Loading Google Identity Services script...');
       const script = document.createElement('script');
       script.src = 'https://accounts.google.com/gsi/client';
       script.async = true;
-      script.onload = () => resolve();
-      script.onerror = () => reject(new Error('Failed to load Google Identity Services'));
+      script.onload = () => {
+        console.log('Google Identity Services script loaded successfully');
+        // Give it a moment to initialize
+        setTimeout(() => {
+          if (window.google?.accounts?.oauth2) {
+            resolve();
+          } else {
+            reject(new Error('Google Identity Services loaded but API not available'));
+          }
+        }, 100);
+      };
+      script.onerror = (error) => {
+        console.error('Failed to load Google Identity Services script:', error);
+        reject(new Error('Failed to load Google Identity Services - network or CORS error'));
+      };
       document.head.appendChild(script);
     });
   }, []);
@@ -136,6 +160,14 @@ export const useGoogleOAuth = () => {
     try {
       // Load Google script
       await loadGoogleScript();
+
+      // ADD DIAGNOSTIC LOGGING
+      console.log('Google OAuth initialization:', {
+        hasGoogleAPI: !!window.google?.accounts?.oauth2,
+        clientId: oauthConfig.google.client_id?.substring(0, 20) + '...',
+        scope: scope,
+        timestamp: new Date().toISOString()
+      });
 
       // Generate PKCE parameters
       const codeVerifier = generateCodeVerifier();
@@ -160,6 +192,14 @@ export const useGoogleOAuth = () => {
         code_challenge_method: 'S256',
         callback: async (response: any) => {
           try {
+            // ADD DIAGNOSTIC LOGGING FOR OAUTH CALLBACK
+            console.log('Google OAuth callback received:', {
+              hasError: !!response.error,
+              hasAccessToken: !!response.access_token,
+              responseKeys: Object.keys(response || {}),
+              timestamp: new Date().toISOString()
+            });
+
             // Validate state parameter
             const storedState = sessionStorage.getItem('google_state');
             if (response.state !== storedState) {
@@ -167,7 +207,12 @@ export const useGoogleOAuth = () => {
             }
 
             if (response.error) {
-              throw new Error(`OAuth error: ${response.error}`);
+              console.error('OAuth error details:', {
+                error: response.error,
+                description: response.error_description,
+                uri: response.error_uri
+              });
+              throw new Error(`OAuth error: ${response.error}${response.error_description ? ' - ' + response.error_description : ''}`);
             }
 
             console.log('Google OAuth successful, storing tokens...');
