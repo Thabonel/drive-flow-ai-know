@@ -1,0 +1,50 @@
+{
+  "timestamp": "2026-02-01T11:53:10.487Z",
+  "testDuration": 33597,
+  "browsers": {
+    "chromium": {
+      "integration": {
+        "enhancedTimelineVisualization": false,
+        "attentionVisualization": false,
+        "decisionBatchVisualization": false,
+        "attentionEnhancementsCSS": true,
+        "animationElements": 0,
+        "svgVisualizations": 0,
+        "enhancementOverlays": 0,
+        "budgetStatusFeedback": false,
+        "contextSwitchIndicators": false,
+        "peakHoursHighlighting": false,
+        "focusProtectionZones": false
+      },
+      "scenarios": [
+        {
+          "scenario": "enhanced_timeline_basic_chromium_1920x1080",
+          "animationMetrics": {
+            "fps": 121,
+            "animatedElements": 0,
+            "duration": 2003.2000000178814,
+            "frameCount": 241
+          },
+          "screenshotPath": "enhanced_timeline_basic_chromium_1920x1080_1920x1080.png",
+          "timestamp": "2026-02-01T11:52:54.424Z"
+        },
+        {
+          "scenario": "attention_budget_visualization_chromium_1920x1080",
+          "animationMetrics": {
+            "fps": 121,
+            "animatedElements": 0,
+            "duration": 2007.5999999940395,
+            "frameCount": 241
+          },
+          "screenshotPath": "attention_budget_visualization_chromium_1920x1080_1920x1080.png",
+          "timestamp": "2026-02-01T11:53:10.465Z"
+        }
+      ]
+    }
+  },
+  "summary": {
+    "totalScenarios": 6,
+    "browsersLested": 1,
+    "screenshotsCaptured": 2
+  }
+}

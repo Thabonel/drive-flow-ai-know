@@ -23,6 +23,7 @@ import { useTheme } from "@/components/ThemeProvider";
 import { AIQueryInput } from "@/components/AIQueryInput";
 import { AgentModeToggle } from "@/components/settings/AgentModeToggle";
 import { MemoryManager } from "@/components/settings/MemoryManager";
+import { MFASettings } from "@/components/settings/MFASettings";
 import {
   User,
   Bell,
@@ -339,6 +340,12 @@ const Settings = () => {
                     </div>
                   </CardContent>
                 </Card>
+
+                {/* Multi-Factor Authentication */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium text-primary">Multi-Factor Authentication</h3>
+                  <MFASettings />
+                </div>
 
                 <Card>
                   <CardHeader>

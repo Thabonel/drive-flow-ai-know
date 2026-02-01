@@ -301,8 +301,9 @@ export function calculateContextSwitchCost(
   const transitionKey = `${fromType}-${toType}`;
   const baseCost = baseCosts[transitionKey] || 2;
 
-  // Apply role-specific penalties
-  const rolePenalty = ROLE_MODE_DESCRIPTIONS[roleMode].behaviors.contextSwitchPenalty;
+  // Apply role-specific penalties with fallback for invalid roleMode
+  const roleDescription = ROLE_MODE_DESCRIPTIONS[roleMode];
+  const rolePenalty = roleDescription?.behaviors?.contextSwitchPenalty ?? 2; // Default penalty if roleMode is invalid
 
   return Math.min(baseCost * rolePenalty, 10); // Cap at 10
 }
@@ -312,7 +313,8 @@ export function getAttentionTypeCompatibility(
   attentionType: AttentionType,
   roleMode: RoleMode
 ): 'high' | 'medium' | 'low' {
-  const preferred = ROLE_MODE_DESCRIPTIONS[roleMode].behaviors.preferredAttentionTypes;
+  const roleDescription = ROLE_MODE_DESCRIPTIONS[roleMode];
+  const preferred = roleDescription?.behaviors?.preferredAttentionTypes ?? [];
 
   if (preferred.includes(attentionType)) {
     return 'high';

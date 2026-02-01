@@ -1,0 +1,22 @@
+{
+  "timestamp": "2026-02-01T11:54:16.208Z",
+  "visualizationComponents": {
+    "enhancedTimelineVisualization": false,
+    "attentionVisualization": false,
+    "decisionBatchVisualization": false
+  },
+  "animationSystem": {
+    "cssAnimationsPresent": true,
+    "animatedElementsCount": 0,
+    "budgetViolationAnimations": false,
+    "contextSwitchAnimations": false
+  },
+  "attentionSystemIntegration": {
+    "attentionBudgetWidget": false,
+    "roleBasedElements": 0
+  },
+  "timelineBasics": {
+    "timelineManagerPresent": false,
+    "timelineItemsCount": 0
+  }
+}

@@ -1,0 +1,276 @@
+{
+  "timestamp": "2026-02-01T11:51:20.590Z",
+  "components": [
+    {
+      "file": "src/components/timeline/DelegationButton.tsx",
+      "type": "component",
+      "exists": true,
+      "size": 15858,
+      "lines": 407,
+      "issues": [],
+      "features": [
+        "Component export",
+        "React import",
+        "Props interface",
+        "Trust level handling",
+        "Delegation functionality",
+        "Data integration",
+        "Event handlers"
+      ],
+      "status": "PASSED"
+    },
+    {
+      "file": "src/components/timeline/DelegationDashboard.tsx",
+      "type": "component",
+      "exists": true,
+      "size": 24481,
+      "lines": 629,
+      "issues": [],
+      "features": [
+        "Component export",
+        "React import",
+        "Props interface",
+        "Trust level handling",
+        "Delegation functionality",
+        "Data integration",
+        "Event handlers",
+        "Error handling"
+      ],
+      "status": "PASSED"
+    },
+    {
+      "file": "src/components/timeline/RouterInbox.tsx",
+      "type": "component",
+      "exists": true,
+      "size": 25205,
+      "lines": 679,
+      "issues": [],
+      "features": [
+        "Component export",
+        "React import",
+        "Props interface",
+        "Data integration",
+        "Event handlers"
+      ],
+      "status": "PASSED"
+    },
+    {
+      "file": "src/components/timeline/TrustLevelManagement.tsx",
+      "type": "component",
+      "exists": true,
+      "size": 24484,
+      "lines": 605,
+      "issues": [],
+      "features": [
+        "Component export",
+        "React import",
+        "Props interface",
+        "Trust level handling",
+        "Delegation functionality",
+        "Data integration",
+        "Event handlers",
+        "Error handling"
+      ],
+      "status": "PASSED"
+    },
+    {
+      "file": "src/components/timeline/FollowUpAutomation.tsx",
+      "type": "component",
+      "exists": true,
+      "size": 24469,
+      "lines": 629,
+      "issues": [],
+      "features": [
+        "Component export",
+        "React import",
+        "Props interface",
+        "Trust level handling",
+        "Delegation functionality",
+        "Event handlers",
+        "Error handling"
+      ],
+      "status": "PASSED"
+    },
+    {
+      "file": "src/components/timeline/MultiplierDashboard.tsx",
+      "type": "component",
+      "exists": true,
+      "size": 18157,
+      "lines": 506,
+      "issues": [],
+      "features": [
+        "Component export",
+        "React import",
+        "Props interface",
+        "Trust level handling",
+        "Delegation functionality"
+      ],
+      "status": "PASSED"
+    }
+  ],
+  "hooks": [
+    {
+      "file": "src/hooks/useDelegations.ts",
+      "type": "hook",
+      "exists": true,
+      "size": 7410,
+      "lines": 261,
+      "issues": [],
+      "features": [
+        "Hook export",
+        "React hooks",
+        "Supabase integration",
+        "Error handling",
+        "TypeScript interfaces",
+        "Async operations"
+      ],
+      "status": "PASSED"
+    },
+    {
+      "file": "src/hooks/useRouterInbox.ts",
+      "type": "hook",
+      "exists": true,
+      "size": 9703,
+      "lines": 328,
+      "issues": [
+        {
+          "severity": "warning",
+          "message": "console.log statements found",
+          "line": 0
+        }
+      ],
+      "features": [
+        "Hook export",
+        "React hooks",
+        "Supabase integration",
+        "Error handling",
+        "TypeScript interfaces",
+        "Async operations"
+      ],
+      "status": "WARNING"
+    },
+    {
+      "file": "src/hooks/useTrustLevelData.ts",
+      "type": "hook",
+      "exists": true,
+      "size": 13215,
+      "lines": 386,
+      "issues": [],
+      "features": [
+        "Hook export",
+        "React hooks",
+        "Supabase integration",
+        "Error handling",
+        "TypeScript interfaces",
+        "Async operations"
+      ],
+      "status": "PASSED"
+    },
+    {
+      "file": "src/hooks/useTeamWorkload.ts",
+      "type": "hook",
+      "exists": true,
+      "size": 8369,
+      "lines": 294,
+      "issues": [],
+      "features": [
+        "Hook export",
+        "React hooks",
+        "Supabase integration",
+        "Error handling",
+        "TypeScript interfaces",
+        "Async operations"
+      ],
+      "status": "PASSED"
+    },
+    {
+      "file": "src/hooks/useFollowUpAutomation.ts",
+      "type": "hook",
+      "exists": true,
+      "size": 11907,
+      "lines": 421,
+      "issues": [],
+      "features": [
+        "Hook export",
+        "React hooks",
+        "Supabase integration",
+        "Error handling",
+        "TypeScript interfaces",
+        "Async operations"
+      ],
+      "status": "PASSED"
+    }
+  ],
+  "database": [],
+  "integration": [
+    {
+      "check": "DelegationDashboard imported in MultiplierDashboard",
+      "status": "FAILED",
+      "issue": "Component not imported"
+    },
+    {
+      "check": "RouterInbox imported in MultiplierDashboard",
+      "status": "FAILED",
+      "issue": "Component not imported"
+    },
+    {
+      "check": "TrustLevelManagement imported in MultiplierDashboard",
+      "status": "FAILED",
+      "issue": "Component not imported"
+    },
+    {
+      "check": "FollowUpAutomation imported in MultiplierDashboard",
+      "status": "FAILED",
+      "issue": "Component not imported"
+    },
+    {
+      "check": "MultiplierMode page integration",
+      "status": "PASSED"
+    },
+    {
+      "check": "DelegationDashboard uses useDelegations",
+      "status": "PASSED"
+    },
+    {
+      "check": "RouterInbox uses useRouterInbox",
+      "status": "PASSED"
+    },
+    {
+      "check": "TrustLevelManagement uses useTrustLevelData",
+      "status": "PASSED"
+    }
+  ],
+  "summary": {
+    "total": 12,
+    "passed": 10,
+    "failed": 0,
+    "warnings": 2
+  },
+  "databases": [
+    {
+      "file": "supabase/migrations/20250201000020_delegation_workflow_enhancements.sql",
+      "type": "database",
+      "exists": true,
+      "size": 14352,
+      "lines": 383,
+      "issues": [
+        {
+          "severity": "info",
+          "message": "No comments found",
+          "line": 0
+        }
+      ],
+      "features": [
+        "Table creation",
+        "Table alterations",
+        "Index creation",
+        "RLS policies",
+        "delegations table",
+        "router_inbox table",
+        "delegation_follow_ups table",
+        "team_workload_indicators table"
+      ],
+      "status": "WARNING"
+    }
+  ]
+}

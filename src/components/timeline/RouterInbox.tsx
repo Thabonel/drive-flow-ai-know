@@ -30,7 +30,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import {
   Inbox,
-  Route,
+  MapPin,
   Calendar,
   MessageSquare,
   X,
@@ -76,8 +76,8 @@ interface TriageAction {
 const TRIAGE_ACTIONS: TriageAction[] = [
   {
     type: 'route',
-    label: 'Route to Team',
-    icon: Route,
+    label: 'MapPin to Team',
+    icon: MapPin,
     description: 'Assign to a team member',
     color: 'bg-blue-100 text-blue-800 hover:bg-blue-200'
   },
@@ -241,10 +241,10 @@ export function RouterInbox() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Routed</p>
+                <p className="text-sm font-medium text-gray-600">MapPind</p>
                 <p className="text-2xl font-bold">{routedCount}</p>
               </div>
-              <Route className="h-8 w-8 text-green-600" />
+              <MapPin className="h-8 w-8 text-green-600" />
             </div>
           </CardContent>
         </Card>
@@ -287,7 +287,7 @@ export function RouterInbox() {
           <SelectContent>
             <SelectItem value="all">All Requests</SelectItem>
             <SelectItem value="pending">Pending</SelectItem>
-            <SelectItem value="routed">Routed</SelectItem>
+            <SelectItem value="routed">MapPind</SelectItem>
             <SelectItem value="scheduled">Scheduled</SelectItem>
             <SelectItem value="responded">Responded</SelectItem>
             <SelectItem value="declined">Declined</SelectItem>
@@ -395,8 +395,8 @@ export function RouterInbox() {
                       {item.routed_to && item.routing_context && (
                         <div className="mt-3 p-2 bg-green-50 border border-green-200 rounded-md">
                           <div className="flex items-center gap-2 text-green-800 text-sm">
-                            <Route className="h-4 w-4" />
-                            <span>Routed: {item.routing_context}</span>
+                            <MapPin className="h-4 w-4" />
+                            <span>MapPind: {item.routing_context}</span>
                           </div>
                         </div>
                       )}

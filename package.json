@@ -89,6 +89,7 @@
     "mixpanel-browser": "^2.71.1",
     "next-themes": "^0.4.6",
     "openai": "^6.7.0",
+    "playwright": "^1.58.1",
     "pptxgenjs": "^4.0.1",
     "react": "^18.2.0",
     "react-day-picker": "^9.8.0",
