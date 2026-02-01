@@ -55,7 +55,7 @@ AI Query Hub integrates with multiple Google services to provide seamless docume
 ```typescript
 // Used consistently across all Google integrations
 const GOOGLE_CLIENT_ID = '1050361175911-2caa9uiuf4tmi5pvqlt0arl1h592hurm.apps.googleusercontent.com';
-const GOOGLE_API_KEY = 'AIzaSyDJlMOaAOnFM8kt2zheZyVYzSs0euY1uUg';
+const GOOGLE_API_KEY = 'YOUR_GOOGLE_API_KEY_HERE'; // Replace with your actual API key
 ```
 
 ### OAuth 2.0 Flow with PKCE
