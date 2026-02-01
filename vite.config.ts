@@ -9,10 +9,17 @@ export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
     port: 8080,
-    // Fix Google OAuth popup COOP issues
+    // Fix Google OAuth popup COOP issues and add CSP for development
     headers: {
       'Cross-Origin-Opener-Policy': 'same-origin-allow-popups',
       'Cross-Origin-Embedder-Policy': 'credentialless',
+      // Content Security Policy for development (more permissive for HMR)
+      'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' ws: https://*.supabase.co https://api.anthropic.com https://openrouter.ai https://api.openai.com; object-src 'none'; frame-ancestors 'none'; upgrade-insecure-requests",
+      // Additional security headers
+      'X-Content-Type-Options': 'nosniff',
+      'X-Frame-Options': 'DENY',
+      'X-XSS-Protection': '1; mode=block',
+      'Referrer-Policy': 'strict-origin-when-cross-origin',
     },
   },
   plugins: [
