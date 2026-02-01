@@ -29,13 +29,24 @@ import {
 } from '@/components/ui/tooltip';
 import { TimelineLayer, getRandomItemColor, TimelineItem } from '@/lib/timelineUtils';
 import { QUICK_ADD_DURATIONS } from '@/lib/timelineConstants';
+import { AttentionTypeSelector } from './AttentionTypeSelector';
+import { RoleBasedTemplatesCompact } from './RoleBasedTemplates';
+import {
+  AttentionType,
+  RoleMode,
+  calculateContextSwitchCost,
+} from '@/lib/attentionTypes';
 import { TimeEstimateInput } from './TimeEstimateInput';
 import { DateTimePicker } from '@/components/ui/date-time-picker';
 import { useAITimeIntelligence } from '@/hooks/useAITimeIntelligence';
 import { useTeam } from '@/hooks/useTeam';
 import { useTeamMembers } from '@/hooks/useTeamMembers';
 import { useAuth } from '@/hooks/useAuth';
-import { Brain, Sparkles, ListTree } from 'lucide-react';
+import { useEventSuggestions } from '@/hooks/useRoleBehavior';
+import { Brain, Sparkles, ListTree, Target, AlertTriangle } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import { Slider } from '@/components/ui/slider';
+import { supabase } from '@/integrations/supabase/client';
 import { AITaskBreakdown } from '@/components/ai/AITaskBreakdown';
 import { AIMeetingPrep } from '@/components/ai/AIMeetingPrep';
 import { RecurringActionDialog } from './RecurringActionDialog';
@@ -57,6 +68,13 @@ interface AddItemFormProps {
       visibility?: 'personal' | 'team' | 'assigned';
       assigned_to?: string | null;
       assigned_by?: string | null;
+      // Attention system fields
+      attention_type?: AttentionType | null;
+      priority?: number | null;
+      is_non_negotiable?: boolean;
+      notes?: string | null;
+      tags?: string[] | null;
+      context_switch_cost?: number;
     }
   ) => Promise<void>;
   onUpdateItem?: (itemId: string, updates: Partial<TimelineItem>) => Promise<boolean>;
@@ -103,6 +121,14 @@ export function AddItemForm({
   const [visibility, setVisibility] = useState<'personal' | 'team' | 'assigned'>('personal');
   const [assignedTo, setAssignedTo] = useState<string>('');
 
+  // Attention system state
+  const [attentionType, setAttentionType] = useState<AttentionType | null>(null);
+  const [priority, setPriority] = useState<number>(3); // Default medium priority
+  const [isNonNegotiable, setIsNonNegotiable] = useState<boolean>(false);
+  const [notes, setNotes] = useState<string>('');
+  const [tags, setTags] = useState<string>('');
+  const [currentRole, setCurrentRole] = useState<RoleMode | undefined>();
+
   // AI Time Intelligence
   const { getAIEstimate, isConfigured } = useAITimeIntelligence();
   const [aiEstimate, setAiEstimate] = useState<{
@@ -110,6 +136,41 @@ export function AddItemForm({
     confidence: number;
     reasoning: string;
   } | null>(null);
+
+  // Role-based behavior suggestions
+  const roleSuggestions = useEventSuggestions(
+    attentionType || 'create',
+    startTime.toISOString(),
+    duration,
+    currentRole
+  );
+
+  // Load user's attention preferences to get current role
+  useEffect(() => {
+    if (!user || !open) return;
+
+    const loadAttentionPreferences = async () => {
+      try {
+        const response = await fetch('/functions/v1/attention-preferences', {
+          headers: {
+            'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data.preferences) {
+            setCurrentRole(data.preferences.current_role);
+          }
+        }
+      } catch (error) {
+        console.error('Error loading attention preferences:', error);
+      }
+    };
+
+    loadAttentionPreferences();
+  }, [user, open]);
 
   // Set initial values when provided (from double-click)
   useEffect(() => {
@@ -141,6 +202,13 @@ export function AddItemForm({
       setIsMeeting(editingItem.is_meeting || false);
       setIsFlexible(editingItem.is_flexible !== undefined ? editingItem.is_flexible : true);
 
+      // Populate attention fields
+      setAttentionType(editingItem.attention_type || null);
+      setPriority(editingItem.priority || 3);
+      setIsNonNegotiable(editingItem.is_non_negotiable || false);
+      setNotes(editingItem.notes || '');
+      setTags(editingItem.tags ? editingItem.tags.join(', ') : '');
+
       // Enable advanced mode if duration and planned duration differ
       const hasDifferentDurations = editingItem.planned_duration_minutes &&
         editingItem.planned_duration_minutes !== editingItem.duration_minutes;
@@ -162,6 +230,13 @@ export function AddItemForm({
       setIsCreatingLayer(false);
       setVisibility('personal');
       setAssignedTo('');
+
+      // Reset attention fields
+      setAttentionType(null);
+      setPriority(3);
+      setIsNonNegotiable(false);
+      setNotes('');
+      setTags('');
     }
   }, [editingItem]);
 
@@ -215,6 +290,13 @@ export function AddItemForm({
         is_meeting: isMeeting,
         is_flexible: isFlexible,
         color: color,
+        // Attention system fields
+        attention_type: attentionType,
+        priority: priority,
+        is_non_negotiable: isNonNegotiable,
+        notes: notes.trim() || null,
+        tags: tags.trim() ? tags.split(',').map(tag => tag.trim()).filter(Boolean) : null,
+        context_switch_cost: 0, // Will be calculated based on previous item when saving
       };
 
       // Check if this is a recurring item
@@ -229,12 +311,22 @@ export function AddItemForm({
       }
     } else {
       // Add new item
-      const teamOptions = team ? {
-        team_id: visibility !== 'personal' ? team.id : null,
-        visibility,
-        assigned_to: visibility === 'assigned' && assignedTo ? assignedTo : null,
-        assigned_by: visibility === 'assigned' && assignedTo ? user?.id : null,
-      } : undefined;
+      const allOptions = {
+        // Team options
+        ...(team ? {
+          team_id: visibility !== 'personal' ? team.id : null,
+          visibility,
+          assigned_to: visibility === 'assigned' && assignedTo ? assignedTo : null,
+          assigned_by: visibility === 'assigned' && assignedTo ? user?.id : null,
+        } : {}),
+        // Attention system options
+        attention_type: attentionType,
+        priority: priority,
+        is_non_negotiable: isNonNegotiable,
+        notes: notes.trim() || null,
+        tags: tags.trim() ? tags.split(',').map(tag => tag.trim()).filter(Boolean) : null,
+        context_switch_cost: 0, // Will be calculated based on previous item when saving
+      };
 
       await onAddItem(
         layerId,
@@ -242,7 +334,7 @@ export function AddItemForm({
         startTime.toISOString(),
         duration,
         color,
-        teamOptions
+        allOptions
       );
     }
 
@@ -262,6 +354,14 @@ export function AddItemForm({
     setIsCreatingLayer(false);
     setVisibility('personal');
     setAssignedTo('');
+
+    // Reset attention fields
+    setAttentionType(null);
+    setPriority(3);
+    setIsNonNegotiable(false);
+    setNotes('');
+    setTags('');
+
     onClose();
   };
 
@@ -289,6 +389,14 @@ export function AddItemForm({
     setIsCreatingLayer(false);
     setVisibility('personal');
     setAssignedTo('');
+
+    // Reset attention fields
+    setAttentionType(null);
+    setPriority(3);
+    setIsNonNegotiable(false);
+    setNotes('');
+    setTags('');
+
     onClose();
   };
 
@@ -316,6 +424,14 @@ export function AddItemForm({
     setIsCreatingLayer(false);
     setVisibility('personal');
     setAssignedTo('');
+
+    // Reset attention fields
+    setAttentionType(null);
+    setPriority(3);
+    setIsNonNegotiable(false);
+    setNotes('');
+    setTags('');
+
     onClose();
   };
 
@@ -356,6 +472,33 @@ export function AddItemForm({
     return 'bg-orange-500';
   };
 
+  // Handle template selection
+  const handleTemplateSelect = (template: {
+    title: string;
+    suggestedDuration: number;
+    attentionType: AttentionType;
+    priority: number;
+    isNonNegotiable?: boolean;
+    tags?: string[];
+  }) => {
+    setTitle(template.title);
+    setDuration(template.suggestedDuration);
+    setPlannedDuration(template.suggestedDuration);
+    setAttentionType(template.attentionType);
+    setPriority(template.priority);
+    setIsNonNegotiable(template.isNonNegotiable || false);
+
+    if (template.tags && template.tags.length > 0) {
+      setTags(template.tags.join(', '));
+    }
+
+    // Set end time based on duration
+    if (startTime) {
+      const newEndTime = new Date(startTime.getTime() + template.suggestedDuration * 60 * 1000);
+      setEndTime(newEndTime);
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md">
@@ -369,7 +512,14 @@ export function AddItemForm({
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Title */}
           <div className="space-y-2">
-            <Label htmlFor="title">Title *</Label>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="title">Title *</Label>
+              <RoleBasedTemplatesCompact
+                currentRole={currentRole}
+                onTemplateSelect={handleTemplateSelect}
+                disabled={isEditMode}
+              />
+            </div>
             <Input
               id="title"
               value={title}
@@ -515,6 +665,142 @@ export function AddItemForm({
               >
                 Flexible timing (can be rescheduled)
               </Label>
+            </div>
+          </div>
+
+          {/* Attention System Fields */}
+          <div className="space-y-4 border-t pt-4">
+            <div className="flex items-center gap-2 mb-2">
+              <Target className="h-4 w-4 text-primary" />
+              <Label className="text-sm font-semibold">Attention Management</Label>
+            </div>
+
+            {/* Attention Type */}
+            <div className="space-y-2">
+              <Label htmlFor="attention-type">Attention Type</Label>
+              <AttentionTypeSelector
+                value={attentionType}
+                onChange={setAttentionType}
+                currentRole={currentRole}
+                showDescriptions={false}
+                showCompatibilityWarnings={true}
+              />
+              <p className="text-xs text-muted-foreground">
+                What type of mental energy does this task require?
+              </p>
+
+              {/* Role-based suggestions */}
+              {roleSuggestions.suggestions.length > 0 && (
+                <div className="space-y-2 p-3 bg-muted/50 rounded-lg border">
+                  <div className="flex items-center gap-2">
+                    <Target className="h-4 w-4 text-orange-500" />
+                    <span className="text-sm font-medium">
+                      {currentRole?.charAt(0).toUpperCase()}{currentRole?.slice(1)} Mode Suggestions
+                    </span>
+                  </div>
+                  {roleSuggestions.suggestions.map((suggestion, index) => (
+                    <div key={index} className={`p-2 rounded text-xs ${
+                      suggestion.severity === 'high' ? 'bg-red-50 border border-red-200 text-red-700' :
+                      suggestion.severity === 'medium' ? 'bg-orange-50 border border-orange-200 text-orange-700' :
+                      'bg-blue-50 border border-blue-200 text-blue-700'
+                    }`}>
+                      <div className="font-medium">{suggestion.title}</div>
+                      <div className="mt-1">{suggestion.description}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Duration suggestion */}
+              {roleSuggestions.hasDurationSuggestion && (
+                <div className="flex items-center gap-2 p-2 bg-blue-50 border border-blue-200 rounded text-xs text-blue-700">
+                  <Sparkles className="h-3 w-3" />
+                  <span>
+                    Suggested duration: {roleSuggestions.suggestedDuration} minutes
+                    {roleSuggestions.suggestedDuration !== duration && (
+                      <Button
+                        variant="link"
+                        size="sm"
+                        className="h-auto p-0 ml-1 text-xs text-blue-600"
+                        onClick={() => setDuration(roleSuggestions.suggestedDuration)}
+                      >
+                        Apply
+                      </Button>
+                    )}
+                  </span>
+                </div>
+              )}
+            </div>
+
+            {/* Priority and Non-Negotiable */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="priority">Priority (1-5)</Label>
+                <div className="space-y-2">
+                  <Slider
+                    id="priority"
+                    min={1}
+                    max={5}
+                    step={1}
+                    value={[priority]}
+                    onValueChange={(value) => setPriority(value[0])}
+                    className="w-full"
+                  />
+                  <div className="flex justify-between text-xs text-muted-foreground">
+                    <span>Low</span>
+                    <span className="font-medium">Priority: {priority}</span>
+                    <span>High</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="non-negotiable">Special Designation</Label>
+                <div className="flex items-center space-x-2 pt-3">
+                  <Checkbox
+                    id="non-negotiable"
+                    checked={isNonNegotiable}
+                    onCheckedChange={(checked) => setIsNonNegotiable(checked === true)}
+                  />
+                  <Label
+                    htmlFor="non-negotiable"
+                    className="text-sm font-normal cursor-pointer flex items-center gap-1"
+                  >
+                    <AlertTriangle className="h-3 w-3 text-orange-500" />
+                    Non-negotiable priority
+                  </Label>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Protected focus time that cannot be interrupted
+                </p>
+              </div>
+            </div>
+
+            {/* Notes */}
+            <div className="space-y-2">
+              <Label htmlFor="notes">Notes</Label>
+              <Textarea
+                id="notes"
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder="Additional context, prerequisites, or important details..."
+                rows={2}
+                className="resize-none"
+              />
+            </div>
+
+            {/* Tags */}
+            <div className="space-y-2">
+              <Label htmlFor="tags">Tags</Label>
+              <Input
+                id="tags"
+                value={tags}
+                onChange={(e) => setTags(e.target.value)}
+                placeholder="project, urgent, client-work (comma separated)"
+              />
+              <p className="text-xs text-muted-foreground">
+                Comma-separated tags for organizing and filtering tasks
+              </p>
             </div>
           </div>
 

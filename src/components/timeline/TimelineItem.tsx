@@ -13,6 +13,10 @@ import {
   ITEM_BORDER_RADIUS,
   ITEM_PADDING,
 } from '@/lib/timelineConstants';
+import {
+  ATTENTION_TYPE_DESCRIPTIONS,
+  AttentionType,
+} from '@/lib/attentionTypes';
 
 interface TimelineItemProps {
   item: TimelineItemType;
@@ -28,6 +32,7 @@ interface TimelineItemProps {
   onDragEnd?: (item: TimelineItemType, deltaX: number, deltaY: number) => void;
   onResize?: (item: TimelineItemType, newDurationMinutes: number) => void;
   documentCount?: number;
+  attentionBudgetStatus?: 'within' | 'warning' | 'over' | null;
 }
 
 export function TimelineItem({
@@ -44,6 +49,7 @@ export function TimelineItem({
   onDragEnd,
   onResize,
   documentCount = 0,
+  attentionBudgetStatus = null,
 }: TimelineItemProps) {
   const [isDragging, setIsDragging] = React.useState(false);
   const [isResizing, setIsResizing] = React.useState(false);
@@ -68,6 +74,36 @@ export function TimelineItem({
 
   // Determine if item should pulse (logjam)
   const shouldPulse = item.status === 'logjam';
+
+  // Get budget status styling
+  const getBudgetStatusStyling = () => {
+    switch (attentionBudgetStatus) {
+      case 'over':
+        return {
+          stroke: '#ef4444',
+          strokeWidth: 2,
+          filter: 'drop-shadow(0 0 4px #ef4444)'
+        };
+      case 'warning':
+        return {
+          stroke: '#f59e0b',
+          strokeWidth: 1,
+          filter: 'drop-shadow(0 0 2px #f59e0b)'
+        };
+      case 'within':
+        return {
+          stroke: '#10b981',
+          strokeWidth: 1,
+        };
+      default:
+        return {
+          stroke: isDragging || isResizing ? '#3b82f6' : (shouldPulse ? '#ef4444' : 'none'),
+          strokeWidth: isDragging || isResizing ? 2 : (shouldPulse ? 3 : 0),
+        };
+    }
+  };
+
+  const budgetStyling = getBudgetStatusStyling();
 
   // Handle drag start
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -219,16 +255,17 @@ export function TimelineItem({
           ry={ITEM_BORDER_RADIUS}
           fill={item.color}
           opacity={isDragging || isResizing ? 0.6 : opacity}
-          stroke={isDragging || isResizing ? '#3b82f6' : (shouldPulse ? '#ef4444' : 'none')}
-          strokeWidth={isDragging || isResizing ? 2 : (shouldPulse ? 3 : 0)}
+          stroke={budgetStyling.stroke}
+          strokeWidth={budgetStyling.strokeWidth}
+          filter={budgetStyling.filter}
           className={shouldPulse && !isDragging && !isResizing ? 'animate-pulse' : ''}
         />
 
       {/* Item text (only if wide enough) */}
       {displayWidth > 60 && (
         <text
-          x={displayX + ITEM_PADDING}
-          y={displayY + height / 2}
+          x={displayX + ITEM_PADDING + (item.attention_type ? 24 : 0)}
+          y={displayY + height / 2 - (item.attention_type && displayWidth > 120 ? 6 : 0)}
           dominantBaseline="middle"
           fill="white"
           fontSize="12"
@@ -244,11 +281,48 @@ export function TimelineItem({
         </text>
       )}
 
-      {/* Duration text (only if wide enough) */}
-      {displayWidth > 100 && (
+      {/* Attention type label (for larger items) */}
+      {item.attention_type && displayWidth > 120 && (
         <text
-          x={displayX + ITEM_PADDING}
+          x={displayX + ITEM_PADDING + 24}
+          y={displayY + height / 2 + 8}
+          dominantBaseline="middle"
+          fill="white"
+          fontSize="10"
+          opacity={0.8}
+          className="pointer-events-none select-none"
+          style={{
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+          }}
+        >
+          {ATTENTION_TYPE_DESCRIPTIONS[item.attention_type as AttentionType]?.label}
+        </text>
+      )}
+
+      {/* Duration text (only if wide enough and no attention type label) */}
+      {displayWidth > 100 && !(item.attention_type && displayWidth > 120) && (
+        <text
+          x={displayX + ITEM_PADDING + (item.attention_type ? 24 : 0)}
           y={displayY + height / 2 + 14}
+          dominantBaseline="middle"
+          fill="white"
+          fontSize="10"
+          opacity={0.8}
+          className="pointer-events-none select-none"
+        >
+          {isResizing
+            ? formatDuration(Math.max(15, item.duration_minutes + Math.round((resizeDelta * 60) / pixelsPerHour)))
+            : formatDuration(item.planned_duration_minutes || item.duration_minutes)}
+        </text>
+      )}
+
+      {/* Duration text for very wide items with attention type */}
+      {item.attention_type && displayWidth > 180 && (
+        <text
+          x={displayX + displayWidth - 80}
+          y={displayY + height / 2 + 8}
           dominantBaseline="middle"
           fill="white"
           fontSize="10"
@@ -284,6 +358,81 @@ export function TimelineItem({
             strokeLinecap="round"
             strokeLinejoin="round"
           />
+        </g>
+      )}
+
+      {/* Attention Type Indicator */}
+      {item.attention_type && displayWidth > 60 && (
+        <g transform={`translate(${displayX + 8}, ${displayY + 6})`}>
+          {/* Attention type icon background */}
+          <circle
+            cx="8"
+            cy="8"
+            r="8"
+            fill={ATTENTION_TYPE_DESCRIPTIONS[item.attention_type as AttentionType]?.color || '#6b7280'}
+            opacity="0.9"
+          />
+          {/* Attention type emoji/icon */}
+          <text
+            x="8"
+            y="8"
+            dominantBaseline="middle"
+            textAnchor="middle"
+            fill="white"
+            fontSize="10"
+            fontWeight="bold"
+            className="pointer-events-none select-none"
+          >
+            {ATTENTION_TYPE_DESCRIPTIONS[item.attention_type as AttentionType]?.icon || '•'}
+          </text>
+        </g>
+      )}
+
+      {/* Priority Indicator */}
+      {item.priority && item.priority > 3 && displayWidth > 40 && (
+        <g transform={`translate(${displayX + (item.attention_type ? 30 : 8)}, ${displayY + 6})`}>
+          {/* High priority indicator */}
+          <polygon
+            points="8,2 12,8 8,14 4,8"
+            fill="#f59e0b"
+            opacity="0.9"
+          />
+          <text
+            x="8"
+            y="8"
+            dominantBaseline="middle"
+            textAnchor="middle"
+            fill="white"
+            fontSize="8"
+            fontWeight="bold"
+            className="pointer-events-none select-none"
+          >
+            !
+          </text>
+        </g>
+      )}
+
+      {/* Non-negotiable indicator */}
+      {item.is_non_negotiable && displayWidth > 40 && (
+        <g transform={`translate(${displayX + displayWidth - 20}, ${displayY + 6})`}>
+          {/* Shield icon for non-negotiable items */}
+          <path
+            d="M8 2 C8 2 12 3 12 7 C12 11 8 14 8 14 C8 14 4 11 4 7 C4 3 8 2 8 2 Z"
+            fill="#dc2626"
+            opacity="0.9"
+          />
+          <text
+            x="8"
+            y="8"
+            dominantBaseline="middle"
+            textAnchor="middle"
+            fill="white"
+            fontSize="8"
+            fontWeight="bold"
+            className="pointer-events-none select-none"
+          >
+            ★
+          </text>
         </g>
       )}
 

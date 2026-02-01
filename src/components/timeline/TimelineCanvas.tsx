@@ -2,7 +2,12 @@
 
 import React, { useRef, useState, useEffect } from 'react';
 import { TimelineItem } from './TimelineItem';
+import { useTimelineContext } from '@/contexts/TimelineContext';
 import { TimelinePhilosophy } from './TimelinePhilosophy';
+import { AttentionVisualization } from './AttentionVisualization';
+import { AttentionBudgetAlerts } from './AttentionBudgetAlerts';
+import { ContextSwitchWarning } from './ContextSwitchWarning';
+import { PeakHoursOptimizer } from './PeakHoursOptimizer';
 import {
   TimelineItem as TimelineItemType,
   TimelineLayer,
@@ -58,6 +63,7 @@ export function TimelineCanvas({
   onDoubleClick,
   onCanvasReady,
 }: TimelineCanvasProps) {
+  const { checkBudgetViolation, attentionPreferences } = useTimelineContext();
   const svgRef = useRef<SVGSVGElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
@@ -164,6 +170,21 @@ export function TimelineCanvas({
   const totalHeight = TIMELINE_HEADER_HEIGHT + (visibleLayers.length * layerHeight);
   const nowLineX = calculateNowLineX(viewportWidth, isLocked, scrollOffset);
 
+  // Helper to calculate budget status for an item
+  const getBudgetStatusForItem = (item: TimelineItemType): 'within' | 'warning' | 'over' | null => {
+    if (!item.attention_type) return null;
+
+    const itemDate = new Date(item.start_time);
+    const budgetStatuses = checkBudgetViolation(items, itemDate);
+
+    const statusForType = budgetStatuses.find(status => status.attention_type === item.attention_type);
+    if (!statusForType) return null;
+
+    if (statusForType.is_over_budget) return 'over';
+    if (statusForType.usage_percentage >= 80) return 'warning';
+    return 'within';
+  };
+
   // Generate time markers
   const timeMarkers = generateTimeMarkers(
     nowTime,
@@ -181,7 +202,82 @@ export function TimelineCanvas({
     : items.filter(item => item.status !== 'completed');
 
   return (
-    <svg
+    <div className="relative w-full">
+      {/* Attention budget alerts and context switch warnings overlay */}
+      {attentionPreferences && (
+        <div className="absolute top-0 left-0 right-0 z-20 p-4 space-y-3">
+          <AttentionBudgetAlerts
+            items={filteredItems}
+            preferences={attentionPreferences}
+            currentDate={nowTime}
+            onTakeAction={(action, data) => {
+              // Handle attention budget actions
+              console.log('Attention action:', action, data);
+              // Could emit events to parent or implement specific actions here
+            }}
+            onDismiss={(alertId) => {
+              // Handle alert dismissal
+              console.log('Dismiss alert:', alertId);
+              // Could store dismissed alerts in local storage or state
+            }}
+            compact={true}
+            className="max-w-2xl"
+          />
+
+          <ContextSwitchWarning
+            items={filteredItems}
+            preferences={attentionPreferences}
+            currentDate={nowTime}
+            onBatchSuggestion={(batchItems, targetTime) => {
+              // Handle batching suggestions
+              console.log('Batch suggestion:', batchItems.map(item => item.title), 'at', targetTime);
+              // Could implement automatic batching or show UI to confirm
+            }}
+            onOptimizeSchedule={() => {
+              // Handle schedule optimization request
+              console.log('Optimize schedule requested');
+              // Could trigger AI optimization or open optimization dialog
+            }}
+            compact={true}
+            className="max-w-2xl"
+          />
+
+          <PeakHoursOptimizer
+            items={filteredItems}
+            preferences={attentionPreferences}
+            currentDate={nowTime}
+            onOptimizeSchedule={(suggestions) => {
+              // Handle peak hours optimization suggestions
+              console.log('Peak hours optimization:', suggestions);
+              // Could implement automatic rescheduling or show confirmation UI
+            }}
+            onUpdatePeakHours={(startTime, endTime) => {
+              // Handle peak hours updates
+              console.log('Update peak hours:', startTime, endTime);
+              // Could update user preferences via API
+            }}
+            compact={true}
+            className="max-w-2xl"
+          />
+        </div>
+      )}
+
+      {/* Attention visualization overlay */}
+      {attentionPreferences && (
+        <AttentionVisualization
+          items={filteredItems}
+          preferences={attentionPreferences}
+          currentDate={nowTime}
+          pixelsPerHour={pixelsPerHour}
+          scrollOffset={scrollOffset}
+          nowLineX={nowLineX}
+          viewportWidth={viewportWidth}
+          layerHeight={layerHeight}
+          headerHeight={TIMELINE_HEADER_HEIGHT}
+        />
+      )}
+
+      <svg
       ref={svgRef}
       className="w-full border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 shadow-[0_4px_20px_-2px_rgba(10,35,66,0.15),0_16px_40px_-4px_rgba(10,35,66,0.25)]"
       style={{
@@ -375,6 +471,7 @@ export function TimelineCanvas({
                 onClick={onItemClick}
                 onDragEnd={handleItemDragEnd}
                 onResize={onItemResize}
+                attentionBudgetStatus={getBudgetStatusForItem(item)}
               />
             </g>
           );
@@ -424,5 +521,6 @@ export function TimelineCanvas({
         </text>
       </g>
     </svg>
+    </div>
   );
 }
