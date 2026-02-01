@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { CheckCircle, XCircle, RefreshCw } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { useGoogleDrive } from '@/hooks/useGoogleDrive';
+import { useGoogleDriveSimple as useGoogleDrive } from '@/hooks/useGoogleDriveSimple';
 
 const GoogleAuthStatus = () => {
   const [tokenStatus, setTokenStatus] = useState<'loading' | 'valid' | 'expired' | 'missing'>('loading');
