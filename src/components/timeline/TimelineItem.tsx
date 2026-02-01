@@ -75,30 +75,51 @@ export function TimelineItem({
   // Determine if item should pulse (logjam)
   const shouldPulse = item.status === 'logjam';
 
-  // Get budget status styling
+  // Get budget status styling with enhanced visual feedback
   const getBudgetStatusStyling = () => {
+    // Non-negotiable items get special protected styling
+    if (item.is_non_negotiable) {
+      return {
+        stroke: '#dc2626',
+        strokeWidth: 3,
+        strokeDasharray: '8,4',
+        filter: 'drop-shadow(0 0 6px rgba(220, 38, 38, 0.4))',
+        className: 'animate-pulse-slow'
+      };
+    }
+
+    // Priority-based styling enhancements
+    const basePriorityGlow = item.priority && item.priority > 3 ?
+      'drop-shadow(0 0 3px rgba(245, 158, 11, 0.3))' : '';
+
     switch (attentionBudgetStatus) {
       case 'over':
         return {
           stroke: '#ef4444',
-          strokeWidth: 2,
-          filter: 'drop-shadow(0 0 4px #ef4444)'
+          strokeWidth: 2.5,
+          strokeDasharray: '6,3',
+          filter: `drop-shadow(0 0 6px #ef4444) ${basePriorityGlow}`,
+          className: 'budget-violation-blink'
         };
       case 'warning':
         return {
           stroke: '#f59e0b',
-          strokeWidth: 1,
-          filter: 'drop-shadow(0 0 2px #f59e0b)'
+          strokeWidth: 2,
+          strokeDasharray: '4,2',
+          filter: `drop-shadow(0 0 4px #f59e0b) ${basePriorityGlow}`,
+          className: 'budget-warning-pulse'
         };
       case 'within':
         return {
           stroke: '#10b981',
-          strokeWidth: 1,
+          strokeWidth: 1.5,
+          filter: `drop-shadow(0 0 2px #10b981) ${basePriorityGlow}`
         };
       default:
         return {
           stroke: isDragging || isResizing ? '#3b82f6' : (shouldPulse ? '#ef4444' : 'none'),
           strokeWidth: isDragging || isResizing ? 2 : (shouldPulse ? 3 : 0),
+          filter: basePriorityGlow || undefined
         };
     }
   };
@@ -193,6 +214,12 @@ export function TimelineItem({
     }
   };
 
+  // Get attention type color for enhanced styling
+  const getAttentionTypeColor = () => {
+    if (!item.attention_type) return '#6b7280';
+    return ATTENTION_TYPE_DESCRIPTIONS[item.attention_type as AttentionType]?.color || '#6b7280';
+  };
+
   // Calculate display position (with drag offset)
   // Use fallback values to prevent undefined/NaN in SVG attributes
   const displayX = Number.isFinite(x + currentDragDelta.x) ? x + currentDragDelta.x : 0;
@@ -245,7 +272,7 @@ export function TimelineItem({
       onMouseLeave={handleMouseUp}
       onClick={handleClick}
     >
-        {/* Item rectangle */}
+        {/* Item rectangle with enhanced styling */}
         <rect
           x={displayX}
           y={displayY}
@@ -254,12 +281,45 @@ export function TimelineItem({
           rx={ITEM_BORDER_RADIUS}
           ry={ITEM_BORDER_RADIUS}
           fill={item.color}
-          opacity={isDragging || isResizing ? 0.6 : opacity}
+          opacity={isDragging || isResizing ? 0.7 : opacity}
           stroke={budgetStyling.stroke}
           strokeWidth={budgetStyling.strokeWidth}
+          strokeDasharray={budgetStyling.strokeDasharray}
           filter={budgetStyling.filter}
-          className={shouldPulse && !isDragging && !isResizing ? 'animate-pulse' : ''}
+          className={`
+            ${shouldPulse && !isDragging && !isResizing ? 'animate-pulse' : ''}
+            ${budgetStyling.className || ''}
+            timeline-item-rect transition-all duration-200 ease-in-out
+          `}
         />
+
+        {/* Attention type accent bar */}
+        {item.attention_type && displayWidth > 20 && (
+          <rect
+            x={displayX}
+            y={displayY}
+            width={4}
+            height={height}
+            rx={2}
+            fill={getAttentionTypeColor()}
+            opacity="0.8"
+            className="attention-accent-bar"
+          />
+        )}
+
+        {/* Context switch cost indicator line */}
+        {item.attention_type && displayWidth > 40 && (
+          <line
+            x1={displayX}
+            y1={displayY + height}
+            x2={displayX + Math.min(displayWidth, 80)}
+            y2={displayY + height}
+            stroke={getAttentionTypeColor()}
+            strokeWidth="2"
+            opacity="0.6"
+            className="context-switch-indicator"
+          />
+        )}
 
       {/* Item text (only if wide enough) */}
       {displayWidth > 60 && (
@@ -412,27 +472,41 @@ export function TimelineItem({
         </g>
       )}
 
-      {/* Non-negotiable indicator */}
+      {/* Non-negotiable indicator with enhanced protection styling */}
       {item.is_non_negotiable && displayWidth > 40 && (
-        <g transform={`translate(${displayX + displayWidth - 20}, ${displayY + 6})`}>
+        <g transform={`translate(${displayX + displayWidth - 22}, ${displayY + 4})`}>
+          {/* Enhanced shield background */}
+          <circle
+            cx="10"
+            cy="10"
+            r="10"
+            fill="rgba(220, 38, 38, 0.2)"
+            stroke="#dc2626"
+            strokeWidth="1"
+            className="animate-pulse-slow"
+          />
           {/* Shield icon for non-negotiable items */}
           <path
-            d="M8 2 C8 2 12 3 12 7 C12 11 8 14 8 14 C8 14 4 11 4 7 C4 3 8 2 8 2 Z"
+            d="M10 3 C10 3 14 4 14 8 C14 12 10 15 10 15 C10 15 6 12 6 8 C6 4 10 3 10 3 Z"
             fill="#dc2626"
             opacity="0.9"
           />
-          <text
+          {/* Lock symbol for protection */}
+          <rect
             x="8"
-            y="8"
-            dominantBaseline="middle"
-            textAnchor="middle"
+            y="9"
+            width="4"
+            height="3"
+            rx="0.5"
             fill="white"
-            fontSize="8"
-            fontWeight="bold"
-            className="pointer-events-none select-none"
-          >
-            ★
-          </text>
+            fontSize="6"
+          />
+          <path
+            d="M8.5 9 C8.5 8.2 9.2 7.5 10 7.5 C10.8 7.5 11.5 8.2 11.5 9"
+            stroke="white"
+            strokeWidth="1"
+            fill="none"
+          />
         </g>
       )}
 

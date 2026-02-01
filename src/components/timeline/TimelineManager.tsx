@@ -16,6 +16,9 @@ import { RoleZoneSelector } from './RoleZoneSelector';
 import { AttentionBudgetWidget } from './AttentionBudgetWidget';
 import { DecisionBatchIndicator } from './DecisionBatchIndicator';
 import { MultiplierDashboard } from './MultiplierDashboard';
+import { NonNegotiableTracker } from './NonNegotiableTracker';
+import { AttentionVisualization } from './AttentionVisualization';
+import { EnhancedTimelineVisualization } from './EnhancedTimelineVisualization';
 import { RoleBasedEventTemplates } from './RoleBasedEventTemplates';
 import { useAttentionBudget } from '@/hooks/useAttentionBudget';
 import { CalendarGrid } from './CalendarGrid';
@@ -31,6 +34,7 @@ import { AITimeInsights } from '@/components/ai/AITimeInsights';
 import { RoutineManager } from '@/components/routines/RoutineManager';
 import { DailyPlanningFlow } from '@/components/planning/DailyPlanningFlow';
 import { EndOfDayShutdown } from '@/components/planning/EndOfDayShutdown';
+import { WeeklyCalibrationWizard } from './WeeklyCalibrationWizard';
 import { useTimeline } from '@/hooks/useTimeline';
 import { useLayers } from '@/hooks/useLayers';
 import { useRoutines } from '@/hooks/useRoutines';
@@ -51,12 +55,13 @@ import {
 } from '@/lib/timelineConstants';
 import { addDays, addWeeks, addMonths, format } from 'date-fns';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, Clock, Settings, Layers, Lock, Unlock, Archive, LayoutTemplate, Sparkles, RefreshCw, Calendar as CalIcon, Brain, Sunrise, Moon, Link as LinkIcon, MoreHorizontal, ZoomIn, ZoomOut, Navigation, ChevronLeft, ChevronRight, Eye, EyeOff } from 'lucide-react';
+import { Loader2, Clock, Settings, Layers, Lock, Unlock, Archive, LayoutTemplate, Sparkles, RefreshCw, Calendar, Calendar as CalIcon, Brain, Sunrise, Moon, Link as LinkIcon, MoreHorizontal, ZoomIn, ZoomOut, Navigation, ChevronLeft, ChevronRight, Eye, EyeOff } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuLabel } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { PageHelp } from '@/components/PageHelp';
+import { supabase } from '@/integrations/supabase/client';
 
 interface TimelineManagerProps {
   onCanvasReady?: (svg: SVGSVGElement) => void;
@@ -104,7 +109,10 @@ export function TimelineManager({ onCanvasReady }: TimelineManagerProps = {}) {
   } = useTasks();
 
   // Attention system hooks
-  const { preferences: attentionPreferences } = useAttentionBudget();
+  const {
+    preferences: attentionPreferences,
+    updatePreferences: updateAttentionPreferences
+  } = useAttentionBudget();
 
   // Real-time sync with callback for newly inserted items
   useTimelineSync({
@@ -154,6 +162,7 @@ export function TimelineManager({ onCanvasReady }: TimelineManagerProps = {}) {
   const [showEndOfDay, setShowEndOfDay] = useState(false);
   const [showAddTask, setShowAddTask] = useState(false);
   const [showRoleTemplates, setShowRoleTemplates] = useState(false);
+  const [showWeeklyCalibration, setShowWeeklyCalibration] = useState(false);
   const [viewMode, setViewMode] = useState<TimelineViewMode>('week');
   const [viewType, setViewType] = useState<ViewType>(() => {
     const stored = localStorage.getItem('timeline-view-type');
@@ -336,6 +345,74 @@ export function TimelineManager({ onCanvasReady }: TimelineManagerProps = {}) {
     prevItemsCountRef.current = items.length;
     prevViewTypeRef.current = viewType;
   }, [items, viewType, viewMode, calendarViewDate]);
+
+  // Weekly Calibration Monday Morning Trigger
+  useEffect(() => {
+    const checkMondayCalibration = () => {
+      const now = new Date();
+      const dayOfWeek = now.getDay(); // 0 = Sunday, 1 = Monday, etc.
+      const hour = now.getHours();
+
+      // Check if it's Monday morning (8 AM - 11 AM)
+      if (dayOfWeek === 1 && hour >= 8 && hour < 11) {
+        const lastCalibrationCheck = localStorage.getItem('last-calibration-check');
+        const currentWeekStart = getCurrentWeekStart();
+
+        // Only show if we haven't checked this week yet
+        if (lastCalibrationCheck !== currentWeekStart) {
+          // Check if user has completed calibration for this week
+          checkWeeklyCalibrationStatus(currentWeekStart).then((hasCompleted) => {
+            if (!hasCompleted) {
+              // Show calibration wizard
+              setShowWeeklyCalibration(true);
+            }
+            // Mark that we've checked this week
+            localStorage.setItem('last-calibration-check', currentWeekStart);
+          });
+        }
+      }
+    };
+
+    // Check immediately
+    checkMondayCalibration();
+
+    // Set up interval to check every hour
+    const interval = setInterval(checkMondayCalibration, 60 * 60 * 1000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  function getCurrentWeekStart(): string {
+    const now = new Date();
+    const day = now.getDay();
+    const diff = now.getDate() - day + (day === 0 ? -6 : 1); // Adjust when day is Sunday
+    const monday = new Date(now.setDate(diff));
+    return monday.toISOString().split('T')[0];
+  }
+
+  async function checkWeeklyCalibrationStatus(weekStartDate: string): Promise<boolean> {
+    try {
+      const response = await fetch('/functions/v1/weekly-calibration', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          action: 'get_current',
+          week_start_date: weekStartDate
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        return data.calibration && data.calibration.calibration_completed_at;
+      }
+    } catch (error) {
+      console.error('Error checking calibration status:', error);
+    }
+    return false;
+  }
 
   const animationFrameRef = useRef<number>();
   const lastTickRef = useRef<number>(Date.now());
@@ -788,6 +865,10 @@ export function TimelineManager({ onCanvasReady }: TimelineManagerProps = {}) {
                 <Sunrise className="h-4 w-4 mr-2" />
                 Daily Planning
               </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setShowWeeklyCalibration(true)}>
+                <Calendar className="h-4 w-4 mr-2" />
+                Weekly Calibration
+              </DropdownMenuItem>
               <DropdownMenuItem onClick={() => setShowAIPlanning(true)} disabled={layers.length === 0}>
                 <Sparkles className="h-4 w-4 mr-2" />
                 AI Plan My Day
@@ -1020,6 +1101,15 @@ export function TimelineManager({ onCanvasReady }: TimelineManagerProps = {}) {
               compact={isCompactMode}
             />
 
+            {/* Non-Negotiable Priority Tracker */}
+            <NonNegotiableTracker
+              items={items}
+              preferences={attentionPreferences}
+              currentWeek={getSelectedDateForBudget()}
+              compact={isCompactMode}
+              onPreferencesUpdate={updateAttentionPreferences}
+            />
+
             {/* Decision Batching Indicator for Marker mode */}
             {attentionPreferences?.current_role === 'marker' && (
               <DecisionBatchIndicator
@@ -1096,8 +1186,12 @@ export function TimelineManager({ onCanvasReady }: TimelineManagerProps = {}) {
         </Alert>
       )}
 
-      {/* Workload Indicator */}
-      <WorkloadIndicator items={items} />
+      {/* Enhanced Workload Indicator with Attention Metrics */}
+      <WorkloadIndicator
+        items={items}
+        targetDate={getSelectedDateForBudget()}
+        showAttentionMetrics={true}
+      />
 
       {/* Main timeline area */}
       <div className="space-y-4">
@@ -1123,25 +1217,42 @@ export function TimelineManager({ onCanvasReady }: TimelineManagerProps = {}) {
             defaultLayerId={layers.find(l => l.is_visible)?.id}
           />
         ) : (
-          <TimelineCanvas
-            items={items}
-            layers={layers}
-            nowTime={nowTime}
-            scrollOffset={scrollOffset}
-            pixelsPerHour={pixelsPerHour}
-            layerHeight={layerHeight}
-            isLocked={settings?.is_locked ?? true}
-            showCompleted={true}
-            pastHours={viewModeConfig.pastHours}
-            futureHours={viewModeConfig.futureHours}
-            subdivisionMinutes={viewModeConfig.subdivisionMinutes}
-            onItemClick={handleItemClick}
-            onDrag={handleDrag}
-            onItemDrop={handleItemDrop}
-            onItemResize={handleItemResize}
-            onDoubleClick={handleTimelineDoubleClick}
-            onCanvasReady={onCanvasReady}
-          />
+          <>
+            <TimelineCanvas
+              items={items}
+              layers={layers}
+              nowTime={nowTime}
+              scrollOffset={scrollOffset}
+              pixelsPerHour={pixelsPerHour}
+              layerHeight={layerHeight}
+              isLocked={settings?.is_locked ?? true}
+              showCompleted={true}
+              pastHours={viewModeConfig.pastHours}
+              futureHours={viewModeConfig.futureHours}
+              subdivisionMinutes={viewModeConfig.subdivisionMinutes}
+              onItemClick={handleItemClick}
+              onDrag={handleDrag}
+              onItemDrop={handleItemDrop}
+              onItemResize={handleItemResize}
+              onDoubleClick={handleTimelineDoubleClick}
+              onCanvasReady={onCanvasReady}
+            />
+
+            {/* Enhanced Attention System Visualization Overlay */}
+            {attentionPreferences && (
+              <EnhancedTimelineVisualization
+                items={items}
+                currentDate={getSelectedDateForBudget()}
+                pixelsPerHour={pixelsPerHour}
+                scrollOffset={scrollOffset}
+                nowTime={nowTime}
+                viewportWidth={1200}
+                layerHeight={layerHeight}
+                headerHeight={60}
+                showEnhancedFeatures={true}
+              />
+            )}
+          </>
         )}
       </div>
 
@@ -1250,6 +1361,15 @@ export function TimelineManager({ onCanvasReady }: TimelineManagerProps = {}) {
         open={showEndOfDay}
         onClose={() => {
           setShowEndOfDay(false);
+          refetchItems();
+        }}
+      />
+
+      {/* Weekly Calibration Wizard */}
+      <WeeklyCalibrationWizard
+        isOpen={showWeeklyCalibration}
+        onClose={() => {
+          setShowWeeklyCalibration(false);
           refetchItems();
         }}
       />
