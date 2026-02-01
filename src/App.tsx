@@ -14,6 +14,8 @@ import { BackgroundTasksProvider } from "@/contexts/BackgroundTasksContext";
 import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
 import { PresentationModeProvider } from "@/contexts/PresentationModeContext";
 import Header from "./layout/Header";
+import PrivacyPolicyWidget from "@/components/legal/PrivacyPolicyWidget";
+import TermsModal from "@/components/legal/TermsModal";
 
 // Lazy load page components for better performance
 const Index = React.lazy(() => import("./pages/Index"));
@@ -149,6 +151,8 @@ const App = () => (
             <AuthProvider>
             <BackgroundTasksProvider>
             <PWAInstallPrompt />
+            <PrivacyPolicyWidget />
+            <TermsModal />
             <Routes>
             <Route path="/auth" element={
               <PublicRoute>
