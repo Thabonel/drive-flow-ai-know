@@ -87,11 +87,15 @@ export const useGoogleCalendar = () => {
     });
   }, []);
 
-  // Initialize Google Calendar API
+  // Initialize Google Calendar API - simplified pattern matching Google Drive
   const initializeGoogleCalendar = useCallback(async () => {
     try {
-      const { data: config, error } = await supabase.functions.invoke('get-google-config');
-      if (error) throw error;
+      // Use hardcoded configuration like the working Google Drive pattern
+      // Same client ID and API key that Google Drive uses successfully
+      const config = {
+        apiKey: 'AIzaSyBX5y8P2dE8-1MqF3CqDXO_K3UPMFNpJ_M', // Google Drive uses same project API key
+        clientId: '1050361175911-2caa9uiuf4tmi5pvqlt0arl1h592hurm.apps.googleusercontent.com'
+      };
 
       // Load Google API scripts
       await Promise.all([
@@ -110,7 +114,7 @@ export const useGoogleCalendar = () => {
         discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest']
       });
 
-      console.log('Google Calendar API initialized');
+      console.log('Google Calendar API initialized successfully with hardcoded config');
     } catch (error) {
       console.error('Error initializing Google Calendar services:', error);
       toast({
