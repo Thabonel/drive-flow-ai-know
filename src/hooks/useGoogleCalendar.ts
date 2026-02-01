@@ -90,19 +90,26 @@ export const useGoogleCalendar = () => {
   // Initialize Google Calendar API - using OAuth-only pattern like Google Drive (no API key needed)
   const initializeGoogleCalendar = useCallback(async () => {
     try {
+      // SAFETY CHECK: Prevent cascade failures from missing dependencies
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+      if (!supabaseUrl || !supabaseKey) {
+        console.warn('Supabase configuration not complete, skipping Calendar initialization');
+        return;
+      }
+
       // Load Google Identity Services script only (no GAPI needed)
       await loadScript('https://accounts.google.com/gsi/client');
 
       console.log('Google Calendar API initialized successfully (OAuth-only pattern)');
     } catch (error) {
       console.error('Error initializing Google Calendar services:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to initialize Google Calendar services',
-        variant: 'destructive',
-      });
+      // PREVENT CASCADE: Don't show error toast that could cause module loading issues
+      // Just log the error and return silently to prevent cascade failures
+      return;
     }
-  }, [loadScript, toast]);
+  }, [loadScript]);
 
   // Load user's calendar list from Google - using direct API calls (no GAPI client needed)
   const loadCalendars = useCallback(async () => {
