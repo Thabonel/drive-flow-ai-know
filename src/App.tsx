@@ -1,4 +1,4 @@
-import React, { Suspense, useEffect } from "react";
+import React, { Suspense } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -150,34 +150,6 @@ function MobileInitializer() {
   return null;
 }
 
-// Environment status logging component
-function EnvironmentLogger() {
-  useEffect(() => {
-    // Log environment status for debugging white screen issues
-    console.log('🔧 Environment Configuration Status:', {
-      supabaseUrl: !!import.meta.env.VITE_SUPABASE_URL,
-      supabaseKey: !!import.meta.env.VITE_SUPABASE_ANON_KEY,
-      openaiKey: !!import.meta.env.VITE_OPENAI_API_KEY,
-      mode: import.meta.env.MODE,
-      dev: import.meta.env.DEV,
-      build: import.meta.env.VITE_BUILD_TIME || 'unknown'
-    });
-
-    // Log any missing critical environment variables
-    const missing = [];
-    if (!import.meta.env.VITE_SUPABASE_URL) missing.push('VITE_SUPABASE_URL');
-    if (!import.meta.env.VITE_SUPABASE_ANON_KEY) missing.push('VITE_SUPABASE_ANON_KEY');
-
-    if (missing.length > 0) {
-      console.warn('⚠️ Missing critical environment variables:', missing);
-      console.warn('App may have limited functionality. Check Netlify environment configuration.');
-    } else {
-      console.log('✅ All critical environment variables are present');
-    }
-  }, []);
-
-  return null;
-}
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -189,7 +161,6 @@ const App = () => (
           <BrowserRouter>
             <AuthProvider>
             <BackgroundTasksProvider>
-            <EnvironmentLogger />
             <MobileInitializer />
             <PWAInstallPrompt />
             <PrivacyPolicyWidget />
