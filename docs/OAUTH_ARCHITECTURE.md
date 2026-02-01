@@ -109,7 +109,7 @@ fetch('https://www.googleapis.com/drive/v3/files', {
 ```typescript
 // Used consistently across all hooks
 const GOOGLE_CLIENT_ID = '1050361175911-2caa9uiuf4tmi5pvqlt0arl1h592hurm.apps.googleusercontent.com';
-const GOOGLE_API_KEY = 'AIzaSyBX5y8P2dE8-1MqF3CqDXO_K3UPMFNpJ_M'; // For API calls
+const GOOGLE_API_KEY = 'AIzaSyDJlMOaAOnFM8kt2zheZyVYzSs0euY1uUg'; // For API calls
 ```
 
 ### Files Using This Pattern
