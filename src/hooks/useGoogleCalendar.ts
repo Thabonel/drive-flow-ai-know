@@ -59,7 +59,7 @@ export const useGoogleCalendar = () => {
         throw error;
       }
 
-      console.log('Calendar tokens stored securely:', data);
+      console.log('Calendar tokens stored securely');
       return true;
     } catch (error) {
       console.error('Error storing tokens:', error);

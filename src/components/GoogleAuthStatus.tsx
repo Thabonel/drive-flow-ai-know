@@ -123,13 +123,13 @@ const GoogleAuthStatus = () => {
           </div>
         )}
 
-        {/* ADD DEBUG INFO FOR TROUBLESHOOTING */}
+        {/* Secure debug info - no sensitive data exposure */}
         {process.env.NODE_ENV === 'development' && (
           <div className="text-xs text-gray-500 mt-2 p-2 bg-gray-50 rounded">
             <p>Debug Info:</p>
-            <p>User ID: {user?.id?.substring(0, 8)}...</p>
-            <p>Token Status: {tokenStatus}</p>
+            <p>Connection Status: {tokenStatus}</p>
             <p>Has Token Info: {!!tokenInfo}</p>
+            <p>Environment: {process.env.NODE_ENV}</p>
           </div>
         )}
 
