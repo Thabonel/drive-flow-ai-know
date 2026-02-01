@@ -491,7 +491,7 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
       return null;
     }
 
-    console.log(`Auto-save: Starting save of ${content.length} characters for user ${user.id}`);
+    console.log(`Auto-save: Starting save of ${content.length} characters`);
 
     try {
       // Generate a title from the first line or first 50 chars

@@ -43,7 +43,7 @@ export const useMicrosoft = () => {
         throw error;
       }
 
-      console.log('Microsoft tokens stored securely:', data);
+      console.log('Microsoft tokens stored securely');
     } catch (error) {
       console.error('Error storing Microsoft tokens:', error);
       toast({
