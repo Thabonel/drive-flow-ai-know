@@ -90,10 +90,17 @@ export const useGoogleCalendar = () => {
   // Initialize Google Calendar API - simplified pattern matching Google Drive
   const initializeGoogleCalendar = useCallback(async () => {
     try {
+      // Check if API key is available and valid
+      const apiKey = import.meta.env.VITE_GOOGLE_API_KEY;
+      if (!apiKey || apiKey === 'GENERATE_NEW_KEY_AT_CONSOLE_CLOUD_GOOGLE_COM') {
+        console.warn('Google API key not configured, skipping Calendar initialization');
+        return;
+      }
+
       // Use hardcoded configuration like the working Google Drive pattern
       // Same client ID and API key that Google Drive uses successfully
       const config = {
-        apiKey: import.meta.env.VITE_GOOGLE_API_KEY, // Environment variable (secure)
+        apiKey: apiKey, // Environment variable (secure)
         clientId: '1050361175911-2caa9uiuf4tmi5pvqlt0arl1h592hurm.apps.googleusercontent.com'
       };
 
@@ -117,6 +124,11 @@ export const useGoogleCalendar = () => {
       console.log('Google Calendar API initialized successfully with hardcoded config');
     } catch (error) {
       console.error('Error initializing Google Calendar services:', error);
+      // Don't show toast for missing API key - it's expected in development
+      if (!import.meta.env.VITE_GOOGLE_API_KEY || import.meta.env.VITE_GOOGLE_API_KEY === 'GENERATE_NEW_KEY_AT_CONSOLE_CLOUD_GOOGLE_COM') {
+        console.warn('Google Calendar not available - API key not configured');
+        return;
+      }
       toast({
         title: 'Error',
         description: 'Failed to initialize Google Calendar services',
