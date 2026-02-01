@@ -1,9 +1,10 @@
-// Dashboard for Multiplier mode showing delegation opportunities and team enablement
-import { useMemo } from 'react';
+// Enhanced Multiplier Dashboard with delegation workflow integration
+import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Popover,
   PopoverContent,
@@ -12,13 +13,22 @@ import {
 import { TimelineItem } from '@/lib/timelineUtils';
 import { ATTENTION_TYPES, ROLE_MODES } from '@/lib/attentionTypes';
 import { MultiplierModeBehaviors } from '@/lib/roleBasedBehaviors';
+import { DelegationDashboard } from './DelegationDashboard';
+import { RouterInbox } from './RouterInbox';
+import { TrustLevelManagement } from './TrustLevelManagement';
+import { FollowUpAutomation } from './FollowUpAutomation';
 import {
   Users,
   ArrowRight,
   Target,
   TrendingUp,
   AlertTriangle,
-  CheckCircle
+  CheckCircle,
+  Inbox,
+  Route,
+  Calendar,
+  Award,
+  Bell
 } from 'lucide-react';
 
 interface MultiplierDashboardProps {
@@ -26,6 +36,7 @@ interface MultiplierDashboardProps {
   currentDate: Date;
   currentRole?: string;
   compact?: boolean;
+  showFullDashboard?: boolean;
 }
 
 interface DelegationMetrics {
@@ -40,8 +51,11 @@ export function MultiplierDashboard({
   items,
   currentDate,
   currentRole,
-  compact = false
+  compact = false,
+  showFullDashboard = false
 }: MultiplierDashboardProps) {
+  const [activeTab, setActiveTab] = useState('overview');
+
   // Only show for Multiplier mode
   if (currentRole !== ROLE_MODES.MULTIPLIER) {
     return null;
@@ -54,6 +68,7 @@ export function MultiplierDashboard({
 
   const metrics = useMemo(() => calculateMultiplierMetrics(todaysItems), [todaysItems]);
 
+  // Compact mode - just the quick overview
   if (compact) {
     return (
       <Popover>
@@ -67,12 +82,78 @@ export function MultiplierDashboard({
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-80 p-4">
-          <MultiplierDashboardContent metrics={metrics} />
+          <MultiplierDashboardContent metrics={metrics} compact />
         </PopoverContent>
       </Popover>
     );
   }
 
+  // Full dashboard mode - comprehensive delegation management
+  if (showFullDashboard) {
+    return (
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <div>
+            <h2 className="text-2xl font-bold flex items-center gap-2">
+              <Users className="h-6 w-6" />
+              Multiplier Command Center
+            </h2>
+            <p className="text-gray-600">Manage delegations, team routing, and trust levels</p>
+          </div>
+          <Badge variant={metrics.roleCompatibilityScore >= 70 ? "default" : "destructive"} className="text-lg px-3 py-1">
+            {metrics.roleCompatibilityScore}% Effectiveness
+          </Badge>
+        </div>
+
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-5">
+            <TabsTrigger value="overview" className="flex items-center gap-2">
+              <Target className="h-4 w-4" />
+              Overview
+            </TabsTrigger>
+            <TabsTrigger value="inbox" className="flex items-center gap-2">
+              <Inbox className="h-4 w-4" />
+              Router Inbox
+            </TabsTrigger>
+            <TabsTrigger value="delegations" className="flex items-center gap-2">
+              <Route className="h-4 w-4" />
+              Delegations
+            </TabsTrigger>
+            <TabsTrigger value="trust-levels" className="flex items-center gap-2">
+              <Award className="h-4 w-4" />
+              Trust Levels
+            </TabsTrigger>
+            <TabsTrigger value="follow-ups" className="flex items-center gap-2">
+              <Bell className="h-4 w-4" />
+              Follow-ups
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="overview" className="space-y-4">
+            <MultiplierOverview metrics={metrics} items={todaysItems} />
+          </TabsContent>
+
+          <TabsContent value="inbox">
+            <RouterInbox />
+          </TabsContent>
+
+          <TabsContent value="delegations">
+            <DelegationDashboard />
+          </TabsContent>
+
+          <TabsContent value="trust-levels">
+            <TrustLevelManagement />
+          </TabsContent>
+
+          <TabsContent value="follow-ups">
+            <FollowUpAutomation />
+          </TabsContent>
+        </Tabs>
+      </div>
+    );
+  }
+
+  // Standard sidebar widget
   return (
     <Card className="w-full">
       <CardHeader className="pb-3">
@@ -88,7 +169,171 @@ export function MultiplierDashboard({
   );
 }
 
-function MultiplierDashboardContent({ metrics }: { metrics: DelegationMetrics }) {
+// Enhanced overview section for full dashboard mode
+function MultiplierOverview({ metrics, items }: { metrics: DelegationMetrics; items: TimelineItem[] }) {
+  return (
+    <div className="space-y-6">
+      {/* Key Metrics Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Team Enablement</p>
+                <p className="text-2xl font-bold">{Math.round(metrics.totalConnectTime / 60 * 10) / 10}h</p>
+              </div>
+              <Users className="h-8 w-8 text-blue-600" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Personal Work</p>
+                <p className="text-2xl font-bold">{Math.round(metrics.totalCreateTime / 60 * 10) / 10}h</p>
+              </div>
+              <Target className="h-8 w-8 text-green-600" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Delegation Ops</p>
+                <p className="text-2xl font-bold">{metrics.delegationOpportunities.length}</p>
+              </div>
+              <Route className="h-8 w-8 text-purple-600" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Effectiveness</p>
+                <p className="text-2xl font-bold">{metrics.roleCompatibilityScore}%</p>
+              </div>
+              <TrendingUp className="h-8 w-8 text-orange-600" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Today's Schedule Analysis */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Today's Attention Allocation</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <AttentionAllocationChart items={items} />
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Multiplier Effectiveness</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <MultiplierDashboardContent metrics={metrics} compact />
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Delegation Opportunities */}
+      {metrics.delegationOpportunities.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Today's Delegation Opportunities</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {metrics.delegationOpportunities.map((item, index) => (
+                <DelegationOpportunityCard key={index} item={item} />
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+}
+
+// Attention allocation chart component
+function AttentionAllocationChart({ items }: { items: TimelineItem[] }) {
+  const attentionBreakdown = useMemo(() => {
+    const breakdown = {
+      create: 0,
+      decide: 0,
+      connect: 0,
+      review: 0,
+      recover: 0
+    };
+
+    items.forEach(item => {
+      if (item.attention_type && breakdown.hasOwnProperty(item.attention_type)) {
+        breakdown[item.attention_type as keyof typeof breakdown] += item.duration_minutes || 0;
+      }
+    });
+
+    const total = Object.values(breakdown).reduce((sum, time) => sum + time, 0);
+
+    return Object.entries(breakdown).map(([type, time]) => ({
+      type,
+      time,
+      percentage: total > 0 ? (time / total) * 100 : 0
+    }));
+  }, [items]);
+
+  return (
+    <div className="space-y-4">
+      {attentionBreakdown.map(({ type, time, percentage }) => (
+        <div key={type} className="space-y-2">
+          <div className="flex items-center justify-between text-sm">
+            <span className="capitalize font-medium">{type}</span>
+            <div className="flex items-center gap-2">
+              <span>{Math.round(time / 60 * 10) / 10}h</span>
+              <span className="text-gray-500">({Math.round(percentage)}%)</span>
+            </div>
+          </div>
+          <Progress value={percentage} className="h-2" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// Individual delegation opportunity card
+function DelegationOpportunityCard({ item }: { item: TimelineItem }) {
+  return (
+    <div className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50">
+      <div className="flex-1">
+        <h4 className="font-medium">{item.title}</h4>
+        <div className="flex items-center gap-3 text-sm text-gray-600 mt-1">
+          <Badge variant="outline" className="capitalize">
+            {item.attention_type}
+          </Badge>
+          <span>{item.duration_minutes} minutes</span>
+          <span>{new Date(item.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+        </div>
+        <p className="text-sm text-gray-600 mt-2">
+          Suitable for delegation due to {item.duration_minutes && item.duration_minutes > 90 ? 'length' : 'type'}
+        </p>
+      </div>
+      <Button variant="outline" size="sm">
+        <Route className="h-4 w-4 mr-2" />
+        Delegate
+      </Button>
+    </div>
+  );
+}
+
+function MultiplierDashboardContent({ metrics, compact = false }: { metrics: DelegationMetrics; compact?: boolean }) {
   const {
     totalCreateTime,
     totalConnectTime,

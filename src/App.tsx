@@ -13,6 +13,7 @@ import { AppSidebar } from "@/components/AppSidebar";
 import { BackgroundTasksProvider } from "@/contexts/BackgroundTasksContext";
 import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
 import { PresentationModeProvider } from "@/contexts/PresentationModeContext";
+import { initializeMobileOptimizations } from "@/lib/haptics";
 import Header from "./layout/Header";
 import PrivacyPolicyWidget from "@/components/legal/PrivacyPolicyWidget";
 import TermsModal from "@/components/legal/TermsModal";
@@ -48,6 +49,7 @@ const Support = React.lazy(() => import("./pages/Support"));
 const AdminSupportTickets = React.lazy(() => import("./pages/AdminSupportTickets"));
 const Timeline = React.lazy(() => import("./pages/Timeline"));
 const BookingPage = React.lazy(() => import("./pages/BookingPage"));
+const MobileDemo = React.lazy(() => import("./pages/MobileDemo"));
 const BookingLinks = React.lazy(() => import("./pages/BookingLinks"));
 const DailyBrief = React.lazy(() => import("./pages/DailyBrief"));
 const EmailToTask = React.lazy(() => import("./pages/EmailToTask"));
@@ -140,6 +142,14 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+// Mobile initialization component
+function MobileInitializer() {
+  React.useEffect(() => {
+    initializeMobileOptimizations();
+  }, []);
+  return null;
+}
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <PresentationModeProvider>
@@ -150,6 +160,7 @@ const App = () => (
           <BrowserRouter>
             <AuthProvider>
             <BackgroundTasksProvider>
+            <MobileInitializer />
             <PWAInstallPrompt />
             <PrivacyPolicyWidget />
             <TermsModal />
@@ -251,6 +262,11 @@ const App = () => (
             <Route path="/timeline" element={
               <ProtectedRoute>
                 <Timeline />
+              </ProtectedRoute>
+            } />
+            <Route path="/mobile-demo" element={
+              <ProtectedRoute>
+                <MobileDemo />
               </ProtectedRoute>
             } />
             <Route path="/booking-links" element={

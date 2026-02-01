@@ -1,34 +1,80 @@
 {
-  "name": "AI Query Hub",
-  "short_name": "AI Query Hub",
-  "description": "An AI Assistant That Remembers Everything - Connect your documents and chat naturally",
+  "name": "AI Query Hub - Attention Management",
+  "short_name": "AIQueryHub",
+  "description": "Premium attention management and AI-powered productivity system with 3-2-1 methodology",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0A2342",
-  "theme_color": "#0A2342",
-  "orientation": "any",
+  "theme_color": "#FFC300",
+  "orientation": "portrait-primary",
+  "categories": ["productivity", "business", "utilities"],
+  "lang": "en-US",
+  "scope": "/",
   "icons": [
     {
       "src": "/icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
       "src": "/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
       "src": "/apple-touch-icon.png",
       "sizes": "180x180",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ],
-  "categories": ["productivity", "business", "utilities"],
-  "screenshots": [],
+  "screenshots": [
+    {
+      "src": "/screenshots/mobile-timeline.png",
+      "sizes": "390x844",
+      "type": "image/png",
+      "platform": "narrow",
+      "label": "Mobile Timeline View with Attention Management"
+    },
+    {
+      "src": "/screenshots/mobile-budget.png",
+      "sizes": "390x844",
+      "type": "image/png",
+      "platform": "narrow",
+      "label": "Mobile Attention Budget Dashboard"
+    }
+  ],
   "shortcuts": [
+    {
+      "name": "Today's Timeline",
+      "short_name": "Timeline",
+      "description": "View today's attention-managed schedule",
+      "url": "/timeline?date=today",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Quick Add Task",
+      "short_name": "Add Task",
+      "description": "Quickly add a new attention-typed task",
+      "url": "/timeline?action=add",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Attention Budget",
+      "short_name": "Budget",
+      "description": "Check your current attention budget status",
+      "url": "/attention-budget",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Team Dashboard",
+      "short_name": "Team",
+      "description": "View team delegation and multiplier dashboard",
+      "url": "/team-dashboard",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
     {
       "name": "New Conversation",
       "short_name": "Chat",
@@ -42,6 +88,23 @@
       "description": "View your documents",
       "url": "/documents",
       "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    }
+  ],
+  "related_applications": [],
+  "prefer_related_applications": false,
+  "file_handlers": [
+    {
+      "action": "/timeline/import",
+      "accept": {
+        "text/calendar": [".ics"],
+        "application/json": [".json"]
+      }
+    }
+  ],
+  "protocol_handlers": [
+    {
+      "protocol": "web+aiqueryhub",
+      "url": "/deep-link?url=%s"
     }
   ]
 }
