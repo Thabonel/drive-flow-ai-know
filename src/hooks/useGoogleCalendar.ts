@@ -87,48 +87,15 @@ export const useGoogleCalendar = () => {
     });
   }, []);
 
-  // Initialize Google Calendar API - simplified pattern matching Google Drive
+  // Initialize Google Calendar API - using OAuth-only pattern like Google Drive (no API key needed)
   const initializeGoogleCalendar = useCallback(async () => {
     try {
-      // Check if API key is available and valid
-      const apiKey = import.meta.env.VITE_GOOGLE_API_KEY;
-      if (!apiKey || apiKey === 'GENERATE_NEW_KEY_AT_CONSOLE_CLOUD_GOOGLE_COM') {
-        console.warn('Google API key not configured, skipping Calendar initialization');
-        return;
-      }
+      // Load Google Identity Services script only (no GAPI needed)
+      await loadScript('https://accounts.google.com/gsi/client');
 
-      // Use hardcoded configuration like the working Google Drive pattern
-      // Same client ID and API key that Google Drive uses successfully
-      const config = {
-        apiKey: apiKey, // Environment variable (secure)
-        clientId: '1050361175911-2caa9uiuf4tmi5pvqlt0arl1h592hurm.apps.googleusercontent.com'
-      };
-
-      // Load Google API scripts
-      await Promise.all([
-        loadScript('https://accounts.google.com/gsi/client'),
-        loadScript('https://apis.google.com/js/api.js')
-      ]);
-
-      // Load GAPI client
-      await new Promise((resolve, reject) => {
-        window.gapi.load('client', {callback: resolve, onerror: reject});
-      });
-
-      // Initialize GAPI client for Calendar API
-      await window.gapi.client.init({
-        apiKey: config.apiKey,
-        discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest']
-      });
-
-      console.log('Google Calendar API initialized successfully with hardcoded config');
+      console.log('Google Calendar API initialized successfully (OAuth-only pattern)');
     } catch (error) {
       console.error('Error initializing Google Calendar services:', error);
-      // Don't show toast for missing API key - it's expected in development
-      if (!import.meta.env.VITE_GOOGLE_API_KEY || import.meta.env.VITE_GOOGLE_API_KEY === 'GENERATE_NEW_KEY_AT_CONSOLE_CLOUD_GOOGLE_COM') {
-        console.warn('Google Calendar not available - API key not configured');
-        return;
-      }
       toast({
         title: 'Error',
         description: 'Failed to initialize Google Calendar services',
@@ -137,49 +104,38 @@ export const useGoogleCalendar = () => {
     }
   }, [loadScript, toast]);
 
-  // Load user's calendar list from Google
+  // Load user's calendar list from Google - using direct API calls (no GAPI client needed)
   const loadCalendars = useCallback(async () => {
     if (!user) return [];
 
     setIsLoading(true);
     try {
-      // Ensure GAPI Calendar client is initialized (not just client)
-      if (!window.gapi?.client?.calendar) {
-        console.log('GAPI Calendar client not ready, initializing...');
-        await initializeGoogleCalendar();
+      // Fetch stored token from database
+      const { data: tokenData, error: tokenError } = await supabase
+        .from('user_google_tokens')
+        .select('access_token')
+        .eq('user_id', user.id)
+        .single();
+
+      if (tokenError || !tokenData?.access_token) {
+        console.error('No stored token found:', tokenError);
+        throw new Error('No Google token found. Please reconnect your Google Calendar.');
       }
 
-      // Safety double-check after initialization
-      if (!window.gapi?.client?.calendar) {
-        throw new Error('Google Calendar API failed to load. Please refresh and try again.');
-      }
-
-      // Ensure token is set in GAPI from stored tokens
-      if (!window.gapi?.client?.getToken()) {
-        console.log('No GAPI token set, fetching from database...');
-        // Fetch stored token from database
-        const { data: tokenData, error: tokenError } = await supabase
-          .from('user_google_tokens')
-          .select('access_token')
-          .eq('user_id', user.id)
-          .single();
-
-        if (tokenError || !tokenData?.access_token) {
-          console.error('No stored token found:', tokenError);
-          throw new Error('No Google token found. Please reconnect your Google Calendar.');
-        }
-
-        // Set token in GAPI
-        console.log('Setting token in GAPI client');
-        window.gapi.client.setToken({ access_token: tokenData.access_token });
-      }
-
-      const response = await window.gapi.client.calendar.calendarList.list({
-        maxResults: 250,
-        minAccessRole: 'writer', // Only calendars the user can write to
+      // Make direct API call to Google Calendar REST API
+      const response = await fetch('https://www.googleapis.com/calendar/v3/users/me/calendarList?maxResults=250&minAccessRole=writer', {
+        headers: {
+          'Authorization': `Bearer ${tokenData.access_token}`,
+          'Content-Type': 'application/json',
+        },
       });
 
-      const calendarList = response.result.items || [];
+      if (!response.ok) {
+        throw new Error(`Google Calendar API error: ${response.status} ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      const calendarList = data.items || [];
       setCalendars(calendarList as GoogleCalendar[]);
 
       return calendarList as GoogleCalendar[];
@@ -194,7 +150,7 @@ export const useGoogleCalendar = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [toast, user, initializeGoogleCalendar]);
+  }, [toast, user]);
 
   // Connect to Google Calendar (OAuth flow) - matches working Google Drive pattern
   const connectCalendar = useCallback(async () => {
@@ -243,9 +199,7 @@ export const useGoogleCalendar = () => {
 
           if (response.access_token) {
             console.log('=== ACCESS TOKEN RECEIVED ===');
-            // Set the token in the Google API client
-            window.gapi.client.setToken(response);
-            console.log('Token set in GAPI client');
+            // No need to set token in GAPI client - we use direct API calls
 
             // Store tokens securely in database - MUST succeed before proceeding
             console.log('Calling storeTokens...');
