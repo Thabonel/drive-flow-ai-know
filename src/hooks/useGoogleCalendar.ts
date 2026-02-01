@@ -93,7 +93,7 @@ export const useGoogleCalendar = () => {
       // Use hardcoded configuration like the working Google Drive pattern
       // Same client ID and API key that Google Drive uses successfully
       const config = {
-        apiKey: '<GOOGLE_TOKEN>', // Updated valid API key
+        apiKey: '<GOOGLE_TOKEN>', // New restricted API key
         clientId: '1050361175911-2caa9uiuf4tmi5pvqlt0arl1h592hurm.apps.googleusercontent.com'
       };
 
