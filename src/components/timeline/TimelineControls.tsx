@@ -1,9 +1,10 @@
-// Timeline controls component (lock, zoom, add item)
+// Timeline controls component (lock, zoom, add item, role optimization)
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
+import { Separator } from '@/components/ui/separator';
 import {
   ZoomIn,
   ZoomOut,
@@ -16,6 +17,10 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { RoleBasedTemplates, RoleBasedTemplatesCompact } from './RoleBasedTemplates';
+import { RoleOptimizationPanel } from './RoleOptimizationPanel';
+import { useTimelineContext } from '@/contexts/TimelineContext';
+import { OptimizationSuggestion } from '@/lib/roleOptimizer';
 
 interface TimelineControlsProps {
   zoomHorizontal: number;
@@ -23,6 +28,9 @@ interface TimelineControlsProps {
   onZoomHorizontalChange: (value: number) => void;
   onZoomVerticalChange: (value: number) => void;
   onFitAllLayers: () => void;
+  onTemplateSelect?: (template: any) => void;
+  onOptimizationApply?: (suggestion: OptimizationSuggestion) => void;
+  compact?: boolean;
 }
 
 export function TimelineControls({
@@ -31,7 +39,11 @@ export function TimelineControls({
   onZoomHorizontalChange,
   onZoomVerticalChange,
   onFitAllLayers,
+  onTemplateSelect,
+  onOptimizationApply,
+  compact = false,
 }: TimelineControlsProps) {
+  const { attentionPreferences } = useTimelineContext();
   const handleZoomIn = (isHorizontal: boolean) => {
     if (isHorizontal) {
       onZoomHorizontalChange(Math.min(zoomHorizontal + ZOOM_STEP, MAX_ZOOM));
@@ -156,6 +168,52 @@ export function TimelineControls({
           <Maximize2 className="mr-2 h-4 w-4" />
           Fit All Layers
         </Button>
+
+        {/* Role-Based Optimization Section */}
+        {attentionPreferences && (
+          <>
+            <Separator className="my-4" />
+
+            <div className="space-y-2">
+              <Label>Role Optimization</Label>
+
+              {/* Smart Templates */}
+              {compact ? (
+                <RoleBasedTemplatesCompact
+                  currentRole={attentionPreferences.current_role}
+                  currentZone={attentionPreferences.current_zone}
+                  onTemplateSelect={onTemplateSelect || (() => {})}
+                />
+              ) : (
+                <RoleBasedTemplates
+                  currentRole={attentionPreferences.current_role}
+                  currentZone={attentionPreferences.current_zone}
+                  onTemplateSelect={onTemplateSelect || (() => {})}
+                  onOptimizationApply={onOptimizationApply}
+                  trigger={
+                    <Button variant="outline" size="sm" className="w-full">
+                      Smart Templates
+                    </Button>
+                  }
+                />
+              )}
+
+              {/* Optimization Dashboard */}
+              <RoleOptimizationPanel
+                onOptimizationApply={onOptimizationApply}
+                trigger={
+                  <Button variant="outline" size="sm" className="w-full">
+                    Optimization Dashboard
+                  </Button>
+                }
+              />
+
+              <p className="text-xs text-muted-foreground">
+                AI-powered optimization for your {attentionPreferences.current_role} role
+              </p>
+            </div>
+          </>
+        )}
       </div>
     </TooltipProvider>
   );

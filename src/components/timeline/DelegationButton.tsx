@@ -1,7 +1,8 @@
-// Component for delegating timeline items in Multiplier mode
-import { useState } from 'react';
+// Component for delegating timeline items in Multiplier mode with role optimization
+import { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
   Dialog,
   DialogContent,
@@ -20,16 +21,19 @@ import {
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { TimelineItem } from '@/lib/timelineUtils';
-import { TrustLevel } from '@/lib/attentionTypes';
+import { TrustLevel, ROLE_MODES } from '@/lib/attentionTypes';
+import { ROLE_OPTIMIZATION_RULES } from '@/lib/roleOptimizer';
 import { useTeam } from '@/hooks/useTeam';
 import { useTeamMembers } from '@/hooks/useTeamMembers';
-import { Users, ArrowRight, Clock, AlertCircle } from 'lucide-react';
+import { useTimelineContext } from '@/contexts/TimelineContext';
+import { Users, ArrowRight, Clock, AlertCircle, Lightbulb, TrendingUp, Zap } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface DelegationButtonProps {
   item: TimelineItem;
   onDelegate?: (delegatedItem: TimelineItem, delegateInfo: DelegationInfo) => void;
   disabled?: boolean;
+  className?: string;
 }
 
 interface DelegationInfo {
@@ -43,10 +47,12 @@ interface DelegationInfo {
 export function DelegationButton({
   item,
   onDelegate,
-  disabled = false
+  disabled = false,
+  className
 }: DelegationButtonProps) {
   const { team } = useTeam();
   const { members } = useTeamMembers(team?.id);
+  const { attentionPreferences } = useTimelineContext();
   const [isOpen, setIsOpen] = useState(false);
   const [selectedDelegate, setSelectedDelegate] = useState<string>('');
   const [trustLevel, setTrustLevel] = useState<TrustLevel>('experienced');
@@ -56,16 +62,109 @@ export function DelegationButton({
     member.user_id !== item.assigned_to && member.user_id !== item.user_id
   ) || [];
 
+  // Role-based delegation analysis
+  const delegationAnalysis = useMemo(() => {
+    if (!attentionPreferences) {
+      return {
+        isDelegatable: item.attention_type === 'create' || item.attention_type === 'review',
+        roleRecommendation: 'Consider delegation for efficiency',
+        optimizationPotential: 'medium',
+        reasoning: 'Standard delegation assessment',
+      };
+    }
+
+    const currentRole = attentionPreferences.current_role;
+    const rules = ROLE_OPTIMIZATION_RULES[currentRole];
+    const isHighPriority = item.priority && item.priority >= 5;
+    const isNonNegotiable = item.is_non_negotiable;
+    const isLongTask = item.duration_minutes > (rules?.delegationThreshold || 60);
+
+    let isDelegatable = false;
+    let roleRecommendation = '';
+    let optimizationPotential: 'high' | 'medium' | 'low' = 'low';
+    let reasoning = '';
+
+    switch (currentRole) {
+      case ROLE_MODES.MULTIPLIER:
+        // Multipliers should delegate most work except strategic activities
+        isDelegatable = item.attention_type === 'create' || item.attention_type === 'review';
+        if (isLongTask) {
+          optimizationPotential = 'high';
+          roleRecommendation = 'Strong delegation candidate - frees you for strategic work';
+          reasoning = `Multipliers excel by enabling others. Tasks over ${rules?.delegationThreshold}min should be delegated.`;
+        } else if (item.attention_type === 'create') {
+          optimizationPotential = 'medium';
+          roleRecommendation = 'Consider delegation to focus on team enablement';
+          reasoning = 'Creation work can be delegated unless strategically critical.';
+        } else {
+          optimizationPotential = 'low';
+          roleRecommendation = 'Quick task - may be efficient to complete yourself';
+          reasoning = 'Short tasks may not benefit from delegation overhead.';
+        }
+        break;
+
+      case ROLE_MODES.MARKER:
+        // Markers should delegate execution work but keep decision-making
+        isDelegatable = item.attention_type === 'create' || item.attention_type === 'review';
+        if (item.attention_type === 'decide') {
+          isDelegatable = false;
+          roleRecommendation = 'Keep decision-making work - core to Marker role';
+          reasoning = 'Markers should retain decision authority and strategic choices.';
+        } else if (isLongTask) {
+          optimizationPotential = 'high';
+          roleRecommendation = 'Delegate execution to focus on decisions';
+          reasoning = 'Delegating execution preserves decision-making capacity.';
+        } else {
+          optimizationPotential = 'medium';
+          roleRecommendation = 'Consider delegation to protect decision energy';
+          reasoning = 'Even small execution tasks can drain decision-making capacity.';
+        }
+        break;
+
+      case ROLE_MODES.MAKER:
+        // Makers should be selective about delegation - keep create work, delegate admin
+        isDelegatable = item.attention_type === 'review' || item.attention_type === 'recover';
+        if (item.attention_type === 'create') {
+          isDelegatable = false;
+          roleRecommendation = 'Keep creative work - core to Maker productivity';
+          reasoning = 'Makers achieve most value through personal creative output.';
+        } else if (item.attention_type === 'review') {
+          optimizationPotential = 'high';
+          roleRecommendation = 'Strong delegation candidate - protects focus time';
+          reasoning = 'Review work interrupts deep focus and can often be delegated.';
+        } else {
+          optimizationPotential = 'medium';
+          roleRecommendation = 'Consider delegation to minimize interruptions';
+          reasoning = 'Administrative tasks fragment maker focus time.';
+        }
+        break;
+
+      default:
+        isDelegatable = item.attention_type === 'create' || item.attention_type === 'review';
+        roleRecommendation = 'Standard delegation assessment';
+        reasoning = 'General delegation guidelines apply.';
+    }
+
+    // Adjust for item characteristics
+    if (isNonNegotiable && optimizationPotential === 'high') {
+      optimizationPotential = 'medium';
+      roleRecommendation += ' (with careful handoff due to priority)';
+    }
+
+    return {
+      isDelegatable,
+      roleRecommendation,
+      optimizationPotential,
+      reasoning,
+      isHighPriority,
+      isNonNegotiable,
+      isLongTask,
+    };
+  }, [item, attentionPreferences]);
+
   if (!team || availableMembers.length === 0) {
     return null;
   }
-
-  // Check if this item is suitable for delegation
-  const isDelegatable = item.attention_type === 'create' || item.attention_type === 'review';
-  const isHighPriority = item.priority && item.priority >= 5;
-  const isNonNegotiable = item.is_non_negotiable;
-
-  const shouldWarnAboutDelegation = isHighPriority || isNonNegotiable;
 
   const handleDelegate = () => {
     if (!selectedDelegate) {
@@ -140,11 +239,17 @@ export function DelegationButton({
         <Button
           variant="outline"
           size="sm"
-          disabled={disabled || !isDelegatable}
-          className="gap-2"
+          disabled={disabled || !delegationAnalysis.isDelegatable}
+          className={`gap-2 ${className || ''}`}
         >
           <Users className="h-3 w-3" />
           <span className="hidden sm:inline">Delegate</span>
+          {delegationAnalysis.optimizationPotential === 'high' && (
+            <Badge variant="default" className="ml-1 text-xs">
+              <TrendingUp className="h-2 w-2 mr-1" />
+              Recommended
+            </Badge>
+          )}
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
@@ -159,16 +264,48 @@ export function DelegationButton({
         </DialogHeader>
 
         <div className="space-y-4">
-          {/* Warning for high-priority/non-negotiable items */}
-          {shouldWarnAboutDelegation && (
-            <div className="flex items-center gap-2 p-3 bg-orange-50 border border-orange-200 rounded-lg">
-              <AlertCircle className="h-4 w-4 text-orange-600" />
-              <div className="text-sm text-orange-700">
-                {isNonNegotiable && <p>This is a non-negotiable item.</p>}
-                {isHighPriority && <p>This is a high-priority item (Level {item.priority}).</p>}
-                <p>Consider if delegation is appropriate.</p>
+          {/* Role-based delegation insight */}
+          <Alert className={`border-l-4 ${
+            delegationAnalysis.optimizationPotential === 'high' ? 'border-green-500' :
+            delegationAnalysis.optimizationPotential === 'medium' ? 'border-yellow-500' :
+            'border-gray-300'
+          }`}>
+            <div className="flex items-start gap-2">
+              {delegationAnalysis.optimizationPotential === 'high' ? (
+                <Zap className="h-4 w-4 text-green-600 mt-0.5" />
+              ) : (
+                <Lightbulb className="h-4 w-4 text-yellow-600 mt-0.5" />
+              )}
+              <div className="flex-1">
+                <div className="text-sm font-medium">
+                  {attentionPreferences?.current_role ?
+                    `${attentionPreferences.current_role.charAt(0).toUpperCase() + attentionPreferences.current_role.slice(1)} Mode Analysis` :
+                    'Delegation Analysis'
+                  }
+                </div>
+                <AlertDescription className="mt-1">
+                  <p className="text-sm">{delegationAnalysis.roleRecommendation}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{delegationAnalysis.reasoning}</p>
+                </AlertDescription>
               </div>
+              {delegationAnalysis.optimizationPotential === 'high' && (
+                <Badge variant="default" className="text-xs">
+                  High Impact
+                </Badge>
+              )}
             </div>
+          </Alert>
+
+          {/* Warning for high-priority/non-negotiable items */}
+          {(delegationAnalysis.isNonNegotiable || delegationAnalysis.isHighPriority) && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                {delegationAnalysis.isNonNegotiable && <p>This is a non-negotiable item.</p>}
+                {delegationAnalysis.isHighPriority && <p>This is a high-priority item (Level {item.priority}).</p>}
+                <p>Ensure thorough handoff and clear accountability.</p>
+              </AlertDescription>
+            </Alert>
           )}
 
           {/* Task info */}

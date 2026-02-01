@@ -12,9 +12,10 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { TimelineItem, rescheduleItem as calculateReschedule } from '@/lib/timelineUtils';
 import { RESCHEDULE_OPTIONS } from '@/lib/timelineConstants';
-import { Check, Clock, Pause, Trash2, Edit, Paperclip } from 'lucide-react';
+import { Check, Clock, Pause, Trash2, Edit, Paperclip, Users } from 'lucide-react';
 import { DocumentViewer } from '@/components/documents/DocumentViewer';
 import { RecurringActionDialog } from './RecurringActionDialog';
+import { DelegationButton } from './DelegationButton';
 import { supabase } from '@/integrations/supabase/client';
 
 interface ItemActionMenuProps {
@@ -249,6 +250,19 @@ export function ItemActionMenu({
               <Pause className="mr-2 h-4 w-4" />
               Park for Later
             </Button>
+          )}
+
+          {/* Delegate Task */}
+          {item.status !== 'completed' && (
+            <DelegationButton
+              item={item}
+              onDelegate={(delegatedItem, delegationInfo) => {
+                // Handle delegation success
+                console.log('Task delegated:', delegatedItem, delegationInfo);
+                onClose();
+              }}
+              className="w-full justify-start"
+            />
           )}
 
           {/* Delete */}

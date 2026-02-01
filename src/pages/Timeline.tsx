@@ -3,10 +3,12 @@
 
 import { useState, useEffect } from 'react';
 import { TimelineWithDnd } from '@/components/timeline/TimelineWithDnd';
+import { MobileAttentionDemo } from '@/components/MobileAttentionDemo';
 import { useDailyPlanning } from '@/hooks/useDailyPlanning';
 import { useAuth } from '@/hooks/useAuth';
 import { useTimeline } from '@/hooks/useTimeline';
 import { useTasks } from '@/hooks/useTasks';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { DailyPlanningFlow } from '@/components/planning/DailyPlanningFlow';
 import { EndOfDayShutdown } from '@/components/planning/EndOfDayShutdown';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -28,6 +30,7 @@ function TimelineContent() {
   const { user } = useAuth();
   const { refetchItems } = useTimeline();
   const { refetch: refetchTasks } = useTasks();
+  const isMobile = useIsMobile();
   const {
     settings,
     planningNeeded,
@@ -188,7 +191,11 @@ function TimelineContent() {
       ) : null}
 
       {/* Main Timeline Content */}
-      <TimelineWithDnd refetchItems={refetchItems} refetchTasks={refetchTasks} />
+      {isMobile ? (
+        <MobileAttentionDemo />
+      ) : (
+        <TimelineWithDnd refetchItems={refetchItems} refetchTasks={refetchTasks} />
+      )}
 
       {/* Planning Modals */}
       <DailyPlanningFlow
