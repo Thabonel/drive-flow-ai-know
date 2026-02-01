@@ -31,7 +31,8 @@ import {
   AlertTriangle,
   CheckCircle,
   Settings,
-  Star
+  Star,
+  X
 } from 'lucide-react';
 
 interface NonNegotiableTrackerProps {
@@ -164,6 +165,7 @@ export function NonNegotiableTracker({
                 onTitleChange={setTempTitle}
                 onHoursChange={setTempHours}
                 onSave={handleUpdateSettings}
+                onCancel={() => setShowSettings(false)}
               />
             </DialogContent>
           </Dialog>
@@ -242,6 +244,7 @@ export function NonNegotiableTracker({
             onTitleChange={setTempTitle}
             onHoursChange={setTempHours}
             onSave={handleUpdateSettings}
+            onCancel={() => setShowSettings(false)}
           />
         </DialogContent>
       </Dialog>
@@ -375,13 +378,15 @@ function NonNegotiableSettings({
   hours,
   onTitleChange,
   onHoursChange,
-  onSave
+  onSave,
+  onCancel
 }: {
   title: string;
   hours: number;
   onTitleChange: (title: string) => void;
   onHoursChange: (hours: number) => void;
   onSave: () => void;
+  onCancel?: () => void;
 }) {
   return (
     <div className="space-y-4">
@@ -414,6 +419,11 @@ function NonNegotiableSettings({
       </div>
 
       <div className="flex items-center gap-3 pt-4">
+        {onCancel && (
+          <Button variant="outline" onClick={onCancel} className="flex-1">
+            Not Now
+          </Button>
+        )}
         <Button onClick={onSave} className="flex-1">
           <Shield className="h-4 w-4 mr-2" />
           Save Settings
