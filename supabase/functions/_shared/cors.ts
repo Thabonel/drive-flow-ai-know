@@ -34,18 +34,20 @@ const getAllowedOrigins = (): string[] => {
 export const isOriginAllowed = (origin: string | null): boolean => {
   if (!origin) return false;
 
-  // If ALLOWED_ORIGINS is not configured, allow all origins (backwards compatible)
-  // This ensures existing deployments don't break
+  // SECURITY: Only allow development origins when CORS is not configured
   if (!isProductionCorsConfigured()) {
-    // Log warning in production environments
-    if (!origin.includes('localhost') && !origin.includes('127.0.0.1')) {
-      console.warn(
-        'SECURITY WARNING: CORS is not configured. Set ALLOWED_ORIGINS env variable ' +
-        'with your production domains to restrict cross-origin requests. ' +
-        `Allowing origin: ${origin}`
+    // Log critical security warning for non-development origins
+    if (!origin.includes('localhost') && !origin.includes('127.0.0.1') && !origin.includes('[::]:')) {
+      console.error(
+        'SECURITY CRITICAL: CORS is not configured for production. ' +
+        'Set ALLOWED_ORIGINS environment variable immediately. ' +
+        `BLOCKING unauthorized origin: ${origin}`
       );
+      return false; // BLOCK non-development origins when not configured
     }
-    return true;
+
+    // Only allow development origins when not configured
+    return DEFAULT_DEV_ORIGINS.includes(origin);
   }
 
   const allowedOrigins = getAllowedOrigins();
