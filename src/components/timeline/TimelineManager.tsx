@@ -59,6 +59,7 @@ import { Loader2, Clock, Settings, Layers, Lock, Unlock, Archive, LayoutTemplate
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuLabel } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { PageHelp } from '@/components/PageHelp';
 import { supabase } from '@/integrations/supabase/client';
@@ -763,7 +764,8 @@ export function TimelineManager({ onCanvasReady }: TimelineManagerProps = {}) {
   const logjamCount = items.filter(i => i.status === 'logjam').length;
 
   return (
-    <div className={isCompactMode ? 'space-y-1' : 'space-y-6'}>
+    <TooltipProvider delayDuration={300}>
+      <div className={isCompactMode ? 'space-y-1' : 'space-y-6'}>
       {/* Header */}
       <div className={isCompactMode ? 'space-y-1' : 'space-y-4'}>
         {/* Combined Header Row - Title and Action Buttons on Same Line */}
@@ -780,40 +782,40 @@ export function TimelineManager({ onCanvasReady }: TimelineManagerProps = {}) {
             <TimelinePhilosophy mode="dialog" trigger="icon" />
 {viewType === 'calendar' ? (
               <PageHelp
-                title="Calendar View Help"
-                description="The Calendar View displays your timeline items in a familiar Google Calendar-style layout. Create events by clicking or dragging on the grid, view your schedule by day, week, or month, and manage items with intuitive controls."
+                title="Calendar View - How It Works"
+                description="AI Query Hub's Calendar View combines traditional scheduling with intelligent time management. Create events naturally, leverage AI planning, and see your attention budget in real-time to optimize your productivity."
                 tips={[
-                  "Click on any time slot to quick-add an event",
-                  "Drag vertically to create events with specific durations",
-                  "Click on events to edit, reschedule, or delete them",
-                  "Drag events to move them to different times or days",
-                  "Drag the bottom edge of events to resize duration",
-                  "Switch between Day, Week, and Month views for different perspectives",
-                  "Use arrow buttons to navigate forward/backward in time",
-                  "The red line shows the current time (on today's view)",
-                  "Events snap to 15-minute intervals for precise scheduling",
-                  "Use layers to organize different types of events",
-                  "Sync with Google Calendar using the Calendar button",
-                  "Switch to Timeline view for a flowing, scrollable timeline"
+                  "✨ Getting Started: Click any time slot to create an event, or drag vertically for specific durations",
+                  "🎯 AI Planning: Use 'Plan Day' for AI-assisted scheduling that considers your energy levels and priorities",
+                  "📊 Attention Budget: See your cognitive load in real-time - the system warns when you're overcommitting",
+                  "🔄 Smart Sync: Connect Google Calendar to sync existing events and maintain one source of truth",
+                  "📑 Templates & Routines: Access pre-built templates for common scenarios or create custom routines",
+                  "🎨 Layers: Organize events by type (work, personal, meetings) with color-coded layers",
+                  "⏰ Time Intelligence: Events snap to 15-minute intervals, and the red line shows current time",
+                  "📱 Responsive: Switch between Day, Week, and Month views - optimized for desktop and mobile",
+                  "🔐 Lock Mode: Enable to auto-scroll with real-time, or unlock for manual navigation",
+                  "🎭 Role Zones: Switch between different role contexts (CEO, Parent, etc.) for focused planning",
+                  "📋 Unscheduled Tasks: Save items for later scheduling in the task panel (drag to timeline when ready)",
+                  "🧠 AI Insights: Get personalized recommendations based on your productivity patterns"
                 ]}
               />
             ) : (
               <PageHelp
-                title="Timeline Manager Help"
-                description="The Timeline Manager helps you visualize and manage your tasks on a flowing timeline. Items move towards the NOW line, and become 'logjammed' (red pulsing) when overdue. You can drag items to reschedule, resize them to adjust duration, or park them for later."
+                title="Timeline Manager - How It Works"
+                description="AI Query Hub's Timeline Manager visualizes time as a flowing river. Items drift toward the NOW line and become 'logjammed' (red pulsing) when overdue. This unique approach helps you see time pressure and make better decisions about what to do next."
                 tips={[
-                  "Drag items horizontally to reschedule them",
-                  "Drag the right edge to resize duration (like Google Calendar)",
-                  "Click items to mark done, reschedule, park, or delete",
-                  "Double-click empty space to create a new item at that time",
-                  "Use arrow buttons to jump forward/backward by day, week, or month",
-                  "Use layers to organize different types of tasks",
-                  "Lock/unlock to enable auto-scrolling with real time",
-                  "Use 'Plan Day' for AI planning, templates, and routines",
-                  "Schedule project plans directly from the 'Plans' dropdown",
-                  "Sync with Google Calendar using the Calendar button",
-                  "Use unscheduled tasks panel to save items for later scheduling",
-                  "Switch view modes (Day/Week/Month) for different perspectives"
+                  "🌊 The Flow Concept: Time flows left to right - items drift toward the NOW line and logjam when overdue",
+                  "🎯 AI Planning: Use 'Plan Day' to leverage AI for intelligent scheduling based on your energy patterns",
+                  "🧠 Attention Budget: Real-time cognitive load tracking prevents overcommitment and decision fatigue",
+                  "🎨 Layers: Organize tasks by context (Deep Work, Meetings, Admin) with visual color coding",
+                  "⚡ Quick Actions: Double-click empty space to create items, drag to reschedule, resize edges for duration",
+                  "🔄 Live Sync: Connect Google Calendar for bidirectional sync of all your events and tasks",
+                  "🎭 Role Switching: Toggle between different life roles (Professional, Parent, etc.) for focused planning",
+                  "📋 Task Management: Drag unscheduled tasks from the side panel onto the timeline when ready",
+                  "🔐 Lock Modes: Lock for auto-scroll with time, or unlock for free navigation and planning",
+                  "📊 View Modes: Switch between Day, Week, Month views to see different time horizons",
+                  "🧩 Templates: Access role-based templates and create recurring routines for consistent execution",
+                  "💡 AI Insights: Get personalized recommendations on time allocation and productivity optimization"
                 ]}
               />
             )}
@@ -841,25 +843,42 @@ export function TimelineManager({ onCanvasReady }: TimelineManagerProps = {}) {
         {/* Action Buttons Row - Simplified to 5 Primary Actions */}
         <div className={isCompactMode ? 'flex items-center gap-2 flex-wrap' : 'flex items-center gap-3 flex-wrap'}>
           {/* Primary Add Item Button */}
-          <button
-            onClick={() => setShowAddItemForm(true)}
-            className={isCompactMode
-              ? 'px-4 py-2 bg-primary text-primary-foreground rounded-lg font-semibold hover:bg-primary/90 transition-colors shadow-sm text-sm'
-              : 'px-6 py-3 bg-primary text-primary-foreground rounded-lg font-semibold hover:bg-primary/90 transition-colors shadow-sm'
-            }
-            disabled={layers.length === 0}
-          >
-            {layers.length === 0 ? 'Create a Layer First' : '+ Add Item'}
-          </button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                onClick={() => setShowAddItemForm(true)}
+                className={isCompactMode
+                  ? 'px-4 py-2 bg-primary text-primary-foreground rounded-lg font-semibold hover:bg-primary/90 transition-colors shadow-sm text-sm'
+                  : 'px-6 py-3 bg-primary text-primary-foreground rounded-lg font-semibold hover:bg-primary/90 transition-colors shadow-sm'
+                }
+                disabled={layers.length === 0}
+              >
+                {layers.length === 0 ? 'Create a Layer First' : '+ Add Item'}
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>
+              {layers.length === 0
+                ? 'Create a layer first to organize your timeline items'
+                : 'Create a new timeline item with title, duration, and timing'
+              }
+            </TooltipContent>
+          </Tooltip>
 
           {/* Unified Planning Button */}
           <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="default" size={isCompactMode ? 'sm' : 'default'} className="gap-2">
-                <Sparkles className="h-4 w-4" />
-                Plan Day
-              </Button>
-            </DropdownMenuTrigger>
+            <Tooltip>
+              <DropdownMenuTrigger asChild>
+                <TooltipTrigger asChild>
+                  <Button variant="default" size={isCompactMode ? 'sm' : 'default'} className="gap-2">
+                    <Sparkles className="h-4 w-4" />
+                    Plan Day
+                  </Button>
+                </TooltipTrigger>
+              </DropdownMenuTrigger>
+              <TooltipContent>
+                Access planning tools: daily planning, AI scheduling, templates, and routines
+              </TooltipContent>
+            </Tooltip>
             <DropdownMenuContent align="start">
               <DropdownMenuItem onClick={() => setShowDailyPlanning(true)}>
                 <Sunrise className="h-4 w-4 mr-2" />
@@ -897,73 +916,115 @@ export function TimelineManager({ onCanvasReady }: TimelineManagerProps = {}) {
           <PlanDropdown />
 
           {/* Lock/Unlock Toggle Button */}
-          <Button
-            onClick={handleToggleLock}
-            variant={settings?.is_locked ? 'default' : 'outline'}
-            size={isCompactMode ? 'sm' : 'default'}
-            className="gap-2"
-          >
-            {settings?.is_locked ? (
-              <>
-                <Lock className="h-4 w-4" />
-                {!isCompactMode && 'Locked'}
-              </>
-            ) : (
-              <>
-                <Unlock className="h-4 w-4" />
-                {!isCompactMode && 'Unlocked'}
-              </>
-            )}
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                onClick={handleToggleLock}
+                variant={settings?.is_locked ? 'default' : 'outline'}
+                size={isCompactMode ? 'sm' : 'default'}
+                className="gap-2"
+              >
+                {settings?.is_locked ? (
+                  <>
+                    <Lock className="h-4 w-4" />
+                    {!isCompactMode && 'Locked'}
+                  </>
+                ) : (
+                  <>
+                    <Unlock className="h-4 w-4" />
+                    {!isCompactMode && 'Unlocked'}
+                  </>
+                )}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              {settings?.is_locked
+                ? 'Timeline is locked to current time - toggle to unlock for free scrolling'
+                : 'Timeline scrolls freely - toggle to lock and auto-scroll with real time'
+              }
+            </TooltipContent>
+          </Tooltip>
 
           {/* Quick Zoom Controls */}
           <div className="flex items-center gap-1">
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={handleQuickZoomOut}
-              disabled={settings?.zoom_horizontal && settings.zoom_horizontal <= MIN_ZOOM}
-              title="Zoom Out (Ctrl + -)"
-              className="h-9 w-9 p-0"
-            >
-              <ZoomOut className="h-4 w-4" />
-            </Button>
-            <span className="text-xs text-muted-foreground px-1 min-w-[3rem] text-center">
-              {settings?.zoom_horizontal ?? 100}%
-            </span>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={handleQuickZoomIn}
-              disabled={settings?.zoom_horizontal && settings.zoom_horizontal >= MAX_ZOOM}
-              title="Zoom In (Ctrl + +)"
-              className="h-9 w-9 p-0"
-            >
-              <ZoomIn className="h-4 w-4" />
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleQuickZoomOut}
+                  disabled={settings?.zoom_horizontal && settings.zoom_horizontal <= MIN_ZOOM}
+                  className="h-9 w-9 p-0"
+                >
+                  <ZoomOut className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                Zoom out to see more time (Ctrl + -)
+              </TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className="text-xs text-muted-foreground px-1 min-w-[3rem] text-center cursor-help">
+                  {settings?.zoom_horizontal ?? 100}%
+                </span>
+              </TooltipTrigger>
+              <TooltipContent>
+                Current horizontal zoom level
+              </TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleQuickZoomIn}
+                  disabled={settings?.zoom_horizontal && settings.zoom_horizontal >= MAX_ZOOM}
+                  className="h-9 w-9 p-0"
+                >
+                  <ZoomIn className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                Zoom in to see less time (Ctrl + +)
+              </TooltipContent>
+            </Tooltip>
           </div>
 
           {/* Timeline Navigation */}
           <div className="flex items-center gap-1">
             {/* Previous increment */}
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={handleJumpBackward}
-              title={`Previous ${getJumpLabel()}`}
-              className="h-9 w-9 p-0"
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleJumpBackward}
+                  className="h-9 w-9 p-0"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                Go back one {getJumpLabel().toLowerCase()}
+              </TooltipContent>
+            </Tooltip>
 
             {/* Jump to Date Popover */}
             <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="outline" size={isCompactMode ? 'sm' : 'default'} className="gap-2 px-3">
-                  <Navigation className="h-4 w-4" />
-                  <span className="hidden sm:inline">{!isCompactMode && getJumpLabel()}</span>
-                </Button>
-              </PopoverTrigger>
+              <Tooltip>
+                <PopoverTrigger asChild>
+                  <TooltipTrigger asChild>
+                    <Button variant="outline" size={isCompactMode ? 'sm' : 'default'} className="gap-2 px-3">
+                      <Navigation className="h-4 w-4" />
+                      <span className="hidden sm:inline">{!isCompactMode && getJumpLabel()}</span>
+                    </Button>
+                  </TooltipTrigger>
+                </PopoverTrigger>
+                <TooltipContent>
+                  Navigate to a specific date or jump to today
+                </TooltipContent>
+              </Tooltip>
               <PopoverContent className="w-64" align="start">
                 <div className="space-y-3">
                   <h3 className="font-semibold text-sm">Jump to Date</h3>
@@ -998,15 +1059,21 @@ export function TimelineManager({ onCanvasReady }: TimelineManagerProps = {}) {
             </Popover>
 
             {/* Next increment */}
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={handleJumpForward}
-              title={`Next ${getJumpLabel()}`}
-              className="h-9 w-9 p-0"
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleJumpForward}
+                  className="h-9 w-9 p-0"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                Go forward one {getJumpLabel().toLowerCase()}
+              </TooltipContent>
+            </Tooltip>
           </div>
 
           {/* Calendar Sync - moved outside dropdown for proper popover behavior */}
@@ -1014,12 +1081,19 @@ export function TimelineManager({ onCanvasReady }: TimelineManagerProps = {}) {
 
           {/* More Actions Dropdown */}
           <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size={isCompactMode ? 'sm' : 'default'} className="gap-2">
-                <MoreHorizontal className="h-4 w-4" />
-                {!isCompactMode && 'More'}
-              </Button>
-            </DropdownMenuTrigger>
+            <Tooltip>
+              <DropdownMenuTrigger asChild>
+                <TooltipTrigger asChild>
+                  <Button variant="outline" size={isCompactMode ? 'sm' : 'default'} className="gap-2">
+                    <MoreHorizontal className="h-4 w-4" />
+                    {!isCompactMode && 'More'}
+                  </Button>
+                </TooltipTrigger>
+              </DropdownMenuTrigger>
+              <TooltipContent>
+                Additional timeline actions: end of day, AI insights, layers, and settings
+              </TooltipContent>
+            </Tooltip>
             <DropdownMenuContent align="start" className="w-56">
               <DropdownMenuItem onClick={() => setShowEndOfDay(true)}>
                 <Moon className="h-4 w-4 mr-2" />
@@ -1412,5 +1486,6 @@ export function TimelineManager({ onCanvasReady }: TimelineManagerProps = {}) {
         </DialogContent>
       </Dialog>
     </div>
+    </TooltipProvider>
   );
 }

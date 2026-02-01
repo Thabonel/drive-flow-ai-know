@@ -25,7 +25,7 @@ import {
   AlertTriangle,
   CheckCircle,
   Inbox,
-  Route,
+  MapPin,
   Calendar,
   Award,
   Bell
@@ -116,7 +116,7 @@ export function MultiplierDashboard({
               Router Inbox
             </TabsTrigger>
             <TabsTrigger value="delegations" className="flex items-center gap-2">
-              <Route className="h-4 w-4" />
+              <MapPin className="h-4 w-4" />
               Delegations
             </TabsTrigger>
             <TabsTrigger value="trust-levels" className="flex items-center gap-2">
@@ -134,7 +134,7 @@ export function MultiplierDashboard({
           </TabsContent>
 
           <TabsContent value="inbox">
-            <RouterInbox />
+            <MapPinrInbox />
           </TabsContent>
 
           <TabsContent value="delegations">
@@ -206,7 +206,7 @@ function MultiplierOverview({ metrics, items }: { metrics: DelegationMetrics; it
                 <p className="text-sm font-medium text-gray-600">Delegation Ops</p>
                 <p className="text-2xl font-bold">{metrics.delegationOpportunities.length}</p>
               </div>
-              <Route className="h-8 w-8 text-purple-600" />
+              <MapPin className="h-8 w-8 text-purple-600" />
             </div>
           </CardContent>
         </Card>
@@ -326,7 +326,7 @@ function DelegationOpportunityCard({ item }: { item: TimelineItem }) {
         </p>
       </div>
       <Button variant="outline" size="sm">
-        <Route className="h-4 w-4 mr-2" />
+        <MapPin className="h-4 w-4 mr-2" />
         Delegate
       </Button>
     </div>

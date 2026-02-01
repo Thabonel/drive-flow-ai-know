@@ -1,0 +1,354 @@
+{
+  "timestamp": "2026-02-01T11:57:09.868Z",
+  "architecture": {
+    "mobileComponents": {
+      "count": 5,
+      "components": [
+        "MobileAttentionBudget",
+        "MobileCalibrationWizard",
+        "MobileDelegationPanel",
+        "MobileRoleZoneSelector",
+        "MobileTimelineControls"
+      ],
+      "expectedComponents": [
+        "MobileTimelineControls",
+        "MobileAttentionBudget",
+        "MobileDelegationPanel",
+        "MobileRoleZoneSelector",
+        "MobileCalibrationWizard"
+      ]
+    },
+    "gestureSystem": {
+      "features": [
+        {
+          "name": "Swipe Detection",
+          "supported": true
+        },
+        {
+          "name": "Long Press",
+          "supported": true
+        },
+        {
+          "name": "Pinch/Zoom",
+          "supported": true
+        },
+        {
+          "name": "Multi-touch",
+          "supported": true
+        },
+        {
+          "name": "Velocity Tracking",
+          "supported": true
+        },
+        {
+          "name": "Direction Detection",
+          "supported": true
+        }
+      ],
+      "completeness": 100
+    },
+    "hapticSystem": {
+      "features": [
+        {
+          "name": "Vibration API",
+          "supported": true
+        },
+        {
+          "name": "Pattern Variations",
+          "supported": true
+        },
+        {
+          "name": "Success Feedback",
+          "supported": true
+        },
+        {
+          "name": "Error Feedback",
+          "supported": true
+        },
+        {
+          "name": "Custom Patterns",
+          "supported": true
+        }
+      ],
+      "completeness": 100
+    }
+  },
+  "components": {
+    "analyzed": [
+      {
+        "name": "MobileAttentionBudget",
+        "file": "MobileAttentionBudget.tsx",
+        "features": {
+          "usesGestures": true,
+          "usesHaptics": true,
+          "usesMobileHook": true,
+          "hasTouchHandlers": false,
+          "hasContextMenu": false,
+          "hasSheets": true,
+          "hasScrollArea": true,
+          "hasResponsiveDesign": false,
+          "usesAnimations": true,
+          "hasAccessibility": false
+        },
+        "dependencies": {
+          "gestureHooks": 3,
+          "hapticCalls": 2,
+          "touchEvents": 0
+        },
+        "lineCount": 433
+      },
+      {
+        "name": "MobileCalibrationWizard",
+        "file": "MobileCalibrationWizard.tsx",
+        "features": {
+          "usesGestures": false,
+          "usesHaptics": true,
+          "usesMobileHook": true,
+          "hasTouchHandlers": false,
+          "hasContextMenu": false,
+          "hasSheets": true,
+          "hasScrollArea": true,
+          "hasResponsiveDesign": false,
+          "usesAnimations": true,
+          "hasAccessibility": false
+        },
+        "dependencies": {
+          "gestureHooks": 0,
+          "hapticCalls": 7,
+          "touchEvents": 0
+        },
+        "lineCount": 547
+      },
+      {
+        "name": "MobileDelegationPanel",
+        "file": "MobileDelegationPanel.tsx",
+        "features": {
+          "usesGestures": true,
+          "usesHaptics": true,
+          "usesMobileHook": true,
+          "hasTouchHandlers": false,
+          "hasContextMenu": false,
+          "hasSheets": true,
+          "hasScrollArea": true,
+          "hasResponsiveDesign": false,
+          "usesAnimations": true,
+          "hasAccessibility": false
+        },
+        "dependencies": {
+          "gestureHooks": 3,
+          "hapticCalls": 7,
+          "touchEvents": 0
+        },
+        "lineCount": 443
+      },
+      {
+        "name": "MobileRoleZoneSelector",
+        "file": "MobileRoleZoneSelector.tsx",
+        "features": {
+          "usesGestures": true,
+          "usesHaptics": true,
+          "usesMobileHook": true,
+          "hasTouchHandlers": false,
+          "hasContextMenu": false,
+          "hasSheets": true,
+          "hasScrollArea": true,
+          "hasResponsiveDesign": true,
+          "usesAnimations": true,
+          "hasAccessibility": false
+        },
+        "dependencies": {
+          "gestureHooks": 3,
+          "hapticCalls": 4,
+          "touchEvents": 0
+        },
+        "lineCount": 395
+      },
+      {
+        "name": "MobileTimelineControls",
+        "file": "MobileTimelineControls.tsx",
+        "features": {
+          "usesGestures": true,
+          "usesHaptics": true,
+          "usesMobileHook": true,
+          "hasTouchHandlers": false,
+          "hasContextMenu": true,
+          "hasSheets": true,
+          "hasScrollArea": true,
+          "hasResponsiveDesign": false,
+          "usesAnimations": true,
+          "hasAccessibility": false
+        },
+        "dependencies": {
+          "gestureHooks": 3,
+          "hapticCalls": 11,
+          "touchEvents": 0
+        },
+        "lineCount": 397
+      }
+    ],
+    "totalComponents": 5,
+    "gestureIntegration": 4,
+    "hapticIntegration": 5,
+    "mobileOptimized": 5,
+    "accessible": 0
+  },
+  "gestures": {},
+  "haptics": {},
+  "pwa": {
+    "score": 125,
+    "maxScore": 100,
+    "features": [
+      {
+        "name": "Manifest File",
+        "score": 15,
+        "supported": true
+      },
+      {
+        "name": "App Name",
+        "score": 5,
+        "supported": "AIQueryHub"
+      },
+      {
+        "name": "Icons",
+        "score": 15,
+        "supported": true
+      },
+      {
+        "name": "Start URL",
+        "score": 5,
+        "supported": "/"
+      },
+      {
+        "name": "Display Mode",
+        "score": 10,
+        "supported": true
+      },
+      {
+        "name": "Theme Colors",
+        "score": 5,
+        "supported": "#0A2342"
+      },
+      {
+        "name": "Shortcuts",
+        "score": 10,
+        "supported": true
+      },
+      {
+        "name": "File Handlers",
+        "score": 5,
+        "supported": true
+      },
+      {
+        "name": "Screenshots",
+        "score": 5,
+        "supported": true
+      },
+      {
+        "name": "Service Worker",
+        "score": 20,
+        "supported": true
+      },
+      {
+        "name": "Install Handler",
+        "score": 5,
+        "supported": true
+      },
+      {
+        "name": "Activate Handler",
+        "score": 5,
+        "supported": true
+      },
+      {
+        "name": "Fetch Handler",
+        "score": 10,
+        "supported": true
+      },
+      {
+        "name": "Caching Strategy",
+        "score": 10,
+        "supported": true
+      }
+    ],
+    "icons": {
+      "required": [
+        "icon-192.png",
+        "icon-512.png",
+        "apple-touch-icon.png"
+      ],
+      "present": [
+        "icon-192.png",
+        "icon-512.png",
+        "apple-touch-icon.png"
+      ],
+      "coverage": 100
+    },
+    "installable": true,
+    "offlineCapable": true
+  },
+  "performance": {
+    "sourceCode": {
+      "totalSizeKB": 3713,
+      "fileCount": 406,
+      "averageFileSizeKB": 9
+    },
+    "optimizations": {
+      "lazyLoading": true,
+      "imageOptimization": true,
+      "bundleSplitting": true,
+      "memoryManagement": true,
+      "touchOptimizations": true
+    },
+    "score": 100
+  },
+  "accessibility": {
+    "score": 90,
+    "features": [
+      {
+        "name": "ARIA Labels",
+        "weight": 20,
+        "supported": true
+      },
+      {
+        "name": "Keyboard Navigation",
+        "weight": 20,
+        "supported": true
+      },
+      {
+        "name": "Focus Management",
+        "weight": 15,
+        "supported": true
+      },
+      {
+        "name": "Screen Reader Support",
+        "weight": 15,
+        "supported": true
+      },
+      {
+        "name": "High Contrast",
+        "weight": 10,
+        "supported": true
+      },
+      {
+        "name": "Reduced Motion",
+        "weight": 10,
+        "supported": true
+      },
+      {
+        "name": "Touch Target Size",
+        "weight": 10,
+        "supported": false
+      }
+    ],
+    "level": "AA"
+  },
+  "recommendations": [],
+  "overallScore": 100,
+  "scoreBreakdown": {
+    "architecture": 100,
+    "pwa": 125,
+    "performance": 100,
+    "accessibility": 90,
+    "components": 80
+  },
+  "readinessLevel": "Production Ready"
+}

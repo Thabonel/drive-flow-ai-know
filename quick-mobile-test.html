@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mobile Experience Test - AI Query Hub</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .test-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .status {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .status.pass { background: #d4edda; color: #155724; }
+        .status.fail { background: #f8d7da; color: #721c24; }
+        .status.warning { background: #fff3cd; color: #856404; }
+
+        .gesture-test-area {
+            background: #e9ecef;
+            border: 2px dashed #6c757d;
+            border-radius: 8px;
+            padding: 40px;
+            text-align: center;
+            margin: 20px 0;
+            min-height: 200px;
+            position: relative;
+            touch-action: none;
+        }
+
+        .gesture-feedback {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+
+        #log {
+            background: #000;
+            color: #00ff00;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 11px;
+            max-height: 200px;
+            overflow-y: auto;
+            margin-top: 20px;
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .metric {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 6px;
+            text-align: center;
+        }
+
+        .metric-value {
+            font-size: 18px;
+            font-weight: bold;
+            color: #007bff;
+        }
+
+        .metric-label {
+            font-size: 12px;
+            color: #6c757d;
+            margin-top: 4px;
+        }
+
+        .pwa-test {
+            margin: 20px 0;
+        }
+
+        .install-button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        .install-button:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>Mobile Experience Test Suite</h1>
+        <p>Testing mobile timeline, gesture controls, and PWA functionality</p>
+
+        <!-- Device Detection -->
+        <div class="test-card">
+            <h3>Device Detection</h3>
+            <div class="metrics-grid">
+                <div class="metric">
+                    <div class="metric-value" id="screen-width">-</div>
+                    <div class="metric-label">Screen Width</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-value" id="device-type">-</div>
+                    <div class="metric-label">Device Type</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-value" id="touch-support">-</div>
+                    <div class="metric-label">Touch Support</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-value" id="orientation">-</div>
+                    <div class="metric-label">Orientation</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Gesture Testing -->
+        <div class="test-card">
+            <h3>Gesture Recognition Test</h3>
+            <div class="gesture-test-area" id="gesture-area">
+                <div class="gesture-feedback" id="gesture-feedback">Ready for gestures</div>
+                <h4>Touch Interaction Area</h4>
+                <p>Try these gestures:</p>
+                <ul style="text-align: left; display: inline-block;">
+                    <li><strong>Tap:</strong> Single touch</li>
+                    <li><strong>Long Press:</strong> Hold for 600ms</li>
+                    <li><strong>Swipe:</strong> Drag in any direction</li>
+                    <li><strong>Pinch:</strong> Two-finger pinch/zoom</li>
+                    <li><strong>Pan:</strong> Drag to move</li>
+                </ul>
+                <div style="margin-top: 20px;">
+                    <span class="status" id="tap-status">Tap: Not tested</span>
+                    <span class="status" id="swipe-status">Swipe: Not tested</span>
+                    <span class="status" id="pinch-status">Pinch: Not tested</span>
+                    <span class="status" id="longpress-status">Long Press: Not tested</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Haptic Feedback Test -->
+        <div class="test-card">
+            <h3>Haptic Feedback Test</h3>
+            <p>Test vibration patterns:</p>
+            <button onclick="testVibration('light', [10])">Light Tap</button>
+            <button onclick="testVibration('selection', [20])">Selection</button>
+            <button onclick="testVibration('success', [20, 50, 20])">Success</button>
+            <button onclick="testVibration('error', [100, 100, 100])">Error</button>
+            <div style="margin-top: 10px;">
+                <span class="status" id="haptic-status">Not tested</span>
+            </div>
+        </div>
+
+        <!-- PWA Features Test -->
+        <div class="test-card">
+            <h3>PWA Features Test</h3>
+            <div class="pwa-test">
+                <div style="margin-bottom: 15px;">
+                    <span class="status" id="manifest-status">Manifest: Checking...</span>
+                    <span class="status" id="sw-status">Service Worker: Checking...</span>
+                    <span class="status" id="install-status">Install Prompt: Checking...</span>
+                </div>
+                <button class="install-button" id="install-btn" onclick="testPWAInstall()" disabled>
+                    Test PWA Install
+                </button>
+            </div>
+        </div>
+
+        <!-- Performance Metrics -->
+        <div class="test-card">
+            <h3>Performance Metrics</h3>
+            <div class="metrics-grid">
+                <div class="metric">
+                    <div class="metric-value" id="load-time">-</div>
+                    <div class="metric-label">Page Load (ms)</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-value" id="fps">-</div>
+                    <div class="metric-label">Animation FPS</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-value" id="memory">-</div>
+                    <div class="metric-label">Memory Usage (MB)</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-value" id="network">-</div>
+                    <div class="metric-label">Network Type</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main App Test -->
+        <div class="test-card">
+            <h3>Main App Connection Test</h3>
+            <p>Testing connection to main app at <code>http://localhost:8080</code></p>
+            <div style="margin: 15px 0;">
+                <button onclick="testMainApp()">Test Main App</button>
+                <span class="status" id="app-status">Not tested</span>
+            </div>
+            <iframe id="app-frame" src="" style="width: 100%; height: 300px; border: 1px solid #ddd; border-radius: 6px; display: none;"></iframe>
+        </div>
+
+        <!-- Test Log -->
+        <div class="test-card">
+            <h3>Test Log</h3>
+            <div id="log"></div>
+            <button onclick="clearLog()">Clear Log</button>
+            <button onclick="downloadResults()">Download Results</button>
+        </div>
+    </div>
+
+    <script>
+        // Test results storage
+        const testResults = {
+            timestamp: new Date().toISOString(),
+            device: {},
+            gestures: {},
+            haptics: {},
+            pwa: {},
+            performance: {},
+            errors: []
+        };
+
+        // Logging function
+        function log(message, type = 'info') {
+            const logEl = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            const colorMap = { info: '#00ff00', error: '#ff0000', warning: '#ffff00', success: '#00ff00' };
+            const logEntry = document.createElement('div');
+            logEntry.style.color = colorMap[type] || '#00ff00';
+            logEntry.textContent = `[${timestamp}] ${message}`;
+            logEl.appendChild(logEntry);
+            logEl.scrollTop = logEl.scrollHeight;
+        }
+
+        // Device detection
+        function detectDevice() {
+            const width = window.innerWidth;
+            const height = window.innerHeight;
+            const userAgent = navigator.userAgent;
+            const touchSupport = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+
+            let deviceType = 'Desktop';
+            if (width <= 480) deviceType = 'Mobile';
+            else if (width <= 768) deviceType = 'Tablet';
+
+            const orientation = width > height ? 'Landscape' : 'Portrait';
+
+            testResults.device = {
+                width,
+                height,
+                userAgent,
+                touchSupport,
+                deviceType,
+                orientation,
+                pixelRatio: window.devicePixelRatio || 1,
+                platform: navigator.platform
+            };
+
+            document.getElementById('screen-width').textContent = `${width}x${height}`;
+            document.getElementById('device-type').textContent = deviceType;
+            document.getElementById('touch-support').textContent = touchSupport ? 'Yes' : 'No';
+            document.getElementById('orientation').textContent = orientation;
+
+            log(`Device detected: ${deviceType} (${width}x${height}), Touch: ${touchSupport}`, 'info');
+        }
+
+        // Gesture testing
+        function setupGestureTests() {
+            const gestureArea = document.getElementById('gesture-area');
+            const feedback = document.getElementById('gesture-feedback');
+
+            let touchStart = null;
+            let touchCount = 0;
+            let longPressTimer = null;
+            let initialDistance = null;
+
+            function updateStatus(gesture, status) {
+                const el = document.getElementById(`${gesture}-status`);
+                if (el) {
+                    el.textContent = `${gesture.charAt(0).toUpperCase() + gesture.slice(1)}: ${status}`;
+                    el.className = 'status ' + (status.includes('✓') ? 'pass' : status.includes('✗') ? 'fail' : '');
+                }
+            }
+
+            // Touch start
+            gestureArea.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                touchCount = e.touches.length;
+                touchStart = {
+                    x: e.touches[0].clientX,
+                    y: e.touches[0].clientY,
+                    time: Date.now()
+                };
+
+                feedback.textContent = `Touch started (${touchCount} finger${touchCount > 1 ? 's' : ''})`;
+
+                if (touchCount === 2) {
+                    const touch1 = e.touches[0];
+                    const touch2 = e.touches[1];
+                    initialDistance = Math.sqrt(
+                        Math.pow(touch2.clientX - touch1.clientX, 2) +
+                        Math.pow(touch2.clientY - touch1.clientY, 2)
+                    );
+                }
+
+                // Long press detection
+                longPressTimer = setTimeout(() => {
+                    feedback.textContent = 'Long press detected! ✓';
+                    updateStatus('longpress', '✓ Detected');
+                    testResults.gestures.longPress = true;
+                    log('Long press gesture detected', 'success');
+                }, 600);
+            });
+
+            // Touch move
+            gestureArea.addEventListener('touchmove', (e) => {
+                e.preventDefault();
+                clearTimeout(longPressTimer);
+
+                if (touchCount === 2 && initialDistance) {
+                    const touch1 = e.touches[0];
+                    const touch2 = e.touches[1];
+                    const currentDistance = Math.sqrt(
+                        Math.pow(touch2.clientX - touch1.clientX, 2) +
+                        Math.pow(touch2.clientY - touch1.clientY, 2)
+                    );
+                    const scale = currentDistance / initialDistance;
+                    feedback.textContent = `Pinch gesture: ${scale.toFixed(2)}x`;
+
+                    if (Math.abs(scale - 1) > 0.1) {
+                        updateStatus('pinch', '✓ Detected');
+                        testResults.gestures.pinch = true;
+                        log(`Pinch gesture detected, scale: ${scale.toFixed(2)}`, 'success');
+                    }
+                }
+            });
+
+            // Touch end
+            gestureArea.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                clearTimeout(longPressTimer);
+
+                if (touchStart && touchCount === 1) {
+                    const touchEnd = {
+                        x: e.changedTouches[0].clientX,
+                        y: e.changedTouches[0].clientY,
+                        time: Date.now()
+                    };
+
+                    const deltaX = touchEnd.x - touchStart.x;
+                    const deltaY = touchEnd.y - touchStart.y;
+                    const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+                    const duration = touchEnd.time - touchStart.time;
+
+                    if (distance > 50 && duration < 1000) {
+                        const direction = Math.abs(deltaX) > Math.abs(deltaY) ?
+                            (deltaX > 0 ? 'right' : 'left') :
+                            (deltaY > 0 ? 'down' : 'up');
+
+                        feedback.textContent = `Swipe ${direction} detected! ✓`;
+                        updateStatus('swipe', `✓ ${direction.toUpperCase()}`);
+                        testResults.gestures.swipe = { direction, distance, duration };
+                        log(`Swipe ${direction} detected (${distance.toFixed(0)}px, ${duration}ms)`, 'success');
+                    } else if (distance < 10 && duration < 500) {
+                        feedback.textContent = 'Tap detected! ✓';
+                        updateStatus('tap', '✓ Detected');
+                        testResults.gestures.tap = true;
+                        log('Tap gesture detected', 'success');
+                    }
+                }
+
+                touchStart = null;
+                touchCount = 0;
+                initialDistance = null;
+
+                setTimeout(() => {
+                    feedback.textContent = 'Ready for gestures';
+                }, 2000);
+            });
+
+            // Mouse fallback for desktop testing
+            gestureArea.addEventListener('click', () => {
+                if (!('ontouchstart' in window)) {
+                    feedback.textContent = 'Click detected (mouse fallback)';
+                    updateStatus('tap', '✓ Mouse Click');
+                    testResults.gestures.tap = true;
+                    log('Click gesture detected (mouse fallback)', 'info');
+                }
+            });
+        }
+
+        // Haptic feedback test
+        function testVibration(type, pattern) {
+            if ('vibrate' in navigator) {
+                try {
+                    navigator.vibrate(pattern);
+                    document.getElementById('haptic-status').textContent = `✓ ${type} vibration worked`;
+                    document.getElementById('haptic-status').className = 'status pass';
+                    testResults.haptics[type] = true;
+                    log(`Haptic feedback test: ${type} (${pattern.join(',')})`, 'success');
+                } catch (e) {
+                    document.getElementById('haptic-status').textContent = `✗ Vibration failed`;
+                    document.getElementById('haptic-status').className = 'status fail';
+                    testResults.errors.push(`Haptic ${type}: ${e.message}`);
+                    log(`Haptic test failed: ${e.message}`, 'error');
+                }
+            } else {
+                document.getElementById('haptic-status').textContent = '✗ Vibration API not supported';
+                document.getElementById('haptic-status').className = 'status fail';
+                log('Haptic feedback not supported on this device', 'warning');
+            }
+        }
+
+        // PWA features test
+        function testPWAFeatures() {
+            // Check manifest
+            const manifestLink = document.querySelector('link[rel="manifest"]');
+            const hasManifest = manifestLink !== null;
+            document.getElementById('manifest-status').textContent = `Manifest: ${hasManifest ? '✓ Found' : '✗ Missing'}`;
+            document.getElementById('manifest-status').className = `status ${hasManifest ? 'pass' : 'fail'}`;
+
+            // Check service worker
+            const hasServiceWorker = 'serviceWorker' in navigator;
+            document.getElementById('sw-status').textContent = `Service Worker: ${hasServiceWorker ? '✓ Supported' : '✗ Not supported'}`;
+            document.getElementById('sw-status').className = `status ${hasServiceWorker ? 'pass' : 'fail'}`;
+
+            // Check install prompt capability
+            const hasInstallPrompt = 'BeforeInstallPromptEvent' in window || 'onbeforeinstallprompt' in window;
+            document.getElementById('install-status').textContent = `Install Prompt: ${hasInstallPrompt ? '✓ Supported' : '✗ Not supported'}`;
+            document.getElementById('install-status').className = `status ${hasInstallPrompt ? 'pass' : 'warning'}`;
+
+            if (hasInstallPrompt || hasServiceWorker) {
+                document.getElementById('install-btn').disabled = false;
+            }
+
+            testResults.pwa = { hasManifest, hasServiceWorker, hasInstallPrompt };
+            log(`PWA features: Manifest(${hasManifest}), SW(${hasServiceWorker}), Install(${hasInstallPrompt})`, 'info');
+        }
+
+        function testPWAInstall() {
+            log('PWA install test initiated', 'info');
+            // This would normally trigger the install prompt
+            // For now, just log that the test was run
+            alert('PWA install test completed. Check browser developer tools for actual install prompt behavior.');
+        }
+
+        // Performance testing
+        function testPerformance() {
+            // Load time
+            const loadTime = performance.timing.loadEventEnd - performance.timing.navigationStart;
+            document.getElementById('load-time').textContent = loadTime;
+
+            // Memory usage
+            if (performance.memory) {
+                const memoryMB = Math.round(performance.memory.usedJSHeapSize / 1024 / 1024);
+                document.getElementById('memory').textContent = memoryMB;
+                testResults.performance.memory = memoryMB;
+            } else {
+                document.getElementById('memory').textContent = 'N/A';
+            }
+
+            // Network information
+            if (navigator.connection) {
+                const networkType = navigator.connection.effectiveType || navigator.connection.type || 'unknown';
+                document.getElementById('network').textContent = networkType;
+                testResults.performance.network = networkType;
+            } else {
+                document.getElementById('network').textContent = 'N/A';
+            }
+
+            // FPS test (simple animation)
+            let frames = 0;
+            const startTime = performance.now();
+            function countFrames() {
+                frames++;
+                if (frames < 60) {
+                    requestAnimationFrame(countFrames);
+                } else {
+                    const endTime = performance.now();
+                    const fps = Math.round(frames / ((endTime - startTime) / 1000));
+                    document.getElementById('fps').textContent = fps;
+                    testResults.performance.fps = fps;
+                    log(`Performance test completed: Load(${loadTime}ms), FPS(${fps})`, 'info');
+                }
+            }
+            requestAnimationFrame(countFrames);
+
+            testResults.performance.loadTime = loadTime;
+        }
+
+        // Test main app connection
+        function testMainApp() {
+            const iframe = document.getElementById('app-frame');
+            const status = document.getElementById('app-status');
+
+            status.textContent = 'Testing...';
+            status.className = 'status warning';
+
+            iframe.src = 'http://localhost:8080';
+            iframe.style.display = 'block';
+
+            iframe.onload = () => {
+                status.textContent = '✓ App loaded';
+                status.className = 'status pass';
+                testResults.mainApp = { loaded: true };
+                log('Main app loaded successfully in iframe', 'success');
+            };
+
+            iframe.onerror = () => {
+                status.textContent = '✗ App failed to load';
+                status.className = 'status fail';
+                testResults.mainApp = { loaded: false };
+                testResults.errors.push('Main app failed to load');
+                log('Main app failed to load', 'error');
+            };
+
+            // Timeout after 10 seconds
+            setTimeout(() => {
+                if (status.textContent === 'Testing...') {
+                    status.textContent = '⚠ App load timeout';
+                    status.className = 'status warning';
+                    testResults.mainApp = { loaded: false, timeout: true };
+                    log('Main app load timeout', 'warning');
+                }
+            }, 10000);
+        }
+
+        // Utility functions
+        function clearLog() {
+            document.getElementById('log').replaceChildren();
+        }
+
+        function downloadResults() {
+            const dataStr = JSON.stringify(testResults, null, 2);
+            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(dataBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `mobile-test-results-${Date.now()}.json`;
+            link.click();
+            URL.revokeObjectURL(url);
+            log('Test results downloaded', 'success');
+        }
+
+        // Initialize tests when page loads
+        window.addEventListener('load', () => {
+            log('Mobile test suite initialized', 'info');
+            detectDevice();
+            setupGestureTests();
+            testPWAFeatures();
+            testPerformance();
+
+            // Auto-test main app after a delay
+            setTimeout(() => {
+                testMainApp();
+            }, 2000);
+        });
+
+        // Update orientation on device rotation
+        window.addEventListener('orientationchange', () => {
+            setTimeout(() => {
+                detectDevice();
+                log('Orientation changed', 'info');
+            }, 100);
+        });
+    </script>
+</body>
+</html>

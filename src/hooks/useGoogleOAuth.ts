@@ -56,66 +56,45 @@ export const useGoogleOAuth = () => {
   const { toast } = useToast();
   const { user } = useAuth();
 
-  // Fetch OAuth configuration securely from backend
-  const fetchOAuthConfig = useCallback(async (): Promise<OAuthConfig | null> => {
-    try {
-      // Use the working get-google-config function instead of oauth-config
-      // This avoids CORS issues and doesn't require authentication
-      const response = await supabase.functions.invoke('get-google-config');
+  // Use hardcoded OAuth configuration (consistent with working Google Drive and Calendar hooks)
+  //
+  // ARCHITECTURAL NOTE: This is the standard OAuth 2.0 pattern for multi-user SaaS applications
+  // - Client ID is PUBLIC by design and safe to hardcode in frontend code
+  // - Each user authenticates with their OWN Google account via OAuth popup
+  // - User tokens are stored per-user in database with Row-Level Security
+  // - No Client Secret is used (OAuth 2.0 implicit flow for browser-based apps)
+  //
+  // Multi-User Flow:
+  // User A → OAuth with same Client ID → User A's Google account → User A's tokens
+  // User B → OAuth with same Client ID → User B's Google account → User B's tokens
+  //
+  // This approach allows unlimited users to connect their individual Google accounts
+  // while maintaining security and proper token isolation.
+  const getOAuthConfig = useCallback((): OAuthConfig => {
+    const currentOrigin = window.location.origin;
+    return {
+      google: {
+        client_id: '1050361175911-2caa9uiuf4tmi5pvqlt0arl1h592hurm.apps.googleusercontent.com',
+        redirect_uri: `${currentOrigin}/auth/google/callback`,
+      },
+      microsoft: {
+        client_id: '', // Not implemented yet
+        tenant_id: 'common',
+        redirect_uri: `${currentOrigin}/auth/microsoft/callback`,
+      },
+      dropbox: {
+        client_id: '', // Not implemented yet
+        redirect_uri: `${currentOrigin}/auth/dropbox/callback`,
+      },
+    };
+  }, []);
 
-      if (response.error) {
-        throw new Error(`OAuth config error: ${response.error.message}`);
-      }
-
-      const googleConfig = response.data;
-      if (!googleConfig?.clientId) {
-        throw new Error('Google client ID not available');
-      }
-
-      // Construct the full OAuth config format expected by the rest of the code
-      // Note: Google Identity Services initTokenClient() uses popup-based OAuth, not redirect
-      const currentOrigin = window.location.origin;
-      return {
-        google: {
-          client_id: googleConfig.clientId?.trim(),
-          // No redirect_uri needed for popup-based OAuth flow
-        },
-        microsoft: {
-          client_id: '', // Not needed for Google Sheets
-          tenant_id: 'common',
-          redirect_uri: `${currentOrigin}/auth/microsoft/callback`,
-        },
-        dropbox: {
-          client_id: '', // Not needed for Google Sheets
-          redirect_uri: `${currentOrigin}/auth/dropbox/callback`,
-        },
-      } as OAuthConfig;
-    } catch (error) {
-      console.error('Failed to fetch OAuth configuration:', error);
-
-      // Provide more specific error messages based on error type
-      let userMessage = 'Failed to load OAuth configuration. Please refresh and try again.';
-      if (error.message.includes('Google API credentials not configured')) {
-        userMessage = 'Google integration not configured. Please contact support.';
-      } else if (error.message.includes('Network Error') || error.message.includes('Failed to fetch')) {
-        userMessage = 'Network error loading Google configuration. Check your internet connection.';
-      }
-
-      toast({
-        title: 'Configuration Error',
-        description: userMessage,
-        variant: 'destructive',
-      });
-      return null;
-    }
-  }, [toast]);
-
-  // Initialize OAuth configuration on mount
+  // Initialize OAuth configuration on mount - now synchronous since hardcoded
   useEffect(() => {
     if (!oauthConfig) {
-      fetchOAuthConfig().then(setOAuthConfig);
+      setOAuthConfig(getOAuthConfig());
     }
-  }, [oauthConfig, fetchOAuthConfig]);
+  }, [oauthConfig, getOAuthConfig]);
 
   // Load Google Identity Services script securely
   const loadGoogleScript = useCallback((): Promise<void> => {
@@ -151,9 +130,12 @@ export const useGoogleOAuth = () => {
 
   // Initiate Google OAuth with PKCE and CSRF protection
   const initiateGoogleOAuth = useCallback(async (scope: string): Promise<void> => {
-    if (!user || !oauthConfig) {
-      throw new Error('User not authenticated or OAuth config not loaded');
+    if (!user) {
+      throw new Error('User not authenticated');
     }
+
+    // Get config directly if not loaded
+    const config = oauthConfig || getOAuthConfig();
 
     setIsLoading(true);
 
@@ -164,7 +146,7 @@ export const useGoogleOAuth = () => {
       // ADD DIAGNOSTIC LOGGING
       console.log('Google OAuth initialization:', {
         hasGoogleAPI: !!window.google?.accounts?.oauth2,
-        clientId: oauthConfig.google.client_id?.substring(0, 20) + '...',
+        clientId: config.google.client_id?.substring(0, 20) + '...',
         scope: scope,
         timestamp: new Date().toISOString()
       });
@@ -185,7 +167,7 @@ export const useGoogleOAuth = () => {
 
       // Use Google Identity Services with PKCE parameters
       const tokenClient = window.google.accounts.oauth2.initTokenClient({
-        client_id: oauthConfig.google.client_id,
+        client_id: config.google.client_id,
         scope: scope,
         state: state, // CSRF protection
         code_challenge: codeChallenge,
@@ -276,7 +258,7 @@ export const useGoogleOAuth = () => {
       });
       throw error;
     }
-  }, [user, oauthConfig, loadGoogleScript, toast]);
+  }, [user, oauthConfig, getOAuthConfig, loadGoogleScript, toast]);
 
   // Check if user has valid Google tokens
   const checkConnection = useCallback(async (): Promise<boolean> => {

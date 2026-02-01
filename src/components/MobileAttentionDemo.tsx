@@ -20,7 +20,7 @@ import {
   Clock,
   Brain,
   Zap,
-  Gesture,
+  HandMetal,
   Headphones,
   AlertCircle,
   CheckCircle
@@ -116,7 +116,7 @@ export function MobileAttentionDemo() {
 
   const demoFeatures = [
     {
-      icon: <Gesture className="h-5 w-5" />,
+      icon: <HandMetal className="h-5 w-5" />,
       title: "Swipe Gestures",
       description: "Swipe right to complete, down to park, long press for options",
       color: "bg-blue-50 border-blue-200 text-blue-700"
@@ -216,7 +216,7 @@ export function MobileAttentionDemo() {
         <CardContent>
           <div className="flex flex-wrap gap-2">
             <Badge variant="default" className="gap-1">
-              <Gesture className="h-3 w-3" />
+              <HandMetal className="h-3 w-3" />
               Touch Gestures
             </Badge>
             <Badge variant="secondary" className="gap-1">

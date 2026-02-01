@@ -1,12 +1,22 @@
 // Core attention budget engine with real-time warnings and optimization
 import {
   AttentionType,
-  UserAttentionPreferences,
   ATTENTION_TYPES,
   ROLE_MODES,
   calculateContextSwitchCost
 } from './attentionTypes';
 import { TimelineItem } from './timelineUtils';
+
+// Extended interface for budget engine that includes all attention type budgets
+export interface UserAttentionPreferences {
+  current_role: string;
+  peak_hours_start: string;
+  peak_hours_end: string;
+  attention_budgets?: {
+    [K in AttentionType]?: number;
+  };
+  context_switch_limit?: number;
+}
 
 export interface AttentionWarning {
   level: 'info' | 'warning' | 'critical' | 'blocking';
@@ -119,9 +129,12 @@ export function analyzeAttentionBudget(
   targetDate: Date = new Date()
 ): AttentionBudgetAnalysis {
 
-  const todaysItems = items.filter(item =>
-    new Date(item.start_time).toDateString() === targetDate.toDateString()
-  );
+  const todaysItems = items.filter(item => {
+    const itemDate = new Date(item.start_time);
+    const targetDateStr = targetDate.toISOString().split('T')[0];
+    const itemDateStr = itemDate.toISOString().split('T')[0];
+    return itemDateStr === targetDateStr;
+  });
 
   // Calculate budget violations
   const budgetViolations = calculateBudgetViolations(todaysItems, preferences);
@@ -161,9 +174,12 @@ export function checkNewEventViolations(
 ): AttentionWarning[] {
 
   const eventDate = new Date(newEvent.start_time);
-  const todaysItems = existingItems.filter(item =>
-    new Date(item.start_time).toDateString() === eventDate.toDateString()
-  );
+  const todaysItems = existingItems.filter(item => {
+    const itemDate = new Date(item.start_time);
+    const eventDateStr = eventDate.toISOString().split('T')[0];
+    const itemDateStr = itemDate.toISOString().split('T')[0];
+    return itemDateStr === eventDateStr;
+  });
 
   // Create simulated item for analysis
   const simulatedItem: Partial<TimelineItem> = {
@@ -202,7 +218,7 @@ function calculateBudgetViolations(
     const usagePercentage = (usage / limit) * 100;
 
     if (usagePercentage >= 80) { // Warning at 80%
-      const severity = usagePercentage >= 120 ? 'critical' :
+      const severity = usagePercentage >= 150 ? 'critical' :
                       usagePercentage >= 100 ? 'exceeded' : 'approaching';
 
       violations.push({
@@ -238,7 +254,8 @@ function analyzeContextSwitches(
     if (prev.attention_type !== curr.attention_type) {
       const cost = calculateContextSwitchCost(
         prev.attention_type as AttentionType,
-        curr.attention_type as AttentionType
+        curr.attention_type as AttentionType,
+        preferences.current_role || ROLE_MODES.MAKER
       );
 
       switchPoints.push({
@@ -257,9 +274,13 @@ function analyzeContextSwitches(
   const contextSwitchLimit = thresholds?.contextSwitches || { warning: 5, critical: 8 };
 
   const totalSwitches = switchPoints.length;
+
+  // Role-specific optimal thresholds
+  const optimalThreshold = role === ROLE_MODES.MAKER ? 1 : 2;
+
   const severity = totalSwitches >= contextSwitchLimit.critical ? 'excessive' :
                    totalSwitches >= contextSwitchLimit.warning ? 'high' :
-                   totalSwitches <= 2 ? 'optimal' : 'acceptable';
+                   totalSwitches <= optimalThreshold ? 'optimal' : 'acceptable';
 
   return {
     totalSwitches,
@@ -291,8 +312,8 @@ function analyzePeakHoursUsage(
     .filter(item => item.attention_type && highAttentionTypes.includes(item.attention_type as typeof highAttentionTypes[number]))
     .forEach(item => {
       const itemTime = new Date(item.start_time);
-      const itemHour = itemTime.getHours();
-      const itemMinute = itemTime.getMinutes();
+      const itemHour = itemTime.getUTCHours();
+      const itemMinute = itemTime.getUTCMinutes();
 
       const isInPeakHours = (
         itemHour > peakStartHour ||
@@ -359,7 +380,7 @@ function generateWarnings(
     warnings.push({
       level,
       type: 'budget_limit',
-      title: `${violation.attentionType} Budget ${violation.severity === 'exceeded' ? 'Exceeded' : 'Warning'}`,
+      title: `${violation.attentionType.toUpperCase()} Budget ${violation.severity === 'exceeded' ? 'Exceeded' : 'Warning'}`,
       description: `${Math.round(violation.usagePercentage)}% of daily ${violation.attentionType} budget used (${Math.round(violation.currentUsage / 60 * 10) / 10}h of ${Math.round(violation.budgetLimit / 60 * 10) / 10}h limit)`,
       suggestion: violation.severity === 'exceeded' ?
         'Consider delegating or rescheduling some tasks' :
