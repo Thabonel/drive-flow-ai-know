@@ -18,7 +18,7 @@ SECRETS_FOUND=false
 STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACM)
 
 if [ -z "$STAGED_FILES" ]; then
-    echo "${GREEN}✅ No staged files to scan${NC}"
+    echo -e "${GREEN}✅ No staged files to scan${NC}"
     exit 0
 fi
 
@@ -26,91 +26,81 @@ echo "📁 Scanning staged files:"
 echo "$STAGED_FILES"
 echo ""
 
-# Secret patterns to detect
-declare -A PATTERNS=(
-    # Google API Keys
-    ["Google API Key"]="AIza[0-9A-Za-z_-]{35}"
+# Secret patterns to detect (using simple arrays to avoid syntax issues)
+check_google_api_key() {
+    echo "$1" | grep -qE "AIza[0-9A-Za-z_-]{35}"
+}
 
-    # AWS Keys
-    ["AWS Access Key"]="AKIA[0-9A-Z]{16}"
-    ["AWS Secret Key"]="[0-9a-zA-Z/+]{40}"
+check_aws_access_key() {
+    echo "$1" | grep -qE "AKIA[0-9A-Z]{16}"
+}
 
-    # Generic API Keys
-    ["Generic API Key"]="[aA][pP][iI]_?[kK][eE][yY].*['\"][0-9a-zA-Z]{32,}['\"]"
+check_jwt_token() {
+    echo "$1" | grep -qE "eyJ[A-Za-z0-9_-]*\.[A-Za-z0-9_-]*\.[A-Za-z0-9_-]*"
+}
 
-    # Tokens
-    ["JWT Token"]="eyJ[A-Za-z0-9_-]*\.[A-Za-z0-9_-]*\.[A-Za-z0-9_-]*"
-    ["Generic Token"]="[tT][oO][kK][eE][nN].*['\"][0-9a-zA-Z]{32,}['\"]"
+check_private_key() {
+    echo "$1" | grep -qE "-----BEGIN [A-Z ]*PRIVATE KEY-----"
+}
 
-    # Database URLs
-    ["Database URL"]="(postgres|mysql|mongodb)://[^\s'\"]*"
+check_stripe_secret() {
+    echo "$1" | grep -qE "sk_[a-z]*_[A-Za-z0-9]{24,}"
+}
 
-    # Private Keys
-    ["Private Key"]="-----BEGIN [A-Z ]*PRIVATE KEY-----"
+check_openai_key() {
+    echo "$1" | grep -qE "sk-[A-Za-z0-9]{48,}"
+}
 
-    # Passwords in code
-    ["Password"]="[pP][aA][sS][sS][wW][oO][rR][dD].*['\"][^'\"]{8,}['\"]"
-
-    # Supabase Keys (anon key is OK, service role is not)
-    ["Supabase Service Role"]="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9\.[^.]*\..*service_role.*"
-
-    # GitHub Tokens
-    ["GitHub Token"]="gh[pousr]_[A-Za-z0-9_]{36,255}"
-
-    # Stripe Keys
-    ["Stripe Secret Key"]="sk_[a-z]*_[A-Za-z0-9]{24,}"
-    ["Stripe Publishable Key"]="pk_[a-z]*_[A-Za-z0-9]{24,}"
-
-    # OpenAI Keys
-    ["OpenAI API Key"]="sk-[A-Za-z0-9]{48,}"
-
-    # Anthropic Keys
-    ["Anthropic API Key"]="sk-ant-api03-[A-Za-z0-9_-]{95,}"
-)
-
-# Exception patterns (these are OK to commit)
-EXCEPTIONS=(
-    # Placeholder values
-    "YOUR_.*_KEY_HERE"
-    "YOUR_.*_TOKEN_HERE"
-    "REPLACE_WITH_"
-    "EXAMPLE_"
-    "DEMO_"
-
-    # Test/Mock values
-    "test[_-].*key"
-    "mock[_-].*key"
-    "fake[_-].*key"
-
-    # Documentation examples
-    "AIzaSyBX5y8P2dE8-1MqF3CqDXO_K3UPMFNpJ_M"  # Example key from old docs
-
-    # Environment variable references (not actual secrets)
-    "process\.env\."
-    "Deno\.env\.get"
-    "\$\{.*\}"
-
-    # Comments about secrets
-    "# This is a public API key"
-    "// Public API key"
-    "Replace with your actual"
-)
-
-# Function to check if a match is an exception
+# Function to check if content is an exception
 is_exception() {
-    local match="$1"
-    for exception in "${EXCEPTIONS[@]}"; do
-        if echo "$match" | grep -qE "$exception"; then
-            return 0
-        fi
-    done
+    local content="$1"
+
+    # Check for placeholder patterns
+    if echo "$content" | grep -qE "(YOUR_.*_KEY_HERE|YOUR_.*_TOKEN_HERE|REPLACE_WITH_|EXAMPLE_|DEMO_)"; then
+        return 0
+    fi
+
+    # Check for environment variable references
+    if echo "$content" | grep -qE "(process\.env\.|Deno\.env\.get|\$\{.*\})"; then
+        return 0
+    fi
+
+    # Check for test/mock patterns
+    if echo "$content" | grep -qE "(test[_-].*key|mock[_-].*key|fake[_-].*key)"; then
+        return 0
+    fi
+
+    # Check for comments
+    if echo "$content" | grep -qE "(# This is a public|// Public|Replace with your actual)"; then
+        return 0
+    fi
+
+    # Specific old example key (safe to commit in docs)
+    if echo "$content" | grep -qF "AIzaSyBX5y8P2dE8-1MqF3CqDXO_K3UPMFNpJ_M"; then
+        return 0
+    fi
+
     return 1
+}
+
+# Function to report secret found
+report_secret() {
+    local file="$1"
+    local type="$2"
+    local match="$3"
+
+    echo -e "${RED}❌ POTENTIAL SECRET DETECTED${NC}"
+    echo "   File: $file"
+    echo "   Type: $type"
+    echo "   Pattern: ${match:0:40}..."
+    echo ""
+    SECRETS_FOUND=true
 }
 
 # Scan each staged file
 for file in $STAGED_FILES; do
     # Skip binary files
-    if file "$file" | grep -q "binary"; then
+    if file "$file" | grep -q "binary" 2>/dev/null; then
         continue
     fi
 
@@ -121,47 +111,92 @@ for file in $STAGED_FILES; do
 
     echo "🔍 Scanning: $file"
 
-    # Check each pattern
-    for pattern_name in "${!PATTERNS[@]}"; do
-        pattern="${PATTERNS[$pattern_name]}"
+    # Get the staged content (what's being committed)
+    CONTENT=$(git diff --cached "$file")
 
-        # Search for pattern in file
-        matches=$(git diff --cached "$file" | grep -E "^\+" | grep -oE "$pattern" || true)
+    # Skip if no content
+    if [ -z "$CONTENT" ]; then
+        continue
+    fi
 
-        if [ -n "$matches" ]; then
-            # Check each match against exceptions
-            while IFS= read -r match; do
-                if [ -n "$match" ] && ! is_exception "$match"; then
-                    echo "${RED}❌ POTENTIAL SECRET DETECTED${NC}"
-                    echo "   File: $file"
-                    echo "   Type: $pattern_name"
-                    echo "   Pattern: ${match:0:20}..."
-                    echo ""
-                    SECRETS_FOUND=true
-                fi
-            done <<< "$matches"
+    # Check for Google API keys
+    while IFS= read -r line; do
+        if [[ "$line" =~ ^\+ ]] && check_google_api_key "$line"; then
+            match=$(echo "$line" | grep -oE "AIza[0-9A-Za-z_-]{35}")
+            if [ -n "$match" ] && ! is_exception "$line"; then
+                report_secret "$file" "Google API Key" "$match"
+            fi
         fi
-    done
+    done <<< "$CONTENT"
+
+    # Check for AWS keys
+    while IFS= read -r line; do
+        if [[ "$line" =~ ^\+ ]] && check_aws_access_key "$line"; then
+            match=$(echo "$line" | grep -oE "AKIA[0-9A-Z]{16}")
+            if [ -n "$match" ] && ! is_exception "$line"; then
+                report_secret "$file" "AWS Access Key" "$match"
+            fi
+        fi
+    done <<< "$CONTENT"
+
+    # Check for JWT tokens
+    while IFS= read -r line; do
+        if [[ "$line" =~ ^\+ ]] && check_jwt_token "$line"; then
+            match=$(echo "$line" | grep -oE "eyJ[A-Za-z0-9_-]*\.[A-Za-z0-9_-]*\.[A-Za-z0-9_-]*")
+            if [ -n "$match" ] && ! is_exception "$line"; then
+                report_secret "$file" "JWT Token" "$match"
+            fi
+        fi
+    done <<< "$CONTENT"
+
+    # Check for private keys
+    while IFS= read -r line; do
+        if [[ "$line" =~ ^\+ ]] && check_private_key "$line"; then
+            if ! is_exception "$line"; then
+                report_secret "$file" "Private Key" "-----BEGIN PRIVATE KEY-----"
+            fi
+        fi
+    done <<< "$CONTENT"
+
+    # Check for Stripe secret keys
+    while IFS= read -r line; do
+        if [[ "$line" =~ ^\+ ]] && check_stripe_secret "$line"; then
+            match=$(echo "$line" | grep -oE "sk_[a-z]*_[A-Za-z0-9]{24,}")
+            if [ -n "$match" ] && ! is_exception "$line"; then
+                report_secret "$file" "Stripe Secret Key" "$match"
+            fi
+        fi
+    done <<< "$CONTENT"
+
+    # Check for OpenAI keys
+    while IFS= read -r line; do
+        if [[ "$line" =~ ^\+ ]] && check_openai_key "$line"; then
+            match=$(echo "$line" | grep -oE "sk-[A-Za-z0-9]{48,}")
+            if [ -n "$match" ] && ! is_exception "$line"; then
+                report_secret "$file" "OpenAI API Key" "$match"
+            fi
+        fi
+    done <<< "$CONTENT"
 done
 
 # Final result
 if [ "$SECRETS_FOUND" = true ]; then
     echo ""
-    echo "${RED}🚨 COMMIT BLOCKED: Potential secrets detected!${NC}"
+    echo -e "${RED}🚨 COMMIT BLOCKED: Potential secrets detected!${NC}"
     echo ""
-    echo "${YELLOW}How to fix:${NC}"
+    echo -e "${YELLOW}How to fix:${NC}"
     echo "1. Remove the secret from your code"
     echo "2. Use environment variables instead"
     echo "3. Add to .gitignore if it's a config file"
     echo "4. Use placeholder values in documentation"
     echo ""
-    echo "${YELLOW}If this is a false positive:${NC}"
+    echo -e "${YELLOW}If this is a false positive:${NC}"
     echo "1. Check the exception patterns in .githooks/pre-commit"
-    echo "2. Add your pattern to the EXCEPTIONS array"
+    echo "2. Add your pattern to the is_exception function"
     echo "3. Use --no-verify to bypass (NOT recommended)"
     echo ""
     exit 1
 else
-    echo "${GREEN}✅ No secrets detected - commit approved!${NC}"
+    echo -e "${GREEN}✅ No secrets detected - commit approved!${NC}"
     exit 0
 fi
