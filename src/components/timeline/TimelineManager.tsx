@@ -12,6 +12,12 @@ import { ItemActionMenu } from './ItemActionMenu';
 import { ParkedItemsPanel } from './ParkedItemsPanel';
 import { ViewModeSwitcher } from './ViewModeSwitcher';
 import { ViewTypeSwitcher, ViewType } from './ViewTypeSwitcher';
+import { RoleZoneSelector } from './RoleZoneSelector';
+import { AttentionBudgetWidget } from './AttentionBudgetWidget';
+import { DecisionBatchIndicator } from './DecisionBatchIndicator';
+import { MultiplierDashboard } from './MultiplierDashboard';
+import { RoleBasedEventTemplates } from './RoleBasedEventTemplates';
+import { useAttentionBudget } from '@/hooks/useAttentionBudget';
 import { CalendarGrid } from './CalendarGrid';
 import { CalendarSyncButton } from './CalendarSyncButton';
 import { WorkloadIndicator } from './WorkloadIndicator';
@@ -97,6 +103,9 @@ export function TimelineManager({ onCanvasReady }: TimelineManagerProps = {}) {
     refetch: refetchTasks,
   } = useTasks();
 
+  // Attention system hooks
+  const { preferences: attentionPreferences } = useAttentionBudget();
+
   // Real-time sync with callback for newly inserted items
   useTimelineSync({
     onItemsChange: refetchItems,
@@ -144,6 +153,7 @@ export function TimelineManager({ onCanvasReady }: TimelineManagerProps = {}) {
   const [showDailyPlanning, setShowDailyPlanning] = useState(false);
   const [showEndOfDay, setShowEndOfDay] = useState(false);
   const [showAddTask, setShowAddTask] = useState(false);
+  const [showRoleTemplates, setShowRoleTemplates] = useState(false);
   const [viewMode, setViewMode] = useState<TimelineViewMode>('week');
   const [viewType, setViewType] = useState<ViewType>(() => {
     const stored = localStorage.getItem('timeline-view-type');
@@ -335,6 +345,23 @@ export function TimelineManager({ onCanvasReady }: TimelineManagerProps = {}) {
   const viewModeConfig = VIEW_MODE_CONFIG[viewMode];
   const basePixelsPerHour = viewModeConfig.pixelsPerHour;
   const pixelsPerHour = (settings?.zoom_horizontal || 100) / 100 * basePixelsPerHour;
+
+  // Helper to get selected date for attention budget calculation
+  const getSelectedDateForBudget = (): Date => {
+    // For day view, use current date
+    if (viewMode === 'day') {
+      return new Date();
+    }
+    // For week/month views, use the start of the current period
+    const today = new Date();
+    if (viewMode === 'week') {
+      const startOfWeek = new Date(today);
+      startOfWeek.setDate(today.getDate() - today.getDay());
+      return startOfWeek;
+    }
+    // For month view, use start of month
+    return new Date(today.getFullYear(), today.getMonth(), 1);
+  };
   const layerHeight = (settings?.zoom_vertical || 80) / 100 * DEFAULT_LAYER_HEIGHT;
 
   // Real-time auto-scroll effect (only in locked mode)
@@ -770,6 +797,10 @@ export function TimelineManager({ onCanvasReady }: TimelineManagerProps = {}) {
                 <LayoutTemplate className="h-4 w-4 mr-2" />
                 Templates
               </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setShowRoleTemplates(true)}>
+                <Sparkles className="h-4 w-4 mr-2" />
+                Role Templates
+              </DropdownMenuItem>
               <DropdownMenuItem onClick={() => setShowRoutines(true)}>
                 <CalIcon className="h-4 w-4 mr-2" />
                 Manage Routines
@@ -976,6 +1007,41 @@ export function TimelineManager({ onCanvasReady }: TimelineManagerProps = {}) {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+
+          {/* Attention System Controls */}
+          <div className="flex items-center gap-2">
+            <RoleZoneSelector
+              showLabels={!isCompactMode}
+              size={isCompactMode ? 'sm' : 'default'}
+            />
+            <AttentionBudgetWidget
+              items={items}
+              selectedDate={getSelectedDateForBudget()}
+              compact={isCompactMode}
+            />
+
+            {/* Decision Batching Indicator for Marker mode */}
+            {attentionPreferences?.current_role === 'marker' && (
+              <DecisionBatchIndicator
+                items={items}
+                currentDate={getSelectedDateForBudget()}
+                onSuggestBatching={(batchItems) => {
+                  // Could implement batching suggestions here
+                  console.log('Suggest batching for:', batchItems);
+                }}
+              />
+            )}
+
+            {/* Multiplier Dashboard for Multiplier mode */}
+            {attentionPreferences?.current_role === 'multiplier' && (
+              <MultiplierDashboard
+                items={items}
+                currentDate={getSelectedDateForBudget()}
+                currentRole={attentionPreferences.current_role}
+                compact={isCompactMode}
+              />
+            )}
+          </div>
 
           {/* View Type and Mode Switchers */}
           <div className="ml-auto flex items-center gap-2">
@@ -1187,6 +1253,44 @@ export function TimelineManager({ onCanvasReady }: TimelineManagerProps = {}) {
           refetchItems();
         }}
       />
+
+      {/* Role-Based Event Templates Dialog */}
+      <Dialog open={showRoleTemplates} onOpenChange={setShowRoleTemplates}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <RoleBasedEventTemplates
+            preferences={attentionPreferences}
+            onCreateEvent={async (template, startTime) => {
+              // Create event from template
+              const defaultLayer = layers.find(l => l.is_visible);
+              if (defaultLayer) {
+                try {
+                  await addItem(
+                    defaultLayer.id,
+                    template.title,
+                    startTime || new Date().toISOString(),
+                    template.duration,
+                    resolveLayerColor(defaultLayer.color),
+                    {
+                      attention_type: template.attentionType,
+                      priority: template.priority,
+                      notes: template.notes,
+                      tags: template.tags
+                    }
+                  );
+                  setShowRoleTemplates(false);
+                  refetchItems();
+                } catch (error) {
+                  console.error('Error creating event from template:', error);
+                }
+              }
+            }}
+            onOpenFullForm={() => {
+              setShowRoleTemplates(false);
+              setShowAddItemForm(true);
+            }}
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -23,6 +23,13 @@ export interface TimelineItem {
   visibility?: 'personal' | 'team' | 'assigned';
   assigned_to?: string | null; // User assigned to this task
   assigned_by?: string | null; // User who assigned this task
+  // 3-2-1 Attention System fields
+  attention_type?: 'create' | 'decide' | 'connect' | 'review' | 'recover' | null;
+  priority?: number | null; // 1-5 scale
+  is_non_negotiable?: boolean; // Protected priority
+  notes?: string | null; // Additional context
+  tags?: string[] | null; // Flexible tagging
+  context_switch_cost?: number; // 0-10 cognitive cost scale
   created_at: string;
   updated_at: string;
 }
@@ -56,6 +63,56 @@ export interface ParkedItem {
   color: string;
   parked_at: string;
 }
+
+// 3-2-1 Attention System Types
+export interface UserAttentionPreferences {
+  id: string;
+  user_id: string;
+  current_role: 'maker' | 'marker' | 'multiplier';
+  current_zone: 'wartime' | 'peacetime';
+  non_negotiable_title?: string | null;
+  non_negotiable_weekly_hours: number;
+  attention_budgets: {
+    decide: number;
+    context_switches: number;
+    meetings: number;
+  };
+  peak_hours_start: string; // HH:MM format
+  peak_hours_end: string; // HH:MM format
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Delegation {
+  id: string;
+  delegator_id: string;
+  delegate_id?: string | null;
+  timeline_item_id: string;
+  title: string;
+  description?: string | null;
+  trust_level: 'new' | 'experienced' | 'expert';
+  status: 'pending' | 'in_progress' | 'completed' | 'cancelled';
+  follow_up_scheduled_at?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AttentionBudgetTracking {
+  id: string;
+  user_id: string;
+  date: string; // YYYY-MM-DD format
+  attention_type: string;
+  budget_used: number;
+  budget_limit: number;
+  context_switches: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export type AttentionType = 'create' | 'decide' | 'connect' | 'review' | 'recover';
+export type RoleMode = 'maker' | 'marker' | 'multiplier';
+export type ZoneContext = 'wartime' | 'peacetime';
+export type TrustLevel = 'new' | 'experienced' | 'expert';
 
 /**
  * Calculate the X position of an item on the timeline

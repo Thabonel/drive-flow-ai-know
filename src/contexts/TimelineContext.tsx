@@ -12,6 +12,25 @@ import {
   shouldBeLogjammed,
   shouldBeAutoPark,
 } from '@/lib/timelineUtils';
+import {
+  AttentionType,
+  RoleMode,
+  ZoneContext,
+  UserAttentionPreferences,
+  calculateContextSwitchCost,
+  getRoleDefaults,
+  ROLE_MODES,
+  ZONE_CONTEXTS,
+} from '@/lib/attentionTypes';
+
+interface AttentionBudgetStatus {
+  attention_type: AttentionType;
+  items_count: number;
+  budget_limit: number;
+  usage_percentage: number;
+  is_over_budget: boolean;
+  total_duration_minutes: number;
+}
 
 interface TimelineContextValue {
   items: TimelineItem[];
@@ -21,6 +40,12 @@ interface TimelineContextValue {
   nowTime: Date;
   scrollOffset: number;
   setScrollOffset: (offset: number) => void;
+
+  // Attention System State
+  attentionPreferences: UserAttentionPreferences | null;
+  attentionLoading: boolean;
+
+  // Enhanced addItem method with attention support
   addItem: (
     layerId: string,
     title: string,
@@ -34,8 +59,15 @@ interface TimelineContextValue {
       assigned_by?: string | null;
       recurring_series_id?: string | null;
       occurrence_index?: number | null;
+      // Attention fields
+      attention_type?: AttentionType | null;
+      priority?: number;
+      is_non_negotiable?: boolean;
+      notes?: string;
+      tags?: string[];
     }
   ) => Promise<TimelineItem | undefined>;
+
   updateItem: (itemId: string, updates: Partial<TimelineItem>) => Promise<boolean>;
   completeItem: (itemId: string) => Promise<void>;
   rescheduleItem: (itemId: string, newStartTime: string, newLayerId?: string) => Promise<void>;
@@ -48,6 +80,13 @@ interface TimelineContextValue {
   updateSettings: (updates: Partial<TimelineSettings>) => Promise<void>;
   refetchItems: () => Promise<void>;
   refetchParkedItems: () => Promise<void>;
+
+  // Attention System Methods
+  updateAttentionPreferences: (updates: Partial<UserAttentionPreferences>) => Promise<boolean>;
+  checkBudgetViolation: (items: TimelineItem[], date?: Date) => AttentionBudgetStatus[];
+  calculateContextSwitches: (items: TimelineItem[], date?: Date) => number;
+  getAttentionWarnings: (items: TimelineItem[], date?: Date) => string[];
+  refreshAttentionPreferences: () => Promise<void>;
 }
 
 const TimelineContext = createContext<TimelineContextValue | null>(null);
@@ -62,6 +101,10 @@ export function TimelineProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [nowTime, setNowTime] = useState(new Date());
   const [scrollOffset, setScrollOffset] = useState(0);
+
+  // Attention System State
+  const [attentionPreferences, setAttentionPreferences] = useState<UserAttentionPreferences | null>(null);
+  const [attentionLoading, setAttentionLoading] = useState(true);
 
   const animationFrameRef = useRef<number>();
   const lastTickRef = useRef<number>(Date.now());
@@ -154,6 +197,202 @@ export function TimelineProvider({ children }: { children: React.ReactNode }) {
     }
   }, [user]);
 
+  // Fetch attention preferences
+  const fetchAttentionPreferences = useCallback(async () => {
+    if (!user) return;
+
+    try {
+      const response = await fetch('/functions/v1/attention-preferences', {
+        headers: {
+          'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setAttentionPreferences(data.preferences);
+      } else if (response.status === 404) {
+        // No preferences yet - create defaults based on first-time user
+        const defaults = getRoleDefaults(ROLE_MODES.MAKER);
+        const defaultPreferences: Partial<UserAttentionPreferences> = {
+          current_role: ROLE_MODES.MAKER,
+          current_zone: ZONE_CONTEXTS.PEACETIME,
+          non_negotiable_weekly_hours: 5,
+          attention_budgets: defaults.attentionBudgets,
+          peak_hours_start: defaults.peakHoursStart,
+          peak_hours_end: defaults.peakHoursEnd,
+        };
+
+        await updateAttentionPreferences(defaultPreferences);
+      } else {
+        throw new Error('Failed to load attention preferences');
+      }
+    } catch (error) {
+      console.error('Error fetching attention preferences:', error);
+    } finally {
+      setAttentionLoading(false);
+    }
+  }, [user]);
+
+  // Update attention preferences
+  const updateAttentionPreferences = useCallback(async (updates: Partial<UserAttentionPreferences>): Promise<boolean> => {
+    if (!user) return false;
+
+    try {
+      const response = await fetch('/functions/v1/attention-preferences', {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(updates)
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setAttentionPreferences(data.preferences);
+        return true;
+      } else {
+        throw new Error('Failed to update attention preferences');
+      }
+    } catch (error) {
+      console.error('Error updating attention preferences:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to update attention preferences',
+        variant: 'destructive',
+      });
+      return false;
+    }
+  }, [user, toast]);
+
+  // Check budget violations for timeline items
+  const checkBudgetViolation = useCallback((items: TimelineItem[], date: Date = new Date()): AttentionBudgetStatus[] => {
+    if (!attentionPreferences) return [];
+
+    const targetDate = date.toISOString().split('T')[0];
+
+    // Filter items for the target date
+    const dayItems = items.filter(item => {
+      const itemDate = new Date(item.start_time).toISOString().split('T')[0];
+      return itemDate === targetDate && item.attention_type;
+    });
+
+    // Calculate usage by attention type
+    const usageByType = new Map<AttentionType, { count: number; duration: number }>();
+
+    // Initialize all attention types
+    Object.values(['create', 'decide', 'connect', 'review', 'recover'] as AttentionType[]).forEach(type => {
+      const typeItems = dayItems.filter(item => item.attention_type === type);
+      usageByType.set(type, {
+        count: typeItems.length,
+        duration: typeItems.reduce((sum, item) => sum + item.duration_minutes, 0)
+      });
+    });
+
+    // Generate budget status for each attention type
+    const budgetStatuses: AttentionBudgetStatus[] = [];
+
+    Object.values(['create', 'decide', 'connect', 'review', 'recover'] as AttentionType[]).forEach(type => {
+      const usage = usageByType.get(type) || { count: 0, duration: 0 };
+      let budgetLimit = 5; // default
+
+      // Get budget limit from preferences
+      if (type === 'decide') {
+        budgetLimit = attentionPreferences.attention_budgets.decide || 2;
+      } else if (type === 'connect') {
+        budgetLimit = attentionPreferences.attention_budgets.meetings || 4;
+      }
+
+      const usagePercentage = Math.round((usage.count / budgetLimit) * 100);
+
+      budgetStatuses.push({
+        attention_type: type,
+        items_count: usage.count,
+        budget_limit: budgetLimit,
+        usage_percentage: usagePercentage,
+        is_over_budget: usage.count > budgetLimit,
+        total_duration_minutes: usage.duration
+      });
+    });
+
+    return budgetStatuses;
+  }, [attentionPreferences]);
+
+  // Calculate context switches for timeline items
+  const calculateContextSwitches = useCallback((items: TimelineItem[], date: Date = new Date()): number => {
+    if (!attentionPreferences) return 0;
+
+    const targetDate = date.toISOString().split('T')[0];
+
+    // Filter and sort items for the target date
+    const dayItems = items
+      .filter(item => {
+        const itemDate = new Date(item.start_time).toISOString().split('T')[0];
+        return itemDate === targetDate && item.attention_type;
+      })
+      .sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime());
+
+    let totalContextSwitches = 0;
+
+    for (let i = 1; i < dayItems.length; i++) {
+      const prevItem = dayItems[i - 1];
+      const currentItem = dayItems[i];
+
+      if (prevItem.attention_type && currentItem.attention_type) {
+        const switchCost = calculateContextSwitchCost(
+          prevItem.attention_type,
+          currentItem.attention_type,
+          attentionPreferences.current_role
+        );
+        totalContextSwitches += switchCost;
+      }
+    }
+
+    return totalContextSwitches;
+  }, [attentionPreferences]);
+
+  // Get attention warnings for timeline items
+  const getAttentionWarnings = useCallback((items: TimelineItem[], date: Date = new Date()): string[] => {
+    if (!attentionPreferences) return [];
+
+    const warnings: string[] = [];
+    const budgetStatus = checkBudgetViolation(items, date);
+    const contextSwitches = calculateContextSwitches(items, date);
+
+    // Check budget violations
+    const overBudgetTypes = budgetStatus.filter(status => status.is_over_budget);
+    if (overBudgetTypes.length > 0) {
+      warnings.push(
+        `Over budget for ${overBudgetTypes.map(t => t.attention_type).join(', ')} activities`
+      );
+    }
+
+    // Check approaching budget limits (80%+)
+    const nearLimitTypes = budgetStatus.filter(
+      status => !status.is_over_budget && status.usage_percentage >= 80
+    );
+    if (nearLimitTypes.length > 0) {
+      warnings.push(
+        `Approaching budget limit for ${nearLimitTypes.map(t => t.attention_type).join(', ')}`
+      );
+    }
+
+    // Check excessive context switching
+    const contextSwitchBudget = attentionPreferences.attention_budgets.context_switches || 3;
+    if (contextSwitches > contextSwitchBudget) {
+      warnings.push(`High context switching detected (${contextSwitches} vs ${contextSwitchBudget} budget)`);
+    }
+
+    return warnings;
+  }, [attentionPreferences, checkBudgetViolation, calculateContextSwitches]);
+
+  // Refresh attention preferences
+  const refreshAttentionPreferences = useCallback(async () => {
+    await fetchAttentionPreferences();
+  }, [fetchAttentionPreferences]);
+
   // Add a new item
   const addItem = useCallback(async (
     layerId: string,
@@ -168,6 +407,12 @@ export function TimelineProvider({ children }: { children: React.ReactNode }) {
       assigned_by?: string | null;
       recurring_series_id?: string | null;
       occurrence_index?: number | null;
+      // Attention fields
+      attention_type?: AttentionType | null;
+      priority?: number;
+      is_non_negotiable?: boolean;
+      notes?: string;
+      tags?: string[];
     }
   ): Promise<TimelineItem | undefined> => {
     if (!user) return;
@@ -195,6 +440,13 @@ export function TimelineProvider({ children }: { children: React.ReactNode }) {
       if (options?.assigned_by !== undefined) insertData.assigned_by = options.assigned_by;
       if (options?.recurring_series_id !== undefined) insertData.recurring_series_id = options.recurring_series_id;
       if (options?.occurrence_index !== undefined) insertData.occurrence_index = options.occurrence_index;
+
+      // Add attention fields
+      if (options?.attention_type !== undefined) insertData.attention_type = options.attention_type;
+      if (options?.priority !== undefined) insertData.priority = options.priority;
+      if (options?.is_non_negotiable !== undefined) insertData.is_non_negotiable = options.is_non_negotiable;
+      if (options?.notes !== undefined) insertData.notes = options.notes;
+      if (options?.tags !== undefined) insertData.tags = options.tags;
 
       const { data, error } = await supabase
         .from('timeline_items')
@@ -771,8 +1023,9 @@ export function TimelineProvider({ children }: { children: React.ReactNode }) {
       fetchItems();
       fetchSettings();
       fetchParkedItems();
+      fetchAttentionPreferences();
     }
-  }, [user, fetchItems, fetchSettings, fetchParkedItems]);
+  }, [user, fetchItems, fetchSettings, fetchParkedItems, fetchAttentionPreferences]);
 
   const value: TimelineContextValue = {
     items,
@@ -782,6 +1035,12 @@ export function TimelineProvider({ children }: { children: React.ReactNode }) {
     nowTime,
     scrollOffset,
     setScrollOffset,
+
+    // Attention System State
+    attentionPreferences,
+    attentionLoading,
+
+    // Timeline Item Methods
     addItem,
     updateItem,
     completeItem,
@@ -795,6 +1054,13 @@ export function TimelineProvider({ children }: { children: React.ReactNode }) {
     updateSettings,
     refetchItems: fetchItems,
     refetchParkedItems: fetchParkedItems,
+
+    // Attention System Methods
+    updateAttentionPreferences,
+    checkBudgetViolation,
+    calculateContextSwitches,
+    getAttentionWarnings,
+    refreshAttentionPreferences,
   };
 
   return (
