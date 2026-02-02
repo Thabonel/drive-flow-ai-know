@@ -10,6 +10,7 @@ interface AttentionPreferencesRequest {
   current_zone?: 'wartime' | 'peacetime';
   non_negotiable_title?: string;
   non_negotiable_weekly_hours?: number;
+  non_negotiable_enabled?: boolean;
   attention_budgets?: {
     decide: number;
     context_switches: number;
@@ -65,6 +66,7 @@ serve(async (req) => {
           current_role: 'maker',
           current_zone: 'peacetime',
           non_negotiable_weekly_hours: 5,
+          non_negotiable_enabled: false,
           attention_budgets: {
             decide: 2,
             context_switches: 3,

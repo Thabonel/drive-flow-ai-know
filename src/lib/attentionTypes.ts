@@ -19,6 +19,7 @@ export interface UserAttentionPreferences {
   current_zone: ZoneContext;
   non_negotiable_title?: string | null;
   non_negotiable_weekly_hours: number;
+  non_negotiable_enabled?: boolean;
   attention_budgets: {
     decide: number;
     context_switches: number;

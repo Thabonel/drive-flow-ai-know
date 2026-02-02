@@ -62,6 +62,39 @@ interface WeeklyDayProgress {
   isToday: boolean;
 }
 
+const getStatusConfig = (status: WeeklyProgress['status']) => {
+  switch (status) {
+    case 'ahead':
+      return {
+        color: 'bg-green-100 text-green-800 border-green-200',
+        icon: CheckCircle,
+        iconColor: 'text-green-600',
+        description: 'Exceeding weekly target'
+      };
+    case 'on-track':
+      return {
+        color: 'bg-blue-100 text-blue-800 border-blue-200',
+        icon: Target,
+        iconColor: 'text-blue-600',
+        description: 'On pace to meet target'
+      };
+    case 'behind':
+      return {
+        color: 'bg-orange-100 text-orange-800 border-orange-200',
+        icon: AlertTriangle,
+        iconColor: 'text-orange-600',
+        description: 'Behind weekly target'
+      };
+    case 'complete':
+      return {
+        color: 'bg-emerald-100 text-emerald-800 border-emerald-200',
+        icon: Star,
+        iconColor: 'text-emerald-600',
+        description: 'Weekly target achieved'
+      };
+  }
+};
+
 export function NonNegotiableTracker({
   items,
   preferences,
@@ -104,39 +137,45 @@ export function NonNegotiableTracker({
     }
   };
 
-  const getStatusConfig = (status: WeeklyProgress['status']) => {
-    switch (status) {
-      case 'ahead':
-        return {
-          color: 'bg-green-100 text-green-800 border-green-200',
-          icon: CheckCircle,
-          iconColor: 'text-green-600',
-          description: 'Exceeding weekly target'
-        };
-      case 'on-track':
-        return {
-          color: 'bg-blue-100 text-blue-800 border-blue-200',
-          icon: Target,
-          iconColor: 'text-blue-600',
-          description: 'On pace to meet target'
-        };
-      case 'behind':
-        return {
-          color: 'bg-orange-100 text-orange-800 border-orange-200',
-          icon: AlertTriangle,
-          iconColor: 'text-orange-600',
-          description: 'Behind weekly target'
-        };
-      case 'complete':
-        return {
-          color: 'bg-emerald-100 text-emerald-800 border-emerald-200',
-          icon: Star,
-          iconColor: 'text-emerald-600',
-          description: 'Weekly target achieved'
-        };
+
+
+  // Handle enabling the feature
+  const handleEnableFeature = async () => {
+    try {
+      const updates = {
+        ...preferences,
+        non_negotiable_enabled: true
+      };
+      await updatePreferences(updates);
+      onPreferencesUpdate?.(updates);
+    } catch (error) {
+      console.error('Failed to enable non-negotiable tracking:', error);
     }
   };
 
+  // Show enable option if the feature is not enabled
+  if (!preferences?.non_negotiable_enabled) {
+    return (
+      <div className="w-full">
+        <div className="flex items-center justify-between p-2 bg-muted/50 rounded-lg border border-dashed">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Shield className="h-4 w-4" />
+            <span>Track weekly non-negotiable priority</span>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleEnableFeature}
+            className="h-auto px-2 py-1 text-xs"
+          >
+            Enable
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // If enabled but no title is set, show setup prompt
   if (!preferences?.non_negotiable_title) {
     return (
       <Card className="w-full">
