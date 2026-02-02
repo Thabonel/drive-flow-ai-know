@@ -14,6 +14,8 @@ import { BackgroundTasksProvider } from "@/contexts/BackgroundTasksContext";
 import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
 import { PresentationModeProvider } from "@/contexts/PresentationModeContext";
 import { initializeMobileOptimizations } from "@/lib/haptics";
+import { ErrorBoundary, InitializationError } from "@/components/ErrorBoundary";
+import { isSupabaseConfigured } from "@/integrations/supabase/client";
 import Header from "./layout/Header";
 import PrivacyPolicyWidget from "@/components/legal/PrivacyPolicyWidget";
 import TermsModal from "@/components/legal/TermsModal";
@@ -152,186 +154,195 @@ function MobileInitializer() {
 
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <PresentationModeProvider>
-      <ThemeProvider defaultTheme="system" storageKey="aiqueryhub-theme">
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <AuthProvider>
-            <BackgroundTasksProvider>
-            <MobileInitializer />
-            <PWAInstallPrompt />
-            <PrivacyPolicyWidget />
-            <TermsModal />
-            <Routes>
-            <Route path="/auth" element={
-              <PublicRoute>
-                <Auth />
-              </PublicRoute>
-            } />
-            <Route path="/reset-password" element={<ResetPassword />} />
-            <Route path="/auth/confirm" element={<ConfirmEmail />} />
-            <Route path="/auth/microsoft/callback" element={<MicrosoftCallback />} />
-            <Route path="/auth/dropbox/callback" element={<DropboxCallback />} />
-            <Route path="/" element={
-              <PublicRoute>
-                <Landing />
-              </PublicRoute>
-            } />
-            <Route path="/dashboard" element={
-              <ProtectedRoute>
-                <Index />
-              </ProtectedRoute>
-            } />
-            <Route path="/drive" element={
-              <ProtectedRoute>
-                <GoogleDrive />
-              </ProtectedRoute>
-            } />
-            <Route path="/sheets" element={
-              <ProtectedRoute>
-                <GoogleSheets />
-              </ProtectedRoute>
-            } />
-            <Route path="/documents" element={
-              <ProtectedRoute>
-                <Documents />
-              </ProtectedRoute>
-            } />
-            <Route path="/add-documents" element={
-              <ProtectedRoute>
-                <AddDocuments />
-              </ProtectedRoute>
-            } />
-            <Route path="/knowledge" element={
-              <ProtectedRoute>
-                <KnowledgeBases />
-              </ProtectedRoute>
-            } />
-            <Route path="/pitch-deck" element={
-              <ProtectedRoute>
-                <PitchDeck />
-              </ProtectedRoute>
-            } />
-            <Route path="/sync" element={
-              <ProtectedRoute>
-                <SyncStatus />
-              </ProtectedRoute>
-            } />
-            <Route path="/settings" element={
-              <ProtectedRoute>
-                <Settings />
-              </ProtectedRoute>
-            } />
-            <Route path="/settings/billing" element={
-              <ProtectedRoute>
-                <Settings />
-              </ProtectedRoute>
-            } />
-            <Route path="/docs" element={
-              <ProtectedRoute>
-                <DocumentList />
-              </ProtectedRoute>
-            } />
-            <Route path="/admin" element={
-              <ProtectedRoute>
-                <Admin />
-              </ProtectedRoute>
-            } />
-            <Route path="/admin/invites" element={
-              <ProtectedRoute>
-                <CustomerInvites />
-              </ProtectedRoute>
-            } />
-            <Route path="/admin/support-tickets" element={
-              <ProtectedRoute>
-                <AdminSupportTickets />
-              </ProtectedRoute>
-            } />
-            <Route path="/conversations" element={
-              <ProtectedRoute>
-                <Conversations />
-              </ProtectedRoute>
-            } />
-            <Route path="/support" element={
-              <ProtectedRoute>
-                <Support />
-              </ProtectedRoute>
-            } />
-            <Route path="/timeline" element={
-              <ProtectedRoute>
-                <Timeline />
-              </ProtectedRoute>
-            } />
-            <Route path="/mobile-demo" element={
-              <ProtectedRoute>
-                <MobileDemo />
-              </ProtectedRoute>
-            } />
-            <Route path="/booking-links" element={
-              <ProtectedRoute>
-                <BookingLinks />
-              </ProtectedRoute>
-            } />
-            <Route path="/daily-brief" element={
-              <ProtectedRoute>
-                <DailyBrief />
-              </ProtectedRoute>
-            } />
-            <Route path="/email-to-task" element={
-              <ProtectedRoute>
-                <EmailToTask />
-              </ProtectedRoute>
-            } />
-            <Route path="/team/settings" element={
-              <ProtectedRoute>
-                <TeamSettings />
-              </ProtectedRoute>
-            } />
-            <Route path="/team/members" element={
-              <ProtectedRoute>
-                <TeamMembers />
-              </ProtectedRoute>
-            } />
-            <Route path="/team/documents" element={
-              <ProtectedRoute>
-                <TeamDocuments />
-              </ProtectedRoute>
-            } />
-            <Route path="/team/timeline" element={
-              <ProtectedRoute>
-                <TeamTimeline />
-              </ProtectedRoute>
-            } />
-            <Route path="/team/create" element={
-              <ProtectedRoute>
-                <CreateTeam />
-              </ProtectedRoute>
-            } />
-            <Route path="/accept-invite/:token" element={
-              <ProtectedRoute>
-                <AcceptInvite />
-              </ProtectedRoute>
-            } />
-            <Route path="/book/:slug" element={<BookingPage />} />
-            <Route path="/presentation-audience/:sessionId" element={<PresentationAudience />} />
-            <Route path="/terms" element={<Terms />} />
-            <Route path="/privacy" element={<Privacy />} />
-            <Route path="/disclaimer" element={<Disclaimer />} />
-            <Route path="/data-policy" element={<DataPolicy />} />
-            <Route path="/acceptable-use" element={<AcceptableUse />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-            </BackgroundTasksProvider>
-        </AuthProvider>
-      </BrowserRouter>
-    </TooltipProvider>
-    </ThemeProvider>
-    </PresentationModeProvider>
-  </QueryClientProvider>
+  <ErrorBoundary>
+    <QueryClientProvider client={queryClient}>
+      <PresentationModeProvider>
+        <ThemeProvider defaultTheme="system" storageKey="aiqueryhub-theme">
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            {/* Show initialization error if Supabase is not configured */}
+            {!isSupabaseConfigured ? (
+              <InitializationError
+                error={new Error('Supabase configuration is missing or invalid')}
+              />
+            ) : (
+              <BrowserRouter>
+                <AuthProvider>
+                <BackgroundTasksProvider>
+                <MobileInitializer />
+                <PWAInstallPrompt />
+                <PrivacyPolicyWidget />
+                <TermsModal />
+                <Routes>
+                  <Route path="/auth" element={
+                    <PublicRoute>
+                      <Auth />
+                    </PublicRoute>
+                  } />
+                  <Route path="/reset-password" element={<ResetPassword />} />
+                  <Route path="/auth/confirm" element={<ConfirmEmail />} />
+                  <Route path="/auth/microsoft/callback" element={<MicrosoftCallback />} />
+                  <Route path="/auth/dropbox/callback" element={<DropboxCallback />} />
+                  <Route path="/" element={
+                    <PublicRoute>
+                      <Landing />
+                    </PublicRoute>
+                  } />
+                  <Route path="/dashboard" element={
+                    <ProtectedRoute>
+                      <Index />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/drive" element={
+                    <ProtectedRoute>
+                      <GoogleDrive />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/sheets" element={
+                    <ProtectedRoute>
+                      <GoogleSheets />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/documents" element={
+                    <ProtectedRoute>
+                      <Documents />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/add-documents" element={
+                    <ProtectedRoute>
+                      <AddDocuments />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/knowledge" element={
+                    <ProtectedRoute>
+                      <KnowledgeBases />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/pitch-deck" element={
+                    <ProtectedRoute>
+                      <PitchDeck />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/sync" element={
+                    <ProtectedRoute>
+                      <SyncStatus />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/settings" element={
+                    <ProtectedRoute>
+                      <Settings />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/settings/billing" element={
+                    <ProtectedRoute>
+                      <Settings />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/docs" element={
+                    <ProtectedRoute>
+                      <DocumentList />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/admin" element={
+                    <ProtectedRoute>
+                      <Admin />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/admin/invites" element={
+                    <ProtectedRoute>
+                      <CustomerInvites />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/admin/support-tickets" element={
+                    <ProtectedRoute>
+                      <AdminSupportTickets />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/conversations" element={
+                    <ProtectedRoute>
+                      <Conversations />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/support" element={
+                    <ProtectedRoute>
+                      <Support />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/timeline" element={
+                    <ProtectedRoute>
+                      <Timeline />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/mobile-demo" element={
+                    <ProtectedRoute>
+                      <MobileDemo />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/booking-links" element={
+                    <ProtectedRoute>
+                      <BookingLinks />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/daily-brief" element={
+                    <ProtectedRoute>
+                      <DailyBrief />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/email-to-task" element={
+                    <ProtectedRoute>
+                      <EmailToTask />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/team/settings" element={
+                    <ProtectedRoute>
+                      <TeamSettings />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/team/members" element={
+                    <ProtectedRoute>
+                      <TeamMembers />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/team/documents" element={
+                    <ProtectedRoute>
+                      <TeamDocuments />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/team/timeline" element={
+                    <ProtectedRoute>
+                      <TeamTimeline />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/team/create" element={
+                    <ProtectedRoute>
+                      <CreateTeam />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/accept-invite/:token" element={
+                    <ProtectedRoute>
+                      <AcceptInvite />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/book/:slug" element={<BookingPage />} />
+                  <Route path="/presentation-audience/:sessionId" element={<PresentationAudience />} />
+                  <Route path="/terms" element={<Terms />} />
+                  <Route path="/privacy" element={<Privacy />} />
+                  <Route path="/disclaimer" element={<Disclaimer />} />
+                  <Route path="/data-policy" element={<DataPolicy />} />
+                  <Route path="/acceptable-use" element={<AcceptableUse />} />
+                  {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+                </BackgroundTasksProvider>
+              </AuthProvider>
+            </BrowserRouter>
+            )}
+          </TooltipProvider>
+        </ThemeProvider>
+      </PresentationModeProvider>
+    </QueryClientProvider>
+  </ErrorBoundary>
 );
 
 export default App;
