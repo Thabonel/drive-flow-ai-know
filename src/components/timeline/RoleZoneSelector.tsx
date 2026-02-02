@@ -9,6 +9,12 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { toast } from 'sonner';
 import {
   RoleMode,
@@ -133,20 +139,29 @@ export function RoleZoneSelector({ className, showLabels = true, size = 'default
   const zoneDesc = ZONE_CONTEXT_DESCRIPTIONS[currentZone];
 
   return (
-    <div className={`flex items-center gap-2 ${className}`}>
-      {/* Role Selector */}
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant="outline"
-            size={size}
-            className="gap-2"
-            disabled={updating}
-          >
-            <span>{roleDesc.icon}</span>
-            {showLabels && <span>{roleDesc.label}</span>}
-          </Button>
-        </DropdownMenuTrigger>
+    <TooltipProvider>
+      <div className={`flex items-center gap-2 ${className}`}>
+        {/* Role Selector */}
+        <DropdownMenu>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="outline"
+                  size={size}
+                  className="gap-2"
+                  disabled={updating}
+                >
+                  <span>{roleDesc.icon}</span>
+                  {showLabels && <span>{roleDesc.label}</span>}
+                </Button>
+              </DropdownMenuTrigger>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p><strong>{roleDesc.label}</strong></p>
+              <p className="text-xs">{roleDesc.description}</p>
+            </TooltipContent>
+          </Tooltip>
         <DropdownMenuContent align="start" className="w-64">
           <DropdownMenuLabel>Role Mode</DropdownMenuLabel>
           <DropdownMenuSeparator />
@@ -174,19 +189,27 @@ export function RoleZoneSelector({ className, showLabels = true, size = 'default
         </DropdownMenuContent>
       </DropdownMenu>
 
-      {/* Zone Selector */}
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant="outline"
-            size={size}
-            className="gap-2"
-            disabled={updating}
-          >
-            <span>{zoneDesc.icon}</span>
-            {showLabels && <span>{zoneDesc.label}</span>}
-          </Button>
-        </DropdownMenuTrigger>
+        {/* Zone Selector */}
+        <DropdownMenu>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="outline"
+                  size={size}
+                  className="gap-2"
+                  disabled={updating}
+                >
+                  <span>{zoneDesc.icon}</span>
+                  {showLabels && <span>{zoneDesc.label}</span>}
+                </Button>
+              </DropdownMenuTrigger>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p><strong>{zoneDesc.label}</strong></p>
+              <p className="text-xs">{zoneDesc.description}</p>
+            </TooltipContent>
+          </Tooltip>
         <DropdownMenuContent align="start" className="w-64">
           <DropdownMenuLabel>Zone Context</DropdownMenuLabel>
           <DropdownMenuSeparator />
@@ -214,15 +237,16 @@ export function RoleZoneSelector({ className, showLabels = true, size = 'default
         </DropdownMenuContent>
       </DropdownMenu>
 
-      {/* Status Indicator */}
-      {(currentZone === ZONE_CONTEXTS.WARTIME || currentRole === ROLE_MODES.MULTIPLIER) && (
-        <Badge
-          variant={currentZone === ZONE_CONTEXTS.WARTIME ? "destructive" : "default"}
-          className="text-xs"
-        >
-          {currentZone === ZONE_CONTEXTS.WARTIME ? 'High Focus' : 'Delegation Mode'}
-        </Badge>
-      )}
-    </div>
+        {/* Status Indicator */}
+        {(currentZone === ZONE_CONTEXTS.WARTIME || currentRole === ROLE_MODES.MULTIPLIER) && (
+          <Badge
+            variant={currentZone === ZONE_CONTEXTS.WARTIME ? "destructive" : "default"}
+            className="text-xs"
+          >
+            {currentZone === ZONE_CONTEXTS.WARTIME ? 'High Focus' : 'Delegation Mode'}
+          </Badge>
+        )}
+      </div>
+    </TooltipProvider>
   );
 }

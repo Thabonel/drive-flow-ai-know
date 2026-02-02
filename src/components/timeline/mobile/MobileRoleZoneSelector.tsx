@@ -18,6 +18,12 @@ import {
 } from '@/components/ui/dialog';
 import { Card, CardContent } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useGestures } from '@/hooks/useGestures';
 import { toast } from 'sonner';
@@ -207,25 +213,34 @@ export function MobileRoleZoneSelector({
   }
 
   return (
-    <>
-      <div className={`flex items-center gap-2 ${className}`}>
-        {/* Compact Role Button */}
-        <Sheet open={isRoleSheetOpen} onOpenChange={setIsRoleSheetOpen}>
-          <SheetTrigger asChild>
-            <Button
-              variant="outline"
-              size="sm"
-              className={`
-                h-12 px-3 gap-2 rounded-2xl shadow-neu-raised transition-all duration-150
-                ${isGesturing ? 'scale-95' : 'hover:scale-105'}
-                ${updating ? 'opacity-50' : ''}
-              `}
-              disabled={updating}
-            >
-              <span className="text-lg">{roleDesc.icon}</span>
-              <span className="text-xs font-medium">{roleDesc.label}</span>
-            </Button>
-          </SheetTrigger>
+    <TooltipProvider>
+      <>
+        <div className={`flex items-center gap-2 ${className}`}>
+          {/* Compact Role Button */}
+          <Sheet open={isRoleSheetOpen} onOpenChange={setIsRoleSheetOpen}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <SheetTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className={`
+                      h-12 px-3 gap-2 rounded-2xl shadow-neu-raised transition-all duration-150
+                      ${isGesturing ? 'scale-95' : 'hover:scale-105'}
+                      ${updating ? 'opacity-50' : ''}
+                    `}
+                    disabled={updating}
+                  >
+                    <span className="text-lg">{roleDesc.icon}</span>
+                    <span className="text-xs font-medium">{roleDesc.label}</span>
+                  </Button>
+                </SheetTrigger>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p><strong>{roleDesc.label}</strong></p>
+                <p className="text-xs">{roleDesc.description}</p>
+              </TooltipContent>
+            </Tooltip>
           <SheetContent side="bottom" className="h-[60vh]">
             <SheetHeader>
               <SheetTitle className="flex items-center gap-2">
@@ -281,24 +296,32 @@ export function MobileRoleZoneSelector({
           </SheetContent>
         </Sheet>
 
-        {/* Compact Zone Button */}
-        <Sheet open={isZoneSheetOpen} onOpenChange={setIsZoneSheetOpen}>
-          <SheetTrigger asChild>
-            <Button
-              variant="outline"
-              size="sm"
-              className={`
-                h-12 px-3 gap-2 rounded-2xl shadow-neu-raised transition-all duration-150
-                ${isGesturing ? 'scale-95' : 'hover:scale-105'}
-                ${updating ? 'opacity-50' : ''}
-                ${currentZone === ZONE_CONTEXTS.WARTIME ? 'border-destructive text-destructive' : ''}
-              `}
-              disabled={updating}
-            >
-              <span className="text-lg">{zoneDesc.icon}</span>
-              <span className="text-xs font-medium">{zoneDesc.label}</span>
-            </Button>
-          </SheetTrigger>
+          {/* Compact Zone Button */}
+          <Sheet open={isZoneSheetOpen} onOpenChange={setIsZoneSheetOpen}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <SheetTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className={`
+                      h-12 px-3 gap-2 rounded-2xl shadow-neu-raised transition-all duration-150
+                      ${isGesturing ? 'scale-95' : 'hover:scale-105'}
+                      ${updating ? 'opacity-50' : ''}
+                      ${currentZone === ZONE_CONTEXTS.WARTIME ? 'border-destructive text-destructive' : ''}
+                    `}
+                    disabled={updating}
+                  >
+                    <span className="text-lg">{zoneDesc.icon}</span>
+                    <span className="text-xs font-medium">{zoneDesc.label}</span>
+                  </Button>
+                </SheetTrigger>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p><strong>{zoneDesc.label}</strong></p>
+                <p className="text-xs">{zoneDesc.description}</p>
+              </TooltipContent>
+            </Tooltip>
           <SheetContent side="bottom" className="h-[50vh]">
             <SheetHeader>
               <SheetTitle className="flex items-center gap-2">
@@ -390,6 +413,7 @@ export function MobileRoleZoneSelector({
           </div>
         </DialogContent>
       </Dialog>
-    </>
+      </>
+    </TooltipProvider>
   );
 }
