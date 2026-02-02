@@ -9,6 +9,7 @@ function EnvironmentDebugger() {
   const envVars = {
     'VITE_SUPABASE_URL': import.meta.env.VITE_SUPABASE_URL,
     'VITE_SUPABASE_ANON_KEY': import.meta.env.VITE_SUPABASE_ANON_KEY,
+    'VITE_SUPABASE_PUBLISHABLE_KEY': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
   };
 
   const hasIssues = Object.values(envVars).some(value => !value);
