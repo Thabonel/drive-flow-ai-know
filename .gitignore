@@ -50,3 +50,6 @@ test-apis.js
 *.test.env
 tests/quick-test.js
 **/quick-test.js
+
+# Documentation with potential secrets (keep local only)
+docs/
