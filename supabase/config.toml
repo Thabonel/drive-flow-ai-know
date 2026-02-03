@@ -1,4 +1,4 @@
-project_id = "fskwutnoxbbflzqrphro"
+project_id = "your-project-id"
 
 [functions."ai-document-analysis"]
 verify_jwt = true

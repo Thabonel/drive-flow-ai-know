@@ -363,7 +363,7 @@ export function FeatureComponent() {
 #### Security Testing
 ```bash
 # Test RLS policies
-curl -X GET 'https://fskwutnoxbbflzqrphro.supabase.co/rest/v1/knowledge_documents' \
+curl -X GET 'https://your-project-id.supabase.co/rest/v1/knowledge_documents' \
   -H "apikey: ${SUPABASE_ANON_KEY}" \
   -H "Authorization: Bearer ${USER_TOKEN}"
 
@@ -443,7 +443,7 @@ ls -lh dist/
 npx supabase functions deploy ai-query
 
 # 5. Verify deployment
-curl -X POST https://fskwutnoxbbflzqrphro.supabase.co/functions/v1/ai-query \
+curl -X POST https://your-project-id.supabase.co/functions/v1/ai-query \
   -H "Authorization: Bearer ${TOKEN}" \
   -d '{"query": "test"}'
 
@@ -484,7 +484,7 @@ AI Query Hub (formerly Knowledge Base App) is a React/TypeScript application tha
 
 Built with Vite, React, shadcn-ui, Tailwind CSS, and Supabase backend.
 
-**Supabase Project**: `fskwutnoxbbflzqrphro` (https://fskwutnoxbbflzqrphro.supabase.co)
+**Supabase Project**: `your-project-id` (https://your-project-id.supabase.co)
 
 ## Development Commands
 
@@ -705,7 +705,7 @@ To change the theme:
 
 ### Frontend (.env)
 ```
-VITE_SUPABASE_URL=https://fskwutnoxbbflzqrphro.supabase.co
+VITE_SUPABASE_URL=https://your-project-id.supabase.co
 VITE_SUPABASE_ANON_KEY=<anon-key>
 ```
 

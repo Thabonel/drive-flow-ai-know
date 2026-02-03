@@ -70,8 +70,9 @@
   conditions = {Role = ["get"]}
 
 # API proxy to Supabase Edge Functions (if needed)
+# Note: Replace with your actual Supabase URL in production
 [[redirects]]
   from = "/api/*"
-  to = "https://fskwutnoxbbflzqrphro.supabase.co/functions/v1/:splat"
+  to = "https://your-project-id.supabase.co/functions/v1/:splat"
   status = 200
   force = true

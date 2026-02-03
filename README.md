@@ -305,7 +305,7 @@ This project is proprietary software. All rights reserved.
 ## 🔗 Links
 
 - **Website**: https://aiqueryhub.com (coming soon)
-- **Supabase Project**: https://fskwutnoxbbflzqrphro.supabase.co
+- **Supabase Project**: https://your-project-id.supabase.co
 - **Documentation**: [docs/AI_QUERY_HUB_OVERVIEW.md](docs/AI_QUERY_HUB_OVERVIEW.md)
 - **Design System**: [docs/BIBLE/09-REFERENCE/DESIGN_SYSTEM.md](docs/BIBLE/09-REFERENCE/DESIGN_SYSTEM.md)
 

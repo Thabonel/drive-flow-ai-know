@@ -397,7 +397,7 @@ export default function Landing() {
           <div className="grid md:grid-cols-2 gap-12 items-center">
             <div className="relative">
               <img
-                src="https://fskwutnoxbbflzqrphro.supabase.co/storage/v1/object/public/assets/wheels.jpg"
+                src="https://your-project-id.supabase.co/storage/v1/object/public/assets/wheels.jpg"
                 alt="AI Pitch Deck Generator"
                 className="rounded-2xl shadow-card border border-border"
                 onError={(e) => {
