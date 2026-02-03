@@ -16,6 +16,7 @@ import { PresentationModeProvider } from "@/contexts/PresentationModeContext";
 import { initializeMobileOptimizations } from "@/lib/haptics";
 import { ErrorBoundary, InitializationError } from "@/components/ErrorBoundary";
 import { isSupabaseConfigured } from "@/integrations/supabase/client";
+import { config } from "@/config/environment";
 import Header from "./layout/Header";
 import PrivacyPolicyWidget from "@/components/legal/PrivacyPolicyWidget";
 import TermsModal from "@/components/legal/TermsModal";
@@ -77,6 +78,11 @@ function AppLayout({ children }: { children: React.ReactNode }) {
         {offline && (
           <div className="bg-yellow-500 dark:bg-yellow-600 text-white dark:text-yellow-50 text-center py-1 text-sm font-medium">
             Offline Mode Enabled
+          </div>
+        )}
+        {config.branding.showEnvironmentBanner && (
+          <div className="bg-orange-500 dark:bg-orange-600 text-white dark:text-orange-50 text-center py-1 text-sm font-medium">
+            🚧 Staging Environment - This is for testing only
           </div>
         )}
         <div className="flex flex-1 w-full">
