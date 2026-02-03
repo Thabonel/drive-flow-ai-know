@@ -63,7 +63,7 @@ export function TimelineCanvas({
   onDoubleClick,
   onCanvasReady,
 }: TimelineCanvasProps) {
-  const { checkBudgetViolation, attentionPreferences } = useTimelineContext();
+  const { checkBudgetViolation, attentionPreferences, updateAttentionPreferences } = useTimelineContext();
   const svgRef = useRef<SVGSVGElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
@@ -251,10 +251,17 @@ export function TimelineCanvas({
               console.log('Peak hours optimization:', suggestions);
               // Could implement automatic rescheduling or show confirmation UI
             }}
-            onUpdatePeakHours={(startTime, endTime) => {
+            onUpdatePeakHours={async (startTime, endTime) => {
               // Handle peak hours updates
-              console.log('Update peak hours:', startTime, endTime);
-              // Could update user preferences via API
+              try {
+                await updateAttentionPreferences({
+                  peak_hours_start: startTime,
+                  peak_hours_end: endTime
+                });
+                console.log('Peak hours updated successfully:', startTime, endTime);
+              } catch (error) {
+                console.error('Failed to update peak hours:', error);
+              }
             }}
             compact={true}
             className="max-w-2xl"

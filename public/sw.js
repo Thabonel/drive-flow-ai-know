@@ -354,11 +354,83 @@ function calculateAttentionBudgetOffline(timelineData, preferences, date) {
   };
 }
 
-// Get cached timeline data from localStorage
+// IndexedDB helper functions for timeline cache
+const DB_NAME = 'TimelineCache';
+const DB_VERSION = 1;
+const STORE_NAME = 'timeline-data';
+
+async function openDB() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(DB_NAME, DB_VERSION);
+
+    request.onerror = () => reject(request.error);
+    request.onsuccess = () => resolve(request.result);
+
+    request.onupgradeneeded = (event) => {
+      const db = event.target.result;
+      if (!db.objectStoreNames.contains(STORE_NAME)) {
+        db.createObjectStore(STORE_NAME);
+      }
+    };
+  });
+}
+
+async function getFromIDB(key) {
+  try {
+    const db = await openDB();
+    const transaction = db.transaction([STORE_NAME], 'readonly');
+    const store = transaction.objectStore(STORE_NAME);
+
+    return new Promise((resolve, reject) => {
+      const request = store.get(key);
+      request.onerror = () => reject(request.error);
+      request.onsuccess = () => resolve(request.result);
+    });
+  } catch (error) {
+    console.error('Failed to get from IndexedDB:', error);
+    return null;
+  }
+}
+
+async function setInIDB(key, value) {
+  try {
+    const db = await openDB();
+    const transaction = db.transaction([STORE_NAME], 'readwrite');
+    const store = transaction.objectStore(STORE_NAME);
+
+    return new Promise((resolve, reject) => {
+      const request = store.put(value, key);
+      request.onerror = () => reject(request.error);
+      request.onsuccess = () => resolve(request.result);
+    });
+  } catch (error) {
+    console.error('Failed to set in IndexedDB:', error);
+    throw error;
+  }
+}
+
+async function deleteFromIDB(key) {
+  try {
+    const db = await openDB();
+    const transaction = db.transaction([STORE_NAME], 'readwrite');
+    const store = transaction.objectStore(STORE_NAME);
+
+    return new Promise((resolve, reject) => {
+      const request = store.delete(key);
+      request.onerror = () => reject(request.error);
+      request.onsuccess = () => resolve(request.result);
+    });
+  } catch (error) {
+    console.error('Failed to delete from IndexedDB:', error);
+    throw error;
+  }
+}
+
+// Get cached timeline data from IndexedDB
 async function getCachedTimelineData() {
   try {
-    const cached = localStorage.getItem('timeline-cache');
-    return cached ? JSON.parse(cached) : [];
+    const cached = await getFromIDB('timeline-cache');
+    return cached || [];
   } catch (error) {
     console.error('Failed to get cached timeline data:', error);
     return [];
@@ -406,12 +478,13 @@ self.addEventListener('message', (event) => {
   switch (type) {
     case 'CACHE_TIMELINE_DATA':
       // Cache timeline data for offline calculations
-      try {
-        localStorage.setItem('timeline-cache', JSON.stringify(data));
-        event.ports[0].postMessage({ success: true });
-      } catch (error) {
-        event.ports[0].postMessage({ success: false, error: error.message });
-      }
+      setInIDB('timeline-cache', data)
+        .then(() => {
+          event.ports[0].postMessage({ success: true });
+        })
+        .catch((error) => {
+          event.ports[0].postMessage({ success: false, error: error.message });
+        });
       break;
 
     case 'GET_OFFLINE_STATUS':
@@ -455,7 +528,7 @@ async function clearAllCaches() {
   await Promise.all(
     cacheNames.map(cacheName => caches.delete(cacheName))
   );
-  localStorage.removeItem('timeline-cache');
+  await deleteFromIDB('timeline-cache');
 }
 
 // Push notification handling for attention budget alerts
