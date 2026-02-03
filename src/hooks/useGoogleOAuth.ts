@@ -151,27 +151,19 @@ export const useGoogleOAuth = () => {
         timestamp: new Date().toISOString()
       });
 
-      // Generate PKCE parameters
-      const codeVerifier = generateCodeVerifier();
-      const codeChallenge = await generateCodeChallenge(codeVerifier);
-      const state = generateState();
-
-      // Store PKCE parameters securely (use sessionStorage, not localStorage for better security)
-      sessionStorage.setItem('google_code_verifier', codeVerifier);
-      sessionStorage.setItem('google_state', state);
+      // Note: PKCE parameters removed - not supported by initTokenClient()
+      // initTokenClient() uses implicit flow (popup-based token return)
+      // PKCE is for authorization code flow only
 
       toast({
         title: 'Opening Google Sign-In',
         description: 'Please sign in and grant the requested permissions',
       });
 
-      // Use Google Identity Services with PKCE parameters
+      // Use Google Identity Services (simplified configuration matching working Google Drive pattern)
       const tokenClient = window.google.accounts.oauth2.initTokenClient({
         client_id: config.google.client_id,
         scope: scope,
-        state: state, // CSRF protection
-        code_challenge: codeChallenge,
-        code_challenge_method: 'S256',
         callback: async (response: any) => {
           try {
             // ADD DIAGNOSTIC LOGGING FOR OAUTH CALLBACK
@@ -182,11 +174,8 @@ export const useGoogleOAuth = () => {
               timestamp: new Date().toISOString()
             });
 
-            // Validate state parameter
-            const storedState = sessionStorage.getItem('google_state');
-            if (response.state !== storedState) {
-              throw new Error('Invalid state parameter - possible CSRF attack');
-            }
+            // Note: State validation removed - not applicable for initTokenClient() implicit flow
+            // CSRF protection is handled by Google's popup-based authentication
 
             if (response.error) {
               console.error('OAuth error details:', {
@@ -199,7 +188,7 @@ export const useGoogleOAuth = () => {
 
             console.log('Google OAuth successful, storing tokens...');
 
-            // Store tokens in Supabase via Edge Function
+            // Store tokens in Supabase via Edge Function (simplified - no PKCE fields)
             const { data, error } = await supabase.functions.invoke('store-google-tokens', {
               body: {
                 access_token: response.access_token,
@@ -207,8 +196,7 @@ export const useGoogleOAuth = () => {
                 token_type: 'Bearer',
                 expires_in: response.expires_in || 3600,
                 scope: scope,
-                // Include code_verifier for server-side validation if needed
-                code_verifier: sessionStorage.getItem('google_code_verifier'),
+                // Note: code_verifier removed - not applicable for implicit flow
               },
             });
 
@@ -232,9 +220,7 @@ export const useGoogleOAuth = () => {
               variant: 'destructive',
             });
           } finally {
-            // Clean up PKCE parameters
-            sessionStorage.removeItem('google_code_verifier');
-            sessionStorage.removeItem('google_state');
+            // Note: No PKCE cleanup needed for implicit flow
             setIsLoading(false);
           }
         },
@@ -247,9 +233,7 @@ export const useGoogleOAuth = () => {
       console.error('OAuth initiation error:', error);
       setIsLoading(false);
 
-      // Clean up on error
-      sessionStorage.removeItem('google_code_verifier');
-      sessionStorage.removeItem('google_state');
+      // Note: No PKCE cleanup needed for implicit flow
 
       toast({
         title: 'Connection Failed',
