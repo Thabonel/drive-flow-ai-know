@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase, getSupabaseUrl } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 interface AnimationFrame {
@@ -165,8 +165,7 @@ export function usePitchDeckStream() {
       }
 
       // Step 3: Connect to SSE stream
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      const streamUrl = `${supabaseUrl}/functions/v1/pitch-deck-stream?job_id=${jobId}`;
+      const streamUrl = `${getSupabaseUrl()}/functions/v1/pitch-deck-stream?job_id=${jobId}`;
 
       // EventSource doesn't support custom headers, so we use fetch with streaming
       abortControllerRef.current = new AbortController();

@@ -7,8 +7,9 @@
 
 const https = require('https');
 
-const SUPABASE_URL = process.env.VITE_SUPABASE_URL || 'https://your-project-id.supabase.co';
-const ANON_KEY = process.env.VITE_SUPABASE_ANON_KEY || 'your-anon-key-here';
+// Environment variables must be set before running this test
+const SUPABASE_URL = process.env.SUPABASE_URL || 'https://your-project-id.supabase.co';
+const ANON_KEY = process.env.SUPABASE_ANON_KEY || 'your-anon-key-here';
 
 console.log('🔌 Testing Actual AI Optimization API Endpoints');
 console.log('=' .repeat(60));

@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback } from 'react'
-import { supabase } from '@/integrations/supabase/client'
+import { supabase, getSupabaseUrl } from '@/integrations/supabase/client'
 import { toast } from 'sonner'
 
 export interface UseDictationReturn {
@@ -88,7 +88,7 @@ export function useDictation(): UseDictationReturn {
           formData.append('audio', audioFile)
           formData.append('language', 'en') // Could be made configurable
 
-          const fetchUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/transcribe-audio`
+          const fetchUrl = `${getSupabaseUrl()}/functions/v1/transcribe-audio`
           console.log('🎤 Starting transcription fetch to:', fetchUrl)
           console.log('Audio file size:', audioFile.size, 'bytes')
 

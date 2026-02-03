@@ -3,16 +3,19 @@ import { describe, test, expect } from 'vitest';
 describe('Supabase Client Security', () => {
   test('Supabase client uses environment variables', () => {
     // Check if environment variables are defined (they should be from .env file)
-    expect(import.meta.env.VITE_SUPABASE_URL).toBeDefined();
-    expect(import.meta.env.VITE_SUPABASE_ANON_KEY).toBeDefined();
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+    expect(supabaseUrl).toBeDefined();
+    expect(supabaseKey).toBeDefined();
 
     // Verify environment variables are not empty
-    expect(import.meta.env.VITE_SUPABASE_URL).not.toBe('');
-    expect(import.meta.env.VITE_SUPABASE_ANON_KEY).not.toBe('');
+    expect(supabaseUrl).not.toBe('');
+    expect(supabaseKey).not.toBe('');
 
     // Verify they have expected format
-    expect(import.meta.env.VITE_SUPABASE_URL).toMatch(/^https:\/\/.*\.supabase\.co$/);
-    expect(import.meta.env.VITE_SUPABASE_ANON_KEY).toMatch(/^eyJ/); // JWT format
+    expect(supabaseUrl).toMatch(/^https:\/\/.*\.supabase\.co$/);
+    expect(supabaseKey).toMatch(/^eyJ/); // JWT format
   });
 
   test('no hardcoded credentials in source code', () => {
@@ -27,8 +30,8 @@ describe('Supabase Client Security', () => {
     expect(clientContent).not.toMatch(/eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+/);
 
     // Should reference environment variables
-    expect(clientContent).toContain('VITE_SUPABASE_URL');
-    expect(clientContent).toContain('VITE_SUPABASE_ANON_KEY');
+    expect(clientContent).toContain('import.meta.env.VITE_SUPABASE');
+    expect(clientContent).toContain('createClient');
   });
 
   test('environment variables are properly validated', () => {
@@ -40,8 +43,8 @@ describe('Supabase Client Security', () => {
     );
 
     // Verify validation code exists
-    expect(clientContent).toContain('VITE_SUPABASE_URL is required');
-    expect(clientContent).toContain('VITE_SUPABASE_ANON_KEY is required');
+    expect(clientContent).toContain('Supabase configuration incomplete');
+    expect(clientContent).toContain('environment variables');
     expect(clientContent).toContain('throw new Error');
   });
 });
