@@ -2,7 +2,7 @@
 -- APPLY THIS MANUALLY IN SUPABASE SQL EDITOR
 -- ============================================================================
 -- Instructions:
--- 1. Go to https://supabase.com/dashboard/project/fskwutnoxbbflzqrphro/sql
+-- 1. Go to https://supabase.com/dashboard/project/your-project-id/sql
 -- 2. Copy this entire file
 -- 3. Paste into the SQL Editor
 -- 4. Click "Run" button

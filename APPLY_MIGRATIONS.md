@@ -7,7 +7,7 @@ This document explains how to apply the database migrations for the three new ma
 
 ## Option 1: Via Supabase SQL Editor (Recommended)
 
-1. Go to your Supabase dashboard: https://supabase.com/dashboard/project/fskwutnoxbbflzqrphro
+1. Go to your Supabase dashboard: https://supabase.com/dashboard/project/your-project-id
 2. Navigate to **SQL Editor**
 3. Copy and paste the contents of `apply-all-migrations.sql` (in this directory)
 4. Click **Run** to execute all migrations at once
