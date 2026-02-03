@@ -3,8 +3,8 @@ import { createClient } from '@supabase/supabase-js';
 
 // Environment variable validation with graceful degradation
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-// Support both naming conventions: ANON_KEY (legacy) and PUBLISHABLE_KEY (standard)
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+// Support both naming conventions: ANON_KEY (legacy) and alternative key
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 // SAFETY CHECK: Prevent module loading cascade failures from missing environment variables
 // Following the pattern from useGoogleCalendar.ts (lines 93-100)
@@ -15,7 +15,7 @@ if (!hasValidConfig) {
     hasUrl: !!SUPABASE_URL,
     hasKey: !!SUPABASE_ANON_KEY,
     env: import.meta.env.MODE,
-    message: 'Check environment variables: VITE_SUPABASE_URL and either VITE_SUPABASE_ANON_KEY or VITE_SUPABASE_PUBLISHABLE_KEY'
+    message: 'Check your environment variables for Supabase URL and API key'
   });
 }
 
@@ -40,6 +40,9 @@ export const supabase = createClient(
 
 // Flag to indicate configuration status
 export const isSupabaseConfigured = hasValidConfig;
+
+// Helper to get Supabase URL for constructing function endpoints
+export const getSupabaseUrl = () => SUPABASE_URL || 'https://placeholder.supabase.co';
 
 // Import the supabase client like this:
 // import { supabase, isSupabaseConfigured } from "@/integrations/supabase/client";

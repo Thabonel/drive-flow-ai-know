@@ -5,10 +5,7 @@ export const config = {
   isStaging: import.meta.env.VITE_ENVIRONMENT === 'staging',
   isProduction: import.meta.env.VITE_ENVIRONMENT === 'production',
 
-  supabase: {
-    url: import.meta.env.VITE_SUPABASE_URL!,
-    anonKey: import.meta.env.VITE_SUPABASE_ANON_KEY!,
-  },
+  // Supabase configuration handled in src/integrations/supabase/client.ts
 
   features: {
     // Enable experimental features only in staging

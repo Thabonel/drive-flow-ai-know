@@ -704,9 +704,10 @@ To change the theme:
 ## Environment Variables
 
 ### Frontend (.env)
-```
+```bash
+# Supabase Configuration
 VITE_SUPABASE_URL=https://your-project-id.supabase.co
-VITE_SUPABASE_ANON_KEY=<anon-key>
+VITE_SUPABASE_ANON_KEY=your-anon-key-here
 ```
 
 ### Supabase Edge Functions

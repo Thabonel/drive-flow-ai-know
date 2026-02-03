@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase, getSupabaseUrl, isSupabaseConfigured } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 
 export interface GoogleCalendar {
@@ -91,10 +91,7 @@ export const useGoogleCalendar = () => {
   const initializeGoogleCalendar = useCallback(async () => {
     try {
       // SAFETY CHECK: Prevent cascade failures from missing dependencies
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-
-      if (!supabaseUrl || !supabaseKey) {
+      if (!isSupabaseConfigured) {
         console.warn('Supabase configuration not complete, skipping Calendar initialization');
         return;
       }
