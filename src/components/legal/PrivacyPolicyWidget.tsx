@@ -265,19 +265,7 @@ const PrivacyPolicyWidget = ({ showFullPolicy = false }: PrivacyPolicyWidgetProp
         </div>
       )}
 
-      {/* Manage Preferences Button (when consent given) */}
-      {consent.accepted && !showBanner && (
-        <div className="fixed bottom-4 right-4 z-40">
-          <Button
-            onClick={() => setShowPreferences(true)}
-            size="sm"
-            variant="outline"
-            className="bg-background"
-          >
-            Manage Preferences
-          </Button>
-        </div>
-      )}
+      {/* Manage Preferences Button removed - now available in Settings > Security */}
 
       {/* Preferences Modal */}
       {showPreferences && consent.accepted && (

@@ -36,7 +36,8 @@ import {
   Server,
   CreditCard,
   Palette,
-  Check
+  Check,
+  Cookie
 } from "lucide-react";
 
 const Settings = () => {
@@ -57,6 +58,60 @@ const Settings = () => {
 
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [googleDriveConnected, setGoogleDriveConnected] = useState(false);
+
+  // Privacy consent state
+  const [privacyConsent, setPrivacyConsent] = useState({
+    accepted: false,
+    analytics: false,
+    marketing: false,
+  });
+
+  // Load privacy consent on mount
+  useEffect(() => {
+    const existingConsent = localStorage.getItem('privacy-consent-v1');
+    if (existingConsent) {
+      try {
+        const parsed = JSON.parse(existingConsent);
+        setPrivacyConsent({
+          accepted: parsed.accepted || false,
+          analytics: parsed.analytics || false,
+          marketing: parsed.marketing || false,
+        });
+      } catch {
+        // Invalid consent data
+      }
+    }
+  }, []);
+
+  const savePrivacyPreferences = () => {
+    const consentRecord = {
+      version: 'v1',
+      accepted: true,
+      essential: true,
+      analytics: privacyConsent.analytics,
+      marketing: privacyConsent.marketing,
+      timestamp: new Date().toISOString()
+    };
+    localStorage.setItem('privacy-consent-v1', JSON.stringify(consentRecord));
+    setPrivacyConsent({ ...privacyConsent, accepted: true });
+    toast({
+      title: "Privacy Preferences Saved",
+      description: "Your privacy settings have been updated.",
+    });
+  };
+
+  const withdrawPrivacyConsent = () => {
+    localStorage.removeItem('privacy-consent-v1');
+    setPrivacyConsent({
+      accepted: false,
+      analytics: false,
+      marketing: false,
+    });
+    toast({
+      title: "Consent Withdrawn",
+      description: "Your privacy consent has been withdrawn. You may see the consent banner again.",
+    });
+  };
 
   // Check Google Drive connection status
   useEffect(() => {
@@ -376,6 +431,76 @@ const Settings = () => {
                           {googleDriveConnected ? 'Active' : 'Inactive'}
                         </Badge>
                       </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Cookie className="h-5 w-5" />
+                      Privacy Preferences
+                    </CardTitle>
+                    <CardDescription>
+                      Manage your cookie and data collection preferences
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid gap-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h4 className="font-medium">Essential</h4>
+                          <p className="text-sm text-muted-foreground">
+                            Required for the application to function
+                          </p>
+                        </div>
+                        <Switch checked={true} disabled={true} />
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h4 className="font-medium">Analytics</h4>
+                          <p className="text-sm text-muted-foreground">
+                            Help us improve the service
+                          </p>
+                        </div>
+                        <Switch
+                          checked={privacyConsent.analytics}
+                          onCheckedChange={(checked) =>
+                            setPrivacyConsent({ ...privacyConsent, analytics: checked })
+                          }
+                        />
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h4 className="font-medium">Marketing</h4>
+                          <p className="text-sm text-muted-foreground">
+                            Receive personalized recommendations
+                          </p>
+                        </div>
+                        <Switch
+                          checked={privacyConsent.marketing}
+                          onCheckedChange={(checked) =>
+                            setPrivacyConsent({ ...privacyConsent, marketing: checked })
+                          }
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex gap-2 pt-2">
+                      <Button onClick={savePrivacyPreferences} className="flex-1">
+                        Save Preferences
+                      </Button>
+                      {privacyConsent.accepted && (
+                        <Button
+                          onClick={withdrawPrivacyConsent}
+                          variant="outline"
+                          className="text-destructive hover:text-destructive"
+                        >
+                          Withdraw Consent
+                        </Button>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
