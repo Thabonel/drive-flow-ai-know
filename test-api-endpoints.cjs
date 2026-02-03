@@ -7,8 +7,8 @@
 
 const https = require('https');
 
-const SUPABASE_URL = 'https://fskwutnoxbbflzqrphro.supabase.co';
-const ANON_KEY = '<JWT_TOKEN>';
+const SUPABASE_URL = process.env.VITE_SUPABASE_URL || 'https://your-project-id.supabase.co';
+const ANON_KEY = process.env.VITE_SUPABASE_ANON_KEY || 'your-anon-key-here';
 
 console.log('🔌 Testing Actual AI Optimization API Endpoints');
 console.log('=' .repeat(60));
@@ -16,7 +16,7 @@ console.log('=' .repeat(60));
 function makeRequest(functionName, data = {}) {
   return new Promise((resolve, reject) => {
     const options = {
-      hostname: 'fskwutnoxbbflzqrphro.supabase.co',
+      hostname: new URL(SUPABASE_URL).hostname,
       path: `/functions/v1/${functionName}`,
       method: 'POST',
       headers: {

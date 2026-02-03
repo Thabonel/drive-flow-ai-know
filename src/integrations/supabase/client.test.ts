@@ -22,9 +22,9 @@ describe('Supabase Client Security', () => {
     const clientPath = path.join(__dirname, 'client.ts');
     const clientContent = fs.readFileSync(clientPath, 'utf-8');
 
-    // Should not contain hardcoded Supabase URL or key
-    expect(clientContent).not.toContain('https://fskwutnoxbbflzqrphro.supabase.co');
-    expect(clientContent).not.toContain('eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9');
+    // Should not contain any hardcoded Supabase URLs (must use env vars)
+    expect(clientContent).not.toMatch(/https:\/\/[a-z0-9]+\.supabase\.co/);
+    expect(clientContent).not.toMatch(/eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+/);
 
     // Should reference environment variables
     expect(clientContent).toContain('VITE_SUPABASE_URL');

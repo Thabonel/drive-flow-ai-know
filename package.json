@@ -9,7 +9,7 @@
     "build:dev": "vite build --mode development",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
-    "types:generate": "npx supabase gen types typescript --project-id fskwutnoxbbflzqrphro > src/integrations/supabase/types.ts",
+    "types:generate": "npx supabase gen types typescript --project-id your-project-id > src/integrations/supabase/types.ts",
     "test": "vitest",
     "test:unit": "vitest run src/tests/attention/ src/tests/hooks/",
     "test:integration": "vitest run src/tests/integration/",
