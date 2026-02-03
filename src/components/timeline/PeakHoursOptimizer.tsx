@@ -31,15 +31,13 @@ import {
   AttentionType
 } from '@/lib/attentionTypes';
 import { format, setHours, setMinutes } from 'date-fns';
-import { TimePicker12H } from '@/components/ui/time-picker-12h';
 
 interface PeakHoursOptimizerProps {
   items: TimelineItem[];
   preferences: UserAttentionPreferences | null;
   currentDate: Date;
   onOptimizeSchedule?: (optimizedItems: OptimizationSuggestion[]) => void;
-  onUpdatePeakHours?: (startTime: string, endTime: string) => Promise<void>;
-  onSkipSetup?: () => void;
+  onUpdatePeakHours?: (startTime: string, endTime: string) => void;
   compact?: boolean;
   className?: string;
 }
@@ -68,14 +66,12 @@ export function PeakHoursOptimizer({
   currentDate,
   onOptimizeSchedule,
   onUpdatePeakHours,
-  onSkipSetup,
   compact = false,
   className = ''
 }: PeakHoursOptimizerProps) {
   const [showSettings, setShowSettings] = useState(false);
   const [tempStartTime, setTempStartTime] = useState('');
   const [tempEndTime, setTempEndTime] = useState('');
-  const [isSaving, setIsSaving] = useState(false);
 
   const analysis = useMemo((): PeakHoursAnalysis | null => {
     if (!preferences?.peak_hours_start || !preferences?.peak_hours_end) return null;
@@ -186,18 +182,10 @@ export function PeakHoursOptimizer({
     }
   }, [preferences]);
 
-  const handleSavePeakHours = async () => {
+  const handleSavePeakHours = () => {
     if (tempStartTime && tempEndTime && onUpdatePeakHours) {
-      setIsSaving(true);
-      try {
-        await onUpdatePeakHours(tempStartTime, tempEndTime);
-        setShowSettings(false);
-      } catch (error) {
-        console.error('Failed to save peak hours:', error);
-        // Keep modal open on error so user can retry
-      } finally {
-        setIsSaving(false);
-      }
+      onUpdatePeakHours(tempStartTime, tempEndTime);
+      setShowSettings(false);
     }
   };
 
@@ -231,14 +219,13 @@ export function PeakHoursOptimizer({
             </AlertDescription>
           </Alert>
 
-          <div className="flex gap-2 mt-3">
-            <Dialog open={showSettings} onOpenChange={setShowSettings}>
-              <DialogTrigger asChild>
-                <Button size="sm">
-                  <Settings className="h-3 w-3 mr-1" />
-                  Set Peak Hours
-                </Button>
-              </DialogTrigger>
+          <Dialog open={showSettings} onOpenChange={setShowSettings}>
+            <DialogTrigger asChild>
+              <Button className="mt-3" size="sm">
+                <Settings className="h-3 w-3 mr-1" />
+                Set Peak Hours
+              </Button>
+            </DialogTrigger>
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>Configure Peak Hours</DialogTitle>
@@ -249,18 +236,24 @@ export function PeakHoursOptimizer({
 
               <div className="space-y-4 mt-4">
                 <div className="grid grid-cols-2 gap-4">
-                  <TimePicker12H
-                    label="Start Time"
-                    value={tempStartTime}
-                    onChange={setTempStartTime}
-                    className="w-full"
-                  />
-                  <TimePicker12H
-                    label="End Time"
-                    value={tempEndTime}
-                    onChange={setTempEndTime}
-                    className="w-full"
-                  />
+                  <div>
+                    <label className="text-sm font-medium">Start Time</label>
+                    <input
+                      type="time"
+                      value={tempStartTime}
+                      onChange={(e) => setTempStartTime(e.target.value)}
+                      className="w-full mt-1 px-3 py-2 border rounded-md"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium">End Time</label>
+                    <input
+                      type="time"
+                      value={tempEndTime}
+                      onChange={(e) => setTempEndTime(e.target.value)}
+                      className="w-full mt-1 px-3 py-2 border rounded-md"
+                    />
+                  </div>
                 </div>
 
                 <div className="bg-muted/50 p-3 rounded-md">
@@ -273,36 +266,12 @@ export function PeakHoursOptimizer({
                   </ul>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
-                  {onSkipSetup && (
-                    <Button
-                      variant="outline"
-                      onClick={() => {
-                        setShowSettings(false);
-                        onSkipSetup();
-                      }}
-                      className="w-full"
-                    >
-                      Skip for now
-                    </Button>
-                  )}
-                  <Button
-                    onClick={handleSavePeakHours}
-                    disabled={isSaving || !tempStartTime || !tempEndTime}
-                    className={onSkipSetup ? "w-full" : "w-full col-span-2"}
-                  >
-                    {isSaving ? 'Saving...' : 'Save Peak Hours'}
-                  </Button>
-                </div>
+                <Button onClick={handleSavePeakHours} className="w-full">
+                  Save Peak Hours
+                </Button>
               </div>
             </DialogContent>
           </Dialog>
-          {onSkipSetup && (
-            <Button variant="ghost" size="sm" onClick={onSkipSetup}>
-              Skip for now
-            </Button>
-          )}
-          </div>
         </CardContent>
       </Card>
     );
@@ -356,26 +325,28 @@ export function PeakHoursOptimizer({
 
                 <div className="space-y-4 mt-4">
                   <div className="grid grid-cols-2 gap-4">
-                    <TimePicker12H
-                      label="Start Time"
-                      value={tempStartTime}
-                      onChange={setTempStartTime}
-                      className="w-full"
-                    />
-                    <TimePicker12H
-                      label="End Time"
-                      value={tempEndTime}
-                      onChange={setTempEndTime}
-                      className="w-full"
-                    />
+                    <div>
+                      <label className="text-sm font-medium">Start Time</label>
+                      <input
+                        type="time"
+                        value={tempStartTime}
+                        onChange={(e) => setTempStartTime(e.target.value)}
+                        className="w-full mt-1 px-3 py-2 border rounded-md"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium">End Time</label>
+                      <input
+                        type="time"
+                        value={tempEndTime}
+                        onChange={(e) => setTempEndTime(e.target.value)}
+                        className="w-full mt-1 px-3 py-2 border rounded-md"
+                      />
+                    </div>
                   </div>
 
-                  <Button
-                    onClick={handleSavePeakHours}
-                    disabled={isSaving || !tempStartTime || !tempEndTime}
-                    className="w-full"
-                  >
-                    {isSaving ? 'Updating...' : 'Update Peak Hours'}
+                  <Button onClick={handleSavePeakHours} className="w-full">
+                    Update Peak Hours
                   </Button>
                 </div>
               </DialogContent>
