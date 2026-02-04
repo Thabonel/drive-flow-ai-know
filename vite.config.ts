@@ -3,7 +3,7 @@ import react from "@vitejs/plugin-react";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
 
-// Force Netlify rebuild - v2
+// Force Netlify rebuild - v3 - Timeline UX Deploy Fix
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
   server: {
