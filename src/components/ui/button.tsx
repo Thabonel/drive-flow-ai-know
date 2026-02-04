@@ -18,6 +18,9 @@ const buttonVariants = cva(
           "bg-secondary text-secondary-foreground hover:bg-secondary/80 shadow-neu-raised hover:shadow-neu-raised active:shadow-neu-pressed hover:translate-y-[-1px] active:translate-y-[0px]",
         ghost: "hover:bg-background shadow-none hover:shadow-neu-flat active:shadow-neu-pressed hover:text-accent-foreground",
         link: "text-primary underline-offset-4 hover:underline shadow-none",
+        primary: "bg-gradient-to-br from-primary to-primary-dark text-primary-foreground font-semibold shadow-neu-raised hover:shadow-neu-flat active:shadow-neu-pressed hover:scale-[1.02] active:scale-[1.01] transition-all duration-150",
+        "primary-subtle": "bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 shadow-neu-flat hover:shadow-neu-raised active:shadow-neu-pressed",
+        "secondary-action": "bg-muted text-muted-foreground hover:bg-muted/80 shadow-neu-flat hover:shadow-neu-raised active:shadow-neu-pressed border border-border/50",
       },
       size: {
         default: "h-10 px-4 py-2",
