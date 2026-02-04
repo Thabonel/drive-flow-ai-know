@@ -54,9 +54,10 @@ import { TimelinePhilosophy } from '../TimelinePhilosophy';
 import { HelpButton } from '@/components/HelpButton';
 // import { PageHelp } from '@/components/ui/page-help'; // TODO: Check if this component exists
 import { PlanDropdown } from '@/components/plans/PlanDropdown';
-import type { TimelineLayer } from '@/lib/timelineUtils';
+import type { TimelineLayer, TimelineItem } from '@/lib/timelineUtils';
 import type { UserAttentionPreferences } from '@/lib/attentionTypes';
 import type { TimelineViewMode } from '@/lib/timelineConstants';
+import type { Task } from '@/hooks/useTasks';
 
 interface ResponsiveTimelineHeaderProps {
   // View state
@@ -107,20 +108,20 @@ interface ResponsiveTimelineHeaderProps {
   onViewModeChange: (mode: TimelineViewMode) => void;
 
   // Attention system
-  items: any[];
+  items: TimelineItem[];
   attentionPreferences?: UserAttentionPreferences;
   onUpdateAttentionPreferences: (prefs: UserAttentionPreferences) => void;
   getSelectedDateForBudget: () => Date;
 
   // Tasks
-  unscheduledTasks: any[];
+  unscheduledTasks: Task[];
   tasksLoading: boolean;
   onRefetchTasks: () => void;
   onAddTaskClick: () => void;
 
   // Loading states
   populatingRoutines: boolean;
-  parkedItems?: any[];
+  parkedItems?: TimelineItem[];
 }
 
 export const ResponsiveTimelineHeader: React.FC<ResponsiveTimelineHeaderProps> = (props) => {

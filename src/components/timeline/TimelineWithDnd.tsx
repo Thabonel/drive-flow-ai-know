@@ -12,7 +12,7 @@ import {
   pointerWithin,
 } from '@dnd-kit/core';
 // import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
-import { TimelineManager } from './TimelineManager';
+import { TimelineManagerWrapper } from './TimelineManagerWrapper';
 import { Task, useTasks } from '@/hooks/useTasks';
 import { useTimeline } from '@/hooks/useTimeline';
 import { useLayers } from '@/hooks/useLayers';
@@ -332,7 +332,7 @@ export function TimelineWithDnd({ refetchItems, refetchTasks }: TimelineWithDndP
       <div className="relative">
         {/* Main Timeline - with drop zone */}
         <div ref={timelineRef} className="relative">
-          <TimelineManager onCanvasReady={handleCanvasReady} />
+          <TimelineManagerWrapper onCanvasReady={handleCanvasReady} />
 
           {/* Drop preview indicator - vertical line only */}
           {activeTask && dropPreview && (

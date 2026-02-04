@@ -12,17 +12,35 @@ import {
   X
 } from 'lucide-react';
 import { TimelineItem } from '@/lib/timelineUtils';
-import { UserAttentionPreferences, ATTENTION_TYPE_DESCRIPTIONS } from '@/lib/attentionTypes';
-import { analyzeAttentionBudget } from '@/lib/attentionBudgetEngine';
+import { UserAttentionPreferences, ATTENTION_TYPE_DESCRIPTIONS, AttentionType } from '@/lib/attentionTypes';
+import { analyzeAttentionBudget, ContextSwitchAnalysis } from '@/lib/attentionBudgetEngine';
+
+// Context switch point type (extracted from ContextSwitchAnalysis)
+type ContextSwitchPoint = ContextSwitchAnalysis['switchPoints'][number];
+
+// Type-safe action data for budget alerts
+export type BudgetAlertActionData =
+  | { attentionType: AttentionType }
+  | { attentionType: AttentionType; currentLimit: number }
+  | { switches: ContextSwitchPoint[] }
+  | { items: string[] }
+  | Record<string, never>; // Empty object
 
 interface AttentionBudgetAlertsProps {
   items: TimelineItem[];
   preferences: UserAttentionPreferences | null;
   currentDate: Date;
   onDismiss?: (alertId: string) => void;
-  onTakeAction?: (action: string, data?: any) => void;
+  onTakeAction?: (action: string, data?: BudgetAlertActionData) => void;
   compact?: boolean;
   className?: string;
+}
+
+interface BudgetAlertAction {
+  label: string;
+  action: string;
+  data?: BudgetAlertActionData;
+  variant?: 'default' | 'outline' | 'destructive';
 }
 
 interface BudgetAlert {
@@ -32,12 +50,7 @@ interface BudgetAlert {
   title: string;
   message: string;
   icon: React.ReactNode;
-  actions?: {
-    label: string;
-    action: string;
-    data?: any;
-    variant?: 'default' | 'outline' | 'destructive';
-  }[];
+  actions?: BudgetAlertAction[];
   dismissible?: boolean;
 }
 

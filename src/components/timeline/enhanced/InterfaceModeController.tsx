@@ -23,7 +23,7 @@ interface InterfaceModeConfig {
   id: InterfaceMode;
   label: string;
   description: string;
-  icon: React.ComponentType<any>;
+  icon: React.ComponentType<{ className?: string }>;
   cognitiveLoad: number; // 1-10 scale
   featuresVisible: {
     // Primary actions (always visible)

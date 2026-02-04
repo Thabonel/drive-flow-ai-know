@@ -7,6 +7,7 @@ import { TimelineManager } from './TimelineManager';
 
 interface TimelineManagerWrapperProps {
   className?: string;
+  onCanvasReady?: (svg: SVGSVGElement) => void;
 }
 
 export const TimelineManagerWrapper: React.FC<TimelineManagerWrapperProps> = (props) => {
@@ -18,5 +19,5 @@ export const TimelineManagerWrapper: React.FC<TimelineManagerWrapperProps> = (pr
   }
 
   // Fallback to original timeline manager
-  return <TimelineManager />;
+  return <TimelineManager {...props} />;
 };

@@ -1,5 +1,6 @@
 // Enhanced Timeline Components Export
 export { TimelineManager } from './TimelineManager';
+export { TimelineManagerWrapper } from './TimelineManagerWrapper';
 export { TimelineCanvas } from './TimelineCanvas';
 export { TimelineItem } from './TimelineItem';
 export { AttentionVisualization } from './AttentionVisualization';

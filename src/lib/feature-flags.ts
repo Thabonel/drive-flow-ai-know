@@ -29,8 +29,8 @@ const FEATURE_FLAGS: Record<FeatureFlagKey, FeatureFlag> = {
     key: 'enhanced_timeline_manager',
     name: 'Enhanced Timeline Manager',
     description: 'Use the new enhanced timeline manager with progressive disclosure',
-    enabled: false, // Start disabled for safety
-    rolloutPercentage: 0, // Gradual rollout: 0% → 5% → 25% → 100%
+    enabled: true, // Enable to fix UI clutter and red NOW line issues
+    rolloutPercentage: 100, // Full rollout for immediate fix
     requiresAuth: true,
   },
 

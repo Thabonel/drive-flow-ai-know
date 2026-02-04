@@ -17,19 +17,32 @@ import {
   ChevronUp,
 } from 'lucide-react';
 import { TimelineItem } from '@/lib/timelineUtils';
-import { UserAttentionPreferences, ATTENTION_TYPE_DESCRIPTIONS } from '@/lib/attentionTypes';
+import { UserAttentionPreferences, ATTENTION_TYPE_DESCRIPTIONS, AttentionType } from '@/lib/attentionTypes';
 import { analyzeAttentionBudget } from '@/lib/attentionBudgetEngine';
 import { Z_INDEX_CLASSES } from '@/lib/z-index';
 import { cn } from '@/lib/utils';
+
+// Type-safe action data for alert actions
+export type AlertActionData =
+  | { attentionType: AttentionType }
+  | { attentionType: AttentionType; currentLimit: number }
+  | Record<string, never>; // Empty object
 
 interface AlertManagerProps {
   items: TimelineItem[];
   preferences: UserAttentionPreferences | null;
   currentDate: Date;
-  onTakeAction?: (action: string, data?: any) => void;
+  onTakeAction?: (action: string, data?: AlertActionData) => void;
   onDismiss?: (alertId: string) => void;
   className?: string;
   maxVisible?: number;
+}
+
+interface AlertAction {
+  label: string;
+  action: string;
+  data?: AlertActionData;
+  variant?: 'default' | 'outline' | 'destructive';
 }
 
 interface ManagedAlert {
@@ -39,12 +52,7 @@ interface ManagedAlert {
   title: string;
   message: string;
   icon: React.ReactNode;
-  actions?: {
-    label: string;
-    action: string;
-    data?: any;
-    variant?: 'default' | 'outline' | 'destructive';
-  }[];
+  actions?: AlertAction[];
   dismissible?: boolean;
   priority: number; // Higher number = higher priority
 }
@@ -151,7 +159,7 @@ export function AlertManager({
     onDismiss?.(alertId);
   };
 
-  const handleAction = (action: string, data?: any) => {
+  const handleAction = (action: string, data?: AlertActionData) => {
     onTakeAction?.(action, data);
   };
 
