@@ -318,33 +318,146 @@ export const ResponsiveTimelineCanvas: React.FC<ResponsiveTimelineCanvasProps> =
   const renderNowLine = () => {
     if (nowLineX < 0 || nowLineX > viewportWidth) return null;
 
+    const currentTime = new Date();
+    const isWithinBusinessHours = currentTime.getHours() >= 9 && currentTime.getHours() <= 17;
+
     return (
       <g className="now-line">
+        {/* SVG Filter Definitions for enhanced mobile glow */}
+        <defs>
+          <filter id="mobile-now-glow" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation={isMobile ? "3" : "4"} result="coloredBlur"/>
+            <feGaussianBlur stdDeviation={isMobile ? "6" : "8"} result="outerGlow"/>
+            <feMerge>
+              <feMergeNode in="outerGlow"/>
+              <feMergeNode in="coloredBlur"/>
+              <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+          </filter>
+
+          <filter id="mobile-pulse" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="4" result="glow">
+              <animate attributeName="stdDeviation" values="4;8;4" dur="2s" repeatCount="indefinite"/>
+            </feGaussianBlur>
+            <feMerge>
+              <feMergeNode in="glow"/>
+              <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+          </filter>
+        </defs>
+
+        {/* Background glow line */}
         <line
           x1={nowLineX}
           y1={0}
           x2={nowLineX}
           y2={viewportHeight}
           stroke="#ef4444"
-          strokeWidth={isMobile ? 2 : 3}
-          className="drop-shadow-sm"
+          strokeWidth={isMobile ? 6 : 8}
+          opacity={0.3}
+          filter="url(#mobile-pulse)"
         />
+
+        {/* Main NOW line with responsive thickness */}
+        <line
+          x1={nowLineX}
+          y1={0}
+          x2={nowLineX}
+          y2={viewportHeight}
+          stroke="#dc2626"
+          strokeWidth={isMobile ? 3 : 4}
+          opacity={1}
+          filter="url(#mobile-now-glow)"
+          strokeLinecap="round"
+        />
+
+        {/* NOW indicator circle at top - enhanced */}
         <circle
           cx={nowLineX}
-          cy={10}
-          r={isMobile ? 4 : 5}
-          fill="#ef4444"
-          className="drop-shadow-sm"
+          cy={isMobile ? 15 : 20}
+          r={isMobile ? 6 : 8}
+          fill="#dc2626"
+          stroke="#ffffff"
+          strokeWidth={isMobile ? 1.5 : 2}
+          filter="url(#mobile-now-glow)"
         />
-        <text
-          x={nowLineX + 10}
-          y={25}
-          fontSize={isMobile ? '12px' : '14px'}
-          fill="#ef4444"
-          className="font-bold pointer-events-none select-none"
-        >
-          NOW
-        </text>
+
+        {/* Business hours indicator - small dot below main circle */}
+        {isWithinBusinessHours && (
+          <circle
+            cx={nowLineX}
+            cy={isMobile ? 25 : 32}
+            r={isMobile ? 2 : 3}
+            fill="#10b981"
+            stroke="#ffffff"
+            strokeWidth={1}
+          />
+        )}
+
+        {/* Time and NOW label with responsive positioning */}
+        {!isMobile && (
+          <>
+            {/* Time label with background */}
+            <rect
+              x={nowLineX + 12}
+              y={10}
+              width={50}
+              height={16}
+              fill="rgba(220, 38, 38, 0.95)"
+              rx={3}
+            />
+            <text
+              x={nowLineX + 15}
+              y={22}
+              fontSize="12px"
+              fill="white"
+              fontWeight="bold"
+            >
+              {currentTime.toLocaleTimeString('en-US', {
+                hour: 'numeric',
+                minute: '2-digit',
+                hour12: true
+              })}
+            </text>
+
+            {/* NOW label with enhanced background */}
+            <rect
+              x={nowLineX + 12}
+              y={30}
+              width={35}
+              height={16}
+              fill="#dc2626"
+              stroke="#ffffff"
+              strokeWidth={1}
+              rx={3}
+              filter="url(#mobile-now-glow)"
+            />
+            <text
+              x={nowLineX + 16}
+              y={42}
+              fontSize="12px"
+              fill="white"
+              fontWeight="bold"
+            >
+              NOW
+            </text>
+          </>
+        )}
+
+        {/* Mobile-only NOW label - positioned to avoid crowding */}
+        {isMobile && (
+          <text
+            x={nowLineX + 8}
+            y={40}
+            fontSize="11px"
+            fill="#dc2626"
+            fontWeight="bold"
+            className="pointer-events-none select-none"
+            filter="url(#mobile-now-glow)"
+          >
+            NOW
+          </text>
+        )}
       </g>
     );
   };
