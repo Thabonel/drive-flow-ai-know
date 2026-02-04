@@ -70,6 +70,15 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
   }
 
   static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+    // Don't show error UI for navigation errors - they will auto-retry
+    const isNavigationError = error.message?.includes('426') ||
+                              error.message?.includes('SUPABASE');
+
+    if (isNavigationError) {
+      console.log('Navigation error detected, will auto-retry without showing error UI');
+      return { hasError: false, error, retryCount: 0 };
+    }
+
     return { hasError: true, error, retryCount: 0 };
   }
 
@@ -91,14 +100,13 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
 
     if (isNavigationError && this.state.retryCount < 1) {
       console.log('Auto-retrying navigation error...');
+      // Navigation errors don't show UI (handled in getDerivedStateFromError)
+      // Just increment retry count and let it resolve naturally
       setTimeout(() => {
         this.setState({
-          hasError: false,
-          error: undefined,
-          errorInfo: undefined,
           retryCount: this.state.retryCount + 1
         });
-      }, 100);
+      }, 0);
       return;
     }
 
