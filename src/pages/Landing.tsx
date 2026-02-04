@@ -396,18 +396,8 @@ export default function Landing() {
 
           <div className="grid md:grid-cols-2 gap-12 items-center">
             <div className="relative">
-              <img
-                src="https://your-project-id.supabase.co/storage/v1/object/public/assets/wheels.jpg"
-                alt="AI Pitch Deck Generator"
-                className="rounded-2xl shadow-card border border-border"
-                onError={(e) => {
-                  e.currentTarget.style.display = 'none';
-                  const placeholder = e.currentTarget.nextElementSibling as HTMLElement | null;
-                  if (placeholder) placeholder.style.display = 'flex';
-                }}
-              />
-              <div className="hidden rounded-2xl shadow-card border border-border bg-muted/20 items-center justify-center h-[400px]">
-                <p className="text-muted-foreground">Pitch Deck Preview</p>
+              <div className="rounded-2xl shadow-card border border-border bg-muted/20 flex items-center justify-center h-[400px]">
+                <p className="text-muted-foreground text-lg">Pitch Deck Preview</p>
               </div>
             </div>
 
