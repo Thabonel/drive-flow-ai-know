@@ -51,6 +51,7 @@ import { TimelineLayerManager } from '../TimelineLayerManager';
 import { TimelineControls } from '../TimelineControls';
 import { TaskHeaderPanel } from '../TaskHeaderPanel';
 import { TimelinePhilosophy } from '../TimelinePhilosophy';
+import { HelpButton } from '@/components/HelpButton';
 // import { PageHelp } from '@/components/ui/page-help'; // TODO: Check if this component exists
 import { PlanDropdown } from '@/components/plans/PlanDropdown';
 import type { TimelineLayer } from '@/lib/timelineUtils';
@@ -157,31 +158,40 @@ export const ResponsiveTimelineHeader: React.FC<ResponsiveTimelineHeaderProps> =
             <div className="flex items-center gap-2">
               <TimelinePhilosophy mode="dialog" trigger="icon" />
 
-{/* Help system - TODO: Implement help component
+{/* Enhanced help system with comprehensive explanations */}
               {props.viewType === 'calendar' ? (
                 <HelpButton
-                  title="Calendar View - How It Works"
-                  description="AI Query Hub's Calendar View combines traditional scheduling with intelligent time management."
+                  title="Calendar View - Complete Guide"
+                  description="AI Query Hub's Calendar View provides a familiar calendar interface enhanced with intelligent time management features. See your schedule by day, week, or month while monitoring your attention budget and productivity patterns."
                   tips={[
-                    "✨ Click any time slot to create an event",
-                    "🎯 Use 'Plan Day' for AI-assisted scheduling",
-                    "📊 Monitor your attention budget in real-time",
-                    "🔄 Connect Google Calendar for sync",
+                    "✨ Click any time slot to create an event instantly",
+                    "🎯 Use 'Plan Day' to let AI organize your tasks optimally",
+                    "📊 Watch your attention budget in real-time to avoid overcommitting",
+                    "🔄 Sync with Google Calendar for seamless integration",
+                    "👁️ Switch between day, week, and month views using the buttons",
+                    "🎨 Different colored layers help organize work by context or priority",
+                    "⏰ Events show duration and can be resized by dragging edges",
+                    "📱 Mobile-optimized with touch-friendly controls and gestures"
                   ]}
                 />
               ) : (
                 <HelpButton
-                  title="Timeline Manager - How It Works"
-                  description="Visualize time as a flowing river. Items drift toward NOW and become 'logjammed' when overdue."
+                  title="Timeline Manager - Complete Guide"
+                  description="The Timeline Manager visualizes time as a flowing river where tasks and events move toward the present moment. The prominent red NOW line shows exactly where you are in time, while past items move left and future items wait on the right."
                   tips={[
-                    "🌊 Time flows left to right toward the NOW line",
-                    "🎯 Use AI planning for intelligent scheduling",
-                    "🧠 Real-time cognitive load tracking",
-                    "🔐 Lock for auto-scroll or unlock for planning",
+                    "🌊 Time flows from left (past) to right (future) toward the red NOW line",
+                    "🎯 Use AI planning to automatically schedule tasks in optimal time slots",
+                    "🧠 Interface modes (Beginner/Intermediate/Expert) control complexity",
+                    "🔐 Lock timeline to auto-scroll with real time, or unlock to plan ahead",
+                    "🚨 Overdue items turn red and pulse to grab your attention",
+                    "📊 Layers organize items by context (Work, Personal, Health, etc.)",
+                    "✏️ Double-click empty space to quickly create new items",
+                    "🎨 Drag items between time slots or layers to reschedule",
+                    "📱 Touch-optimized with pinch-to-zoom and swipe navigation on mobile",
+                    "🕐 The prominent red NOW line with time display keeps you grounded in the present"
                   ]}
                 />
               )}
-              */}
             </div>
           </div>
         </div>
