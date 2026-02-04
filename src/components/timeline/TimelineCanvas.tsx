@@ -454,16 +454,6 @@ export function TimelineCanvas({
 
       {/* NOW line - rendered last to appear on top of all layers and items */}
       <g className="now-line">
-        {/* Solid red line base - always visible */}
-        <line
-          x1={nowLineX}
-          y1={0}
-          x2={nowLineX}
-          y2={totalHeight}
-          stroke="#dc2626"
-          strokeWidth={3}
-        />
-
         {/* Background glow line for extra visibility */}
         <line
           x1={nowLineX}
@@ -489,26 +479,65 @@ export function TimelineCanvas({
           strokeLinecap="round"
         />
 
-        {/* NOW label with time - compact badge at top */}
+        {/* Date label with background */}
         <rect
           x={nowLineX + 12}
           y={5}
-          width={80}
-          height={20}
-          fill="#dc2626"
-          stroke="#ffffff"
-          strokeWidth={1}
-          rx={4}
-          filter="url(#now-line-glow)"
+          width={65}
+          height={12}
+          fill="rgba(220, 38, 38, 0.9)"
+          rx={2}
         />
         <text
-          x={nowLineX + 16}
-          y={18}
+          x={nowLineX + 15}
+          y={13}
+          fontSize="10"
+          fill="white"
+          fontWeight="600"
+        >
+          {formatDate(nowTime.toISOString())}
+        </text>
+
+        {/* Time label with background */}
+        <rect
+          x={nowLineX + 12}
+          y={20}
+          width={45}
+          height={14}
+          fill="rgba(220, 38, 38, 0.9)"
+          rx={2}
+        />
+        <text
+          x={nowLineX + 15}
+          y={30}
           fontSize="12"
           fill="white"
           fontWeight="bold"
         >
-          NOW {formatTime(nowTime.toISOString())}
+          {formatTime(nowTime.toISOString())}
+        </text>
+
+        {/* NOW label with enhanced background */}
+        <rect
+          x={nowLineX + 12}
+          y={37}
+          width={35}
+          height={16}
+          fill="#dc2626"
+          stroke="#ffffff"
+          strokeWidth={1}
+          rx={3}
+          filter="url(#now-line-glow)"
+        />
+        <text
+          x={nowLineX + 16}
+          y={48}
+          fontSize="12"
+          fill="white"
+          fontWeight="bold"
+          textAnchor="start"
+        >
+          NOW
         </text>
       </g>
     </svg>
