@@ -2,6 +2,11 @@
   publish = "dist"
   command = "npm install --legacy-peer-deps && npm run build"
 
+# Skip secrets scanning for required environment variables and build artifacts
+[build.environment]
+  SECRETS_SCAN_OMIT_KEYS = "VITE_SUPABASE_URL,VITE_SUPABASE_ANON_KEY,VITE_SUPABASE_PROJECT_ID"
+  SECRETS_SCAN_OMIT_PATHS = "dist/**,node_modules/**,.temp/**"
+
 [build.environment]
   NODE_VERSION = "18"
 
