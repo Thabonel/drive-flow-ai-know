@@ -53,3 +53,21 @@ tests/quick-test.js
 
 # Documentation with potential secrets (keep local only)
 docs/
+
+# Root-level documentation files except essential ones
+/*.md
+!README.md
+!CLAUDE.md
+*.sql
+*.sh
+
+# Directories not needed for production
+research-agent/
+video-generation-service/
+supabase/.temp/
+
+# Build artifacts that may contain embedded secrets
+dist/
+
+# Generated content that shouldn't be committed
+conversation.md
