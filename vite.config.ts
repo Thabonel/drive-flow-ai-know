@@ -33,40 +33,101 @@ export default defineConfig(({ mode }) => ({
     },
   },
   build: {
-    // Optimize chunk splitting for better loading
+    // Optimize chunk splitting for better loading and cache invalidation
     rollupOptions: {
       output: {
-        manualChunks: {
-          // Separate vendor chunks for better caching
-          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
-          'ui-vendor': [
-            '@radix-ui/react-dialog',
-            '@radix-ui/react-dropdown-menu',
-            '@radix-ui/react-select',
-            '@radix-ui/react-tabs',
-            '@radix-ui/react-toast',
-            'lucide-react'
-          ],
-          'data-vendor': ['@supabase/supabase-js', '@tanstack/react-query'],
-          'chart-vendor': ['recharts'],
-          // Heavy libraries in separate chunks (loaded on demand)
-          'office-vendor': ['pptxgenjs', 'docx', '@react-pdf/renderer'],
-          'canvas-vendor': ['html2canvas', 'canvg', 'jspdf'],
-          'ai-vendor': ['openai']
+        // Improved chunk naming with hash for cache busting
+        chunkFileNames: (chunkInfo) => {
+          const facadeModuleId = chunkInfo.facadeModuleId
+            ? chunkInfo.facadeModuleId.split('/').pop()?.replace('.tsx', '').replace('.ts', '') || 'chunk'
+            : 'chunk';
+          return `assets/${facadeModuleId}-[hash].js`;
+        },
+        entryFileNames: 'assets/entry-[hash].js',
+        assetFileNames: 'assets/[name]-[hash][extname]',
+
+        manualChunks: (id) => {
+          // Dynamic chunking strategy to prevent chunk load errors
+          if (id.includes('node_modules')) {
+            // Core React dependencies - these change rarely
+            if (id.includes('react') || id.includes('react-dom') || id.includes('react-router-dom')) {
+              return 'react-vendor';
+            }
+
+            // UI components - moderate change frequency
+            if (id.includes('@radix-ui') || id.includes('lucide-react')) {
+              return 'ui-vendor';
+            }
+
+            // Data handling libraries - moderate change frequency
+            if (id.includes('@supabase') || id.includes('@tanstack/react-query')) {
+              return 'data-vendor';
+            }
+
+            // Chart libraries - rarely used, load on demand
+            if (id.includes('recharts')) {
+              return 'chart-vendor';
+            }
+
+            // Heavy document libraries - load on demand
+            if (id.includes('pptxgenjs') || id.includes('docx') || id.includes('@react-pdf')) {
+              return 'office-vendor';
+            }
+
+            // Canvas and PDF libraries - load on demand
+            if (id.includes('html2canvas') || id.includes('canvg') || id.includes('jspdf')) {
+              return 'canvas-vendor';
+            }
+
+            // AI libraries - load on demand
+            if (id.includes('openai')) {
+              return 'ai-vendor';
+            }
+
+            // All other node_modules - generic vendor chunk
+            return 'vendor';
+          }
+
+          // Application code chunking by feature
+          if (id.includes('/pages/')) {
+            const page = id.split('/pages/')[1].split('/')[0];
+            return `page-${page}`;
+          }
+
+          if (id.includes('/components/')) {
+            // Keep commonly used components in main chunk
+            if (id.includes('/ui/') || id.includes('/ErrorBoundary') || id.includes('/ChunkLoadErrorHandler')) {
+              return 'ui-common';
+            }
+            return 'components';
+          }
         }
       }
     },
-    // Increase chunk size warning limit since we're optimizing
+
+    // Improve build reliability
     chunkSizeWarningLimit: 1000,
-    // Enable source maps for debugging (disable for production)
     sourcemap: mode === 'development',
-    // Optimize for production
     minify: mode === 'production' ? 'terser' : false,
+
+    // Enhanced terser options for better error handling
     terserOptions: mode === 'production' ? {
       compress: {
-        drop_console: true, // Remove console.logs in production
+        drop_console: true,
         drop_debugger: true,
+        // Keep function names for better error reporting
+        keep_fnames: true,
+      },
+      mangle: {
+        // Keep class names for better error reporting
+        keep_classnames: true,
       }
-    } : undefined
+    } : undefined,
+
+    // Ensure assets are properly versioned
+    assetsDir: 'assets',
+
+    // Build target for better compatibility
+    target: 'es2020'
   }
 }));
