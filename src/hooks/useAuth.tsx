@@ -25,18 +25,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let initialSessionLoaded = false;
+    let subscription: any = null;
 
-    // Set up auth state listener FIRST
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        // Only set loading=false if initial session was already loaded
-        if (initialSessionLoaded) {
-          setLoading(false);
+    try {
+      // Set up auth state listener FIRST
+      const { data: { subscription: authSubscription } } = supabase.auth.onAuthStateChange(
+        (_, session) => {
+          setSession(session);
+          setUser(session?.user ?? null);
+          // Only set loading=false if initial session was already loaded
+          if (initialSessionLoaded) {
+            setLoading(false);
+          }
         }
-      }
-    );
+      );
+      subscription = authSubscription;
+    } catch (error) {
+      console.error('Auth state listener setup failed:', error);
+      // Fallback: just set loading false without auth
+      setLoading(false);
+    }
 
     // THEN check for existing session - this completes the initialization
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -44,9 +52,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(session?.user ?? null);
       initialSessionLoaded = true;
       setLoading(false); // Only set loading=false once, after initial session check
+    }).catch((error) => {
+      console.error('Auth session initialization failed:', error);
+      // Set auth state as if user is not logged in
+      setSession(null);
+      setUser(null);
+      initialSessionLoaded = true;
+      setLoading(false); // Still set loading=false to prevent infinite loading
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      if (subscription) {
+        subscription.unsubscribe();
+      }
+    };
   }, []);
 
   const signUp = async (email: string, password: string, fullName: string, inviteToken?: string) => {

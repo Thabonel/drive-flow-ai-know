@@ -76,6 +76,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     console.error('ErrorBoundary caught an error:', error, errorInfo);
 
+
     // Enhanced logging for cascade failures
     if (error.message?.includes('Export') || error.message?.includes('import')) {
       console.error('Possible module loading cascade failure detected:', {
