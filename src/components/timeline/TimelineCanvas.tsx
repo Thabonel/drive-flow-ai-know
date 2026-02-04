@@ -454,19 +454,7 @@ export function TimelineCanvas({
 
       {/* NOW line - rendered last to appear on top of all layers and items */}
       <g className="now-line">
-        {/* Background glow line for extra visibility */}
-        <line
-          x1={nowLineX}
-          y1={0}
-          x2={nowLineX}
-          y2={totalHeight}
-          stroke="#ef4444"
-          strokeWidth={10}
-          opacity={0.25}
-          filter="url(#now-line-pulse)"
-        />
-
-        {/* Main NOW line with enhanced visibility - spans all layers */}
+        {/* Solid red line base - always visible */}
         <line
           x1={nowLineX}
           y1={0}
@@ -474,24 +462,49 @@ export function TimelineCanvas({
           y2={totalHeight}
           stroke="#dc2626"
           strokeWidth={3}
+        />
+
+        {/* Background glow line for extra visibility */}
+        <line
+          x1={nowLineX}
+          y1={0}
+          x2={nowLineX}
+          y2={totalHeight}
+          stroke="#ef4444"
+          strokeWidth={8}
+          opacity={0.3}
+          filter="url(#now-line-pulse)"
+        />
+
+        {/* Main NOW line with enhanced visibility */}
+        <line
+          x1={nowLineX}
+          y1={0}
+          x2={nowLineX}
+          y2={totalHeight}
+          stroke="#dc2626"
+          strokeWidth={4}
           opacity={1}
           filter="url(#now-line-glow)"
+          strokeLinecap="round"
         />
 
         {/* NOW label with time - compact badge at top */}
         <rect
-          x={nowLineX + 6}
-          y={4}
-          width={70}
-          height={18}
+          x={nowLineX + 12}
+          y={5}
+          width={80}
+          height={20}
           fill="#dc2626"
-          rx={3}
+          stroke="#ffffff"
+          strokeWidth={1}
+          rx={4}
           filter="url(#now-line-glow)"
         />
         <text
-          x={nowLineX + 10}
-          y={16}
-          fontSize="11"
+          x={nowLineX + 16}
+          y={18}
+          fontSize="12"
           fill="white"
           fontWeight="bold"
         >
