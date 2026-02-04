@@ -28,7 +28,7 @@ export const CLAUDE_MODELS = {
   FAST: Deno.env.get('CLAUDE_FAST_MODEL') || 'claude-sonnet-4-5-20250929',
 
   // Cheap: Most cost-effective for simple tasks
-  CHEAP: Deno.env.get('CLAUDE_CHEAP_MODEL') || 'claude-haiku-4-5-20250929',
+  CHEAP: Deno.env.get('CLAUDE_CHEAP_MODEL') || 'claude-haiku-4-5-20251001',
 } as const;
 
 // OpenRouter models (for fallback)
