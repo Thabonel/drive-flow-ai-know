@@ -3,8 +3,8 @@ import { createClient } from '@supabase/supabase-js';
 
 // Environment variable validation with graceful degradation
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-// Support both naming conventions: ANON_KEY (legacy) and alternative key
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || import.meta.env.VITE_SUPABASE_ANON_KEY;
+// Support both naming conventions: ANON_KEY (legacy) and PUBLISHABLE_KEY (current)
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
 // SAFETY CHECK: Prevent module loading cascade failures from missing environment variables
 // Following the pattern from useGoogleCalendar.ts (lines 93-100)
