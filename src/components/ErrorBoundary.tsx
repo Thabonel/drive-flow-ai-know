@@ -76,6 +76,16 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     console.error('ErrorBoundary caught an error:', error, errorInfo);
 
+    // DEBUG: Capture the exact error causing the flash
+    console.error('🚨 ERROR FLASH - EXACT ERROR:', {
+      message: error.message,
+      name: error.name,
+      stack: error.stack,
+      componentStack: errorInfo.componentStack,
+      url: window.location.href,
+      timestamp: new Date().toISOString()
+    });
+
 
     // Enhanced logging for cascade failures
     if (error.message?.includes('Export') || error.message?.includes('import')) {
@@ -86,11 +96,13 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
       });
     }
 
+    // TEMPORARILY DISABLED AUTO-RETRY TO SEE THE EXACT ERROR
     // Auto-retry once for navigation-related errors (e.g., React error #426)
     const isNavigationError = error.message?.includes('426') ||
                               (error.message?.includes('SUPABASE') && this.state.retryCount === 0);
 
-    if (isNavigationError && this.state.retryCount < 1) {
+    // DEBUG: Temporarily disable auto-retry to see the error
+    if (false && isNavigationError && this.state.retryCount < 1) {
       console.log('Auto-retrying navigation error...');
       setTimeout(() => {
         this.setState({
