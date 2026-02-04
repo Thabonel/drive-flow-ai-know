@@ -1,9 +1,0 @@
-
-Company: TechCorp Solutions
-Founded: 2020
-Headquarters: San Francisco, CA
-Industry: AI and Machine Learning
-Employees: 150
-Revenue: $50M (2023)
-Key Products: AI Platform, Data Analytics Suite, ML Tools
-Mission: Democratizing AI technology for businesses worldwide
