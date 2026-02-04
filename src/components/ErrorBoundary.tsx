@@ -54,6 +54,7 @@ interface ErrorBoundaryState {
   hasError: boolean;
   error?: Error;
   errorInfo?: ErrorInfo;
+  retryCount: number;
 }
 
 interface ErrorBoundaryProps {
@@ -65,11 +66,11 @@ interface ErrorBoundaryProps {
 export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
   constructor(props: ErrorBoundaryProps) {
     super(props);
-    this.state = { hasError: false };
+    this.state = { hasError: false, retryCount: 0 };
   }
 
   static getDerivedStateFromError(error: Error): ErrorBoundaryState {
-    return { hasError: true, error };
+    return { hasError: true, error, retryCount: 0 };
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
@@ -84,12 +85,34 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
       });
     }
 
+    // Auto-retry once for navigation-related errors (e.g., React error #426)
+    const isNavigationError = error.message?.includes('426') ||
+                              (error.message?.includes('SUPABASE') && this.state.retryCount === 0);
+
+    if (isNavigationError && this.state.retryCount < 1) {
+      console.log('Auto-retrying navigation error...');
+      setTimeout(() => {
+        this.setState({
+          hasError: false,
+          error: undefined,
+          errorInfo: undefined,
+          retryCount: this.state.retryCount + 1
+        });
+      }, 100);
+      return;
+    }
+
     this.setState({ errorInfo });
     this.props.onError?.(error, errorInfo);
   }
 
   handleRetry = () => {
-    this.setState({ hasError: false, error: undefined, errorInfo: undefined });
+    this.setState({
+      hasError: false,
+      error: undefined,
+      errorInfo: undefined,
+      retryCount: this.state.retryCount + 1
+    });
   };
 
   render() {
@@ -98,10 +121,10 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
         return this.props.fallback;
       }
 
-      const isModuleLoadingError = this.state.error?.message?.includes('Export') ||
-                                   this.state.error?.message?.includes('import') ||
-                                   this.state.error?.message?.includes('environment') ||
-                                   this.state.error?.message?.includes('SUPABASE');
+      // Only show initialization error for actual configuration problems
+      const isModuleLoadingError = (this.state.error?.message?.includes('Export') ||
+                                   this.state.error?.message?.includes('import')) &&
+                                   !window.location.href.includes('/auth');
 
       return (
         <div className="min-h-screen flex items-center justify-center p-4 bg-muted">
