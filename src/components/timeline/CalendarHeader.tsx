@@ -2,6 +2,7 @@
 
 import { format, isToday } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { Z_INDEX_CLASSES } from '@/lib/z-index';
 
 interface CalendarHeaderProps {
   days: Date[];
@@ -18,12 +19,12 @@ export function CalendarHeader({
 }: CalendarHeaderProps) {
   return (
     <div
-      className="sticky top-0 z-30 flex border-b bg-background"
+      className={cn("sticky top-0 flex border-b bg-background", Z_INDEX_CLASSES.CALENDAR_HEADERS)}
       style={{ height: headerHeight }}
     >
       {/* Empty cell above time column */}
       <div
-        className="sticky left-0 z-40 bg-background border-r flex items-center justify-center"
+        className={cn("sticky left-0 bg-background border-r flex items-center justify-center", Z_INDEX_CLASSES.CALENDAR_TIME_COLUMN)}
         style={{ width: timeColumnWidth, minWidth: timeColumnWidth }}
       >
         <span className="text-xs text-muted-foreground">Time</span>

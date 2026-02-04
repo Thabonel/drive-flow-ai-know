@@ -8,6 +8,7 @@ import { CalendarEvent } from './CalendarEvent';
 import { TimelineItem as TimelineItemType } from '@/lib/timelineUtils';
 import { TimelineViewMode, CALENDAR_CONFIG } from '@/lib/timelineConstants';
 import { cn } from '@/lib/utils';
+import { Z_INDEX_CLASSES } from '@/lib/z-index';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { X } from 'lucide-react';
@@ -598,7 +599,7 @@ export function CalendarGrid({
         {/* Quick add popup for month view */}
         {quickAdd.visible && quickAdd.startTime && (
           <div
-            className="fixed z-50 bg-background border rounded-lg shadow-lg p-3 min-w-[250px]"
+            className={cn("fixed bg-background border rounded-lg shadow-lg p-3 min-w-[250px]", Z_INDEX_CLASSES.QUICK_ADD_FORMS)}
             style={{
               left: Math.min(quickAdd.x, window.innerWidth - 280),
               top: Math.min(quickAdd.y, window.innerHeight - 150),
@@ -750,7 +751,7 @@ export function CalendarGrid({
 
                   return (
                     <div
-                      className="absolute left-1 right-1 bg-primary/30 border-2 border-primary border-dashed rounded pointer-events-none z-20"
+                      className={cn("absolute left-1 right-1 bg-primary/30 border-2 border-primary border-dashed rounded pointer-events-none", Z_INDEX_CLASSES.DRAG_PREVIEW)}
                       style={{
                         top: ((dragCreate.startHour - dayStartHour) * 60 + dragCreate.startMinutes) / 60 * rowHeight,
                         height: Math.max(
@@ -769,7 +770,7 @@ export function CalendarGrid({
                 {/* Current time indicator */}
                 {isCurrentDay && currentTimePosition !== null && (
                   <div
-                    className="absolute left-0 right-0 z-30 pointer-events-none flex items-center"
+                    className={cn("absolute left-0 right-0 pointer-events-none flex items-center", Z_INDEX_CLASSES.TIMELINE_NOW_LINE)}
                     style={{ top: currentTimePosition }}
                   >
                     <div className="w-2 h-2 rounded-full bg-red-500 -ml-1" />
@@ -807,7 +808,7 @@ export function CalendarGrid({
           {/* Quick add popup */}
           {quickAdd.visible && quickAdd.startTime && (
             <div
-              className="absolute z-50 bg-background border rounded-lg shadow-lg p-3 min-w-[280px]"
+              className={cn("absolute bg-background border rounded-lg shadow-lg p-3 min-w-[280px]", Z_INDEX_CLASSES.QUICK_ADD_FORMS)}
               style={{
                 left: quickAdd.x + (dayColumnWidth > 300 ? 20 : 5), // Offset slightly from edge
                 top: quickAdd.y,
