@@ -2,6 +2,8 @@
 
 import React from 'react';
 import { format } from 'date-fns';
+import { Z_INDEX_CLASSES } from '@/lib/z-index';
+import { cn } from '@/lib/utils';
 
 interface CalendarTimeColumnProps {
   startHour: number;
@@ -32,7 +34,7 @@ export function CalendarTimeColumn({
 
   return (
     <div
-      className="sticky left-0 z-20 bg-background border-r"
+      className={cn("sticky left-0 bg-background border-r", Z_INDEX_CLASSES.CALENDAR_TIME_COLUMN)}
       style={{ width, minWidth: width }}
     >
       {/* Empty header cell */}
