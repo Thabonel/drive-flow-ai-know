@@ -1,9 +1,6 @@
 /* Enhanced Timeline Attention System Styles */
 @import './styles/attention-enhancements.css';
 
-/* Timeline Header Styles */
-@import './styles/timeline-header.css';
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
