@@ -293,11 +293,11 @@ Weekly one-on-ones Thursday afternoons`);
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
                       <span className="font-medium">{rec.title}</span>
-                      <Badge variant="outline" size="sm" className="flex items-center gap-1">
+                      <Badge variant="outline" className="flex items-center gap-1 text-xs">
                         <div className={`w-2 h-2 rounded-full ${getConfidenceColor(rec.confidence)}`}></div>
                         {Math.round(rec.confidence * 100)}%
                       </Badge>
-                      <Badge variant="outline" size="sm" className={getImpactColor(rec.impact)}>
+                      <Badge variant="outline" className={`text-xs ${getImpactColor(rec.impact)}`}>
                         {rec.impact}
                       </Badge>
                     </div>

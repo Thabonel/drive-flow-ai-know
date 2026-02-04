@@ -23,7 +23,7 @@ import { useTimelineItemGestures } from '@/hooks/useGestures';
 import { TimelineItem } from '@/lib/timelineUtils';
 import { ATTENTION_TYPE_DESCRIPTIONS } from '@/lib/attentionTypes';
 import { Vibrate } from '@/lib/haptics';
-import { MobileDelegationPanel } from './MobileDelegationPanel';
+import { MobileDelegationPanel, type DelegationInfo } from './MobileDelegationPanel';
 import {
   Clock,
   Check,
@@ -46,7 +46,7 @@ interface MobileTimelineControlsProps {
   onItemUpdate?: (item: TimelineItem) => void;
   onItemComplete?: (item: TimelineItem) => void;
   onItemPark?: (item: TimelineItem) => void;
-  onItemDelegate?: (item: TimelineItem, delegateInfo: any) => void;
+  onItemDelegate?: (item: TimelineItem, delegateInfo: DelegationInfo) => void;
   onItemEdit?: (item: TimelineItem) => void;
   onItemDelete?: (item: TimelineItem) => void;
   className?: string;

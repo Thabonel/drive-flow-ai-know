@@ -78,10 +78,18 @@ interface WeeklyDelegationScan {
   role_alignment_score: number;
 }
 
+// Type for delegation handoff information
+export interface DelegateInfo {
+  delegate_id: string;
+  trust_level: 'new' | 'experienced' | 'expert';
+  handoff_method: 'work_alongside' | 'checkpoint_reviews' | 'provide_context_only';
+  follow_up_schedule: string[];
+}
+
 interface DelegationSuggestionsProps {
   timelineItems: TimelineItem[];
   userRole: 'maker' | 'marker' | 'multiplier';
-  onDelegateItem: (itemId: string, delegateInfo: any) => void;
+  onDelegateItem: (itemId: string, delegateInfo: DelegateInfo) => void;
 }
 
 const DelegationSuggestions: React.FC<DelegationSuggestionsProps> = ({
@@ -184,7 +192,7 @@ const DelegationSuggestions: React.FC<DelegationSuggestionsProps> = ({
     }
   }, [user, userRole, supabase]);
 
-  const handleDelegate = useCallback((recommendation: DelegationRecommendation, delegateInfo: any) => {
+  const handleDelegate = useCallback((recommendation: DelegationRecommendation, delegateInfo: DelegateInfo) => {
     onDelegateItem(recommendation.item_id, delegateInfo);
     setSingleAnalysis(null);
     setSelectedItem(null);
@@ -460,7 +468,7 @@ const DelegationSuggestions: React.FC<DelegationSuggestionsProps> = ({
 interface DelegationAnalysisDialogProps {
   item: TimelineItem;
   recommendation: DelegationRecommendation;
-  onDelegate: (recommendation: DelegationRecommendation, delegateInfo: any) => void;
+  onDelegate: (recommendation: DelegationRecommendation, delegateInfo: DelegateInfo) => void;
 }
 
 const DelegationAnalysisDialog: React.FC<DelegationAnalysisDialogProps> = ({
