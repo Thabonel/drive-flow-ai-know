@@ -461,94 +461,41 @@ export function TimelineCanvas({
           x2={nowLineX}
           y2={totalHeight}
           stroke="#ef4444"
-          strokeWidth={8}
-          opacity={0.3}
+          strokeWidth={10}
+          opacity={0.25}
           filter="url(#now-line-pulse)"
         />
 
-        {/* Main NOW line with enhanced visibility */}
+        {/* Main NOW line with enhanced visibility - spans all layers */}
         <line
           x1={nowLineX}
           y1={0}
           x2={nowLineX}
           y2={totalHeight}
           stroke="#dc2626"
-          strokeWidth={4}
+          strokeWidth={3}
           opacity={1}
           filter="url(#now-line-glow)"
-          strokeLinecap="round"
         />
 
-        {/* NOW indicator circle at top */}
-        <circle
-          cx={nowLineX}
-          cy={20}
-          r={8}
+        {/* NOW label with time - compact badge at top */}
+        <rect
+          x={nowLineX + 6}
+          y={4}
+          width={70}
+          height={18}
           fill="#dc2626"
-          stroke="#ffffff"
-          strokeWidth={2}
-          filter="url(#now-line-glow)"
-        />
-
-        {/* Date label with background */}
-        <rect
-          x={nowLineX + 12}
-          y={5}
-          width={65}
-          height={12}
-          fill="rgba(220, 38, 38, 0.9)"
-          rx={2}
-        />
-        <text
-          x={nowLineX + 15}
-          y={13}
-          fontSize="10"
-          fill="white"
-          fontWeight="600"
-        >
-          {formatDate(nowTime.toISOString())}
-        </text>
-
-        {/* Time label with background */}
-        <rect
-          x={nowLineX + 12}
-          y={20}
-          width={45}
-          height={14}
-          fill="rgba(220, 38, 38, 0.9)"
-          rx={2}
-        />
-        <text
-          x={nowLineX + 15}
-          y={30}
-          fontSize="12"
-          fill="white"
-          fontWeight="bold"
-        >
-          {formatTime(nowTime.toISOString())}
-        </text>
-
-        {/* NOW label with enhanced background */}
-        <rect
-          x={nowLineX + 12}
-          y={37}
-          width={35}
-          height={16}
-          fill="#dc2626"
-          stroke="#ffffff"
-          strokeWidth={1}
           rx={3}
           filter="url(#now-line-glow)"
         />
         <text
-          x={nowLineX + 16}
-          y={48}
-          fontSize="12"
+          x={nowLineX + 10}
+          y={16}
+          fontSize="11"
           fill="white"
           fontWeight="bold"
-          textAnchor="start"
         >
-          NOW
+          NOW {formatTime(nowTime.toISOString())}
         </text>
       </g>
     </svg>

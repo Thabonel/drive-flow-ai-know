@@ -13,7 +13,6 @@ import { ParkedItemsPanel } from './ParkedItemsPanel';
 import { ViewModeSwitcher } from './ViewModeSwitcher';
 import { ViewTypeSwitcher, ViewType } from './ViewTypeSwitcher';
 import { RoleZoneSelector } from './RoleZoneSelector';
-import { AttentionBudgetWidget } from './AttentionBudgetWidget';
 import { DecisionBatchIndicator } from './DecisionBatchIndicator';
 import { MultiplierDashboard } from './MultiplierDashboard';
 import { NonNegotiableTracker } from './NonNegotiableTracker';
@@ -1170,11 +1169,6 @@ export function TimelineManager({ onCanvasReady }: TimelineManagerProps = {}) {
             <RoleZoneSelector
               showLabels={!isCompactMode}
               size={isCompactMode ? 'sm' : 'default'}
-            />
-            <AttentionBudgetWidget
-              items={items}
-              selectedDate={getSelectedDateForBudget()}
-              compact={isCompactMode}
             />
 
             {/* Non-Negotiable Priority Tracker */}

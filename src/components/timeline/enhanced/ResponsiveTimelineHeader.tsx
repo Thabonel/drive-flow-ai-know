@@ -44,7 +44,6 @@ import { InterfaceModeController, useInterfaceMode, ConditionalFeature, Beginner
 import { ViewTypeSwitcher, ViewType } from '../ViewTypeSwitcher';
 import { ViewModeSwitcher } from '../ViewModeSwitcher';
 import { RoleZoneSelector } from '../RoleZoneSelector';
-import { AttentionBudgetWidget } from '../AttentionBudgetWidget';
 import { NonNegotiableTracker } from '../NonNegotiableTracker';
 import { CalendarSyncButton } from '../CalendarSyncButton';
 import { TimelineLayerManager } from '../TimelineLayerManager';
@@ -568,12 +567,6 @@ export const ResponsiveTimelineHeader: React.FC<ResponsiveTimelineHeaderProps> =
               size={config.compactMode ? 'sm' : 'default'}
             />
           </ConditionalFeature>
-
-          <AttentionBudgetWidget
-            items={props.items}
-            selectedDate={props.getSelectedDateForBudget()}
-            compact={config.compactMode}
-          />
 
           <NonNegotiableTracker
             items={props.items}
