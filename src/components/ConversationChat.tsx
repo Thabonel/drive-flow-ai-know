@@ -879,12 +879,39 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
       if (!isTemporary && messages.length === 0 && currentConvId) {
         // Generate AI title immediately
         try {
-          const { data: titleData } = await supabase.functions.invoke('ai-query', {
-            body: {
-              query: `Generate a short, descriptive title (maximum 6 words) for a conversation that starts with: "${userMessage.slice(0, 200)}". Respond with ONLY the title, no quotes or extra text.`,
-              use_documents: false,
-            },
-          });
+          // Get auth session for Edge Function call
+          const { data: { session } } = await supabase.auth.getSession();
+          const authToken = session?.access_token;
+          const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+
+          if (!authToken) {
+            throw new Error('No auth token available for title generation');
+          }
+
+          const titleResponse = await fetch(
+            `${SUPABASE_URL}/functions/v1/ai-query`,
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${authToken}`,
+              },
+              body: JSON.stringify({
+                query: `Generate a short, descriptive title (maximum 6 words) for a conversation that starts with: "${userMessage.slice(0, 200)}". Respond with ONLY the title, no quotes or extra text.`,
+                use_documents: false,
+              }),
+            }
+          );
+
+          if (!titleResponse.ok) {
+            throw new Error(`Title generation failed: ${titleResponse.status} ${titleResponse.statusText}`);
+          }
+
+          const titleData = await titleResponse.json();
+
+          if (titleData.error) {
+            throw new Error(`Title generation error: ${titleData.error}`);
+          }
 
           let finalTitle = 'New Conversation';
 
