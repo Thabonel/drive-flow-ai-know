@@ -1,10 +1,11 @@
-// Service Worker for AI Query Hub Mobile Experience
-// Provides offline functionality for attention budget calculations and basic timeline operations
+// Service Worker for AI Query Hub Mobile Experience + ChunkLoadError Prevention
+// Provides offline functionality for attention budget calculations and prevents chunk loading errors
 
-const CACHE_VERSION = 'v3-mobile';
+const CACHE_VERSION = 'v4-mobile-chunks';
 const CACHE_NAME = `ai-query-hub-${CACHE_VERSION}`;
-const OFFLINE_CACHE = 'aiqueryhub-offline-v1';
-const ATTENTION_DATA_CACHE = 'attention-data-v1';
+const OFFLINE_CACHE = 'aiqueryhub-offline-v2';
+const ATTENTION_DATA_CACHE = 'attention-data-v2';
+const CHUNK_CACHE = 'aiqueryhub-chunks-v1';
 
 // Resources to cache for offline functionality
 const urlsToCache = [
@@ -49,7 +50,8 @@ self.addEventListener('activate', (event) => {
           cacheNames.map((cacheName) => {
             if (cacheName !== CACHE_NAME &&
                 cacheName !== OFFLINE_CACHE &&
-                cacheName !== ATTENTION_DATA_CACHE) {
+                cacheName !== ATTENTION_DATA_CACHE &&
+                cacheName !== CHUNK_CACHE) {
               console.log('Service Worker: Deleting old cache:', cacheName);
               return caches.delete(cacheName);
             }
@@ -86,18 +88,22 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Network-first for HTML/navigation requests
+  // Special handling for JavaScript and CSS chunks
+  if (request.destination === 'script' ||
+      request.destination === 'style' ||
+      url.pathname.includes('/assets/') ||
+      url.pathname.endsWith('.js') ||
+      url.pathname.endsWith('.css')) {
+    event.respondWith(handleChunkRequest(request));
+    return;
+  }
+
+  // Network-first for HTML/navigation requests with chunk error recovery
   if (request.mode === 'navigate' ||
       url.pathname === '/' ||
       url.pathname.endsWith('.html')) {
     event.respondWith(
-      fetch(request)
-        .then((response) => {
-          return response;
-        })
-        .catch(() => {
-          return caches.match(request) || getOfflineFallback(request);
-        })
+      handleNavigationRequest(request)
     );
     return;
   }
@@ -183,6 +189,111 @@ async function handleApiRequest(request) {
         }
       }
     );
+  }
+}
+
+// Handle JavaScript/CSS chunk requests with enhanced error recovery
+async function handleChunkRequest(request) {
+  const url = new URL(request.url);
+  console.log('[SW] Handling chunk request:', url.pathname);
+
+  try {
+    // Try network first for chunks (they may have been updated)
+    const networkResponse = await fetch(request);
+
+    if (networkResponse.ok) {
+      console.log('[SW] Chunk loaded from network successfully');
+
+      // Cache the successful response
+      const cache = await caches.open(CHUNK_CACHE);
+      await cache.put(request, networkResponse.clone());
+
+      // Notify main thread of successful chunk load
+      notifyAllClients({
+        type: 'CHUNK_LOADED',
+        url: request.url,
+        cached: false
+      });
+
+      return networkResponse;
+    } else {
+      throw new Error(`Network response not ok: ${networkResponse.status}`);
+    }
+
+  } catch (networkError) {
+    console.error('[SW] Chunk network request failed:', networkError);
+
+    // Try cache as fallback
+    const cache = await caches.open(CHUNK_CACHE);
+    const cachedResponse = await cache.match(request);
+
+    if (cachedResponse) {
+      console.log('[SW] Serving chunk from cache');
+
+      notifyAllClients({
+        type: 'CHUNK_LOADED',
+        url: request.url,
+        cached: true
+      });
+
+      return cachedResponse;
+    }
+
+    // No cache available - this is a ChunkLoadError scenario
+    console.error('[SW] Chunk not available in cache or network:', request.url);
+
+    // Notify main thread of chunk load failure
+    notifyAllClients({
+      type: 'CHUNK_LOAD_ERROR',
+      url: request.url,
+      error: networkError.message,
+      timestamp: Date.now()
+    });
+
+    // Trigger cache cleanup and reload after short delay
+    setTimeout(() => {
+      notifyAllClients({
+        type: 'REQUEST_CACHE_CLEAR_AND_RELOAD',
+        reason: 'chunk_load_failure'
+      });
+    }, 1000);
+
+    throw networkError;
+  }
+}
+
+// Handle navigation requests with chunk error recovery
+async function handleNavigationRequest(request) {
+  try {
+    const response = await fetch(request);
+
+    if (response.ok) {
+      // Cache successful navigation responses
+      const cache = await caches.open(CACHE_NAME);
+      await cache.put(request, response.clone());
+    }
+
+    return response;
+  } catch (error) {
+    console.error('[SW] Navigation request failed:', error);
+
+    // Check if we have a cached version
+    const cache = await caches.open(CACHE_NAME);
+    const cachedResponse = await cache.match(request);
+
+    if (cachedResponse) {
+      console.log('[SW] Serving navigation from cache due to network error');
+      return cachedResponse;
+    }
+
+    // No cache available - try to serve the main app shell
+    const appShellResponse = await cache.match('/');
+    if (appShellResponse) {
+      console.log('[SW] Serving app shell as fallback for navigation');
+      return appShellResponse;
+    }
+
+    return getOfflineFallback(request);
   }
 }
 
@@ -428,6 +539,47 @@ self.addEventListener('message', (event) => {
         event.ports[0].postMessage({ success: false, error: error.message });
       });
       break;
+
+    case 'CHUNK_LOAD_ERROR_RECOVERY':
+      // Handle chunk load error recovery from main app
+      console.log('[SW] Received chunk load error recovery request');
+      clearAllCaches().then(() => {
+        // Notify all clients to reload after cache clear
+        notifyAllClients({
+          type: 'CACHE_CLEARED',
+          reason: 'chunk_error_recovery',
+          timestamp: Date.now()
+        });
+
+        if (event.ports[0]) {
+          event.ports[0].postMessage({ success: true });
+        }
+      }).catch((error) => {
+        console.error('[SW] Failed to clear caches for chunk error recovery:', error);
+        if (event.ports[0]) {
+          event.ports[0].postMessage({ success: false, error: error.message });
+        }
+      });
+      break;
+
+    case 'SKIP_WAITING':
+      // Force activation of new service worker
+      console.log('[SW] Skipping waiting phase');
+      self.skipWaiting();
+      break;
+
+    case 'GET_CACHE_INFO':
+      // Return detailed cache information
+      getCacheInfo().then(info => {
+        if (event.ports[0]) {
+          event.ports[0].postMessage({ success: true, data: info });
+        }
+      }).catch(error => {
+        if (event.ports[0]) {
+          event.ports[0].postMessage({ success: false, error: error.message });
+        }
+      });
+      break;
   }
 });
 
@@ -449,13 +601,82 @@ async function getCacheSize() {
   }
 }
 
-// Clear all caches
+// Get detailed cache information for debugging
+async function getCacheInfo() {
+  try {
+    const cacheNames = await caches.keys();
+    const cacheInfo = {};
+
+    for (const cacheName of cacheNames) {
+      const cache = await caches.open(cacheName);
+      const keys = await cache.keys();
+
+      cacheInfo[cacheName] = {
+        entryCount: keys.length,
+        entries: keys.map(request => ({
+          url: request.url,
+          method: request.method
+        })).slice(0, 10) // Limit to first 10 entries for performance
+      };
+    }
+
+    return {
+      caches: cacheInfo,
+      totalCaches: cacheNames.length,
+      timestamp: Date.now(),
+      version: CACHE_VERSION
+    };
+  } catch (error) {
+    return {
+      error: error.message,
+      timestamp: Date.now()
+    };
+  }
+}
+
+// Clear all caches with enhanced chunk cache handling
 async function clearAllCaches() {
+  console.log('[SW] Clearing all caches including chunk cache...');
+
   const cacheNames = await caches.keys();
   await Promise.all(
-    cacheNames.map(cacheName => caches.delete(cacheName))
+    cacheNames.map(cacheName => {
+      console.log('[SW] Deleting cache:', cacheName);
+      return caches.delete(cacheName);
+    })
   );
-  localStorage.removeItem('timeline-cache');
+
+  // Clear localStorage data
+  try {
+    localStorage.removeItem('timeline-cache');
+    console.log('[SW] Cleared localStorage data');
+  } catch (error) {
+    console.log('[SW] Could not access localStorage:', error);
+  }
+
+  console.log('[SW] All caches cleared successfully');
+}
+
+// Notify all clients of service worker events
+async function notifyAllClients(message) {
+  try {
+    const clients = await self.clients.matchAll({
+      includeUncontrolled: true,
+      type: 'window'
+    });
+
+    console.log(`[SW] Notifying ${clients.length} clients:`, message.type);
+
+    clients.forEach(client => {
+      try {
+        client.postMessage(message);
+      } catch (error) {
+        console.error('[SW] Failed to notify client:', error);
+      }
+    });
+  } catch (error) {
+    console.error('[SW] Failed to get clients:', error);
+  }
 }
 
 // Push notification handling for attention budget alerts

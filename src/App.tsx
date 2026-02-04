@@ -15,6 +15,8 @@ import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
 import { PresentationModeProvider } from "@/contexts/PresentationModeContext";
 import { initializeMobileOptimizations } from "@/lib/haptics";
 import { ErrorBoundary, InitializationError } from "@/components/ErrorBoundary";
+import { ChunkLoadErrorHandler } from "@/components/ChunkLoadErrorHandler";
+import { ServiceWorkerManager } from "@/components/ServiceWorkerManager";
 import { isSupabaseConfigured } from "@/integrations/supabase/client";
 import { config } from "@/config/environment";
 import Header from "./layout/Header";
@@ -213,6 +215,12 @@ const App = () => (
               <BrowserRouter>
                 <AuthProvider>
                 <BackgroundTasksProvider>
+                <ChunkLoadErrorHandler onError={(error) => console.error('Global ChunkLoadError:', error)} />
+                <ServiceWorkerManager
+                  onChunkError={(error) => console.error('SW ChunkLoadError:', error)}
+                  onUpdateAvailable={() => console.log('App update available')}
+                  onOfflineReady={() => console.log('App ready for offline use')}
+                />
                 <MobileInitializer />
                 <PWAInstallPrompt />
                 <PrivacyPolicyWidget />
