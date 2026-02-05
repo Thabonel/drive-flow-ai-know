@@ -6,7 +6,6 @@ import { AlertCircle, Clock, Calendar, ChevronDown, ChevronUp, Brain, Target, Tr
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { ATTENTION_TYPE_DESCRIPTIONS } from '@/lib/attentionTypes';
 
 interface WorkloadIndicatorProps {
   items: TimelineItem[];
@@ -222,10 +221,33 @@ export function WorkloadIndicator({
                 {attentionAnalysis.peakHoursAnalysis.optimizationScore < 70 && (
                   <div className="mt-2 p-2 bg-yellow-50 dark:bg-yellow-900/20 rounded border-l-2 border-yellow-400">
                     <p className="text-xs text-yellow-800 dark:text-yellow-200">
-                      💡 Only {Math.round(attentionAnalysis.peakHoursAnalysis.highAttentionInPeakHours)}% of focus work is during peak hours
+                      Only {Math.round(attentionAnalysis.peakHoursAnalysis.highAttentionInPeakHours)}% of focus work is during peak hours
                     </p>
                   </div>
                 )}
+
+                {/* Timeline Visual Legend */}
+                <div className="mt-3 pt-2 border-t border-border/50">
+                  <p className="text-xs font-medium text-muted-foreground mb-2">Timeline Indicators</p>
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-2 rounded-sm bg-gradient-to-b from-green-500/30 to-green-500/10" />
+                      <span className="text-muted-foreground">Peak hours</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-0.5 bg-red-500 border-dashed" style={{ borderTopWidth: 2, borderTopStyle: 'dashed' }} />
+                      <span className="text-muted-foreground">Context switch</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-2 rounded-sm bg-yellow-500/30" style={{ backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 2px, rgba(245,158,11,0.3) 2px, rgba(245,158,11,0.3) 4px)' }} />
+                      <span className="text-muted-foreground">Budget warning</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-2 rounded-sm bg-red-500/30" style={{ backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 2px, rgba(239,68,68,0.4) 2px, rgba(239,68,68,0.4) 4px)' }} />
+                      <span className="text-muted-foreground">Over budget</span>
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
           </div>

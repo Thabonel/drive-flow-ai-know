@@ -233,7 +233,6 @@ export function TimelineCanvas({
           scrollOffset={scrollOffset}
           nowLineX={nowLineX}
           viewportWidth={viewportWidth}
-          layerHeight={layerHeight}
           headerHeight={TIMELINE_HEADER_HEIGHT}
         />
       )}
