@@ -1122,7 +1122,7 @@ export function TimelineManager({ onCanvasReady }: TimelineManagerProps = {}) {
                       Layers ({layers.length})
                     </button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-72 max-h-[80vh] overflow-y-auto" side="right">
+                  <PopoverContent className="w-72 max-h-[80vh] overflow-y-auto" side="left">
                     <div className="space-y-2">
                       <h3 className="font-semibold text-sm">Timeline Layers</h3>
                       <p className="text-xs text-muted-foreground">Organize your items into layers</p>
@@ -1146,7 +1146,7 @@ export function TimelineManager({ onCanvasReady }: TimelineManagerProps = {}) {
                       Zoom Controls
                     </button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-72 max-h-[80vh] overflow-y-auto" side="right">
+                  <PopoverContent className="w-72 max-h-[80vh] overflow-y-auto" side="left">
                     <div className="space-y-2">
                       <h3 className="font-semibold text-sm">Timeline Controls</h3>
                       <p className="text-xs text-muted-foreground">Manage your timeline view</p>
