@@ -1095,7 +1095,7 @@ export function TimelineManager({ onCanvasReady }: TimelineManagerProps = {}) {
                 Additional timeline actions: end of day, AI insights, layers, and settings
               </TooltipContent>
             </Tooltip>
-            <DropdownMenuContent align="start" className="w-56">
+            <DropdownMenuContent align="end" className="w-56">
               <DropdownMenuItem onClick={() => setShowEndOfDay(true)}>
                 <Moon className="h-4 w-4 mr-2" />
                 End of Day
