@@ -244,6 +244,8 @@ export function TimelineCanvas({
       style={{
         height: `${totalHeight}px`,
         cursor: isDragging ? 'grabbing' : (isLocked ? 'default' : 'grab'),
+        position: 'relative',
+        zIndex: 2,
       }}
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
