@@ -145,3 +145,22 @@ export function getCalendarHours(config: typeof CALENDAR_CONFIG.day): number {
 export function getCalendarGridHeight(config: typeof CALENDAR_CONFIG.day): number {
   return getCalendarHours(config) * config.rowHeight;
 }
+
+// Recently created item detection threshold (2 minutes)
+export const RECENTLY_CREATED_THRESHOLD_MS = 2 * 60 * 1000;
+
+// Weekly calibration check interval (1 hour)
+export const CALIBRATION_CHECK_INTERVAL_MS = 60 * 60 * 1000;
+
+// Weekly calibration trigger window (Monday 8 AM - 11 AM)
+export const CALIBRATION_WINDOW = {
+  dayOfWeek: 1, // Monday
+  startHour: 8,
+  endHour: 11,
+};
+
+// Default estimated viewport width for calculations
+export const ESTIMATED_VIEWPORT_WIDTH = 1200;
+
+// Snap interval for timeline items (minutes)
+export const SNAP_INTERVAL_MINUTES = 15;

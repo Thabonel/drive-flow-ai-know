@@ -4,6 +4,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { TimelineItem as TimelineItemType } from '@/lib/timelineUtils';
 import { format, addMinutes } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { Z_INDEX } from '@/lib/z-index';
 import { Check, Clock, Tag } from 'lucide-react';
 
 interface CalendarEventProps {
@@ -183,7 +184,7 @@ export function CalendarEvent({
       ref={eventRef}
       className={cn(
         "absolute rounded px-2 py-1 text-xs cursor-pointer overflow-hidden transition-shadow group",
-        isDragging && "shadow-lg z-50",
+        isDragging && "shadow-lg",
         isLogjam && "ring-2 ring-red-500 animate-pulse"
       )}
       style={{
@@ -193,7 +194,7 @@ export function CalendarEvent({
         width: displayWidth,
         backgroundColor: item.color,
         opacity: isDragging || isResizing ? 0.8 : opacity,
-        zIndex: isDragging ? 100 : isHovered ? 50 : 10,
+        zIndex: isDragging ? Z_INDEX.TIMELINE_DRAGGING : isHovered ? Z_INDEX.TIMELINE_HOVER : Z_INDEX.TIMELINE_ITEMS,
         pointerEvents: 'auto', // Enable clicks on events even though parent has pointer-events:none
       }}
       onMouseDown={handleMouseDown}

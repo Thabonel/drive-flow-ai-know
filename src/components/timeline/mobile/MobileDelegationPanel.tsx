@@ -48,7 +48,7 @@ interface MobileDelegationPanelProps {
   trigger?: React.ReactNode;
 }
 
-interface DelegationInfo {
+export interface DelegationInfo {
   delegate_id: string;
   trust_level: TrustLevel;
   context_notes: string;

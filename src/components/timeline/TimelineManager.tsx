@@ -13,7 +13,6 @@ import { ParkedItemsPanel } from './ParkedItemsPanel';
 import { ViewModeSwitcher } from './ViewModeSwitcher';
 import { ViewTypeSwitcher, ViewType } from './ViewTypeSwitcher';
 import { RoleZoneSelector } from './RoleZoneSelector';
-import { AttentionBudgetWidget } from './AttentionBudgetWidget';
 import { DecisionBatchIndicator } from './DecisionBatchIndicator';
 import { MultiplierDashboard } from './MultiplierDashboard';
 import { NonNegotiableTracker } from './NonNegotiableTracker';
@@ -782,9 +781,10 @@ export function TimelineManager({ onCanvasReady }: TimelineManagerProps = {}) {
             <TimelinePhilosophy mode="dialog" trigger="icon" />
 {viewType === 'calendar' ? (
               <PageHelp
-                title="Calendar View - How It Works"
-                description="AI Query Hub's Calendar View combines traditional scheduling with intelligent time management. Create events naturally, leverage AI planning, and see your attention budget in real-time to optimize your productivity."
+                title="Calendar View - Complete Guide"
+                description="AI Query Hub's Calendar View provides a familiar grid layout enhanced with AI-powered time management. The red NOW line cuts across your calendar showing exactly where you are in time, while intelligent features help you schedule more effectively and avoid overcommitment."
                 tips={[
+                  "🕐 Red NOW Line: The red line cutting across your calendar shows exactly where you are in the present moment",
                   "✨ Getting Started: Click any time slot to create an event, or drag vertically for specific durations",
                   "🎯 AI Planning: Use 'Plan Day' for AI-assisted scheduling that considers your energy levels and priorities",
                   "📊 Attention Budget: See your cognitive load in real-time - the system warns when you're overcommitting",
@@ -801,9 +801,10 @@ export function TimelineManager({ onCanvasReady }: TimelineManagerProps = {}) {
               />
             ) : (
               <PageHelp
-                title="Timeline Manager - How It Works"
-                description="AI Query Hub's Timeline Manager visualizes time as a flowing river. Items drift toward the NOW line and become 'logjammed' (red pulsing) when overdue. This unique approach helps you see time pressure and make better decisions about what to do next."
+                title="Timeline Manager - Complete Guide"
+                description="The Timeline Manager visualizes time as a flowing river with a prominent red NOW line showing exactly where you are in the present moment. Tasks flow from left (past) toward the red line (now) and continue to the right (future). Overdue items pulse red to grab your attention, creating a vivid picture of time pressure and helping you prioritize effectively."
                 tips={[
+                  "🕐 Red NOW Line: The prominent red line with current time shows exactly where you are in the present moment",
                   "🌊 The Flow Concept: Time flows left to right - items drift toward the NOW line and logjam when overdue",
                   "🎯 AI Planning: Use 'Plan Day' to leverage AI for intelligent scheduling based on your energy patterns",
                   "🧠 Attention Budget: Real-time cognitive load tracking prevents overcommitment and decision fatigue",
@@ -1094,7 +1095,7 @@ export function TimelineManager({ onCanvasReady }: TimelineManagerProps = {}) {
                 Additional timeline actions: end of day, AI insights, layers, and settings
               </TooltipContent>
             </Tooltip>
-            <DropdownMenuContent align="start" className="w-56">
+            <DropdownMenuContent align="end" className="w-56">
               <DropdownMenuItem onClick={() => setShowEndOfDay(true)}>
                 <Moon className="h-4 w-4 mr-2" />
                 End of Day
@@ -1121,7 +1122,7 @@ export function TimelineManager({ onCanvasReady }: TimelineManagerProps = {}) {
                       Layers ({layers.length})
                     </button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-72 max-h-[80vh] overflow-y-auto" side="right">
+                  <PopoverContent className="w-72 max-h-[80vh] overflow-y-auto" side="left">
                     <div className="space-y-2">
                       <h3 className="font-semibold text-sm">Timeline Layers</h3>
                       <p className="text-xs text-muted-foreground">Organize your items into layers</p>
@@ -1145,7 +1146,7 @@ export function TimelineManager({ onCanvasReady }: TimelineManagerProps = {}) {
                       Zoom Controls
                     </button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-72 max-h-[80vh] overflow-y-auto" side="right">
+                  <PopoverContent className="w-72 max-h-[80vh] overflow-y-auto" side="left">
                     <div className="space-y-2">
                       <h3 className="font-semibold text-sm">Timeline Controls</h3>
                       <p className="text-xs text-muted-foreground">Manage your timeline view</p>
@@ -1168,11 +1169,6 @@ export function TimelineManager({ onCanvasReady }: TimelineManagerProps = {}) {
             <RoleZoneSelector
               showLabels={!isCompactMode}
               size={isCompactMode ? 'sm' : 'default'}
-            />
-            <AttentionBudgetWidget
-              items={items}
-              selectedDate={getSelectedDateForBudget()}
-              compact={isCompactMode}
             />
 
             {/* Non-Negotiable Priority Tracker */}

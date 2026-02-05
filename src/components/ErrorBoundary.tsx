@@ -55,6 +55,7 @@ interface ErrorBoundaryState {
   error?: Error;
   errorInfo?: ErrorInfo;
   retryCount: number;
+  isChunkLoadError?: boolean;
 }
 
 interface ErrorBoundaryProps {
@@ -66,7 +67,7 @@ interface ErrorBoundaryProps {
 export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
   constructor(props: ErrorBoundaryProps) {
     super(props);
-    this.state = { hasError: false, retryCount: 0 };
+    this.state = { hasError: false, retryCount: 0, isChunkLoadError: false };
   }
 
   static getDerivedStateFromError(error: Error): ErrorBoundaryState {
@@ -74,9 +75,23 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
     const isNavigationError = error.message?.includes('426') ||
                               error.message?.includes('SUPABASE');
 
+    // Detect ChunkLoadError (React error #310) - auto-handle these
+    const isChunkLoadError = error.message?.includes('ChunkLoadError') ||
+                            error.message?.includes('Loading chunk') ||
+                            error.message?.includes('Loading CSS chunk') ||
+                            error.name === 'ChunkLoadError' ||
+                            // React minified error #310 pattern
+                            (error.message?.includes('Minified React error #310') ||
+                             window.location.href.includes('invariant=310'));
+
     if (isNavigationError) {
       console.log('Navigation error detected, will auto-retry without showing error UI');
       return { hasError: false, error, retryCount: 0 };
+    }
+
+    if (isChunkLoadError) {
+      console.log('ChunkLoadError detected, will handle with cache clear and reload');
+      return { hasError: true, error, retryCount: 0 };
     }
 
     return { hasError: true, error, retryCount: 0 };
@@ -85,6 +100,15 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     console.error('ErrorBoundary caught an error:', error, errorInfo);
 
+    // Detect ChunkLoadError (React error #310)
+    const isChunkLoadError = error.message?.includes('ChunkLoadError') ||
+                            error.message?.includes('Loading chunk') ||
+                            error.message?.includes('Loading CSS chunk') ||
+                            error.name === 'ChunkLoadError' ||
+                            // React minified error #310 pattern
+                            (error.message?.includes('Minified React error #310') ||
+                             window.location.href.includes('invariant=310'));
+
     // Enhanced logging for cascade failures
     if (error.message?.includes('Export') || error.message?.includes('import')) {
       console.error('Possible module loading cascade failure detected:', {
@@ -92,6 +116,29 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
         stack: error.stack,
         componentStack: errorInfo.componentStack
       });
+    }
+
+    // Handle ChunkLoadError with automatic cache clearing
+    if (isChunkLoadError) {
+      console.error('ChunkLoadError detected:', {
+        error: error.message,
+        url: window.location.href,
+        userAgent: navigator.userAgent,
+        timestamp: new Date().toISOString()
+      });
+
+      this.setState({
+        errorInfo,
+        isChunkLoadError: true
+      });
+
+      // Automatically attempt to clear cache and reload after showing brief error message
+      setTimeout(() => {
+        this.handleChunkLoadError();
+      }, 2000);
+
+      this.props.onError?.(error, errorInfo);
+      return;
     }
 
     // Auto-retry once for navigation-related errors (e.g., React error #426)
@@ -119,8 +166,61 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
       hasError: false,
       error: undefined,
       errorInfo: undefined,
-      retryCount: this.state.retryCount + 1
+      retryCount: this.state.retryCount + 1,
+      isChunkLoadError: false
     });
+  };
+
+  // Comprehensive cache clearing for ChunkLoadError
+  private handleChunkLoadError = async () => {
+    console.log('Handling ChunkLoadError with comprehensive cache clearing...');
+
+    try {
+      // 1. Clear all caches if available
+      if ('caches' in window) {
+        const cacheNames = await caches.keys();
+        await Promise.all(
+          cacheNames.map(cacheName => {
+            console.log('Clearing cache:', cacheName);
+            return caches.delete(cacheName);
+          })
+        );
+      }
+
+      // 2. Clear localStorage and sessionStorage
+      localStorage.clear();
+      sessionStorage.clear();
+
+      // 3. Clear IndexedDB if possible (best effort)
+      if ('indexedDB' in window) {
+        try {
+          const databases = await indexedDB.databases?.() || [];
+          await Promise.all(
+            databases.map(db => {
+              if (db.name) {
+                const deleteReq = indexedDB.deleteDatabase(db.name);
+                return new Promise((resolve) => {
+                  deleteReq.onsuccess = () => resolve(undefined);
+                  deleteReq.onerror = () => resolve(undefined); // Don't fail on this
+                });
+              }
+            })
+          );
+        } catch (e) {
+          console.log('Could not clear IndexedDB, continuing anyway');
+        }
+      }
+
+      console.log('Cache clearing complete, reloading application...');
+
+      // 4. Force hard reload with cache bypass
+      window.location.reload();
+
+    } catch (error) {
+      console.error('Error during cache clearing:', error);
+      // Fallback to simple reload
+      window.location.reload();
+    }
   };
 
   render() {
@@ -134,44 +234,82 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
                                    this.state.error?.message?.includes('import')) &&
                                    !window.location.href.includes('/auth');
 
+      // Detect chunk load errors for specific messaging
+      const isChunkError = this.state.isChunkLoadError ||
+                          this.state.error?.message?.includes('ChunkLoadError') ||
+                          this.state.error?.message?.includes('Loading chunk') ||
+                          this.state.error?.message?.includes('Minified React error #310');
+
       return (
         <div className="min-h-screen flex items-center justify-center p-4 bg-muted">
           <Card className="max-w-2xl w-full">
             <CardHeader>
               <CardTitle className="flex items-center text-destructive">
                 <AlertTriangle className="h-6 w-6 mr-3" />
-                {isModuleLoadingError ? 'Application Initialization Error' : 'Something went wrong'}
+                {isChunkError
+                  ? 'Application Update Required'
+                  : isModuleLoadingError
+                    ? 'Application Initialization Error'
+                    : 'Something went wrong'
+                }
               </CardTitle>
               <CardDescription>
-                {isModuleLoadingError
-                  ? 'The application failed to initialize properly. This is typically caused by missing or invalid configuration.'
-                  : 'We encountered an unexpected error. Please try refreshing the page or contact support if the problem persists.'
+                {isChunkError
+                  ? 'The application has been updated and requires a cache refresh. We\'re automatically clearing the cache and reloading...'
+                  : isModuleLoadingError
+                    ? 'The application failed to initialize properly. This is typically caused by missing or invalid configuration.'
+                    : 'We encountered an unexpected error. Please try refreshing the page or contact support if the problem persists.'
                 }
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <Alert variant={isModuleLoadingError ? 'destructive' : 'default'}>
-                <AlertTriangle className="h-4 w-4" />
-                <AlertTitle>Error Details</AlertTitle>
-                <AlertDescription>
-                  <div className="space-y-2">
-                    <div className="text-sm bg-muted/50 p-3 rounded font-mono">
-                      {this.state.error?.message || 'Unknown error occurred'}
-                    </div>
-                    {isModuleLoadingError && (
-                      <div className="space-y-2">
-                        <p className="text-sm font-medium">Common causes:</p>
-                        <ul className="text-sm space-y-1 ml-4">
-                          <li>• Missing environment variables (VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY)</li>
-                          <li>• Invalid Supabase configuration</li>
-                          <li>• Module loading cascade failure</li>
-                          <li>• Build or deployment issues</li>
-                        </ul>
+              {isChunkError && (
+                <Alert>
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertTitle>Automatic Cache Refresh in Progress</AlertTitle>
+                  <AlertDescription>
+                    <div className="space-y-2">
+                      <p className="text-sm">
+                        The application was updated while you were using it. We're automatically:
+                      </p>
+                      <ul className="text-sm space-y-1 ml-4">
+                        <li>• Clearing browser cache and stored data</li>
+                        <li>• Reloading with the latest version</li>
+                        <li>• This should resolve the loading issue</li>
+                      </ul>
+                      <div className="flex items-center gap-2 mt-3">
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+                        <span className="text-sm">Refreshing application...</span>
                       </div>
-                    )}
-                  </div>
-                </AlertDescription>
-              </Alert>
+                    </div>
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              {!isChunkError && (
+                <Alert variant={isModuleLoadingError ? 'destructive' : 'default'}>
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertTitle>Error Details</AlertTitle>
+                  <AlertDescription>
+                    <div className="space-y-2">
+                      <div className="text-sm bg-muted/50 p-3 rounded font-mono">
+                        {this.state.error?.message || 'Unknown error occurred'}
+                      </div>
+                      {isModuleLoadingError && (
+                        <div className="space-y-2">
+                          <p className="text-sm font-medium">Common causes:</p>
+                          <ul className="text-sm space-y-1 ml-4">
+                            <li>• Missing environment variables (VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY)</li>
+                            <li>• Invalid Supabase configuration</li>
+                            <li>• Module loading cascade failure</li>
+                            <li>• Build or deployment issues</li>
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+                  </AlertDescription>
+                </Alert>
+              )}
 
               <EnvironmentDebugger />
 
@@ -203,23 +341,39 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
               )}
 
               <div className="flex flex-col sm:flex-row gap-3">
-                <Button onClick={() => window.location.reload()} className="flex items-center space-x-2">
-                  <RefreshCw className="h-4 w-4" />
-                  <span>Reload Application</span>
-                </Button>
+                {isChunkError ? (
+                  // Special buttons for chunk errors
+                  <>
+                    <Button onClick={this.handleChunkLoadError} className="flex items-center space-x-2">
+                      <RefreshCw className="h-4 w-4" />
+                      <span>Force Refresh Now</span>
+                    </Button>
+                    <Button variant="outline" onClick={() => window.location.reload()} className="flex items-center space-x-2">
+                      <span>Simple Reload</span>
+                    </Button>
+                  </>
+                ) : (
+                  // Normal error buttons
+                  <>
+                    <Button onClick={() => window.location.reload()} className="flex items-center space-x-2">
+                      <RefreshCw className="h-4 w-4" />
+                      <span>Reload Application</span>
+                    </Button>
 
-                <Button variant="outline" onClick={this.handleRetry} className="flex items-center space-x-2">
-                  <span>Try Again</span>
-                </Button>
+                    <Button variant="outline" onClick={this.handleRetry} className="flex items-center space-x-2">
+                      <span>Try Again</span>
+                    </Button>
 
-                <Button
-                  variant="outline"
-                  onClick={() => window.open('https://github.com/anthropics/claude-code/issues', '_blank')}
-                  className="flex items-center space-x-2"
-                >
-                  <ExternalLink className="h-4 w-4" />
-                  <span>Report Issue</span>
-                </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => window.open('https://github.com/anthropics/claude-code/issues', '_blank')}
+                      className="flex items-center space-x-2"
+                    >
+                      <ExternalLink className="h-4 w-4" />
+                      <span>Report Issue</span>
+                    </Button>
+                  </>
+                )}
               </div>
 
               <div className="text-xs text-muted-foreground pt-4 border-t">

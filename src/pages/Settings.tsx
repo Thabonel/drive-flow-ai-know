@@ -24,6 +24,7 @@ import { AIQueryInput } from "@/components/AIQueryInput";
 import { AgentModeToggle } from "@/components/settings/AgentModeToggle";
 import { MemoryManager } from "@/components/settings/MemoryManager";
 import { MFASettings } from "@/components/settings/MFASettings";
+import { MessagingIntegrations } from "@/components/settings/MessagingIntegrations";
 import {
   User,
   Bell,
@@ -371,6 +372,21 @@ const Settings = () => {
                 </Card>
 
                 <PersonalPrompt />
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Brain className="h-5 w-5" />
+                      Messaging Integrations
+                    </CardTitle>
+                    <CardDescription>
+                      Connect Telegram or Slack to chat with your AI assistant on the go
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {user && <MessagingIntegrations userId={user.id} />}
+                  </CardContent>
+                </Card>
               </TabsContent>
 
               <TabsContent value="security" className="space-y-6 w-full">
