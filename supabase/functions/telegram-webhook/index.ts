@@ -929,8 +929,55 @@ serve(async (req) => {
       messageType = 'text';
       userQuery = message.text;
 
-      // Handle /start command
-      if (userQuery === '/start') {
+      // Handle /start command (with optional linking token)
+      if (userQuery.startsWith('/start')) {
+        const parts = userQuery.split(' ');
+        const linkingToken = parts.length > 1 ? parts[1] : null;
+
+        // Check if this is a deep link with a linking token
+        if (linkingToken) {
+          // Verify and consume the token
+          const { data: tokenResult } = await supabase.rpc('verify_messaging_link_token', {
+            p_platform: 'telegram',
+            p_token: linkingToken,
+          });
+
+          if (tokenResult && tokenResult.length > 0 && tokenResult[0].is_valid) {
+            const linkedUserId = tokenResult[0].user_id;
+
+            // Create the connection
+            await supabase.rpc('connect_messaging_platform', {
+              p_user_id: linkedUserId,
+              p_platform: 'telegram',
+              p_telegram_chat_id: chatId.toString(),
+              p_telegram_username: message.from?.username || null,
+            });
+
+            await sendTelegramMessage(
+              chatId,
+              `Your Telegram account has been successfully connected to AI Query Hub.
+
+You can now:
+- Receive proactive check-ins and reminders
+- Chat with your AI assistant
+- Send voice messages and images
+
+Type /help to see all available commands.`
+            );
+            return new Response('OK', { status: 200 });
+          } else {
+            const errorMsg = tokenResult?.[0]?.error_message || 'Invalid token';
+            await sendTelegramMessage(
+              chatId,
+              `Connection failed: ${errorMsg}
+
+Please generate a new connection link from AI Query Hub settings and try again.`
+            );
+            return new Response('OK', { status: 200 });
+          }
+        }
+
+        // Regular /start without token
         await sendTelegramMessage(
           chatId,
           `Hello! I'm your AI assistant connected to AI Query Hub.
@@ -939,6 +986,8 @@ You can:
 - Send me text messages for AI assistance
 - Send voice messages (I'll transcribe and respond)
 - Send images (I'll analyze them)
+
+To connect your account, go to AI Query Hub Settings and generate a connection link.
 
 How can I help you today?`
         );
