@@ -974,6 +974,38 @@ For document queries and knowledge bases, please use the AI Query Hub web app.`
         }
         return new Response('OK', { status: 200 });
       }
+
+      // Handle /stats command
+      if (userQuery === '/stats') {
+        const { data: stats } = await supabase.rpc('get_user_dashboard_stats', {
+          p_user_id: userId.toString(),
+        });
+
+        const statsMessage = stats ? `Assistant Stats
+
+Today:
+- Messages: ${stats.today?.messages || 0}
+- Check-ins: ${stats.today?.checkins || 0}
+- Actions: ${stats.today?.actions || 0}
+
+This Week:
+- Messages: ${stats.week?.messages || 0}
+- Check-ins: ${stats.week?.checkins || 0}
+- Est. Cost: $${((stats.week?.cost_cents || 0) / 100).toFixed(2)}
+
+Memory:
+- Total memories: ${stats.memory?.total_memories || 0}
+- Facts: ${stats.memory?.user_facts || 0}
+- Goals: ${stats.memory?.user_goals || 0}
+
+Autonomy:
+- Active session: ${stats.autonomy?.active_session ? 'Yes' : 'No'}
+- Total sessions: ${stats.autonomy?.total_sessions || 0}
+- Actions taken: ${stats.autonomy?.total_actions || 0}` : 'Could not load stats. Try again later.';
+
+        await sendTelegramMessage(chatId, statsMessage);
+        return new Response('OK', { status: 200 });
+      }
     } else {
       // Unsupported message type
       await sendTelegramMessage(
