@@ -244,8 +244,6 @@ export function TimelineCanvas({
       style={{
         height: `${totalHeight}px`,
         cursor: isDragging ? 'grabbing' : (isLocked ? 'default' : 'grab'),
-        position: 'relative',
-        zIndex: 2,
       }}
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
@@ -456,6 +454,16 @@ export function TimelineCanvas({
 
       {/* NOW line - rendered last to appear on top of all layers and items */}
       <g className="now-line">
+        {/* Solid red line base - always visible (no filter) */}
+        <line
+          x1={nowLineX}
+          y1={0}
+          x2={nowLineX}
+          y2={totalHeight}
+          stroke="#dc2626"
+          strokeWidth={3}
+        />
+
         {/* Background glow line for extra visibility */}
         <line
           x1={nowLineX}
