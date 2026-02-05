@@ -11,8 +11,8 @@ import {
   useSensors,
   pointerWithin,
 } from '@dnd-kit/core';
-import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
-import { TimelineManager } from './TimelineManager';
+// import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { TimelineManagerWrapper } from './TimelineManagerWrapper';
 import { Task, useTasks } from '@/hooks/useTasks';
 import { useTimeline } from '@/hooks/useTimeline';
 import { useLayers } from '@/hooks/useLayers';
@@ -21,6 +21,8 @@ import { Clock, Loader2 } from 'lucide-react';
 import { calculateRecurringDates, alignStartDateToPattern } from '@/lib/recurrence';
 import { useToast } from '@/hooks/use-toast';
 import { NOW_LINE_POSITION, VIEW_MODE_CONFIG, TimelineViewMode, TIMELINE_HEADER_HEIGHT } from '@/lib/timelineConstants';
+import { Z_INDEX_CLASSES } from '@/lib/z-index';
+import { cn } from '@/lib/utils';
 
 interface TimelineWithDndProps {
   refetchItems: () => Promise<void>;
@@ -330,12 +332,12 @@ export function TimelineWithDnd({ refetchItems, refetchTasks }: TimelineWithDndP
       <div className="relative">
         {/* Main Timeline - with drop zone */}
         <div ref={timelineRef} className="relative">
-          <TimelineManager onCanvasReady={handleCanvasReady} />
+          <TimelineManagerWrapper onCanvasReady={handleCanvasReady} />
 
           {/* Drop preview indicator - vertical line only */}
           {activeTask && dropPreview && (
             <div
-              className="absolute pointer-events-none z-50 border-2 border-dashed border-primary bg-primary/10 rounded"
+              className={cn("absolute pointer-events-none border-2 border-dashed border-primary bg-primary/10 rounded", Z_INDEX_CLASSES.DRAG_OVERLAY)}
               style={{
                 left: dropPreview.x - 2,
                 top: dropPreview.y - 20,

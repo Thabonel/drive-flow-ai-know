@@ -2,6 +2,7 @@
  * PlanDropdown Menu
  *
  * Dropdown menu for the Timeline header to access plan features.
+ * Also includes Attention Budget in a popover for quick access.
  */
 
 import React, { useState } from 'react';
@@ -13,20 +14,25 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { Badge } from '@/components/ui/badge';
-import { FileText, Plus, List, ChevronDown } from 'lucide-react';
+import { FileText, Plus, List, ChevronDown, Brain } from 'lucide-react';
 import { useProjectPlans, ProjectPlan } from '@/hooks/useProjectPlans';
+import { useTimeline } from '@/hooks/useTimeline';
 import { PlanCreator } from './PlanCreator';
 import { PlanList } from './PlanList';
 import { SchedulePreview } from './SchedulePreview';
+import { AttentionBudgetWidget } from '@/components/timeline/AttentionBudgetWidget';
 
 export function PlanDropdown() {
   const { plans } = useProjectPlans();
+  const { items } = useTimeline();
 
   const [showCreator, setShowCreator] = useState(false);
   const [showList, setShowList] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<ProjectPlan | null>(null);
   const [showSchedule, setShowSchedule] = useState(false);
+  const [showAttentionBudget, setShowAttentionBudget] = useState(false);
 
   // Count of schedulable plans
   const schedulablePlans = plans.filter(
@@ -64,7 +70,7 @@ export function PlanDropdown() {
           </Button>
         </DropdownMenuTrigger>
 
-        <DropdownMenuContent align="end" className="w-48">
+        <DropdownMenuContent align="end" className="w-56">
           <DropdownMenuItem onClick={() => setShowCreator(true)}>
             <Plus className="h-4 w-4 mr-2" />
             Create New Plan
@@ -80,6 +86,14 @@ export function PlanDropdown() {
                 {plans.length}
               </Badge>
             )}
+          </DropdownMenuItem>
+
+          <DropdownMenuSeparator />
+
+          {/* Attention Budget - Opens as Popover */}
+          <DropdownMenuItem onClick={() => setShowAttentionBudget(true)}>
+            <Brain className="h-4 w-4 mr-2" />
+            Attention Budget
           </DropdownMenuItem>
 
           {/* Quick access to recent schedulable plans */}
@@ -131,6 +145,26 @@ export function PlanDropdown() {
           setSelectedPlan(null);
         }}
       />
+
+      {/* Attention Budget Popover */}
+      <Popover open={showAttentionBudget} onOpenChange={setShowAttentionBudget}>
+        <PopoverTrigger asChild>
+          <span className="sr-only">Open attention budget</span>
+        </PopoverTrigger>
+        <PopoverContent className="w-80 p-4" align="end">
+          <div className="space-y-3">
+            <h3 className="font-semibold text-sm">Attention Budget</h3>
+            <p className="text-xs text-muted-foreground">
+              Track your cognitive load and energy allocation for today.
+            </p>
+            <AttentionBudgetWidget
+              items={items}
+              selectedDate={new Date()}
+              compact={false}
+            />
+          </div>
+        </PopoverContent>
+      </Popover>
     </>
   );
 }

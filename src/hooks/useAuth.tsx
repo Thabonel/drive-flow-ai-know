@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, useCallback, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, useCallback, useRef, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
@@ -21,10 +21,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
-
+  const initialSessionLoaded = useRef(false);
 
   useEffect(() => {
-    let initialSessionLoaded = false;
     let subscription: any = null;
 
     try {
@@ -34,7 +33,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setSession(session);
           setUser(session?.user ?? null);
           // Only set loading=false if initial session was already loaded
-          if (initialSessionLoaded) {
+          if (initialSessionLoaded.current) {
             setLoading(false);
           }
         }
@@ -50,14 +49,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
-      initialSessionLoaded = true;
+      initialSessionLoaded.current = true;
       setLoading(false); // Only set loading=false once, after initial session check
     }).catch((error) => {
       console.error('Auth session initialization failed:', error);
       // Set auth state as if user is not logged in
       setSession(null);
       setUser(null);
-      initialSessionLoaded = true;
+      initialSessionLoaded.current = true;
       setLoading(false); // Still set loading=false to prevent infinite loading
     });
 

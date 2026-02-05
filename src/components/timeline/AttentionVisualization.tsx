@@ -2,7 +2,7 @@
 import { useMemo } from 'react';
 import { TimelineItem } from '@/lib/timelineUtils';
 import { UserAttentionPreferences, ATTENTION_TYPE_DESCRIPTIONS } from '@/lib/attentionTypes';
-import { analyzeAttentionBudget, AttentionBudgetAnalysis } from '@/lib/attentionBudgetEngine';
+import { analyzeAttentionBudget } from '@/lib/attentionBudgetEngine';
 
 interface AttentionVisualizationProps {
   items: TimelineItem[];
@@ -12,7 +12,6 @@ interface AttentionVisualizationProps {
   scrollOffset: number;
   nowLineX: number;
   viewportWidth: number;
-  layerHeight: number;
   headerHeight: number;
 }
 
@@ -43,7 +42,6 @@ export function AttentionVisualization({
   scrollOffset,
   nowLineX,
   viewportWidth,
-  layerHeight,
   headerHeight
 }: AttentionVisualizationProps) {
 
@@ -55,7 +53,7 @@ export function AttentionVisualization({
   const contextSwitchIndicators = useMemo(() => {
     if (!analysis) return [];
 
-    return analysis.contextSwitchAnalysis.switchPoints.map((switchPoint, index) => {
+    return analysis.contextSwitchAnalysis.switchPoints.map((switchPoint) => {
       const switchTime = new Date(switchPoint.time);
       const hoursFromStart = (switchTime.getTime() - currentDate.setHours(0, 0, 0, 0)) / (1000 * 60 * 60);
       const x = nowLineX + (hoursFromStart * pixelsPerHour) + scrollOffset;
@@ -456,91 +454,6 @@ export function AttentionVisualization({
         </g>
       )}
 
-      {/* Legend */}
-      <g className="attention-legend">
-        <rect
-          x={10}
-          y={viewportWidth > 800 ? headerHeight + 10 : headerHeight + 70}
-          width={200}
-          height={contextSwitchIndicators.length > 0 ? 80 : 60}
-          rx="6"
-          fill="rgba(255, 255, 255, 0.95)"
-          stroke="rgba(156, 163, 175, 0.3)"
-          strokeWidth="1"
-          className="drop-shadow-sm"
-        />
-
-        <text
-          x={15}
-          y={viewportWidth > 800 ? headerHeight + 25 : headerHeight + 85}
-          fontSize="10"
-          fontWeight="600"
-          fill="rgb(75, 85, 99)"
-        >
-          Attention Insights
-        </text>
-
-        {/* Peak hours legend */}
-        <rect
-          x={15}
-          y={viewportWidth > 800 ? headerHeight + 30 : headerHeight + 90}
-          width={12}
-          height={8}
-          fill="url(#peak-hours-gradient)"
-        />
-        <text
-          x={32}
-          y={viewportWidth > 800 ? headerHeight + 37 : headerHeight + 97}
-          fontSize="8"
-          fill="rgb(75, 85, 99)"
-        >
-          Peak attention hours
-        </text>
-
-        {/* Context switches legend */}
-        {contextSwitchIndicators.length > 0 && (
-          <>
-            <line
-              x1={15}
-              y1={viewportWidth > 800 ? headerHeight + 45 : headerHeight + 105}
-              x2={27}
-              y2={viewportWidth > 800 ? headerHeight + 45 : headerHeight + 105}
-              stroke="rgb(239, 68, 68)"
-              strokeWidth="2"
-              strokeDasharray="4,2"
-            />
-            <text
-              x={32}
-              y={viewportWidth > 800 ? headerHeight + 48 : headerHeight + 108}
-              fontSize="8"
-              fill="rgb(75, 85, 99)"
-            >
-              Context switches
-            </text>
-          </>
-        )}
-
-        {/* Budget violations legend */}
-        {budgetViolationZones.length > 0 && (
-          <>
-            <rect
-              x={15}
-              y={viewportWidth > 800 ? headerHeight + 55 : headerHeight + 115}
-              width={12}
-              height={8}
-              fill="url(#warning-pattern)"
-            />
-            <text
-              x={32}
-              y={viewportWidth > 800 ? headerHeight + 62 : headerHeight + 122}
-              fontSize="8"
-              fill="rgb(75, 85, 99)"
-            >
-              Budget warnings
-            </text>
-          </>
-        )}
-      </g>
     </svg>
   );
 }

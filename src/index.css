@@ -82,6 +82,26 @@ All colors MUST be HSL.
     --sidebar-accent-foreground: 212 48% 52%;
     --sidebar-border: 0 0% 91%;
     --sidebar-ring: 46 100% 50%;
+
+    /* Z-index management system */
+    --z-background: 0;
+    --z-content: 1;
+    --z-timeline-base: 10;
+    --z-timeline-items: 15;
+    --z-timeline-hover: 20;
+    --z-timeline-dragging: 25;
+    --z-timeline-now-line: 30;
+    --z-calendar-headers: 35;
+    --z-calendar-time-column: 40;
+    --z-drag-preview: 45;
+    --z-alerts: 50;
+    --z-quick-add-forms: 55;
+    --z-tooltips: 60;
+    --z-popovers: 65;
+    --z-drag-overlay: 70;
+    --z-modals: 80;
+    --z-notifications: 90;
+    --z-critical-alerts: 100;
   }
 
   .dark {
@@ -150,6 +170,26 @@ All colors MUST be HSL.
     --sidebar-accent-foreground: 0 0% 96%;
     --sidebar-border: 212 48% 24%;
     --sidebar-ring: 46 100% 50%;
+
+    /* Z-index management system */
+    --z-background: 0;
+    --z-content: 1;
+    --z-timeline-base: 10;
+    --z-timeline-items: 15;
+    --z-timeline-hover: 20;
+    --z-timeline-dragging: 25;
+    --z-timeline-now-line: 30;
+    --z-calendar-headers: 35;
+    --z-calendar-time-column: 40;
+    --z-drag-preview: 45;
+    --z-alerts: 50;
+    --z-quick-add-forms: 55;
+    --z-tooltips: 60;
+    --z-popovers: 65;
+    --z-drag-overlay: 70;
+    --z-modals: 80;
+    --z-notifications: 90;
+    --z-critical-alerts: 100;
   }
 
   .pure-light {
@@ -204,6 +244,26 @@ All colors MUST be HSL.
     --sidebar-accent-foreground: 0 0% 10%;
     --sidebar-border: 0 0% 90%;
     --sidebar-ring: 0 0% 30%;
+
+    /* Z-index management system */
+    --z-background: 0;
+    --z-content: 1;
+    --z-timeline-base: 10;
+    --z-timeline-items: 15;
+    --z-timeline-hover: 20;
+    --z-timeline-dragging: 25;
+    --z-timeline-now-line: 30;
+    --z-calendar-headers: 35;
+    --z-calendar-time-column: 40;
+    --z-drag-preview: 45;
+    --z-alerts: 50;
+    --z-quick-add-forms: 55;
+    --z-tooltips: 60;
+    --z-popovers: 65;
+    --z-drag-overlay: 70;
+    --z-modals: 80;
+    --z-notifications: 90;
+    --z-critical-alerts: 100;
   }
 
   .magic-blue {
@@ -258,6 +318,26 @@ All colors MUST be HSL.
     --sidebar-accent-foreground: 210 40% 98%;
     --sidebar-border: 217 33% 20%;
     --sidebar-ring: 217 91% 60%;
+
+    /* Z-index management system */
+    --z-background: 0;
+    --z-content: 1;
+    --z-timeline-base: 10;
+    --z-timeline-items: 15;
+    --z-timeline-hover: 20;
+    --z-timeline-dragging: 25;
+    --z-timeline-now-line: 30;
+    --z-calendar-headers: 35;
+    --z-calendar-time-column: 40;
+    --z-drag-preview: 45;
+    --z-alerts: 50;
+    --z-quick-add-forms: 55;
+    --z-tooltips: 60;
+    --z-popovers: 65;
+    --z-drag-overlay: 70;
+    --z-modals: 80;
+    --z-notifications: 90;
+    --z-critical-alerts: 100;
   }
 
   .classic-dark {
@@ -312,6 +392,26 @@ All colors MUST be HSL.
     --sidebar-accent-foreground: 0 0% 95%;
     --sidebar-border: 0 0% 22%;
     --sidebar-ring: 0 0% 50%;
+
+    /* Z-index management system */
+    --z-background: 0;
+    --z-content: 1;
+    --z-timeline-base: 10;
+    --z-timeline-items: 15;
+    --z-timeline-hover: 20;
+    --z-timeline-dragging: 25;
+    --z-timeline-now-line: 30;
+    --z-calendar-headers: 35;
+    --z-calendar-time-column: 40;
+    --z-drag-preview: 45;
+    --z-alerts: 50;
+    --z-quick-add-forms: 55;
+    --z-tooltips: 60;
+    --z-popovers: 65;
+    --z-drag-overlay: 70;
+    --z-modals: 80;
+    --z-notifications: 90;
+    --z-critical-alerts: 100;
   }
 }
 

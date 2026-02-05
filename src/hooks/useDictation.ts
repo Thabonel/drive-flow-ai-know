@@ -22,13 +22,43 @@ export function useDictation(): UseDictationReturn {
     try {
       setError(null)
 
+      // Check if mediaDevices is available
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error('Your browser does not support audio recording. Please use HTTPS or localhost.')
+      }
+
       // Request microphone permission
+      console.log('🎤 Requesting microphone access...')
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      console.log('✅ Microphone access granted')
+
+      // Find a supported mimeType
+      const mimeTypes = [
+        'audio/webm;codecs=opus',
+        'audio/webm',
+        'audio/ogg;codecs=opus',
+        'audio/mp4',
+        'audio/wav',
+      ]
+
+      let selectedMimeType = ''
+      for (const mimeType of mimeTypes) {
+        if (MediaRecorder.isTypeSupported(mimeType)) {
+          selectedMimeType = mimeType
+          console.log('✅ Using mimeType:', mimeType)
+          break
+        }
+      }
+
+      if (!selectedMimeType) {
+        // Fall back to default (let browser choose)
+        console.log('⚠️ No preferred mimeType supported, using browser default')
+      }
 
       // Create MediaRecorder instance
-      const mediaRecorder = new MediaRecorder(stream, {
-        mimeType: 'audio/webm',
-      })
+      const options = selectedMimeType ? { mimeType: selectedMimeType } : undefined
+      const mediaRecorder = new MediaRecorder(stream, options)
+      console.log('✅ MediaRecorder created with mimeType:', mediaRecorder.mimeType)
 
       audioChunksRef.current = []
 
@@ -36,6 +66,10 @@ export function useDictation(): UseDictationReturn {
         if (event.data.size > 0) {
           audioChunksRef.current.push(event.data)
         }
+      }
+
+      mediaRecorder.onerror = (event) => {
+        console.error('❌ MediaRecorder error:', event)
       }
 
       mediaRecorder.start()
@@ -46,7 +80,23 @@ export function useDictation(): UseDictationReturn {
         description: 'Speak now...',
       })
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to access microphone'
+      console.error('❌ Recording error:', err)
+      let errorMessage = 'Failed to access microphone'
+
+      if (err instanceof Error) {
+        errorMessage = err.message
+        // Provide user-friendly messages for common errors
+        if (err.name === 'NotAllowedError') {
+          errorMessage = 'Microphone permission denied. Please allow microphone access in your browser settings.'
+        } else if (err.name === 'NotFoundError') {
+          errorMessage = 'No microphone found. Please connect a microphone and try again.'
+        } else if (err.name === 'NotSupportedError') {
+          errorMessage = 'Audio recording is not supported in this browser.'
+        } else if (err.name === 'SecurityError') {
+          errorMessage = 'Audio recording requires HTTPS. Please use a secure connection.'
+        }
+      }
+
       setError(errorMessage)
       toast.error('Recording failed', {
         description: errorMessage,

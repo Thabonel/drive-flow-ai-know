@@ -5,9 +5,7 @@ import { TimelineItem } from './TimelineItem';
 import { useTimelineContext } from '@/contexts/TimelineContext';
 import { TimelinePhilosophy } from './TimelinePhilosophy';
 import { AttentionVisualization } from './AttentionVisualization';
-import { AttentionBudgetAlerts } from './AttentionBudgetAlerts';
-import { ContextSwitchWarning } from './ContextSwitchWarning';
-import { PeakHoursOptimizer } from './PeakHoursOptimizer';
+import { AlertManager } from './AlertManager';
 import {
   TimelineItem as TimelineItemType,
   TimelineLayer,
@@ -203,16 +201,16 @@ export function TimelineCanvas({
 
   return (
     <div className="relative w-full">
-      {/* Attention budget alerts and context switch warnings overlay */}
+      {/* Unified Alert Management System */}
       {attentionPreferences && (
-        <div className="absolute top-0 left-0 right-0 z-20 p-4 space-y-3">
-          <AttentionBudgetAlerts
+        <div className="absolute top-0 left-0 right-0 p-4">
+          <AlertManager
             items={filteredItems}
             preferences={attentionPreferences}
             currentDate={nowTime}
             onTakeAction={(action, data) => {
-              // Handle attention budget actions
-              console.log('Attention action:', action, data);
+              // Handle all alert actions in a unified way
+              console.log('Alert action:', action, data);
               // Could emit events to parent or implement specific actions here
             }}
             onDismiss={(alertId) => {
@@ -220,44 +218,7 @@ export function TimelineCanvas({
               console.log('Dismiss alert:', alertId);
               // Could store dismissed alerts in local storage or state
             }}
-            compact={true}
-            className="max-w-2xl"
-          />
-
-          <ContextSwitchWarning
-            items={filteredItems}
-            preferences={attentionPreferences}
-            currentDate={nowTime}
-            onBatchSuggestion={(batchItems, targetTime) => {
-              // Handle batching suggestions
-              console.log('Batch suggestion:', batchItems.map(item => item.title), 'at', targetTime);
-              // Could implement automatic batching or show UI to confirm
-            }}
-            onOptimizeSchedule={() => {
-              // Handle schedule optimization request
-              console.log('Optimize schedule requested');
-              // Could trigger AI optimization or open optimization dialog
-            }}
-            compact={true}
-            className="max-w-2xl"
-          />
-
-          <PeakHoursOptimizer
-            items={filteredItems}
-            preferences={attentionPreferences}
-            currentDate={nowTime}
-            onOptimizeSchedule={(suggestions) => {
-              // Handle peak hours optimization suggestions
-              console.log('Peak hours optimization:', suggestions);
-              // Could implement automatic rescheduling or show confirmation UI
-            }}
-            onUpdatePeakHours={(startTime, endTime) => {
-              // Handle peak hours updates
-              console.log('Update peak hours:', startTime, endTime);
-              // Could update user preferences via API
-            }}
-            compact={true}
-            className="max-w-2xl"
+            maxVisible={2}
           />
         </div>
       )}
@@ -272,7 +233,6 @@ export function TimelineCanvas({
           scrollOffset={scrollOffset}
           nowLineX={nowLineX}
           viewportWidth={viewportWidth}
-          layerHeight={layerHeight}
           headerHeight={TIMELINE_HEADER_HEIGHT}
         />
       )}
@@ -292,11 +252,24 @@ export function TimelineCanvas({
     >
       {/* SVG Filter Definitions */}
       <defs>
-        {/* NOW line glow effect */}
+        {/* NOW line enhanced glow effect */}
         <filter id="now-line-glow" x="-50%" y="-50%" width="200%" height="200%">
-          <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+          <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+          <feGaussianBlur stdDeviation="8" result="outerGlow"/>
           <feMerge>
+            <feMergeNode in="outerGlow"/>
             <feMergeNode in="coloredBlur"/>
+            <feMergeNode in="SourceGraphic"/>
+          </feMerge>
+        </filter>
+
+        {/* NOW line pulsing animation */}
+        <filter id="now-line-pulse" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation="6" result="glow">
+            <animate attributeName="stdDeviation" values="6;12;6" dur="2s" repeatCount="indefinite"/>
+          </feGaussianBlur>
+          <feMerge>
+            <feMergeNode in="glow"/>
             <feMergeNode in="SourceGraphic"/>
           </feMerge>
         </filter>
@@ -480,42 +453,98 @@ export function TimelineCanvas({
 
       {/* NOW line - rendered last to appear on top of all layers and items */}
       <g className="now-line">
+        {/* Solid red line base - always visible (no filter) */}
+        <line
+          x1={nowLineX}
+          y1={0}
+          x2={nowLineX}
+          y2={totalHeight}
+          stroke="#dc2626"
+          strokeWidth={3}
+        />
+
+        {/* Background glow line for extra visibility */}
         <line
           x1={nowLineX}
           y1={0}
           x2={nowLineX}
           y2={totalHeight}
           stroke="#ef4444"
-          strokeWidth={3}
-          opacity={0.8}
-          filter="url(#now-line-glow)"
+          strokeWidth={8}
+          opacity={0.3}
+          filter="url(#now-line-pulse)"
         />
-        {/* Date label */}
+
+        {/* Main NOW line with enhanced visibility */}
+        <line
+          x1={nowLineX}
+          y1={0}
+          x2={nowLineX}
+          y2={totalHeight}
+          stroke="#dc2626"
+          strokeWidth={4}
+          opacity={1}
+          filter="url(#now-line-glow)"
+          strokeLinecap="round"
+        />
+
+        {/* Date label with background */}
+        <rect
+          x={nowLineX + 12}
+          y={5}
+          width={65}
+          height={12}
+          fill="rgba(220, 38, 38, 0.9)"
+          rx={2}
+        />
         <text
-          x={nowLineX + 5}
-          y={15}
+          x={nowLineX + 15}
+          y={13}
           fontSize="10"
-          fill="#ef4444"
+          fill="white"
+          fontWeight="600"
         >
           {formatDate(nowTime.toISOString())}
         </text>
-        {/* Time label */}
+
+        {/* Time label with background */}
+        <rect
+          x={nowLineX + 12}
+          y={20}
+          width={45}
+          height={14}
+          fill="rgba(220, 38, 38, 0.9)"
+          rx={2}
+        />
         <text
-          x={nowLineX + 5}
+          x={nowLineX + 15}
           y={30}
           fontSize="12"
-          fontWeight="500"
-          fill="#ef4444"
+          fill="white"
+          fontWeight="bold"
         >
           {formatTime(nowTime.toISOString())}
         </text>
-        {/* NOW label */}
+
+        {/* NOW label with enhanced background */}
+        <rect
+          x={nowLineX + 12}
+          y={37}
+          width={35}
+          height={16}
+          fill="#dc2626"
+          stroke="#ffffff"
+          strokeWidth={1}
+          rx={3}
+          filter="url(#now-line-glow)"
+        />
         <text
-          x={nowLineX + 5}
-          y={45}
+          x={nowLineX + 16}
+          y={48}
           fontSize="12"
+          fill="white"
           fontWeight="bold"
-          fill="#ef4444"
+          textAnchor="start"
         >
           NOW
         </text>
