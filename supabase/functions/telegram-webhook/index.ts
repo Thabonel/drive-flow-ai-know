@@ -23,6 +23,14 @@ import { CLAUDE_MODELS } from '../_shared/models.ts';
 interface TelegramUpdate {
   update_id: number;
   message?: TelegramMessage;
+  callback_query?: TelegramCallbackQuery;
+}
+
+interface TelegramCallbackQuery {
+  id: string;
+  from: TelegramUser;
+  message?: TelegramMessage;
+  data?: string;
 }
 
 interface TelegramMessage {
@@ -614,6 +622,212 @@ async function logInteraction(
   }
 }
 
+// Answer Telegram callback query
+async function answerCallbackQuery(callbackQueryId: string, text: string): Promise<void> {
+  await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/answerCallbackQuery`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      callback_query_id: callbackQueryId,
+      text,
+      show_alert: false,
+    }),
+  });
+}
+
+// Edit Telegram message
+async function editMessage(chatId: number, messageId: number, text: string): Promise<void> {
+  await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/editMessageText`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      chat_id: chatId,
+      message_id: messageId,
+      text,
+    }),
+  });
+}
+
+// Handle autonomy-related commands
+async function handleAutonomyCommand(
+  supabase: any,
+  chatId: number,
+  command: string,
+  userId: string
+): Promise<string | null> {
+  switch (command) {
+    case '/status': {
+      // Check current autonomy session status
+      const { data: session } = await supabase.rpc('get_active_autonomy_session', {
+        p_user_id: userId,
+      });
+
+      if (session && session.length > 0) {
+        const s = session[0];
+        return `Autonomy Session Active
+
+Started: ${new Date(s.started_at).toLocaleString()}
+Expires: ${new Date(s.expires_at).toLocaleString()}
+Time remaining: ${s.time_remaining_minutes} minutes
+Actions taken: ${s.actions_count}
+
+Reply /stop to end the session.`;
+      } else {
+        return `No active autonomy session.
+
+When I need to take autonomous actions (like proactive check-ins), I'll ask for your approval first.
+
+The session lasts 2 hours and lets me act on your behalf without asking each time.`;
+      }
+    }
+
+    case '/stop': {
+      // End current autonomy session
+      const { data: ended } = await supabase.rpc('end_autonomy_session', {
+        p_user_id: userId,
+      });
+
+      if (ended) {
+        return `Autonomy session ended.
+
+I'll now ask for your approval before taking any autonomous actions.`;
+      } else {
+        return `No active autonomy session to end.`;
+      }
+    }
+
+    case '/autonomy': {
+      // Request new autonomy session
+      const { data: hasSession } = await supabase.rpc('has_active_autonomy_session', {
+        p_user_id: userId,
+      });
+
+      if (hasSession) {
+        return `You already have an active autonomy session. Use /status to check details or /stop to end it.`;
+      }
+
+      // Create confirmation request
+      const { data: confirmationId } = await supabase.rpc('create_pending_confirmation', {
+        p_user_id: userId,
+        p_confirmation_type: 'autonomy_start',
+        p_action_description: 'Start 2-hour autonomy session',
+        p_channel: 'telegram',
+        p_channel_id: chatId.toString(),
+        p_expires_minutes: 5,
+      });
+
+      if (confirmationId) {
+        // Send confirmation with inline buttons
+        await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chat_id: chatId,
+            text: `Start Autonomy Session?
+
+This allows me to:
+- Send proactive check-ins
+- Take actions based on urgency
+- Manage tasks without asking each time
+
+Duration: 2 hours
+You can end it anytime with /stop`,
+            reply_markup: {
+              inline_keyboard: [
+                [
+                  { text: 'Approve', callback_data: `confirm:${confirmationId}:approve` },
+                  { text: 'Deny', callback_data: `confirm:${confirmationId}:deny` },
+                ],
+              ],
+            },
+          }),
+        });
+        return null; // Message already sent
+      }
+
+      return `Could not create autonomy request. Please try again.`;
+    }
+
+    default:
+      return null;
+  }
+}
+
+// Handle callback query (button presses)
+async function handleCallbackQuery(
+  supabase: any,
+  callbackQuery: TelegramCallbackQuery
+): Promise<void> {
+  const data = callbackQuery.data;
+  if (!data) {
+    await answerCallbackQuery(callbackQuery.id, 'Invalid callback');
+    return;
+  }
+
+  // Handle confirmation callbacks: confirm:<id>:<action>
+  if (data.startsWith('confirm:')) {
+    const parts = data.split(':');
+    if (parts.length !== 3) {
+      await answerCallbackQuery(callbackQuery.id, 'Invalid format');
+      return;
+    }
+
+    const confirmationId = parts[1];
+    const action = parts[2];
+    const approved = action === 'approve';
+
+    // Process confirmation
+    const { data: result, error } = await supabase.rpc('process_confirmation_response', {
+      p_confirmation_id: confirmationId,
+      p_approved: approved,
+      p_response_data: {
+        telegram_user_id: callbackQuery.from.id,
+        telegram_username: callbackQuery.from.username,
+      },
+    });
+
+    if (error || !result?.success) {
+      await answerCallbackQuery(callbackQuery.id, result?.error || 'Failed to process');
+      return;
+    }
+
+    // Answer and update message
+    const responseText = approved ? 'Approved!' : 'Denied';
+    await answerCallbackQuery(callbackQuery.id, responseText);
+
+    if (callbackQuery.message) {
+      const updatedText = approved
+        ? `Autonomy session STARTED at ${new Date().toLocaleTimeString()}
+
+I can now take actions on your behalf for 2 hours.
+
+Use /status to check session info
+Use /stop to end the session early`
+        : `Autonomy session DENIED at ${new Date().toLocaleTimeString()}
+
+I'll ask for permission before taking actions.`;
+
+      await editMessage(
+        callbackQuery.message.chat.id,
+        callbackQuery.message.message_id,
+        updatedText
+      );
+    }
+
+    // Log audit event
+    await supabase.rpc('log_audit_event', {
+      p_user_id: result.user_id,
+      p_action_type: 'security_event',
+      p_description: `User ${approved ? 'approved' : 'denied'} ${result.confirmation_type}`,
+      p_source_channel: 'telegram',
+      p_metadata: {
+        confirmation_id: confirmationId,
+        approved,
+      },
+    });
+  }
+}
+
 // Main webhook handler
 serve(async (req) => {
   // Only accept POST requests
@@ -636,9 +850,17 @@ serve(async (req) => {
     const update: TelegramUpdate = await req.json();
     console.log('Received Telegram update:', update.update_id);
 
+    // Initialize Supabase client early for callback queries
+    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
+    // Handle callback queries (button presses)
+    if (update.callback_query) {
+      await handleCallbackQuery(supabase, update.callback_query);
+      return new Response('OK', { status: 200 });
+    }
+
     const message = update.message;
     if (!message) {
-      // No message in update (could be callback_query, etc.)
       return new Response('OK', { status: 200 });
     }
 
@@ -655,8 +877,7 @@ serve(async (req) => {
       return new Response('OK', { status: 200 });
     }
 
-    // Initialize Supabase client
-    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+    // supabase client already initialized above for callback queries
 
     // Send typing indicator
     await sendTypingAction(chatId);
@@ -731,6 +952,9 @@ How can I help you today?`
           `Available commands:
 /start - Welcome message
 /help - Show this help
+/status - Check autonomy session status
+/autonomy - Start autonomy session
+/stop - End autonomy session
 
 Or just send me:
 - Text questions
@@ -739,6 +963,15 @@ Or just send me:
 
 For document queries and knowledge bases, please use the AI Query Hub web app.`
         );
+        return new Response('OK', { status: 200 });
+      }
+
+      // Handle autonomy commands
+      if (['/status', '/stop', '/autonomy'].includes(userQuery)) {
+        const response = await handleAutonomyCommand(supabase, chatId, userQuery, userId.toString());
+        if (response) {
+          await sendTelegramMessage(chatId, response);
+        }
         return new Response('OK', { status: 200 });
       }
     } else {
