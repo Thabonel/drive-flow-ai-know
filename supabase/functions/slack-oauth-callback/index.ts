@@ -25,6 +25,8 @@ const FRONTEND_URL = Deno.env.get('FRONTEND_URL') ?? 'http://localhost:8080';
 interface SlackOAuthResponse {
   ok: boolean;
   access_token?: string;
+  refresh_token?: string;
+  expires_in?: number; // seconds until token expires
   token_type?: string;
   scope?: string;
   bot_user_id?: string;
@@ -37,6 +39,8 @@ interface SlackOAuthResponse {
     id: string;
     scope?: string;
     access_token?: string;
+    refresh_token?: string;
+    expires_in?: number;
   };
   incoming_webhook?: {
     channel: string;
@@ -111,12 +115,14 @@ serve(async (req) => {
           team_id: tokenData.team?.id,
           team_name: tokenData.team?.name,
           bot_token: tokenData.access_token,
+          refresh_token: tokenData.refresh_token,
+          token_expires_in: tokenData.expires_in,
           bot_user_id: tokenData.bot_user_id,
           authed_user_id: tokenData.authed_user?.id,
           channel_id: tokenData.incoming_webhook?.channel_id,
           channel_name: tokenData.incoming_webhook?.channel,
           scope: tokenData.scope,
-          expires_at: new Date(Date.now() + 5 * 60 * 1000).toISOString(), // 5 minutes
+          expires_at: new Date(Date.now() + 5 * 60 * 1000).toISOString(), // 5 minutes to claim
         });
 
       if (insertError) {
@@ -162,6 +168,11 @@ serve(async (req) => {
         );
       }
 
+      // Calculate token expiration timestamp
+      const tokenExpiresAt = pending.token_expires_in
+        ? new Date(Date.now() + pending.token_expires_in * 1000).toISOString()
+        : null;
+
       // Create the actual connection
       const { data: connectionId, error: connectError } = await supabase.rpc('connect_messaging_platform', {
         p_user_id: user_id,
@@ -171,6 +182,8 @@ serve(async (req) => {
         p_slack_channel_id: pending.channel_id,
         p_slack_channel_name: pending.channel_name,
         p_slack_bot_token: pending.bot_token,
+        p_slack_refresh_token: pending.refresh_token,
+        p_slack_token_expires_at: tokenExpiresAt,
         p_slack_user_id: pending.authed_user_id,
       });
 

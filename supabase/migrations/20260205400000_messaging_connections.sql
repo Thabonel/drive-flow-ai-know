@@ -20,6 +20,8 @@ CREATE TABLE IF NOT EXISTS user_messaging_connections (
   slack_channel_id TEXT,
   slack_channel_name TEXT,
   slack_bot_token TEXT, -- Encrypted in production
+  slack_refresh_token TEXT, -- For token rotation
+  slack_token_expires_at TIMESTAMPTZ, -- When the access token expires
   slack_user_id TEXT,
 
   -- Connection metadata
@@ -165,6 +167,8 @@ CREATE OR REPLACE FUNCTION connect_messaging_platform(
   p_slack_channel_id TEXT DEFAULT NULL,
   p_slack_channel_name TEXT DEFAULT NULL,
   p_slack_bot_token TEXT DEFAULT NULL,
+  p_slack_refresh_token TEXT DEFAULT NULL,
+  p_slack_token_expires_at TIMESTAMPTZ DEFAULT NULL,
   p_slack_user_id TEXT DEFAULT NULL
 )
 RETURNS UUID AS $$
@@ -181,6 +185,8 @@ BEGIN
     slack_channel_id,
     slack_channel_name,
     slack_bot_token,
+    slack_refresh_token,
+    slack_token_expires_at,
     slack_user_id,
     connected_at
   ) VALUES (
@@ -193,6 +199,8 @@ BEGIN
     p_slack_channel_id,
     p_slack_channel_name,
     p_slack_bot_token,
+    p_slack_refresh_token,
+    p_slack_token_expires_at,
     p_slack_user_id,
     NOW()
   )
@@ -204,6 +212,8 @@ BEGIN
     slack_channel_id = COALESCE(EXCLUDED.slack_channel_id, user_messaging_connections.slack_channel_id),
     slack_channel_name = COALESCE(EXCLUDED.slack_channel_name, user_messaging_connections.slack_channel_name),
     slack_bot_token = COALESCE(EXCLUDED.slack_bot_token, user_messaging_connections.slack_bot_token),
+    slack_refresh_token = COALESCE(EXCLUDED.slack_refresh_token, user_messaging_connections.slack_refresh_token),
+    slack_token_expires_at = COALESCE(EXCLUDED.slack_token_expires_at, user_messaging_connections.slack_token_expires_at),
     slack_user_id = COALESCE(EXCLUDED.slack_user_id, user_messaging_connections.slack_user_id),
     connected_at = NOW(),
     is_active = TRUE,
@@ -213,6 +223,37 @@ BEGIN
   RETURN v_connection_id;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Update Slack tokens after refresh
+CREATE OR REPLACE FUNCTION update_slack_tokens(
+  p_user_id UUID,
+  p_access_token TEXT,
+  p_refresh_token TEXT,
+  p_expires_at TIMESTAMPTZ
+)
+RETURNS VOID AS $$
+  UPDATE user_messaging_connections
+  SET
+    slack_bot_token = p_access_token,
+    slack_refresh_token = p_refresh_token,
+    slack_token_expires_at = p_expires_at,
+    updated_at = NOW()
+  WHERE user_id = p_user_id AND platform = 'slack';
+$$ LANGUAGE sql SECURITY DEFINER;
+
+-- Get Slack connections that need token refresh (expiring in next hour)
+CREATE OR REPLACE FUNCTION get_slack_connections_needing_refresh()
+RETURNS TABLE (
+  user_id UUID,
+  refresh_token TEXT
+) AS $$
+  SELECT user_id, slack_refresh_token
+  FROM user_messaging_connections
+  WHERE platform = 'slack'
+    AND is_active = TRUE
+    AND slack_refresh_token IS NOT NULL
+    AND slack_token_expires_at < NOW() + INTERVAL '1 hour';
+$$ LANGUAGE sql SECURITY DEFINER;
 
 -- Get user by Telegram chat ID
 CREATE OR REPLACE FUNCTION get_user_by_telegram_chat_id(p_chat_id TEXT)
@@ -253,6 +294,8 @@ CREATE TABLE IF NOT EXISTS pending_slack_connections (
   team_id TEXT,
   team_name TEXT,
   bot_token TEXT,
+  refresh_token TEXT,
+  token_expires_in INTEGER, -- seconds until expiry
   bot_user_id TEXT,
   authed_user_id TEXT,
   channel_id TEXT,
