@@ -4,11 +4,11 @@
  * Handles incoming Telegram messages via webhook and routes them to the AI orchestrator.
  * Supports text messages, voice messages (with transcription), and image analysis.
  *
- * Security: Only allows messages from a specific Telegram User ID (configured via env).
+ * Security: Uses webhook signature verification and user account linking for access control.
  *
  * Environment Variables Required:
  * - TELEGRAM_BOT_TOKEN: Your Telegram bot token from @BotFather
- * - TELEGRAM_ALLOWED_USER_ID: Your Telegram user ID (for security)
+ * - TELEGRAM_SECRET_TOKEN: Secret token for webhook signature verification
  * - SUPABASE_URL: Supabase project URL
  * - SUPABASE_SERVICE_ROLE_KEY: Service role key for database operations
  * - OPENAI_API_KEY: For voice transcription (Whisper)
@@ -87,11 +87,30 @@ interface TelegramDocument {
 
 // Environment variables
 const TELEGRAM_BOT_TOKEN = Deno.env.get('TELEGRAM_BOT_TOKEN');
-const TELEGRAM_ALLOWED_USER_ID = Deno.env.get('TELEGRAM_ALLOWED_USER_ID');
+const TELEGRAM_SECRET_TOKEN = Deno.env.get('TELEGRAM_SECRET_TOKEN');
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? '';
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
 const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
 const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY');
+
+/**
+ * Verify webhook signature using Telegram secret token
+ */
+async function verifyWebhookSignature(request: Request, body: string): Promise<boolean> {
+  if (!TELEGRAM_SECRET_TOKEN) {
+    console.warn('TELEGRAM_SECRET_TOKEN not configured, skipping signature verification');
+    return true; // Allow requests if no secret token is set (dev mode)
+  }
+
+  const signature = request.headers.get('X-Telegram-Bot-Api-Secret-Token');
+  if (!signature) {
+    console.warn('Missing X-Telegram-Bot-Api-Secret-Token header');
+    return false;
+  }
+
+  // Simple string comparison (Telegram sends the exact secret token)
+  return signature === TELEGRAM_SECRET_TOKEN;
+}
 
 // Telegram API helper
 async function sendTelegramMessage(chatId: number, text: string, parseMode?: string): Promise<void> {
@@ -841,13 +860,17 @@ serve(async (req) => {
     return new Response('Bot not configured', { status: 500 });
   }
 
-  if (!TELEGRAM_ALLOWED_USER_ID) {
-    console.error('TELEGRAM_ALLOWED_USER_ID not configured');
-    return new Response('Security not configured', { status: 500 });
-  }
-
   try {
-    const update: TelegramUpdate = await req.json();
+    const body = await req.text();
+
+    // Verify webhook signature for security
+    const isValidSignature = await verifyWebhookSignature(req, body);
+    if (!isValidSignature) {
+      console.warn('Invalid webhook signature received');
+      return new Response('Unauthorized', { status: 401 });
+    }
+
+    const update: TelegramUpdate = JSON.parse(body);
     console.log('Received Telegram update:', update.update_id);
 
     // Initialize Supabase client early for callback queries
@@ -867,12 +890,21 @@ serve(async (req) => {
     const chatId = message.chat.id;
     const userId = message.from?.id;
 
-    // SECURITY: Only allow messages from the configured user
-    if (!userId || userId.toString() !== TELEGRAM_ALLOWED_USER_ID) {
-      console.warn(`Unauthorized user attempted access: ${userId}`);
+    // Get connected user from Telegram chat ID
+    const { data: connectedUser } = await supabase.rpc('get_user_by_telegram_chat_id', {
+      p_chat_id: chatId.toString(),
+    });
+
+    // If no connected user, provide linking instructions
+    if (!connectedUser) {
+      console.log(`No connected user for Telegram chat ${chatId}`);
       await sendTelegramMessage(
         chatId,
-        'Sorry, this bot is private and only accessible to its owner.'
+        `Hello! To use this bot, you need to connect your Telegram account to AI Query Hub.
+
+Go to AI Query Hub Settings → Integrations → Telegram and generate a connection link.
+
+Or send /start <connection-token> if you have a connection token.`
       );
       return new Response('OK', { status: 200 });
     }
@@ -1017,7 +1049,7 @@ For document queries and knowledge bases, please use the AI Query Hub web app.`
 
       // Handle autonomy commands
       if (['/status', '/stop', '/autonomy'].includes(userQuery)) {
-        const response = await handleAutonomyCommand(supabase, chatId, userQuery, userId.toString());
+        const response = await handleAutonomyCommand(supabase, chatId, userQuery, connectedUser);
         if (response) {
           await sendTelegramMessage(chatId, response);
         }
@@ -1027,7 +1059,7 @@ For document queries and knowledge bases, please use the AI Query Hub web app.`
       // Handle /stats command
       if (userQuery === '/stats') {
         const { data: stats } = await supabase.rpc('get_user_dashboard_stats', {
-          p_user_id: userId.toString(),
+          p_user_id: connectedUser,
         });
 
         const statsMessage = stats ? `Assistant Stats
@@ -1069,7 +1101,7 @@ Autonomy:
     let aiResponse: string;
 
     try {
-      aiResponse = await callAIOrchestrator(supabase, userId.toString(), userQuery, imageData);
+      aiResponse = await callAIOrchestrator(supabase, connectedUser, userQuery, imageData);
     } catch (aiError) {
       console.error('AI orchestrator error:', aiError);
       aiResponse = 'Sorry, I encountered an error processing your request. Please try again.';
@@ -1079,7 +1111,7 @@ Autonomy:
     await sendTelegramMessage(chatId, aiResponse);
 
     // Log the interaction for memory
-    await logInteraction(supabase, userId, userQuery, aiResponse, messageType);
+    await logInteraction(supabase, userId || 0, userQuery, aiResponse, messageType);
 
     return new Response('OK', { status: 200 });
   } catch (error) {
