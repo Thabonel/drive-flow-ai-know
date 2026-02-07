@@ -53,12 +53,7 @@ export default defineConfig(({ mode }) => ({
           'office-vendor': ['pptxgenjs', 'docx', '@react-pdf/renderer'],
           'canvas-vendor': ['html2canvas', 'canvg', 'jspdf'],
           'ai-vendor': ['openai'],
-          // Timeline chunk splitting to prevent oversized imports
-          'timeline-core': ['./src/pages/Timeline'],
-          'timeline-managers': ['./src/components/timeline/TimelineWithDnd', './src/components/timeline/TimelineManagerWrapper', './src/components/timeline/TimelineManager'],
-          'timeline-widgets': ['./src/components/timeline/AttentionBudgetWidget', './src/components/timeline/WorkloadIndicator', './src/components/timeline/RoleBasedTemplates', './src/components/timeline/WeeklyCalibrationWizard'],
-          'timeline-controls': ['./src/components/timeline/AddItemForm', './src/components/timeline/TimelineControls', './src/components/timeline/RecurringActionDialog'],
-          'planning-components': ['./src/components/planning/DailyPlanningFlow', './src/components/planning/EndOfDayShutdown']
+          // Timeline chunk splitting removed to prevent circular dependencies
         }
       }
     },
