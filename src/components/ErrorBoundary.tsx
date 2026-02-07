@@ -56,6 +56,7 @@ interface ErrorBoundaryState {
   errorInfo?: ErrorInfo;
   retryCount: number;
   isChunkLoadError?: boolean;
+  isSilentlyReloading?: boolean;
 }
 
 interface ErrorBoundaryProps {
@@ -67,7 +68,7 @@ interface ErrorBoundaryProps {
 export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
   constructor(props: ErrorBoundaryProps) {
     super(props);
-    this.state = { hasError: false, retryCount: 0, isChunkLoadError: false };
+    this.state = { hasError: false, retryCount: 0, isChunkLoadError: false, isSilentlyReloading: false };
   }
 
   static getDerivedStateFromError(error: Error): ErrorBoundaryState {
@@ -75,10 +76,13 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
     const isNavigationError = error.message?.includes('426') ||
                               error.message?.includes('SUPABASE');
 
-    // Detect ChunkLoadError (React error #310) - auto-handle these
+    // Detect ChunkLoadError and other module loading failures - auto-handle these silently
     const isChunkLoadError = error.message?.includes('ChunkLoadError') ||
                             error.message?.includes('Loading chunk') ||
                             error.message?.includes('Loading CSS chunk') ||
+                            error.message?.includes('Failed to fetch dynamically imported module') ||
+                            error.message?.includes('Failed to import') ||
+                            error.message?.includes('Cannot resolve module') ||
                             error.name === 'ChunkLoadError' ||
                             // React minified error #310 pattern
                             (error.message?.includes('Minified React error #310') ||
@@ -90,8 +94,9 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
     }
 
     if (isChunkLoadError) {
-      console.log('ChunkLoadError detected, will handle with cache clear and reload');
-      return { hasError: true, error, retryCount: 0 };
+      console.log('ChunkLoadError detected, will handle silently with immediate cache clear and reload');
+      // Don't show error UI for chunk load errors - handle silently
+      return { hasError: false, error, retryCount: 0, isChunkLoadError: true };
     }
 
     return { hasError: true, error, retryCount: 0 };
@@ -100,10 +105,13 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     console.error('ErrorBoundary caught an error:', error, errorInfo);
 
-    // Detect ChunkLoadError (React error #310)
+    // Detect ChunkLoadError and other module loading failures (React error #310)
     const isChunkLoadError = error.message?.includes('ChunkLoadError') ||
                             error.message?.includes('Loading chunk') ||
                             error.message?.includes('Loading CSS chunk') ||
+                            error.message?.includes('Failed to fetch dynamically imported module') ||
+                            error.message?.includes('Failed to import') ||
+                            error.message?.includes('Cannot resolve module') ||
                             error.name === 'ChunkLoadError' ||
                             // React minified error #310 pattern
                             (error.message?.includes('Minified React error #310') ||
@@ -127,15 +135,10 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
         timestamp: new Date().toISOString()
       });
 
-      this.setState({
-        errorInfo,
-        isChunkLoadError: true
-      });
-
-      // Automatically attempt to clear cache and reload after showing brief error message
-      setTimeout(() => {
-        this.handleChunkLoadError();
-      }, 2000);
+      // For chunk load errors, show minimal loading state while clearing cache
+      console.log('Handling chunk load error silently - clearing cache and reloading immediately...');
+      this.setState({ isSilentlyReloading: true });
+      this.handleChunkLoadError();
 
       this.props.onError?.(error, errorInfo);
       return;
@@ -167,7 +170,8 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
       error: undefined,
       errorInfo: undefined,
       retryCount: this.state.retryCount + 1,
-      isChunkLoadError: false
+      isChunkLoadError: false,
+      isSilentlyReloading: false
     });
   };
 
@@ -224,6 +228,18 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
   };
 
   render() {
+    // Show minimal loading screen during silent reload (no error messaging)
+    if (this.state.isSilentlyReloading) {
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-background">
+          <div className="flex flex-col items-center space-y-4">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            <div className="text-sm text-muted-foreground">Loading...</div>
+          </div>
+        </div>
+      );
+    }
+
     if (this.state.hasError) {
       if (this.props.fallback) {
         return this.props.fallback;
