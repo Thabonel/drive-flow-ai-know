@@ -1,4 +1,6 @@
 import { useEffect } from 'react';
+import { cacheManager } from '@/lib/cache-manager';
+import { errorReporter } from '@/lib/error-reporter';
 
 /**
  * Global ChunkLoadError Handler Component
@@ -18,45 +20,20 @@ export function ChunkLoadErrorHandler({ onError }: ChunkLoadErrorHandlerProps) {
     let retryCount = 0;
     const maxRetries = 2;
 
-    // Comprehensive cache clearing function
-    const clearAllCaches = async () => {
-      console.log('ChunkLoadErrorHandler: Clearing all caches...');
+    // Progressive cache clearing strategy
+    const handleChunkFailure = async () => {
+      console.log('ChunkLoadErrorHandler: Starting progressive cache clearing...');
 
       try {
-        // 1. Clear all Cache API caches
-        if ('caches' in window) {
-          const cacheNames = await caches.keys();
-          await Promise.all(
-            cacheNames.map(cacheName => {
-              console.log('Clearing cache:', cacheName);
-              return caches.delete(cacheName);
-            })
-          );
-        }
-
-        // 2. Clear browser storage (localStorage, sessionStorage)
-        localStorage.clear();
-        sessionStorage.clear();
-
-        // 3. Clear IndexedDB (best effort)
-        if ('indexedDB' in window && indexedDB.databases) {
-          try {
-            const databases = await indexedDB.databases();
-            await Promise.all(
-              databases.map(db => {
-                if (db.name) {
-                  return new Promise<void>((resolve) => {
-                    const deleteReq = indexedDB.deleteDatabase(db.name);
-                    deleteReq.onsuccess = () => resolve();
-                    deleteReq.onerror = () => resolve(); // Don't fail on this
-                    deleteReq.onblocked = () => resolve(); // Handle blocked state
-                  });
-                }
-              })
-            );
-          } catch (e) {
-            console.log('Could not clear IndexedDB:', e);
-          }
+        // Start with selective chunk cache clearing (preserves user data)
+        if (retryCount === 0) {
+          console.log('ChunkLoadErrorHandler: Step 1 - Selective chunk cache clearing');
+          await cacheManager.clearChunkCaches();
+          cacheManager.clearChunkLocalStorage();
+          cacheManager.clearChunkSessionStorage();
+        } else if (retryCount === 1) {
+          console.log('ChunkLoadErrorHandler: Step 2 - Emergency full cache clear');
+          await cacheManager.emergencyFullClear();
         }
 
         console.log('ChunkLoadErrorHandler: Cache clearing complete');
@@ -88,13 +65,18 @@ export function ChunkLoadErrorHandler({ onError }: ChunkLoadErrorHandlerProps) {
           timestamp: new Date().toISOString()
         });
 
+        // Report chunk error with retry count
+        errorReporter.reportSimpleChunkError(error, window.location.pathname, retryCount).catch(err => {
+          console.warn('Failed to report chunk error:', err);
+        });
+
         // Prevent the error from reaching the console
         event.preventDefault();
 
         retryCount++;
 
         // Clear caches and reload
-        const cacheCleared = await clearAllCaches();
+        const cacheCleared = await handleChunkFailure();
 
         if (cacheCleared) {
           console.log('ChunkLoadErrorHandler: Reloading after cache clear...');
@@ -135,7 +117,7 @@ export function ChunkLoadErrorHandler({ onError }: ChunkLoadErrorHandlerProps) {
         retryCount++;
 
         // Clear caches and reload
-        const cacheCleared = await clearAllCaches();
+        const cacheCleared = await handleChunkFailure();
 
         if (cacheCleared) {
           console.log('ChunkLoadErrorHandler: Reloading after cache clear...');
