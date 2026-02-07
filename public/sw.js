@@ -580,6 +580,27 @@ self.addEventListener('message', (event) => {
         }
       });
       break;
+
+    case 'CLEAR_CHUNK_CACHES':
+      // Selective chunk cache clearing requested by main app
+      console.log('[SW] Selective chunk cache clearing requested');
+      clearChunkCaches(data?.chunkId).then(() => {
+        notifyAllClients({
+          type: 'CHUNK_CACHES_CLEARED',
+          chunkId: data?.chunkId,
+          timestamp: Date.now()
+        });
+
+        if (event.ports[0]) {
+          event.ports[0].postMessage({ success: true });
+        }
+      }).catch(error => {
+        console.error('[SW] Failed to clear chunk caches:', error);
+        if (event.ports[0]) {
+          event.ports[0].postMessage({ success: false, error: error.message });
+        }
+      });
+      break;
   }
 });
 
@@ -655,6 +676,47 @@ async function clearAllCaches() {
   }
 
   console.log('[SW] All caches cleared successfully');
+}
+
+// Clear only chunk-related caches (selective clearing)
+async function clearChunkCaches(chunkId) {
+  console.log('[SW] Clearing chunk-related caches...');
+
+  const cacheNames = await caches.keys();
+  const chunkCacheNames = cacheNames.filter(name =>
+    name.includes('chunk') ||
+    name.includes('assets') ||
+    name.includes('js')
+  );
+
+  if (chunkId) {
+    // Clear specific chunk from all caches
+    for (const cacheName of cacheNames) {
+      try {
+        const cache = await caches.open(cacheName);
+        const requests = await cache.keys();
+
+        for (const request of requests) {
+          if (request.url.includes(chunkId)) {
+            await cache.delete(request);
+            console.log(`[SW] Deleted specific chunk ${chunkId} from cache ${cacheName}`);
+          }
+        }
+      } catch (error) {
+        console.error(`[SW] Error clearing chunk ${chunkId} from cache ${cacheName}:`, error);
+      }
+    }
+  } else {
+    // Clear all chunk caches
+    await Promise.all(
+      chunkCacheNames.map(cacheName => {
+        console.log('[SW] Deleting chunk cache:', cacheName);
+        return caches.delete(cacheName);
+      })
+    );
+  }
+
+  console.log(`[SW] Chunk cache clearing complete. ${chunkCacheNames.length} caches processed.`);
 }
 
 // Notify all clients of service worker events
