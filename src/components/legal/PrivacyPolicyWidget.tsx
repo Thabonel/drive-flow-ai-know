@@ -3,6 +3,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Shield, Eye, Cookie, FileText } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ConsentData {
   version: string;
@@ -20,6 +22,8 @@ interface PrivacyPolicyWidgetProps {
 const PrivacyPolicyWidget = ({ showFullPolicy = false }: PrivacyPolicyWidgetProps) => {
   const [showBanner, setShowBanner] = useState(false);
   const [showPreferences, setShowPreferences] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const { user } = useAuth();
   const [consent, setConsent] = useState<ConsentData>({
     version: 'v1',
     accepted: false,
@@ -30,31 +34,114 @@ const PrivacyPolicyWidget = ({ showFullPolicy = false }: PrivacyPolicyWidgetProp
   });
 
   useEffect(() => {
-    // Check existing consent
-    const existingConsent = localStorage.getItem('privacy-consent-v1');
-    if (existingConsent) {
-      try {
-        const parsed = JSON.parse(existingConsent);
-        setConsent(parsed);
-        setShowBanner(false);
-      } catch {
-        setShowBanner(true);
+    const checkPrivacyConsent = async () => {
+      if (!user) {
+        setIsLoading(false);
+        return;
       }
-    } else {
-      setShowBanner(true);
-    }
-  }, []);
 
-  const saveConsent = (consentData: ConsentData) => {
-    const consentRecord = {
-      ...consentData,
-      timestamp: new Date().toISOString()
+      try {
+        // First check localStorage for quick response (cache)
+        const cachedConsent = localStorage.getItem(`privacy-consent-${user.id}-v1`);
+        if (cachedConsent) {
+          try {
+            const parsed = JSON.parse(cachedConsent);
+            if (parsed.accepted && parsed.timestamp) {
+              setConsent(parsed);
+              setShowBanner(false);
+              setIsLoading(false);
+              return;
+            }
+          } catch {
+            // Invalid cache, continue to DB check
+          }
+        }
+
+        // Check database for authoritative source
+        const { data: userSettings, error } = await supabase
+          .from('user_settings')
+          .select('privacy_consent_at, privacy_version, consent_essential, consent_analytics, consent_marketing')
+          .eq('user_id', user.id)
+          .single();
+
+        if (error && error.code !== 'PGRST116') {
+          // Error other than "no rows" - default to showing banner for safety
+          console.error('Error checking privacy consent:', error);
+          setShowBanner(true);
+          setIsLoading(false);
+          return;
+        }
+
+        const hasConsentData = userSettings?.privacy_consent_at && userSettings?.privacy_version === 'v1';
+
+        if (hasConsentData) {
+          const consentData = {
+            version: 'v1',
+            accepted: true,
+            essential: userSettings.consent_essential ?? true,
+            analytics: userSettings.consent_analytics ?? false,
+            marketing: userSettings.consent_marketing ?? false,
+            timestamp: userSettings.privacy_consent_at
+          };
+
+          // Cache the consent in localStorage for faster future checks
+          localStorage.setItem(`privacy-consent-${user.id}-v1`, JSON.stringify(consentData));
+          setConsent(consentData);
+          setShowBanner(false);
+        } else {
+          setShowBanner(true);
+        }
+      } catch (error) {
+        console.error('Error checking privacy consent:', error);
+        // Default to showing banner for safety
+        setShowBanner(true);
+      } finally {
+        setIsLoading(false);
+      }
     };
 
-    localStorage.setItem('privacy-consent-v1', JSON.stringify(consentRecord));
-    setConsent(consentRecord);
-    setShowBanner(false);
-    setShowPreferences(false);
+    checkPrivacyConsent();
+  }, [user]);
+
+  const saveConsent = async (consentData: ConsentData) => {
+    if (!user) return;
+
+    try {
+      const now = new Date().toISOString();
+      const consentRecord = {
+        ...consentData,
+        timestamp: now
+      };
+
+      // Update database with privacy consent
+      const { error } = await supabase
+        .from('user_settings')
+        .upsert({
+          user_id: user.id,
+          privacy_consent_at: now,
+          privacy_version: 'v1',
+          consent_essential: consentData.essential,
+          consent_analytics: consentData.analytics,
+          consent_marketing: consentData.marketing,
+          updated_at: now
+        }, {
+          onConflict: 'user_id'
+        });
+
+      if (error) {
+        console.error('Error saving privacy consent:', error);
+        return;
+      }
+
+      // Cache in localStorage for faster future checks
+      localStorage.setItem(`privacy-consent-${user.id}-v1`, JSON.stringify(consentRecord));
+
+      setConsent(consentRecord);
+      setShowBanner(false);
+      setShowPreferences(false);
+    } catch (error) {
+      console.error('Error accepting privacy consent:', error);
+    }
   };
 
   const acceptAll = () => {
@@ -76,17 +163,45 @@ const PrivacyPolicyWidget = ({ showFullPolicy = false }: PrivacyPolicyWidgetProp
     });
   };
 
-  const withdrawConsent = () => {
-    localStorage.removeItem('privacy-consent-v1');
-    setConsent({
-      version: 'v1',
-      accepted: false,
-      essential: true,
-      analytics: false,
-      marketing: false,
-      timestamp: new Date().toISOString()
-    });
-    setShowBanner(true);
+  const withdrawConsent = async () => {
+    if (!user) return;
+
+    try {
+      // Update database to remove consent
+      const { error } = await supabase
+        .from('user_settings')
+        .upsert({
+          user_id: user.id,
+          privacy_consent_at: null,
+          privacy_version: null,
+          consent_essential: true,
+          consent_analytics: false,
+          consent_marketing: false,
+          updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'user_id'
+        });
+
+      if (error) {
+        console.error('Error withdrawing privacy consent:', error);
+        return;
+      }
+
+      // Clear localStorage cache
+      localStorage.removeItem(`privacy-consent-${user.id}-v1`);
+
+      setConsent({
+        version: 'v1',
+        accepted: false,
+        essential: true,
+        analytics: false,
+        marketing: false,
+        timestamp: new Date().toISOString()
+      });
+      setShowBanner(true);
+    } catch (error) {
+      console.error('Error withdrawing consent:', error);
+    }
   };
 
   if (showFullPolicy) {
@@ -156,7 +271,7 @@ const PrivacyPolicyWidget = ({ showFullPolicy = false }: PrivacyPolicyWidgetProp
   return (
     <>
       {/* Consent Banner */}
-      {showBanner && (
+      {!isLoading && showBanner && (
         <div className="fixed bottom-0 left-0 right-0 bg-background border-t shadow-lg z-50">
           <div className="max-w-7xl mx-auto p-4">
             <Card>
