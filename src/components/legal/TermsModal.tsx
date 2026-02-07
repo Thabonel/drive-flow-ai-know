@@ -2,34 +2,80 @@ import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { FileText, Shield, Eye, Scale } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 
-interface TermsAcceptance {
-  version: string;
-  accepted: boolean;
-  timestamp: string;
-}
 
 const TermsModal = () => {
   const [showModal, setShowModal] = useState(false);
   const [hasScrolledToBottom, setHasScrolledToBottom] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const { user } = useAuth();
 
   useEffect(() => {
-    // Check if user has already accepted terms
-    const existingAcceptance = localStorage.getItem('terms-acceptance-v1');
-    if (existingAcceptance) {
+    const checkTermsAcceptance = async () => {
+      if (!user) {
+        setIsLoading(false);
+        return;
+      }
+
       try {
-        const parsed = JSON.parse(existingAcceptance);
-        if (parsed.accepted) {
-          setShowModal(false);
+        // First check localStorage for quick response (cache)
+        const cachedAcceptance = localStorage.getItem(`terms-acceptance-${user.id}-v1`);
+        if (cachedAcceptance) {
+          try {
+            const parsed = JSON.parse(cachedAcceptance);
+            if (parsed.accepted && parsed.timestamp) {
+              setShowModal(false);
+              setIsLoading(false);
+              return;
+            }
+          } catch {
+            // Invalid cache, continue to DB check
+          }
+        }
+
+        // Check database for authoritative source
+        const { data: userSettings, error } = await supabase
+          .from('user_settings')
+          .select('terms_accepted_at, terms_version')
+          .eq('user_id', user.id)
+          .single();
+
+        if (error && error.code !== 'PGRST116') {
+          // Error other than "no rows" - default to showing modal for safety
+          console.error('Error checking terms acceptance:', error);
+          setShowModal(true);
+          setIsLoading(false);
           return;
         }
-      } catch {
-        // Invalid data, show modal
+
+        const hasAcceptedTerms = userSettings?.terms_accepted_at && userSettings?.terms_version === 'v1';
+
+        if (hasAcceptedTerms) {
+          // Cache the acceptance in localStorage for faster future checks
+          const cacheData = {
+            accepted: true,
+            timestamp: userSettings.terms_accepted_at,
+            version: 'v1'
+          };
+          localStorage.setItem(`terms-acceptance-${user.id}-v1`, JSON.stringify(cacheData));
+          setShowModal(false);
+        } else {
+          setShowModal(true);
+        }
+      } catch (error) {
+        console.error('Error checking terms acceptance:', error);
+        // Default to showing modal for safety
+        setShowModal(true);
+      } finally {
+        setIsLoading(false);
       }
-    }
-    setShowModal(true);
-  }, []);
+    };
+
+    checkTermsAcceptance();
+  }, [user]);
 
   const handleScroll = () => {
     const scrollContainer = scrollRef.current;
@@ -41,18 +87,45 @@ const TermsModal = () => {
     setHasScrolledToBottom(isAtBottom);
   };
 
-  const handleAccept = () => {
-    const acceptance: TermsAcceptance = {
-      version: 'v1',
-      accepted: true,
-      timestamp: new Date().toISOString()
-    };
+  const handleAccept = async () => {
+    if (!user) return;
 
-    localStorage.setItem('terms-acceptance-v1', JSON.stringify(acceptance));
-    setShowModal(false);
+    try {
+      const now = new Date().toISOString();
+
+      // Update database with terms acceptance
+      const { error } = await supabase
+        .from('user_settings')
+        .upsert({
+          user_id: user.id,
+          terms_accepted_at: now,
+          terms_version: 'v1',
+          updated_at: now
+        }, {
+          onConflict: 'user_id'
+        });
+
+      if (error) {
+        console.error('Error saving terms acceptance:', error);
+        return;
+      }
+
+      // Cache in localStorage for faster future checks
+      const cacheData = {
+        accepted: true,
+        timestamp: now,
+        version: 'v1'
+      };
+      localStorage.setItem(`terms-acceptance-${user.id}-v1`, JSON.stringify(cacheData));
+
+      setShowModal(false);
+    } catch (error) {
+      console.error('Error accepting terms:', error);
+    }
   };
 
-  if (!showModal) {
+  // Don't render anything while loading or if modal shouldn't show
+  if (isLoading || !showModal) {
     return null;
   }
 
