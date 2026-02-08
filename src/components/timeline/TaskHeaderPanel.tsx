@@ -124,7 +124,7 @@ export function TaskHeaderPanel({ tasks, loading, onRefetch, onAddTaskClick }: T
           size="sm"
           className="gap-2"
         >
-          <span className="text-xs">Tasks</span>
+          <span className="text-xs">Task Pool</span>
           {tasks.length > 0 && (
             <Badge variant="secondary" className="h-4 px-1.5 text-[10px]">
               {tasks.length}
@@ -145,7 +145,7 @@ export function TaskHeaderPanel({ tasks, loading, onRefetch, onAddTaskClick }: T
         <div className="flex flex-col" style={{ maxHeight: '300px' }}>
           {/* Header */}
           <div className="p-3 border-b space-y-2">
-            <h3 className="font-semibold text-sm">Unscheduled Tasks</h3>
+            <h3 className="font-semibold text-sm">Task Pool</h3>
 
             {/* Search */}
             <div className="relative">

@@ -1011,6 +1011,7 @@ export function TimelineManager({ onCanvasReady }: TimelineManagerProps = {}) {
                   size="sm"
                   variant="outline"
                   onClick={handleJumpBackward}
+                  disabled={settings?.is_locked && viewType !== 'calendar'}
                   className="h-9 w-9 p-0"
                 >
                   <ChevronLeft className="h-4 w-4" />
@@ -1021,14 +1022,19 @@ export function TimelineManager({ onCanvasReady }: TimelineManagerProps = {}) {
               </TooltipContent>
             </Tooltip>
 
+            {/* View Mode Selector (Day/Week/Month) */}
+            <ViewModeSwitcher
+              currentMode={viewMode}
+              onModeChange={setViewMode}
+            />
+
             {/* Jump to Date Popover */}
             <Popover>
               <Tooltip>
                 <PopoverTrigger asChild>
                   <TooltipTrigger asChild>
-                    <Button variant="outline" size={isCompactMode ? 'sm' : 'default'} className="gap-2 px-3">
+                    <Button variant="outline" size="sm" className="h-9 w-9 p-0">
                       <Navigation className="h-4 w-4" />
-                      <span className="hidden sm:inline">{!isCompactMode && getJumpLabel()}</span>
                     </Button>
                   </TooltipTrigger>
                 </PopoverTrigger>
@@ -1076,6 +1082,7 @@ export function TimelineManager({ onCanvasReady }: TimelineManagerProps = {}) {
                   size="sm"
                   variant="outline"
                   onClick={handleJumpForward}
+                  disabled={settings?.is_locked && viewType !== 'calendar'}
                   className="h-9 w-9 p-0"
                 >
                   <ChevronRight className="h-4 w-4" />
@@ -1210,15 +1217,11 @@ export function TimelineManager({ onCanvasReady }: TimelineManagerProps = {}) {
             )}
           </div>
 
-          {/* View Type and Mode Switchers */}
+          {/* View Type Switcher */}
           <div className="ml-auto flex items-center gap-2">
             <ViewTypeSwitcher
               currentViewType={viewType}
               onViewTypeChange={setViewType}
-            />
-            <ViewModeSwitcher
-              currentMode={viewMode}
-              onModeChange={setViewMode}
             />
           </div>
 
