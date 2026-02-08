@@ -716,15 +716,20 @@ export function TimelineManager({ onCanvasReady }: TimelineManagerProps = {}) {
 
   // Jump forward by view mode increment
   const handleJumpForward = () => {
+    console.log('🚀 handleJumpForward called - viewType:', viewType, 'viewMode:', viewMode, 'current calendarViewDate:', calendarViewDate);
     if (viewType === 'calendar') {
       // For calendar view, advance the view date
       setCalendarViewDate(prev => {
-        switch (viewMode) {
-          case 'day': return addDays(prev, 1);
-          case 'week': return addWeeks(prev, 1);
-          case 'month': return addMonths(prev, 1);
-          default: return addWeeks(prev, 1);
-        }
+        const next = (() => {
+          switch (viewMode) {
+            case 'day': return addDays(prev, 1);
+            case 'week': return addWeeks(prev, 1);
+            case 'month': return addMonths(prev, 1);
+            default: return addWeeks(prev, 1);
+          }
+        })();
+        console.log('📅 Calendar date changing from:', prev, 'to:', next);
+        return next;
       });
     } else {
       const incrementHours = getJumpIncrement();
@@ -735,15 +740,20 @@ export function TimelineManager({ onCanvasReady }: TimelineManagerProps = {}) {
 
   // Jump backward by view mode increment
   const handleJumpBackward = () => {
+    console.log('⬅️ handleJumpBackward called - viewType:', viewType, 'viewMode:', viewMode, 'current calendarViewDate:', calendarViewDate);
     if (viewType === 'calendar') {
       // For calendar view, go back in the view date
       setCalendarViewDate(prev => {
-        switch (viewMode) {
-          case 'day': return addDays(prev, -1);
-          case 'week': return addWeeks(prev, -1);
-          case 'month': return addMonths(prev, -1);
-          default: return addWeeks(prev, -1);
-        }
+        const next = (() => {
+          switch (viewMode) {
+            case 'day': return addDays(prev, -1);
+            case 'week': return addWeeks(prev, -1);
+            case 'month': return addMonths(prev, -1);
+            default: return addWeeks(prev, -1);
+          }
+        })();
+        console.log('📅 Calendar date changing from:', prev, 'to:', next);
+        return next;
       });
     } else {
       const incrementHours = getJumpIncrement();
@@ -1185,10 +1195,7 @@ export function TimelineManager({ onCanvasReady }: TimelineManagerProps = {}) {
               <DecisionBatchIndicator
                 items={items}
                 currentDate={getSelectedDateForBudget()}
-                onSuggestBatching={(batchItems) => {
-                  // Could implement batching suggestions here
-                  console.log('Suggest batching for:', batchItems);
-                }}
+                onSuggestBatching={() => {}}
               />
             )}
 

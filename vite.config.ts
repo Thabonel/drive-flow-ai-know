@@ -52,7 +52,8 @@ export default defineConfig(({ mode }) => ({
           // Heavy libraries in separate chunks (loaded on demand)
           'office-vendor': ['pptxgenjs', 'docx', '@react-pdf/renderer'],
           'canvas-vendor': ['html2canvas', 'canvg', 'jspdf'],
-          'ai-vendor': ['openai']
+          'ai-vendor': ['openai'],
+          // Timeline chunk splitting removed to prevent circular dependencies
         }
       }
     },
