@@ -1002,98 +1002,6 @@ export function TimelineManager({ onCanvasReady }: TimelineManagerProps = {}) {
             </Tooltip>
           </div>
 
-          {/* Timeline Navigation */}
-          <div className="flex items-center gap-1">
-            {/* Previous increment */}
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={handleJumpBackward}
-                  disabled={settings?.is_locked && viewType !== 'calendar'}
-                  className="h-9 w-9 p-0"
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                Go back one {getJumpLabel().toLowerCase()}
-              </TooltipContent>
-            </Tooltip>
-
-            {/* View Mode Selector (Day/Week/Month) */}
-            <ViewModeSwitcher
-              currentMode={viewMode}
-              onModeChange={setViewMode}
-            />
-
-            {/* Jump to Date Popover */}
-            <Popover>
-              <Tooltip>
-                <PopoverTrigger asChild>
-                  <TooltipTrigger asChild>
-                    <Button variant="outline" size="sm" className="h-9 w-9 p-0">
-                      <Navigation className="h-4 w-4" />
-                    </Button>
-                  </TooltipTrigger>
-                </PopoverTrigger>
-                <TooltipContent>
-                  Navigate to a specific date or jump to today
-                </TooltipContent>
-              </Tooltip>
-              <PopoverContent className="w-64" align="start">
-                <div className="space-y-3">
-                  <h3 className="font-semibold text-sm">Jump to Date</h3>
-                  <p className="text-xs text-muted-foreground">
-                    Navigate to a specific date, or use arrows to jump by {getJumpLabel().toLowerCase()}
-                  </p>
-                  <input
-                    type="date"
-                    value={jumpToDate}
-                    onChange={(e) => setJumpToDate(e.target.value)}
-                    className="w-full px-3 py-2 border rounded-md text-sm"
-                  />
-                  <div className="flex gap-2">
-                    <Button
-                      size="sm"
-                      onClick={() => handleJumpToDate(jumpToDate)}
-                      disabled={!jumpToDate}
-                      className="flex-1"
-                    >
-                      Go
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={handleJumpToToday}
-                    >
-                      Today
-                    </Button>
-                  </div>
-                </div>
-              </PopoverContent>
-            </Popover>
-
-            {/* Next increment */}
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={handleJumpForward}
-                  disabled={settings?.is_locked && viewType !== 'calendar'}
-                  className="h-9 w-9 p-0"
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                Go forward one {getJumpLabel().toLowerCase()}
-              </TooltipContent>
-            </Tooltip>
-          </div>
-
           {/* Calendar Sync - moved outside dropdown for proper popover behavior */}
           <CalendarSyncButton />
 
@@ -1217,12 +1125,100 @@ export function TimelineManager({ onCanvasReady }: TimelineManagerProps = {}) {
             )}
           </div>
 
-          {/* View Type Switcher */}
+          {/* View Type Switcher + Navigation Controls */}
           <div className="ml-auto flex items-center gap-2">
             <ViewTypeSwitcher
               currentViewType={viewType}
               onViewTypeChange={setViewType}
             />
+
+            {/* Navigation controls */}
+            <div className="flex items-center gap-1">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={handleJumpBackward}
+                    disabled={settings?.is_locked && viewType !== 'calendar'}
+                    className="h-9 w-9 p-0"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  Go back one {getJumpLabel().toLowerCase()}
+                </TooltipContent>
+              </Tooltip>
+
+              <ViewModeSwitcher
+                currentMode={viewMode}
+                onModeChange={setViewMode}
+              />
+
+              <Popover>
+                <Tooltip>
+                  <PopoverTrigger asChild>
+                    <TooltipTrigger asChild>
+                      <Button variant="outline" size="sm" className="h-9 w-9 p-0">
+                        <Navigation className="h-4 w-4" />
+                      </Button>
+                    </TooltipTrigger>
+                  </PopoverTrigger>
+                  <TooltipContent>
+                    Navigate to a specific date or jump to today
+                  </TooltipContent>
+                </Tooltip>
+                <PopoverContent className="w-64" align="start">
+                  <div className="space-y-3">
+                    <h3 className="font-semibold text-sm">Jump to Date</h3>
+                    <p className="text-xs text-muted-foreground">
+                      Navigate to a specific date, or use arrows to jump by {getJumpLabel().toLowerCase()}
+                    </p>
+                    <input
+                      type="date"
+                      value={jumpToDate}
+                      onChange={(e) => setJumpToDate(e.target.value)}
+                      className="w-full px-3 py-2 border rounded-md text-sm"
+                    />
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        onClick={() => handleJumpToDate(jumpToDate)}
+                        disabled={!jumpToDate}
+                        className="flex-1"
+                      >
+                        Go
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={handleJumpToToday}
+                      >
+                        Today
+                      </Button>
+                    </div>
+                  </div>
+                </PopoverContent>
+              </Popover>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={handleJumpForward}
+                    disabled={settings?.is_locked && viewType !== 'calendar'}
+                    className="h-9 w-9 p-0"
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  Go forward one {getJumpLabel().toLowerCase()}
+                </TooltipContent>
+              </Tooltip>
+            </div>
           </div>
 
           {/* Unscheduled Tasks Panel */}
