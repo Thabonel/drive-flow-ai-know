@@ -89,13 +89,10 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
                              window.location.href.includes('invariant=310'));
 
     if (isNavigationError) {
-      console.log('Navigation error detected, will auto-retry without showing error UI');
       return { hasError: false, error, retryCount: 0 };
     }
 
     if (isChunkLoadError) {
-      console.log('ChunkLoadError detected, will handle silently with immediate cache clear and reload');
-      // Don't show error UI for chunk load errors - handle silently
       return { hasError: false, error, retryCount: 0, isChunkLoadError: true };
     }
 
@@ -128,15 +125,8 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
 
     // Handle ChunkLoadError with automatic cache clearing
     if (isChunkLoadError) {
-      console.error('ChunkLoadError detected:', {
-        error: error.message,
-        url: window.location.href,
-        userAgent: navigator.userAgent,
-        timestamp: new Date().toISOString()
-      });
+      console.error('ChunkLoadError detected:', error.message);
 
-      // For chunk load errors, show minimal loading state while clearing cache
-      console.log('Handling chunk load error silently - clearing cache and reloading immediately...');
       this.setState({ isSilentlyReloading: true });
       this.handleChunkLoadError();
 
@@ -149,7 +139,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
                               (error.message?.includes('SUPABASE') && this.state.retryCount === 0);
 
     if (isNavigationError && this.state.retryCount < 1) {
-      console.log('Auto-retrying navigation error...');
+      console.log('Auto-retrying navigation error');
       // Navigation errors don't show UI (handled in getDerivedStateFromError)
       // Just increment retry count and let it resolve naturally
       setTimeout(() => {
@@ -177,7 +167,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
 
   // Comprehensive cache clearing for ChunkLoadError
   private handleChunkLoadError = async () => {
-    console.log('Handling ChunkLoadError with comprehensive cache clearing...');
+    console.log('Clearing cache for chunk error...');
 
     try {
       // 1. Clear all caches if available
@@ -215,7 +205,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
         }
       }
 
-      console.log('Cache clearing complete, reloading application...');
+      console.log('Cache cleared, reloading...');
 
       // 4. Force hard reload with cache bypass
       window.location.reload();

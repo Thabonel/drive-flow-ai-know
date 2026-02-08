@@ -1195,10 +1195,7 @@ export function TimelineManager({ onCanvasReady }: TimelineManagerProps = {}) {
               <DecisionBatchIndicator
                 items={items}
                 currentDate={getSelectedDateForBudget()}
-                onSuggestBatching={(items) => {
-                  // Could implement batching suggestions here
-                  console.log('Suggest batching for:', items);
-                }}
+                onSuggestBatching={() => {}}
               />
             )}
 
