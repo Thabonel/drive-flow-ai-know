@@ -728,6 +728,56 @@ VECTOR_STORE_ID=vs_xxxxx  # Optional, auto-detected from files_vs_* folders
 MCP_SERVER_URL=https://your-ngrok-url.ngrok-free.app/sse
 ```
 
+## Environment Status (Verified Feb 8, 2026)
+
+### ✅ Configured Environments
+
+**Frontend Development Environment:**
+- ✅ `VITE_SUPABASE_URL` - Correctly configured (https://fskwutnoxbbflzqrphro.supabase.co)
+- ✅ `VITE_SUPABASE_ANON_KEY` - Correctly configured with latest publishable key
+- ✅ Development server running on port 8097
+
+**Supabase Project (fskwutnoxbbflzqrphro):**
+- ✅ **Project Status**: ACTIVE_HEALTHY in ap-southeast-1 region
+- ✅ **Database**: PostgreSQL 15.8.1.079 running
+- ✅ **Edge Functions**: 72 functions deployed and active
+- ✅ **ai-query Function**: Version 192, ACTIVE, JWT verification enabled
+
+**Core AI Functions Deployed:**
+- ✅ `ai-query` (v192) - Main AI chat functionality
+- ✅ `ai-document-analysis` (v167) - Document processing
+- ✅ `claude-document-processor` (v111) - Claude document analysis
+- ✅ `generate-image` (v21) - Image generation
+- ✅ `generate-pitch-deck` (v39) - Presentation creation
+- ✅ All authentication, storage, and sync functions active
+
+### ⚠️ Missing Environment Variables
+
+**Required for "Generate with AI" Button:**
+- ❌ `ANTHROPIC_API_KEY` - **CRITICAL**: Must be set in Supabase dashboard for AI functionality
+  - Without this, the ai-query function throws "Anthropic API key not available" error
+  - Location: Supabase Dashboard → Settings → Environment Variables
+
+**Optional (Fallback/Enhanced Features):**
+- ⚠️ `OPENROUTER_API_KEY` - OpenRouter fallback (recommended)
+- ⚠️ `BRAVE_SEARCH_API_KEY` - Web search capability (optional)
+- ⚠️ `RAPIDAPI_KEY` - Product price search (optional)
+
+### 🔧 Action Required
+
+**To Fix "Generate with AI" Button:**
+1. **Set `ANTHROPIC_API_KEY` in Supabase Dashboard**:
+   - Go to https://supabase.com/dashboard/project/fskwutnoxbbflzqrphro/settings/environment-variables
+   - Add: `ANTHROPIC_API_KEY` = `your_anthropic_api_key_here`
+   - This is the ONLY missing piece for full AI functionality
+
+**For Production Deployment:**
+- Frontend environment variables configured in hosting platform (Vercel/Netlify/etc.)
+- All Supabase environment variables set in dashboard
+- Domain configured for CORS if using custom domain
+
+**Verification Status**: All environments verified via MCP tools February 8, 2026
+
 ## AI Model Reference
 
 ### Centralized Model Configuration

@@ -102,6 +102,11 @@ export function CalendarGrid({
 }: CalendarGridProps) {
   // Use viewDate for calendar navigation, fallback to nowTime
   const baseDate = viewDate || nowTime;
+
+  // Debug logging for navigation
+  useEffect(() => {
+    console.log('📊 CalendarGrid received viewDate:', viewDate, 'baseDate:', baseDate, 'viewMode:', viewMode);
+  }, [viewDate, baseDate, viewMode]);
   const scrollRef = useRef<HTMLDivElement>(null);
   const gridRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);

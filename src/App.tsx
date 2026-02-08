@@ -16,6 +16,7 @@ import { PresentationModeProvider } from "@/contexts/PresentationModeContext";
 import { initializeMobileOptimizations } from "@/lib/haptics";
 import { ErrorBoundary, InitializationError } from "@/components/ErrorBoundary";
 import { ChunkLoadErrorHandler } from "@/components/ChunkLoadErrorHandler";
+import { RouteErrorBoundary } from "@/components/RouteErrorBoundary";
 import { ServiceWorkerManager } from "@/components/ServiceWorkerManager";
 import { isSupabaseConfigured } from "@/integrations/supabase/client";
 import { config } from "@/config/environment";
@@ -282,7 +283,9 @@ const App = () => (
                   } />
                   <Route path="/settings" element={
                     <ProtectedRoute>
-                      <Settings />
+                      <RouteErrorBoundary routeName="Settings">
+                        <Settings />
+                      </RouteErrorBoundary>
                     </ProtectedRoute>
                   } />
                   <Route path="/settings/billing" element={
@@ -312,7 +315,9 @@ const App = () => (
                   } />
                   <Route path="/conversations" element={
                     <ProtectedRoute>
-                      <Conversations />
+                      <RouteErrorBoundary routeName="Conversations">
+                        <Conversations />
+                      </RouteErrorBoundary>
                     </ProtectedRoute>
                   } />
                   <Route path="/support" element={
@@ -322,7 +327,9 @@ const App = () => (
                   } />
                   <Route path="/timeline" element={
                     <ProtectedRoute>
-                      <Timeline />
+                      <RouteErrorBoundary routeName="Timeline">
+                        <Timeline />
+                      </RouteErrorBoundary>
                     </ProtectedRoute>
                   } />
                   <Route path="/mobile-demo" element={

@@ -6,7 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, FileText, Brain, Tag, X } from 'lucide-react';
+import { Plus, FileText, Brain, Tag, X, Loader2 } from 'lucide-react';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -44,6 +44,7 @@ export const CreateKnowledgeDocumentModal = ({ trigger }: CreateKnowledgeDocumen
   const [newCategory, setNewCategory] = useState('');
   const [showNewCategoryInput, setShowNewCategoryInput] = useState(false);
   const [contentSize, setContentSize] = useState(0);
+  const [isGenerating, setIsGenerating] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -261,8 +262,17 @@ export const CreateKnowledgeDocumentModal = ({ trigger }: CreateKnowledgeDocumen
       return;
     }
 
-    const maxRetries = 3;
-    let lastError;
+    setIsGenerating(true);
+
+    // Show info toast about expected time
+    toast({
+      title: 'Generating content...',
+      description: 'This may take 30-60 seconds. Please wait.',
+    });
+
+    try {
+      const maxRetries = 3;
+      let lastError;
 
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
@@ -326,13 +336,16 @@ export const CreateKnowledgeDocumentModal = ({ trigger }: CreateKnowledgeDocumen
     const errorStr = JSON.stringify(lastError);
     const isOverloaded = errorStr.includes('Overloaded') || errorStr.includes('api_error');
 
-    toast({
-      title: isOverloaded ? 'AI Service Temporarily Unavailable' : 'Error',
-      description: isOverloaded
-        ? 'The AI provider is experiencing high load. Please try again in a moment.'
-        : 'Failed to generate content. Please try again.',
-      variant: 'destructive',
-    });
+      toast({
+        title: isOverloaded ? 'AI Service Temporarily Unavailable' : 'Error',
+        description: isOverloaded
+          ? 'The AI provider is experiencing high load. Please try again in a moment.'
+          : 'Failed to generate content. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   return (
@@ -376,10 +389,14 @@ export const CreateKnowledgeDocumentModal = ({ trigger }: CreateKnowledgeDocumen
                 variant="outline"
                 size="sm"
                 onClick={generateWithAI}
-                disabled={!formData.title.trim()}
+                disabled={!formData.title.trim() || isGenerating}
               >
-                <Brain className="h-4 w-4 mr-2" />
-                Generate with AI
+                {isGenerating ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Brain className="h-4 w-4 mr-2" />
+                )}
+                {isGenerating ? 'Generating...' : 'Generate with AI'}
               </Button>
             </div>
             <Textarea
