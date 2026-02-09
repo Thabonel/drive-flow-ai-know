@@ -774,7 +774,7 @@ export function TimelineManager({ onCanvasReady }: TimelineManagerProps = {}) {
 
   return (
     <TooltipProvider delayDuration={300}>
-      <div className={isCompactMode ? 'space-y-1' : 'space-y-6'}>
+      <div className={isCompactMode ? 'space-y-1' : 'space-y-6'} data-component="timeline-manager">
       {/* Header */}
       <div className={isCompactMode ? 'space-y-1' : 'space-y-4'}>
         {/* Combined Header Row - Title and Action Buttons on Same Line */}

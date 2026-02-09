@@ -135,7 +135,7 @@ export const ResponsiveTimelineHeader: React.FC<ResponsiveTimelineHeaderProps> =
   const canZoomIn = (props.settings?.zoom_horizontal ?? 100) < MAX_ZOOM;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" data-component="responsive-header">
       {/* Beginner onboarding hints */}
       <BeginnerHints />
 
@@ -389,78 +389,6 @@ export const ResponsiveTimelineHeader: React.FC<ResponsiveTimelineHeaderProps> =
           </div>
         </ConditionalFeature>
 
-        {/* Navigation controls */}
-        <ConditionalFeature feature="navigation">
-          <div className="flex items-center gap-1">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={props.onNavigateBack}
-                  className="h-8 w-8 p-0"
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Go back one {props.getJumpLabel().toLowerCase()}</TooltipContent>
-            </Tooltip>
-
-            <Popover>
-              <Tooltip>
-                <PopoverTrigger asChild>
-                  <TooltipTrigger asChild>
-                    <Button variant="outline" size="sm" className="gap-2 px-3">
-                      <Navigation className="h-4 w-4" />
-                      <span className="hidden sm:inline">{props.getJumpLabel()}</span>
-                    </Button>
-                  </TooltipTrigger>
-                </PopoverTrigger>
-                <TooltipContent>Navigate to a specific date</TooltipContent>
-              </Tooltip>
-
-              <PopoverContent className="w-64" align="start">
-                <div className="space-y-3">
-                  <h3 className="font-semibold text-sm">Jump to Date</h3>
-                  <input
-                    type="date"
-                    value={jumpToDate}
-                    onChange={(e) => setJumpToDate(e.target.value)}
-                    className="w-full px-3 py-2 border rounded-md text-sm"
-                  />
-                  <div className="flex gap-2">
-                    <Button
-                      size="sm"
-                      onClick={() => props.onJumpToDate(jumpToDate)}
-                      disabled={!jumpToDate}
-                      className="flex-1"
-                    >
-                      Go
-                    </Button>
-                    <Button size="sm" variant="outline" onClick={props.onJumpToToday}>
-                      Today
-                    </Button>
-                  </div>
-                </div>
-              </PopoverContent>
-            </Popover>
-
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={props.onNavigateForward}
-                  className="h-8 w-8 p-0"
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Go forward one {props.getJumpLabel().toLowerCase()}</TooltipContent>
-            </Tooltip>
-          </div>
-        </ConditionalFeature>
-
         {/* Calendar sync */}
         <ConditionalFeature feature="calendarSync">
           <CalendarSyncButton />
@@ -602,10 +530,81 @@ export const ResponsiveTimelineHeader: React.FC<ResponsiveTimelineHeaderProps> =
             currentViewType={props.viewType}
             onViewTypeChange={props.onViewTypeChange}
           />
+
+          {/* Navigate back */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={props.onNavigateBack}
+                className="h-8 w-8 p-0"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Go back one {props.getJumpLabel().toLowerCase()}</TooltipContent>
+          </Tooltip>
+
           <ViewModeSwitcher
             currentMode={props.viewMode}
             onModeChange={props.onViewModeChange}
           />
+
+          {/* Jump to date */}
+          <Popover>
+            <Tooltip>
+              <PopoverTrigger asChild>
+                <TooltipTrigger asChild>
+                  <Button variant="outline" size="sm" className="gap-2 px-3">
+                    <Navigation className="h-4 w-4" />
+                    <span className="hidden sm:inline">{props.getJumpLabel()}</span>
+                  </Button>
+                </TooltipTrigger>
+              </PopoverTrigger>
+              <TooltipContent>Navigate to a specific date</TooltipContent>
+            </Tooltip>
+
+            <PopoverContent className="w-64" align="start">
+              <div className="space-y-3">
+                <h3 className="font-semibold text-sm">Jump to Date</h3>
+                <input
+                  type="date"
+                  value={jumpToDate}
+                  onChange={(e) => setJumpToDate(e.target.value)}
+                  className="w-full px-3 py-2 border rounded-md text-sm"
+                />
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    onClick={() => props.onJumpToDate(jumpToDate)}
+                    disabled={!jumpToDate}
+                    className="flex-1"
+                  >
+                    Go
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={props.onJumpToToday}>
+                    Today
+                  </Button>
+                </div>
+              </div>
+            </PopoverContent>
+          </Popover>
+
+          {/* Navigate forward */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={props.onNavigateForward}
+                className="h-8 w-8 p-0"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Go forward one {props.getJumpLabel().toLowerCase()}</TooltipContent>
+          </Tooltip>
         </div>
 
         <TaskHeaderPanel

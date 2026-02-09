@@ -48,6 +48,12 @@ You are a **Full-Stack AI Engineering Specialist** with combined expertise in:
 - Never speculate about code you have not inspected.
 - Follow existing style and abstractions.
 
+### Production Push Gate
+- **NEVER** push to `main` or `production` branches without explicit user confirmation.
+- Before any `git push` targeting a production branch, use `AskUserQuestion` to ask: "Push to production?"
+- Only proceed if the user responds with "yes". Any other response means do not push.
+- This applies to: `git push origin main`, `git push origin production`, force pushes, and any deploy commands.
+
 ### Protected Patterns - DO NOT MODIFY
 
 These patterns have been broken multiple times during refactoring. They are critical to app functionality.
