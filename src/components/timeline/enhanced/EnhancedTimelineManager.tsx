@@ -94,7 +94,7 @@ export const EnhancedTimelineManager: React.FC<EnhancedTimelineManagerProps> = (
   const [searchParams, setSearchParams] = useSearchParams();
 
   // All the hooks from original component
-  const { items, settings, loading, refetchItems, addItem, updateItem, completeItem, deleteItem, parkedItems } = useTimeline();
+  const { items, settings, loading, refetchItems, addItem, updateItem, completeItem, deleteItem, parkedItems, updateSettings } = useTimeline();
   const { layers, addLayer, updateLayer, deleteLayer, toggleLayerVisibility, reorderLayers } = useLayers();
   const { routines } = useRoutines();
   useTimelineSync({ onItemsChange: refetchItems });
@@ -201,22 +201,8 @@ export const EnhancedTimelineManager: React.FC<EnhancedTimelineManagerProps> = (
     if (!settings) return;
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/timeline-settings`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          action: 'update',
-          is_locked: !settings.is_locked
-        })
-      });
-
-      if (response.ok) {
-        // Settings will be updated via real-time sync
-        toast.success(settings.is_locked ? 'Timeline unlocked' : 'Timeline locked to real-time');
-      }
+      await updateSettings({ is_locked: !settings.is_locked });
+      toast.success(settings.is_locked ? 'Timeline unlocked' : 'Timeline locked to real-time');
     } catch (error) {
       console.error('Error toggling lock:', error);
       toast.error('Failed to toggle lock');
@@ -237,21 +223,7 @@ export const EnhancedTimelineManager: React.FC<EnhancedTimelineManagerProps> = (
 
   const handleZoomHorizontalChange = async (value: number) => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/timeline-settings`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          action: 'update',
-          zoom_horizontal: value
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to update zoom');
-      }
+      await updateSettings({ zoom_horizontal: value });
     } catch (error) {
       console.error('Error updating horizontal zoom:', error);
       toast.error('Failed to update zoom');
@@ -260,21 +232,7 @@ export const EnhancedTimelineManager: React.FC<EnhancedTimelineManagerProps> = (
 
   const handleZoomVerticalChange = async (value: number) => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/timeline-settings`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          action: 'update',
-          zoom_vertical: value
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to update zoom');
-      }
+      await updateSettings({ zoom_vertical: value });
     } catch (error) {
       console.error('Error updating vertical zoom:', error);
       toast.error('Failed to update zoom');
@@ -297,8 +255,6 @@ export const EnhancedTimelineManager: React.FC<EnhancedTimelineManagerProps> = (
   };
 
   const handleJumpBackward = () => {
-    // Implement jump backward logic based on view mode
-    const now = new Date();
     let increment = 24 * 60 * 60 * 1000; // 1 day in ms
 
     switch (viewMode) {
@@ -314,7 +270,6 @@ export const EnhancedTimelineManager: React.FC<EnhancedTimelineManagerProps> = (
   };
 
   const handleJumpForward = () => {
-    const now = new Date();
     let increment = 24 * 60 * 60 * 1000; // 1 day in ms
 
     switch (viewMode) {

@@ -538,12 +538,17 @@ export const ResponsiveTimelineHeader: React.FC<ResponsiveTimelineHeaderProps> =
                 size="sm"
                 variant="outline"
                 onClick={props.onNavigateBack}
+                disabled={props.settings?.is_locked && props.viewType !== 'calendar'}
                 className="h-8 w-8 p-0"
               >
                 <ChevronLeft className="h-4 w-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Go back one {props.getJumpLabel().toLowerCase()}</TooltipContent>
+            <TooltipContent>
+              {props.settings?.is_locked && props.viewType !== 'calendar'
+                ? 'Unlock timeline to navigate'
+                : `Go back one ${props.getJumpLabel().toLowerCase()}`}
+            </TooltipContent>
           </Tooltip>
 
           <ViewModeSwitcher
@@ -598,12 +603,17 @@ export const ResponsiveTimelineHeader: React.FC<ResponsiveTimelineHeaderProps> =
                 size="sm"
                 variant="outline"
                 onClick={props.onNavigateForward}
+                disabled={props.settings?.is_locked && props.viewType !== 'calendar'}
                 className="h-8 w-8 p-0"
               >
                 <ChevronRight className="h-4 w-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Go forward one {props.getJumpLabel().toLowerCase()}</TooltipContent>
+            <TooltipContent>
+              {props.settings?.is_locked && props.viewType !== 'calendar'
+                ? 'Unlock timeline to navigate'
+                : `Go forward one ${props.getJumpLabel().toLowerCase()}`}
+            </TooltipContent>
           </Tooltip>
         </div>
 
