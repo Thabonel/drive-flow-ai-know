@@ -78,7 +78,10 @@ export const EnhancedTimelineManager: React.FC<EnhancedTimelineManagerProps> = (
   const modals = useModalState();
 
   // View state
-  const [viewMode, setViewMode] = useState<TimelineViewMode>('day');
+  const [viewMode, setViewMode] = useState<TimelineViewMode>(() => {
+    const stored = localStorage.getItem('timeline-view-mode');
+    return (stored === 'day' || stored === 'week' || stored === 'month') ? stored : 'day';
+  });
   const [viewType, setViewType] = useState<ViewType>(() => {
     const stored = localStorage.getItem('timeline-view-type');
     return (stored === 'calendar' ? 'calendar' : 'timeline') as ViewType;
@@ -255,33 +258,37 @@ export const EnhancedTimelineManager: React.FC<EnhancedTimelineManagerProps> = (
   };
 
   const handleJumpBackward = () => {
-    let increment = 24 * 60 * 60 * 1000; // 1 day in ms
-
-    switch (viewMode) {
-      case 'week':
-        increment = 7 * 24 * 60 * 60 * 1000; // 1 week
-        break;
-      case 'month':
-        increment = 30 * 24 * 60 * 60 * 1000; // ~1 month
-        break;
+    if (viewType === 'calendar') {
+      setCalendarViewDate(prev => {
+        const d = new Date(prev);
+        if (viewMode === 'month') d.setMonth(d.getMonth() - 1);
+        else if (viewMode === 'week') d.setDate(d.getDate() - 7);
+        else d.setDate(d.getDate() - 1);
+        return d;
+      });
+    } else {
+      let incrementHours = 24; // 1 day
+      if (viewMode === 'week') incrementHours = 24 * 7;
+      else if (viewMode === 'month') incrementHours = 24 * 30;
+      setScrollOffset(prev => prev + incrementHours * pixelsPerHour);
     }
-
-    setScrollOffset(prev => prev + (increment / (1000 * 60 * 60)) * pixelsPerHour);
   };
 
   const handleJumpForward = () => {
-    let increment = 24 * 60 * 60 * 1000; // 1 day in ms
-
-    switch (viewMode) {
-      case 'week':
-        increment = 7 * 24 * 60 * 60 * 1000; // 1 week
-        break;
-      case 'month':
-        increment = 30 * 24 * 60 * 60 * 1000; // ~1 month
-        break;
+    if (viewType === 'calendar') {
+      setCalendarViewDate(prev => {
+        const d = new Date(prev);
+        if (viewMode === 'month') d.setMonth(d.getMonth() + 1);
+        else if (viewMode === 'week') d.setDate(d.getDate() + 7);
+        else d.setDate(d.getDate() + 1);
+        return d;
+      });
+    } else {
+      let incrementHours = 24; // 1 day
+      if (viewMode === 'week') incrementHours = 24 * 7;
+      else if (viewMode === 'month') incrementHours = 24 * 30;
+      setScrollOffset(prev => prev - incrementHours * pixelsPerHour);
     }
-
-    setScrollOffset(prev => prev - (increment / (1000 * 60 * 60)) * pixelsPerHour);
   };
 
   const handleJumpToDate = (dateStr: string) => {
@@ -419,7 +426,10 @@ export const EnhancedTimelineManager: React.FC<EnhancedTimelineManagerProps> = (
 
             // View switching
             onViewTypeChange={setViewType}
-            onViewModeChange={setViewMode}
+            onViewModeChange={(mode) => {
+              setViewMode(mode);
+              localStorage.setItem('timeline-view-mode', mode);
+            }}
 
             // Attention system
             items={items}
