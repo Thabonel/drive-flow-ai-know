@@ -34,23 +34,22 @@ export const useGoogleOAuth = () => {
   // - User tokens are stored per-user in database with Row-Level Security
   // - Client Secret is stored server-side only (GOOGLE_CLIENT_SECRET env var in Supabase)
   //
-  // Multi-User Flow:
-  // User A -> OAuth with same Client ID -> User A's Google account -> User A's tokens
-  // User B -> OAuth with same Client ID -> User B's Google account -> User B's tokens
-  //
   // Authorization Code Flow (with refresh tokens):
-  // 1. Frontend uses initCodeClient() to get an authorization code via popup
+  // 1. Frontend uses initCodeClient() with ux_mode: 'popup' to get an authorization code
   // 2. Authorization code is sent to store-google-tokens Edge Function
-  // 3. Edge Function exchanges code for access_token + refresh_token server-side
+  // 3. Edge Function exchanges code for access_token + refresh_token using redirect_uri: 'postmessage'
   // 4. Tokens stored in user_google_tokens table with RLS
   // 5. When access_token expires, refresh-google-token Edge Function uses refresh_token
   //    to silently obtain a new access_token (no user interaction needed)
+  //
+  // IMPORTANT: For popup-based code flow, Google's GIS library uses postMessage internally.
+  // The token exchange MUST use redirect_uri: 'postmessage' (NOT a URL) to match.
   const getOAuthConfig = useCallback((): OAuthConfig => {
     const currentOrigin = window.location.origin;
     return {
       google: {
         client_id: '1050361175911-2caa9uiuf4tmi5pvqlt0arl1h592hurm.apps.googleusercontent.com',
-        redirect_uri: `${currentOrigin}/auth/google/callback`,
+        redirect_uri: 'postmessage',
       },
       microsoft: {
         client_id: '', // Not implemented yet

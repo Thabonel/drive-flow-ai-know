@@ -250,8 +250,9 @@ export const useGoogleCalendar = () => {
         });
       }
 
-      const currentOrigin = window.location.origin;
-      const redirectUri = `${currentOrigin}/auth/google/callback`;
+      // For popup-based code flow, Google's GIS uses postMessage internally.
+      // The token exchange must use redirect_uri: 'postmessage' to match.
+      const redirectUri = 'postmessage';
 
       console.log('Creating code client with clientId:', GOOGLE_CLIENT_ID.substring(0, 20) + '...');
 
