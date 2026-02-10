@@ -16,12 +16,13 @@ export const useGoogleDrive = () => {
   const { toast } = useToast();
   const { user } = useAuth();
 
-  // Use secure OAuth utility
+  // Use secure OAuth utility (with refresh token support)
   const {
     isAuthenticated,
     initiateGoogleOAuth,
     checkConnection,
     disconnect: disconnectOAuth,
+    refreshAccessToken,
   } = useGoogleOAuth();
 
   // Initialize connection check from secure OAuth utility
@@ -31,24 +32,36 @@ export const useGoogleDrive = () => {
     }
   }, [user, checkConnection]);
 
-  // Get the current access token (from stored tokens)
+  // Get the current access token (from stored tokens), with auto-refresh if expiring
   const getAccessToken = useCallback(async (): Promise<string | null> => {
     if (!user) return null;
 
     const { data: storedToken } = await supabase
       .from('user_google_tokens')
-      .select('access_token, expires_at')
+      .select('access_token, refresh_token, expires_at')
       .eq('user_id', user.id)
       .maybeSingle();
 
     if (storedToken?.access_token) {
       const expiresAt = new Date(storedToken.expires_at);
-      if (expiresAt > new Date()) {
+      const bufferMs = 5 * 60 * 1000; // 5 minutes
+      const isExpiringSoon = new Date().getTime() >= (expiresAt.getTime() - bufferMs);
+
+      if (!isExpiringSoon) {
         return storedToken.access_token;
+      }
+
+      // Token expiring soon - try to refresh
+      if (storedToken.refresh_token) {
+        console.log('Drive (picker): Access token expiring, refreshing before API call...');
+        const newToken = await refreshAccessToken();
+        if (newToken) {
+          return newToken;
+        }
       }
     }
     return null;
-  }, [user]);
+  }, [user, refreshAccessToken]);
 
   // Load Drive items using the access token
   const loadDriveItems = useCallback(async (folderId: string = 'root') => {

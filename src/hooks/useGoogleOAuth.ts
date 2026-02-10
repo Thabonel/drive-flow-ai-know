@@ -19,36 +19,6 @@ interface OAuthConfig {
   };
 }
 
-// PKCE (Proof Key for Code Exchange) utilities for secure OAuth
-function generateCodeVerifier(): string {
-  const array = new Uint8Array(32);
-  crypto.getRandomValues(array);
-  return btoa(String.fromCharCode(...array))
-    .replace(/\+/g, '-')
-    .replace(/\//g, '_')
-    .replace(/=/g, '');
-}
-
-async function generateCodeChallenge(codeVerifier: string): Promise<string> {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(codeVerifier);
-  const digest = await crypto.subtle.digest('SHA-256', data);
-  return btoa(String.fromCharCode(...new Uint8Array(digest)))
-    .replace(/\+/g, '-')
-    .replace(/\//g, '_')
-    .replace(/=/g, '');
-}
-
-// Generate secure state parameter for CSRF protection
-function generateState(): string {
-  const array = new Uint8Array(16);
-  crypto.getRandomValues(array);
-  return btoa(String.fromCharCode(...array))
-    .replace(/\+/g, '-')
-    .replace(/\//g, '_')
-    .replace(/=/g, '');
-}
-
 export const useGoogleOAuth = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -62,14 +32,19 @@ export const useGoogleOAuth = () => {
   // - Client ID is PUBLIC by design and safe to hardcode in frontend code
   // - Each user authenticates with their OWN Google account via OAuth popup
   // - User tokens are stored per-user in database with Row-Level Security
-  // - No Client Secret is used (OAuth 2.0 implicit flow for browser-based apps)
+  // - Client Secret is stored server-side only (GOOGLE_CLIENT_SECRET env var in Supabase)
   //
   // Multi-User Flow:
-  // User A → OAuth with same Client ID → User A's Google account → User A's tokens
-  // User B → OAuth with same Client ID → User B's Google account → User B's tokens
+  // User A -> OAuth with same Client ID -> User A's Google account -> User A's tokens
+  // User B -> OAuth with same Client ID -> User B's Google account -> User B's tokens
   //
-  // This approach allows unlimited users to connect their individual Google accounts
-  // while maintaining security and proper token isolation.
+  // Authorization Code Flow (with refresh tokens):
+  // 1. Frontend uses initCodeClient() to get an authorization code via popup
+  // 2. Authorization code is sent to store-google-tokens Edge Function
+  // 3. Edge Function exchanges code for access_token + refresh_token server-side
+  // 4. Tokens stored in user_google_tokens table with RLS
+  // 5. When access_token expires, refresh-google-token Edge Function uses refresh_token
+  //    to silently obtain a new access_token (no user interaction needed)
   const getOAuthConfig = useCallback((): OAuthConfig => {
     const currentOrigin = window.location.origin;
     return {
@@ -128,7 +103,36 @@ export const useGoogleOAuth = () => {
     });
   }, []);
 
-  // Initiate Google OAuth with PKCE and CSRF protection
+  // Refresh the access token using the stored refresh token (transparent to user)
+  const refreshAccessToken = useCallback(async (): Promise<string | null> => {
+    try {
+      console.log('Attempting to refresh Google access token...');
+      const { data, error } = await supabase.functions.invoke('refresh-google-token', {});
+
+      if (error) {
+        console.error('Token refresh invocation error:', error);
+        return null;
+      }
+
+      if (data?.needs_reauth) {
+        console.log('Token refresh requires re-authentication:', data.error);
+        setIsAuthenticated(false);
+        return null;
+      }
+
+      if (data?.access_token) {
+        console.log('Token refresh successful, refreshed:', data.refreshed);
+        return data.access_token;
+      }
+
+      return null;
+    } catch (error) {
+      console.error('Token refresh failed:', error);
+      return null;
+    }
+  }, []);
+
+  // Initiate Google OAuth with authorization code flow for refresh token support
   const initiateGoogleOAuth = useCallback(async (scope: string): Promise<void> => {
     if (!user) {
       throw new Error('User not authenticated');
@@ -143,39 +147,32 @@ export const useGoogleOAuth = () => {
       // Load Google script
       await loadGoogleScript();
 
-      // ADD DIAGNOSTIC LOGGING
-      console.log('Google OAuth initialization:', {
+      console.log('Google OAuth initialization (authorization code flow):', {
         hasGoogleAPI: !!window.google?.accounts?.oauth2,
         clientId: config.google.client_id?.substring(0, 20) + '...',
         scope: scope,
         timestamp: new Date().toISOString()
       });
 
-      // Note: PKCE parameters removed - not supported by initTokenClient()
-      // initTokenClient() uses implicit flow (popup-based token return)
-      // PKCE is for authorization code flow only
-
       toast({
         title: 'Opening Google Sign-In',
         description: 'Please sign in and grant the requested permissions',
       });
 
-      // Use Google Identity Services (simplified configuration matching working Google Drive pattern)
-      const tokenClient = window.google.accounts.oauth2.initTokenClient({
+      // Use authorization code flow (initCodeClient) instead of implicit flow (initTokenClient).
+      // This provides refresh tokens for silent token renewal, solving the 1-hour expiration problem.
+      const codeClient = window.google.accounts.oauth2.initCodeClient({
         client_id: config.google.client_id,
         scope: scope,
+        ux_mode: 'popup',
         callback: async (response: any) => {
           try {
-            // ADD DIAGNOSTIC LOGGING FOR OAUTH CALLBACK
-            console.log('Google OAuth callback received:', {
+            console.log('Google OAuth code callback received:', {
               hasError: !!response.error,
-              hasAccessToken: !!response.access_token,
+              hasCode: !!response.code,
               responseKeys: Object.keys(response || {}),
               timestamp: new Date().toISOString()
             });
-
-            // Note: State validation removed - not applicable for initTokenClient() implicit flow
-            // CSRF protection is handled by Google's popup-based authentication
 
             if (response.error) {
               console.error('OAuth error details:', {
@@ -186,25 +183,35 @@ export const useGoogleOAuth = () => {
               throw new Error(`OAuth error: ${response.error}${response.error_description ? ' - ' + response.error_description : ''}`);
             }
 
-            console.log('Google OAuth successful, storing tokens...');
+            if (!response.code) {
+              throw new Error('No authorization code received from Google');
+            }
 
-            // Store tokens in Supabase via Edge Function (simplified - no PKCE fields)
+            console.log('Google OAuth code received, exchanging for tokens via Edge Function...');
+
+            // Send the authorization code to the backend Edge Function
+            // The Edge Function will exchange it for access_token + refresh_token
+            // using the GOOGLE_CLIENT_SECRET (stored server-side only)
             const { data, error } = await supabase.functions.invoke('store-google-tokens', {
               body: {
-                access_token: response.access_token,
-                refresh_token: null, // Token client doesn't provide refresh tokens
-                token_type: 'Bearer',
-                expires_in: response.expires_in || 3600,
+                code: response.code,
+                redirect_uri: config.google.redirect_uri,
                 scope: scope,
-                // Note: code_verifier removed - not applicable for implicit flow
               },
             });
 
             if (error) {
-              throw new Error(`Token storage failed: ${error.message}`);
+              throw new Error(`Token exchange failed: ${error.message}`);
             }
 
-            console.log('Tokens stored successfully:', data);
+            if (data?.error) {
+              throw new Error(`Token exchange failed: ${data.error}`);
+            }
+
+            console.log('Tokens exchanged and stored successfully:', {
+              success: data?.success,
+              hasRefreshToken: data?.has_refresh_token,
+            });
             setIsAuthenticated(true);
 
             toast({
@@ -212,7 +219,7 @@ export const useGoogleOAuth = () => {
               description: 'Your Google account has been connected securely.',
             });
 
-          } catch (callbackError) {
+          } catch (callbackError: any) {
             console.error('OAuth callback error:', callbackError);
             toast({
               title: 'Connection Failed',
@@ -220,20 +227,17 @@ export const useGoogleOAuth = () => {
               variant: 'destructive',
             });
           } finally {
-            // Note: No PKCE cleanup needed for implicit flow
             setIsLoading(false);
           }
         },
       });
 
-      // Request authorization
-      tokenClient.requestAccessToken({ prompt: 'consent' });
+      // Request authorization code - prompt consent to ensure refresh token is granted
+      codeClient.requestCode();
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('OAuth initiation error:', error);
       setIsLoading(false);
-
-      // Note: No PKCE cleanup needed for implicit flow
 
       toast({
         title: 'Connection Failed',
@@ -244,7 +248,7 @@ export const useGoogleOAuth = () => {
     }
   }, [user, oauthConfig, getOAuthConfig, loadGoogleScript, toast]);
 
-  // Check if user has valid Google tokens
+  // Check if user has valid Google tokens, with auto-refresh support
   const checkConnection = useCallback(async (): Promise<boolean> => {
     if (!user) {
       setIsAuthenticated(false);
@@ -254,7 +258,7 @@ export const useGoogleOAuth = () => {
     try {
       const { data: tokenRecord } = await supabase
         .from('user_google_tokens')
-        .select('access_token, expires_at')
+        .select('access_token, refresh_token, expires_at')
         .eq('user_id', user.id)
         .maybeSingle();
 
@@ -263,11 +267,23 @@ export const useGoogleOAuth = () => {
         return false;
       }
 
-      // Check if token is expired
+      // Check if token is expired or expiring within 5 minutes
       const now = new Date();
       const expiresAt = new Date(tokenRecord.expires_at);
-      if (now >= expiresAt) {
-        console.log('Google token expired');
+      const bufferMs = 5 * 60 * 1000; // 5 minutes
+      const isExpiringSoon = now.getTime() >= (expiresAt.getTime() - bufferMs);
+
+      if (isExpiringSoon) {
+        // Token is expired or expiring soon - try to refresh
+        if (tokenRecord.refresh_token) {
+          console.log('Google token expiring soon, attempting auto-refresh...');
+          const newToken = await refreshAccessToken();
+          if (newToken) {
+            setIsAuthenticated(true);
+            return true;
+          }
+        }
+        console.log('Google token expired and cannot be refreshed');
         setIsAuthenticated(false);
         return false;
       }
@@ -280,7 +296,7 @@ export const useGoogleOAuth = () => {
       setIsAuthenticated(false);
       return false;
     }
-  }, [user]);
+  }, [user, refreshAccessToken]);
 
   // Disconnect (revoke tokens)
   const disconnect = useCallback(async (): Promise<void> => {
@@ -306,7 +322,7 @@ export const useGoogleOAuth = () => {
         description: 'Your Google account has been disconnected.',
       });
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error disconnecting Google:', error);
       toast({
         title: 'Disconnection Failed',
@@ -326,5 +342,6 @@ export const useGoogleOAuth = () => {
     checkConnection,
     disconnect,
     loadGoogleScript,
+    refreshAccessToken,
   };
 };

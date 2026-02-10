@@ -38,15 +38,17 @@ vi.mock('@/hooks/useAuth', () => ({
   }),
 }));
 
-// Mock Google Identity Services
-const mockTokenClient = {
-  requestAccessToken: vi.fn(),
+// Mock Google Identity Services - now using initCodeClient (authorization code flow)
+const mockCodeClient = {
+  requestCode: vi.fn(),
 };
 
 const mockGoogle = {
   accounts: {
     oauth2: {
-      initTokenClient: vi.fn().mockReturnValue(mockTokenClient),
+      initCodeClient: vi.fn().mockReturnValue(mockCodeClient),
+      // Keep initTokenClient mock for backward compatibility in case any code references it
+      initTokenClient: vi.fn().mockReturnValue({ requestAccessToken: vi.fn() }),
     },
   },
 };
@@ -63,17 +65,18 @@ describe('useGoogleDrive OAuth Scope', () => {
     window.google = mockGoogle;
   });
 
-  it('should request correct OAuth scopes including Google Sheets', () => {
+  it('should request correct OAuth scopes including Google Sheets via initCodeClient', () => {
     const { result } = renderHook(() => useGoogleDrive());
 
-    // Trigger the sign in process which will call initTokenClient
+    // Trigger the sign in process which will call initCodeClient
     result.current.signIn();
 
-    // Verify that initTokenClient was called with the correct scope
-    expect(mockGoogle.accounts.oauth2.initTokenClient).toHaveBeenCalledWith(
+    // Verify that initCodeClient was called with the correct scope
+    expect(mockGoogle.accounts.oauth2.initCodeClient).toHaveBeenCalledWith(
       expect.objectContaining({
         scope: 'https://www.googleapis.com/auth/drive.readonly https://www.googleapis.com/auth/spreadsheets',
         client_id: '1050361175911-2caa9uiuf4tmi5pvqlt0arl1h592hurm.apps.googleusercontent.com',
+        ux_mode: 'popup',
       })
     );
   });
@@ -83,41 +86,40 @@ describe('useGoogleDrive OAuth Scope', () => {
 
     result.current.signIn();
 
-    const initTokenClientCall = mockGoogle.accounts.oauth2.initTokenClient.mock.calls[0][0];
-    const scope = initTokenClientCall.scope;
+    const initCodeClientCall = mockGoogle.accounts.oauth2.initCodeClient.mock.calls[0][0];
+    const scope = initCodeClientCall.scope;
 
     // Verify both scopes are present
     expect(scope).toContain('https://www.googleapis.com/auth/drive.readonly');
     expect(scope).toContain('https://www.googleapis.com/auth/spreadsheets');
   });
 
-  it('should store tokens with the extended scope', async () => {
+  it('should send authorization code to Edge Function for token exchange', async () => {
     const mockSupabase = await import('@/integrations/supabase/client');
 
     const { result } = renderHook(() => useGoogleDrive());
 
-    // Simulate successful OAuth response
+    // Simulate successful OAuth code response
     const mockCallback = vi.fn();
-    mockGoogle.accounts.oauth2.initTokenClient.mockImplementation((config) => {
+    mockGoogle.accounts.oauth2.initCodeClient.mockImplementation((config: any) => {
       // Store the callback for later invocation
       mockCallback.mockImplementation(config.callback);
-      return { requestAccessToken: mockCallback };
+      return { requestCode: mockCallback };
     });
 
     result.current.signIn();
 
-    // Simulate successful token response
-    const tokenResponse = {
-      access_token: 'mock-access-token',
-      expires_in: 3600,
+    // Simulate successful authorization code response
+    const codeResponse = {
+      code: 'mock-authorization-code',
     };
 
-    await mockCallback(tokenResponse);
+    await mockCallback(codeResponse);
 
-    // Verify that the token is stored with the correct scope
+    // Verify that the authorization code is sent to the Edge Function
     expect(mockSupabase.supabase.functions.invoke).toHaveBeenCalledWith('store-google-tokens', {
       body: expect.objectContaining({
-        access_token: 'mock-access-token',
+        code: 'mock-authorization-code',
         scope: 'https://www.googleapis.com/auth/drive.readonly https://www.googleapis.com/auth/spreadsheets',
       }),
     });
