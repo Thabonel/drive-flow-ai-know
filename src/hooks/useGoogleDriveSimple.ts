@@ -155,8 +155,9 @@ export const useGoogleDriveSimple = () => {
 
       console.log('Initializing authorization code flow for Google Drive...');
 
-      const currentOrigin = window.location.origin;
-      const redirectUri = `${currentOrigin}/auth/google/callback`;
+      // For popup-based code flow, Google's GIS uses postMessage internally.
+      // The token exchange must use redirect_uri: 'postmessage' to match.
+      const redirectUri = 'postmessage';
 
       // Use authorization code flow (initCodeClient) instead of implicit flow (initTokenClient).
       // This provides refresh tokens for silent token renewal, solving the 1-hour expiration problem.
