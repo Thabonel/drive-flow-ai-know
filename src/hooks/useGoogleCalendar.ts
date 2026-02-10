@@ -230,7 +230,7 @@ export const useGoogleCalendar = () => {
     }
   }, [toast, user, getValidAccessToken]);
 
-  // Connect to Google Calendar (OAuth authorization code flow) - provides refresh tokens
+  // Connect to Google Calendar (OAuth authorization code flow with manual popup)
   const connectCalendar = useCallback(async () => {
     setIsConnecting(true);
     try {
@@ -239,185 +239,191 @@ export const useGoogleCalendar = () => {
         description: 'Please sign in and grant access to Google Calendar',
       });
 
-      // Load Google Identity Services script if not loaded
-      if (!window.google?.accounts?.oauth2) {
-        await new Promise<void>((resolve, reject) => {
-          const script = document.createElement('script');
-          script.src = 'https://accounts.google.com/gsi/client';
-          script.onload = () => resolve();
-          script.onerror = () => reject(new Error('Failed to load Google Identity Services'));
-          document.head.appendChild(script);
-        });
+      const redirectUri = `${window.location.origin}/auth/google/callback`;
+      const scope = 'https://www.googleapis.com/auth/calendar';
+
+      console.log('Initializing authorization code flow for Calendar (manual popup)...');
+
+      // Build Google OAuth URL manually for full control over redirect_uri
+      const authUrl = new URL('https://accounts.google.com/o/oauth2/v2/auth');
+      authUrl.searchParams.set('client_id', GOOGLE_CLIENT_ID);
+      authUrl.searchParams.set('redirect_uri', redirectUri);
+      authUrl.searchParams.set('response_type', 'code');
+      authUrl.searchParams.set('scope', scope);
+      authUrl.searchParams.set('access_type', 'offline');
+      authUrl.searchParams.set('prompt', 'consent');
+
+      const width = 500;
+      const height = 600;
+      const left = Math.round((screen.width - width) / 2);
+      const top = Math.round((screen.height - height) / 2);
+
+      const popup = window.open(
+        authUrl.toString(),
+        'google-oauth',
+        `width=${width},height=${height},left=${left},top=${top},toolbar=no,menubar=no`
+      );
+
+      if (!popup) {
+        throw new Error('Popup blocked. Please allow popups for this site.');
       }
 
-      // For popup-based code flow, Google's GIS uses postMessage internally.
-      // The token exchange must use redirect_uri: 'postmessage' to match.
-      const redirectUri = 'postmessage';
+      // Listen for the authorization code from our callback page
+      const messageHandler = async (event: MessageEvent) => {
+        if (event.origin !== window.location.origin) return;
+        if (event.data?.type !== 'google-oauth-callback') return;
 
-      console.log('Creating code client with clientId:', GOOGLE_CLIENT_ID.substring(0, 20) + '...');
+        window.removeEventListener('message', messageHandler);
+        clearInterval(pollTimer);
 
-      // Use authorization code flow (initCodeClient) instead of implicit flow (initTokenClient).
-      // This provides refresh tokens for silent token renewal, solving the 1-hour expiration problem.
-      const codeClient = window.google.accounts.oauth2.initCodeClient({
-        client_id: GOOGLE_CLIENT_ID,
-        scope: 'https://www.googleapis.com/auth/calendar',  // Full calendar access (list + events)
-        ux_mode: 'popup',
-        callback: async (response: any) => {
-          console.log('=== OAUTH CODE CALLBACK FIRED ===');
-          console.log('Calendar OAuth code response received:', {
-            hasCode: !!response?.code,
-            hasError: !!response?.error,
+        if (event.data.error) {
+          console.error('OAuth error from callback:', event.data.error);
+          toast({
+            title: 'Authentication Failed',
+            description: event.data.error || 'Failed to connect to Google Calendar',
+            variant: 'destructive',
           });
+          setIsConnecting(false);
+          return;
+        }
 
-          if (response.error) {
-            console.error('OAuth error:', response);
-            toast({
-              title: 'Authentication Failed',
-              description: response.error_description || 'Failed to connect to Google Calendar',
-              variant: 'destructive',
-            });
-            setIsConnecting(false);
-            return;
-          }
+        if (!event.data.code) {
+          toast({
+            title: 'Authentication Failed',
+            description: 'No authorization code received from Google',
+            variant: 'destructive',
+          });
+          setIsConnecting(false);
+          return;
+        }
 
-          if (!response.code) {
-            console.error('No authorization code in response:', response);
-            toast({
-              title: 'Authentication Failed',
-              description: 'No authorization code received from Google',
-              variant: 'destructive',
-            });
-            setIsConnecting(false);
-            return;
-          }
+        console.log('=== AUTHORIZATION CODE RECEIVED ===');
 
-          console.log('=== AUTHORIZATION CODE RECEIVED ===');
+        // Exchange authorization code for tokens via Edge Function
+        console.log('Calling exchangeAndStoreTokens...');
+        const tokenStored = await exchangeAndStoreTokens(
+          event.data.code,
+          redirectUri,
+          scope
+        );
+        if (!tokenStored) {
+          console.error('Token exchange/storage failed - aborting connection');
+          setIsConnecting(false);
+          return;
+        }
+        console.log('exchangeAndStoreTokens completed successfully');
 
-          // Exchange authorization code for tokens via Edge Function
-          console.log('Calling exchangeAndStoreTokens...');
-          const tokenStored = await exchangeAndStoreTokens(
-            response.code,
-            redirectUri,
-            'https://www.googleapis.com/auth/calendar'
-          );
-          if (!tokenStored) {
-            console.error('Token exchange/storage failed - aborting connection');
-            setIsConnecting(false);
-            return; // STOP - tokens not in database, sync will fail
-          }
-          console.log('exchangeAndStoreTokens completed successfully');
+        setIsAuthenticated(true);
 
-          // Update authentication state
-          setIsAuthenticated(true);
-          console.log('isAuthenticated set to true');
+        // Load user's calendars
+        console.log('Calling loadCalendars...');
+        const calendarList = await loadCalendars();
+        console.log('loadCalendars returned:', calendarList?.length, 'calendars');
 
-          // Load user's calendars
-          console.log('Calling loadCalendars...');
-          const calendarList = await loadCalendars();
-          console.log('loadCalendars returned:', calendarList?.length, 'calendars');
+        if (!calendarList || calendarList.length === 0) {
+          console.warn('No calendars loaded, aborting sync setup.');
+          toast({
+            title: 'Setup Failed',
+            description: 'Could not load your calendars. Please try again.',
+            variant: 'destructive',
+          });
+          setIsConnecting(false);
+          return;
+        }
 
-          // Guard clause: abort if no calendars loaded
-          if (!calendarList || calendarList.length === 0) {
-            console.warn('No calendars loaded, aborting sync setup.');
+        // Auto-select primary calendar if exists
+        const primaryCalendar = calendarList.find(cal => cal.primary);
+        if (primaryCalendar) {
+          const { data: visibleLayers } = await supabase
+            .from('timeline_layers')
+            .select('id')
+            .eq('user_id', user?.id)
+            .eq('is_visible', true)
+            .order('sort_order', { ascending: true })
+            .limit(1);
+
+          const targetLayerId = visibleLayers?.[0]?.id || null;
+
+          const { data: settingsResult, error: settingsError } = await supabase
+            .from('calendar_sync_settings')
+            .upsert({
+              user_id: user?.id,
+              enabled: true,
+              selected_calendar_id: primaryCalendar.id,
+              sync_direction: 'both',
+              auto_sync_enabled: true,
+              sync_interval_minutes: 15,
+              target_layer_id: targetLayerId,
+            })
+            .select()
+            .single();
+
+          if (settingsError || !settingsResult) {
+            console.error('Failed to create sync settings:', settingsError);
             toast({
               title: 'Setup Failed',
-              description: 'Could not load your calendars. Please try again.',
+              description: 'Could not save calendar settings. Please try again.',
               variant: 'destructive',
             });
             setIsConnecting(false);
-            return; // STOP HERE - do not call Edge Function
+            return;
           }
 
-          // Auto-select primary calendar if exists
-          const primaryCalendar = calendarList.find(cal => cal.primary);
-          if (primaryCalendar) {
-            // Get first VISIBLE layer for synced items
-            const { data: visibleLayers } = await supabase
-              .from('timeline_layers')
-              .select('id')
-              .eq('user_id', user?.id)
-              .eq('is_visible', true)
-              .order('sort_order', { ascending: true })
-              .limit(1);
+          await loadSyncSettings();
 
-            const targetLayerId = visibleLayers?.[0]?.id || null;
-            console.log('Target layer for synced items:', targetLayerId);
+          toast({
+            title: 'Connected Successfully!',
+            description: 'Syncing your calendar events now...',
+          });
 
-            // Create or update sync settings - MUST confirm write before sync
-            console.log('Creating sync settings for calendar:', primaryCalendar.id);
-            const { data: settingsResult, error: settingsError } = await supabase
-              .from('calendar_sync_settings')
-              .upsert({
-                user_id: user?.id,
-                enabled: true,
-                selected_calendar_id: primaryCalendar.id,
-                sync_direction: 'both',
-                auto_sync_enabled: true,
-                sync_interval_minutes: 15,
-                target_layer_id: targetLayerId,
-              })
-              .select()
-              .single();
+          try {
+            const { data: syncResult, error: syncError } = await supabase.functions.invoke('google-calendar-sync', {
+              body: {
+                sync_type: 'initial',
+                calendar_id: primaryCalendar.id,
+              }
+            });
 
-            if (settingsError || !settingsResult) {
-              console.error('Failed to create sync settings:', settingsError);
+            if (syncError) {
+              console.error('Auto-sync error:', syncError);
               toast({
-                title: 'Setup Failed',
-                description: 'Could not save calendar settings. Please try again.',
+                title: 'Sync Warning',
+                description: 'Connected successfully but initial sync failed. Try "Sync Now" manually.',
                 variant: 'destructive',
               });
-              setIsConnecting(false);
-              return; // STOP - settings not saved, sync will fail
-            }
-            console.log('Sync settings created successfully:', settingsResult);
-
-            await loadSyncSettings();
-
-            toast({
-              title: 'Connected Successfully!',
-              description: 'Syncing your calendar events now...',
-            });
-
-            // Automatically sync events after connection - INSIDE the if block
-            try {
-              const { data: syncResult, error: syncError } = await supabase.functions.invoke('google-calendar-sync', {
-                body: {
-                  sync_type: 'initial',
-                  calendar_id: primaryCalendar.id,
-                }
+            } else {
+              console.log('Auto-sync completed:', syncResult);
+              toast({
+                title: 'Calendar Synced!',
+                description: `Imported ${syncResult?.items_created || 0} events from Google Calendar`,
               });
-
-              if (syncError) {
-                console.error('Auto-sync error:', syncError);
-                toast({
-                  title: 'Sync Warning',
-                  description: 'Connected successfully but initial sync failed. Try "Sync Now" manually.',
-                  variant: 'destructive',
-                });
-              } else {
-                console.log('Auto-sync completed:', syncResult);
-                toast({
-                  title: 'Calendar Synced!',
-                  description: `Imported ${syncResult?.items_created || 0} events from Google Calendar`,
-                });
-              }
-            } catch (syncErr) {
-              console.error('Auto-sync exception:', syncErr);
             }
-          } else {
-            // No primary calendar found - still connected but user needs to select manually
-            toast({
-              title: 'Connected!',
-              description: 'Open Calendar Settings to select which calendar to sync.',
-            });
+          } catch (syncErr) {
+            console.error('Auto-sync exception:', syncErr);
           }
+        } else {
+          toast({
+            title: 'Connected!',
+            description: 'Open Calendar Settings to select which calendar to sync.',
+          });
+        }
 
-          setIsConnecting(false);
-        },
-      });
+        setIsConnecting(false);
+      };
 
-      // Request authorization code (opens popup) - consent prompt ensures refresh token
-      codeClient.requestCode();
+      window.addEventListener('message', messageHandler);
+
+      const pollTimer = setInterval(() => {
+        try {
+          if (popup.closed) {
+            clearInterval(pollTimer);
+            window.removeEventListener('message', messageHandler);
+            setIsConnecting(false);
+          }
+        } catch {
+          clearInterval(pollTimer);
+        }
+      }, 1000);
 
     } catch (error) {
       console.error('Error connecting calendar:', error);
@@ -428,7 +434,7 @@ export const useGoogleCalendar = () => {
       });
       setIsConnecting(false);
     }
-  }, [exchangeAndStoreTokens, loadCalendars, toast, user]);
+  }, [exchangeAndStoreTokens, loadCalendars, toast, user]); // loadSyncSettings excluded - defined after, called async
 
   // Disconnect from Google Calendar
   const disconnectCalendar = useCallback(async () => {

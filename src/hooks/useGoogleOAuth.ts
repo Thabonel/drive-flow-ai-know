@@ -131,108 +131,137 @@ export const useGoogleOAuth = () => {
     }
   }, []);
 
-  // Initiate Google OAuth with authorization code flow for refresh token support
+  // Initiate Google OAuth with authorization code flow for refresh token support.
+  // Uses a manual popup with our own callback page to avoid GIS redirect_uri issues.
   const initiateGoogleOAuth = useCallback(async (scope: string): Promise<void> => {
     if (!user) {
       throw new Error('User not authenticated');
     }
 
-    // Get config directly if not loaded
     const config = oauthConfig || getOAuthConfig();
-
     setIsLoading(true);
 
     try {
-      // Load Google script
-      await loadGoogleScript();
-
-      console.log('Google OAuth initialization (authorization code flow):', {
-        hasGoogleAPI: !!window.google?.accounts?.oauth2,
-        clientId: config.google.client_id?.substring(0, 20) + '...',
-        scope: scope,
-        timestamp: new Date().toISOString()
-      });
+      const redirectUri = `${window.location.origin}/auth/google/callback`;
 
       toast({
         title: 'Opening Google Sign-In',
         description: 'Please sign in and grant the requested permissions',
       });
 
-      // Use authorization code flow (initCodeClient) instead of implicit flow (initTokenClient).
-      // This provides refresh tokens for silent token renewal, solving the 1-hour expiration problem.
-      const codeClient = window.google.accounts.oauth2.initCodeClient({
-        client_id: config.google.client_id,
-        scope: scope,
-        ux_mode: 'popup',
-        callback: async (response: any) => {
-          try {
-            console.log('Google OAuth code callback received:', {
-              hasError: !!response.error,
-              hasCode: !!response.code,
-              responseKeys: Object.keys(response || {}),
-              timestamp: new Date().toISOString()
-            });
+      // Build Google OAuth authorization URL manually.
+      // This gives us full control over redirect_uri, avoiding GIS library
+      // redirect_uri_mismatch issues across different deployment environments.
+      const authUrl = new URL('https://accounts.google.com/o/oauth2/v2/auth');
+      authUrl.searchParams.set('client_id', config.google.client_id);
+      authUrl.searchParams.set('redirect_uri', redirectUri);
+      authUrl.searchParams.set('response_type', 'code');
+      authUrl.searchParams.set('scope', scope);
+      authUrl.searchParams.set('access_type', 'offline');
+      authUrl.searchParams.set('prompt', 'consent');
 
-            if (response.error) {
-              console.error('OAuth error details:', {
-                error: response.error,
-                description: response.error_description,
-                uri: response.error_uri
-              });
-              throw new Error(`OAuth error: ${response.error}${response.error_description ? ' - ' + response.error_description : ''}`);
-            }
-
-            if (!response.code) {
-              throw new Error('No authorization code received from Google');
-            }
-
-            console.log('Google OAuth code received, exchanging for tokens via Edge Function...');
-
-            // Send the authorization code to the backend Edge Function
-            // The Edge Function will exchange it for access_token + refresh_token
-            // using the GOOGLE_CLIENT_SECRET (stored server-side only)
-            const { data, error } = await supabase.functions.invoke('store-google-tokens', {
-              body: {
-                code: response.code,
-                redirect_uri: config.google.redirect_uri,
-                scope: scope,
-              },
-            });
-
-            if (error) {
-              throw new Error(`Token exchange failed: ${error.message}`);
-            }
-
-            if (data?.error) {
-              throw new Error(`Token exchange failed: ${data.error}`);
-            }
-
-            console.log('Tokens exchanged and stored successfully:', {
-              success: data?.success,
-              hasRefreshToken: data?.has_refresh_token,
-            });
-            setIsAuthenticated(true);
-
-            toast({
-              title: 'Connected Successfully',
-              description: 'Your Google account has been connected securely.',
-            });
-
-          } catch (callbackError: any) {
-            console.error('OAuth callback error:', callbackError);
-            toast({
-              title: 'Connection Failed',
-              description: callbackError.message || 'Failed to connect Google account',
-              variant: 'destructive',
-            });
-          } finally {
-            setIsLoading(false);
-          }
-        },
+      console.log('Google OAuth initialization (manual popup):', {
+        clientId: config.google.client_id?.substring(0, 20) + '...',
+        redirectUri,
+        scope,
       });
 
-      // Request authorization code - prompt consent to ensure refresh token is granted
-      codeClient.requestCode();
+      // Open centered popup
+      const width = 500;
+      const height = 600;
+      const left = Math.round((screen.width - width) / 2);
+      const top = Math.round((screen.height - height) / 2);
+
+      const popup = window.open(
+        authUrl.toString(),
+        'google-oauth',
+        `width=${width},height=${height},left=${left},top=${top},toolbar=no,menubar=no`
+      );
+
+      if (!popup) {
+        throw new Error('Popup blocked. Please allow popups for this site and try again.');
+      }
+
+      // Listen for the authorization code from our callback page via postMessage
+      const messageHandler = async (event: MessageEvent) => {
+        if (event.origin !== window.location.origin) return;
+        if (event.data?.type !== 'google-oauth-callback') return;
+
+        window.removeEventListener('message', messageHandler);
+        clearInterval(pollTimer);
+
+        if (event.data.error) {
+          console.error('OAuth error from callback:', event.data.error);
+          toast({
+            title: 'Connection Failed',
+            description: event.data.error || 'Google sign-in was denied',
+            variant: 'destructive',
+          });
+          setIsLoading(false);
+          return;
+        }
+
+        const code = event.data.code;
+        if (!code) {
+          toast({
+            title: 'Connection Failed',
+            description: 'No authorization code received from Google',
+            variant: 'destructive',
+          });
+          setIsLoading(false);
+          return;
+        }
+
+        try {
+          console.log('Authorization code received, exchanging for tokens...');
+
+          const { data, error } = await supabase.functions.invoke('store-google-tokens', {
+            body: {
+              code,
+              redirect_uri: redirectUri,
+              scope,
+            },
+          });
+
+          if (error) throw new Error(`Token exchange failed: ${error.message}`);
+          if (data?.error) throw new Error(`Token exchange failed: ${data.error}`);
+
+          console.log('Tokens exchanged and stored successfully:', {
+            success: data?.success,
+            hasRefreshToken: data?.has_refresh_token,
+          });
+          setIsAuthenticated(true);
+
+          toast({
+            title: 'Connected Successfully',
+            description: 'Your Google account has been connected securely.',
+          });
+        } catch (callbackError: any) {
+          console.error('OAuth callback error:', callbackError);
+          toast({
+            title: 'Connection Failed',
+            description: callbackError.message || 'Failed to connect Google account',
+            variant: 'destructive',
+          });
+        } finally {
+          setIsLoading(false);
+        }
+      };
+
+      window.addEventListener('message', messageHandler);
+
+      // Poll for popup close (user cancelled)
+      const pollTimer = setInterval(() => {
+        try {
+          if (popup.closed) {
+            clearInterval(pollTimer);
+            window.removeEventListener('message', messageHandler);
+            setIsLoading(false);
+          }
+        } catch {
+          clearInterval(pollTimer);
+        }
+      }, 1000);
 
     } catch (error: any) {
       console.error('OAuth initiation error:', error);
@@ -245,7 +274,7 @@ export const useGoogleOAuth = () => {
       });
       throw error;
     }
-  }, [user, oauthConfig, getOAuthConfig, loadGoogleScript, toast]);
+  }, [user, oauthConfig, getOAuthConfig, toast]);
 
   // Check if user has valid Google tokens, with auto-refresh support
   const checkConnection = useCallback(async (): Promise<boolean> => {
