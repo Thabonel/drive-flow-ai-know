@@ -36,6 +36,7 @@ import { ExtractToTimelineDialog } from '@/components/ai/ExtractToTimelineDialog
 import { SubAgentResult, SubAgentResultsList } from '@/components/ai/SubAgentResultCard';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { DocumentViewerModal } from '@/components/DocumentViewerModal';
 
 interface ClarifyingOption {
   id: string;
@@ -70,6 +71,8 @@ interface Message {
   // Interactive options for clarifying questions
   clarifying_options?: ClarifyingQuestion;
   options_answered?: boolean; // Track if user already answered
+  // Matched documents for document retrieval
+  matched_documents?: Array<{ id: string; title: string; file_type?: string; category?: string }>;
 }
 
 
@@ -119,6 +122,10 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
 
   // Track messages currently being auto-executed for UI state
   const [autoExecutingMessageIds, setAutoExecutingMessageIds] = useState<Set<string>>(new Set());
+
+  // Document viewer state for document retrieval feature
+  const [viewerDocument, setViewerDocument] = useState<any>(null);
+  const [isViewerOpen, setIsViewerOpen] = useState(false);
 
   useEffect(() => {
     // Don't load messages if we're actively submitting (prevents race condition)
@@ -738,6 +745,7 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
       const autoExecuteTaskType = data?.auto_execute_task_type || null;
       const clarifyingOptions = data?.clarifying_options || null;
       const responseImageData = data?.imageData || null;
+      const matchedDocuments = data?.matched_documents || [];
 
       let savedMessageId: string | null = null;
 
@@ -752,6 +760,7 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
           agent_mode_available: agentModeAvailable,
           clarifying_options: clarifyingOptions,
           imageData: responseImageData,
+          matched_documents: matchedDocuments,
         };
         savedMessageId = tempAiMessage.id;
 
@@ -772,6 +781,7 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
             agent_mode_available: agentModeAvailable,
             clarifying_options: clarifyingOptions,
             imageData: responseImageData,
+            matched_documents: matchedDocuments,
           };
 
           // If auto-executing, mark it BEFORE rendering the message (prevents button flash)
@@ -1408,6 +1418,79 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
     }
   };
 
+  // Open a document in the DocumentViewerModal
+  const handleOpenDocument = async (docId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('knowledge_documents')
+        .select('*')
+        .eq('id', docId)
+        .single();
+
+      if (error || !data) {
+        toast.error('Could not load document');
+        return;
+      }
+
+      setViewerDocument(data);
+      setIsViewerOpen(true);
+    } catch {
+      toast.error('Failed to open document');
+    }
+  };
+
+  // Parse [DOC:id:title] markers from AI response and render with clickable cards
+  const renderMessageWithDocRefs = (content: string, matchedDocs?: Message['matched_documents']) => {
+    const docRefPattern = /\[DOC:([a-f0-9-]+):([^\]]+)\]/g;
+    const parts: Array<{ type: 'text' | 'doc'; content: string; docId?: string; docTitle?: string }> = [];
+    let lastIndex = 0;
+    let match: RegExpExecArray | null;
+
+    while ((match = docRefPattern.exec(content)) !== null) {
+      if (match.index > lastIndex) {
+        parts.push({ type: 'text', content: content.slice(lastIndex, match.index) });
+      }
+      parts.push({ type: 'doc', content: match[0], docId: match[1], docTitle: match[2] });
+      lastIndex = match.index + match[0].length;
+    }
+
+    if (lastIndex < content.length) {
+      parts.push({ type: 'text', content: content.slice(lastIndex) });
+    }
+
+    // If no doc refs found, return null to use default rendering
+    if (parts.every(p => p.type === 'text')) return null;
+
+    return (
+      <div className="prose prose-sm max-w-none dark:prose-invert prose-headings:mt-3 prose-headings:mb-2 prose-p:my-2 prose-pre:my-2 prose-ul:my-2 prose-ol:my-2 prose-li:my-0">
+        {parts.map((part, i) => {
+          if (part.type === 'text') {
+            return (
+              <ReactMarkdown key={i} remarkPlugins={[remarkGfm]}>
+                {part.content}
+              </ReactMarkdown>
+            );
+          }
+          // Find matching metadata from response
+          const docMeta = matchedDocs?.find(d => d.id === part.docId);
+          return (
+            <button
+              key={i}
+              onClick={() => handleOpenDocument(part.docId!)}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 my-1 rounded-md border border-primary/30 bg-primary/5 hover:bg-primary/10 transition-colors cursor-pointer text-sm"
+            >
+              <FileText className="h-4 w-4 text-primary flex-shrink-0" />
+              <span className="font-medium text-primary">{part.docTitle}</span>
+              {docMeta?.file_type && (
+                <span className="text-xs text-muted-foreground ml-1">({docMeta.file_type})</span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+    );
+  };
+
   // Extract input form to avoid duplication (used in both empty and active states)
   const renderInputForm = () => (
     <form onSubmit={handleSubmit} className="p-2 border-t flex-shrink-0 bg-background">
@@ -1674,11 +1757,13 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
                       }`}
                     >
                       {message.role === 'assistant' ? (
-                        <div className="prose prose-sm max-w-none dark:prose-invert prose-headings:mt-3 prose-headings:mb-2 prose-p:my-2 prose-pre:my-2 prose-ul:my-2 prose-ol:my-2 prose-li:my-0">
-                          <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                            {message.content}
-                          </ReactMarkdown>
-                        </div>
+                        renderMessageWithDocRefs(message.content, message.matched_documents) || (
+                          <div className="prose prose-sm max-w-none dark:prose-invert prose-headings:mt-3 prose-headings:mb-2 prose-p:my-2 prose-pre:my-2 prose-ul:my-2 prose-ol:my-2 prose-li:my-0">
+                            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                              {message.content}
+                            </ReactMarkdown>
+                          </div>
+                        )
                       ) : (
                         <p className="whitespace-pre-wrap">{message.content}</p>
                       )}
@@ -1810,6 +1895,18 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
         content={timelineContent}
         sourceType="ai-response"
       />
+
+      {/* Document Viewer Modal for document retrieval */}
+      {viewerDocument && (
+        <DocumentViewerModal
+          document={viewerDocument}
+          isOpen={isViewerOpen}
+          onClose={() => {
+            setIsViewerOpen(false);
+            setViewerDocument(null);
+          }}
+        />
+      )}
 
     </div>
     </TooltipProvider>
