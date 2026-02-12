@@ -14,7 +14,7 @@ export default defineConfig(({ mode }) => ({
       'Cross-Origin-Opener-Policy': 'same-origin-allow-popups',
       'Cross-Origin-Embedder-Policy': 'credentialless',
       // Content Security Policy for development (more permissive for HMR)
-      'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://accounts.google.com https://apis.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' ws: https://*.supabase.co https://api.anthropic.com https://openrouter.ai https://api.openai.com https://accounts.google.com https://www.googleapis.com; frame-src https://accounts.google.com; object-src 'none'; frame-ancestors 'none'; upgrade-insecure-requests",
+      'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://accounts.google.com https://apis.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; media-src 'self' data: https: blob:; connect-src 'self' ws: https://*.supabase.co https://api.anthropic.com https://openrouter.ai https://api.openai.com https://accounts.google.com https://www.googleapis.com; frame-src https://accounts.google.com; object-src 'none'; frame-ancestors 'none'; upgrade-insecure-requests",
       // Additional security headers
       'X-Content-Type-Options': 'nosniff',
       'X-Frame-Options': 'DENY',
