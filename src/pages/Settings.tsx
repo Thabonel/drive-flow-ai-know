@@ -20,7 +20,7 @@ import { PersonalPrompt } from "@/components/PersonalPrompt";
 import { PageHelp } from "@/components/PageHelp";
 import { supabase } from "@/integrations/supabase/client";
 import { useTheme } from "@/components/ThemeProvider";
-import { AIQueryInput } from "@/components/AIQueryInput";
+import { SettingsAIAssistant } from "@/components/settings/SettingsAIAssistant";
 import { AgentModeToggle } from "@/components/settings/AgentModeToggle";
 import { MemoryManager } from "@/components/settings/MemoryManager";
 import { MFASettings } from "@/components/settings/MFASettings";
@@ -204,13 +204,13 @@ const Settings = () => {
                   "AI & Data: Set your personal AI prompt to customize AI responses",
                   "Security: Enable offline mode, view connected services, export/import data",
                   "Enterprise: Connect to enterprise servers for team access",
-                  "Use the AI Assistant to ask questions about your settings"
+                  "Use the Settings Assistant to get help configuring your account and preferences"
                 ]}
               />
             </div>
 
             {/* AI Assistant */}
-            <AIQueryInput />
+            <SettingsAIAssistant />
 
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
               <TabsList className="grid w-full grid-cols-5">
