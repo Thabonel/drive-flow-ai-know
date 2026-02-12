@@ -1097,7 +1097,7 @@ serve(async (req) => {
         // Fetch documents (personal OR team)
         const { data: documents, error: docsError } = await supabaseService
           .from('knowledge_documents')
-          .select('title, content, ai_summary, tags, file_type, user_id, team_id')
+          .select('id, title, content, ai_summary, tags, file_type, category, user_id, team_id')
           .in('id', knowledgeBase.source_document_ids)
           .or(teamIds.length > 0
             ? `user_id.eq.${user_id},and(team_id.in.(${teamIds.join(',')}),visibility.eq.team)`
@@ -1144,7 +1144,7 @@ serve(async (req) => {
         // Cast query for marketing documents with broader search (personal OR team)
         const { data: marketingDocs, error: marketingError } = await supabaseService
           .from('knowledge_documents')
-          .select('title, content, ai_summary, tags, file_type, user_id, team_id')
+          .select('id, title, content, ai_summary, tags, file_type, category, user_id, team_id')
           .or(teamIds.length > 0
             ? `and(user_id.eq.${user_id},or(title.ilike.%marketing%,content.ilike.%marketing%,tags.cs.["marketing"],title.ilike.%wheels%,title.ilike.%wins%,file_type.eq.json)),and(team_id.in.(${teamIds.join(',')}),visibility.eq.team,or(title.ilike.%marketing%,content.ilike.%marketing%,tags.cs.["marketing"]))`
             : `user_id.eq.${user_id},or(title.ilike.%marketing%,content.ilike.%marketing%,tags.cs.["marketing"],title.ilike.%wheels%,title.ilike.%wins%,file_type.eq.json)`)
@@ -1164,7 +1164,7 @@ serve(async (req) => {
         // Get recent documents (personal OR team)
         const { data: documents, error: docsError } = await supabaseService
           .from('knowledge_documents')
-          .select('title, content, ai_summary, tags, file_type, user_id, team_id')
+          .select('id, title, content, ai_summary, tags, file_type, category, user_id, team_id')
           .or(teamIds.length > 0
             ? `user_id.eq.${user_id},and(team_id.in.(${teamIds.join(',')}),visibility.eq.team)`
             : `user_id.eq.${user_id}`)
@@ -1195,7 +1195,7 @@ serve(async (req) => {
           : 'Personal';
 
         console.log(`Document ${index + 1}: ${doc.title} - Source: ${source} - Content length: ${content.length}`);
-        return `[${source}] Title: ${doc.title}\nContent: ${content}\nTags: ${doc.tags?.join(', ') || 'None'}\nFile Type: ${doc.file_type}\n---`;
+        return `[DOC_ID:${doc.id}] [${source}] Title: ${doc.title}\nContent: ${content}\nTags: ${doc.tags?.join(', ') || 'None'}\nFile Type: ${doc.file_type}\n---`;
       }).join('\n');
     }
 
@@ -1349,6 +1349,18 @@ You have access to the user's document summaries, content, and knowledge bases${
       - Use web search when you need current information beyond your training data
       - The user is responsible for their own security practices
       ${hasTeamDocs ? '- When answering, you can reference whether information came from personal or team documents\n- Remember: Team documents are shared context - all team members can query against them' : ''}
+
+      DOCUMENT RETRIEVAL:
+      When the user asks to "find", "show", "pull up", "open", "get", or "retrieve" a specific document:
+      1. Search the provided documents for the best match by title or content
+      2. Include the document reference in your response using this exact format: [DOC:document_id:Document Title]
+         - The document_id comes from the [DOC_ID:xxx] prefix in the document context
+         - The Document Title should match the document's actual title
+      3. Briefly describe what the document contains
+      4. You can reference multiple documents if relevant
+      5. ALWAYS include the [DOC:id:title] marker - the frontend uses it to create clickable links
+
+      Example: "I found your document. [DOC:abc-123:Q3 Budget Analysis] It contains quarterly financial projections..."
 
       SEARCH QUERY BEST PRACTICES (when using web_search):
       - For time-sensitive queries, include temporal qualifiers: "today", "current", "2025"
@@ -1694,6 +1706,16 @@ ${productKnowledge}
       console.log('Detected clarifying options:', clarifyingOptions.options.length, 'options');
     }
 
+    // Build matched documents metadata for frontend document retrieval
+    const matchedDocuments = contextDocuments
+      .filter(doc => doc.id)
+      .map(doc => ({
+        id: doc.id,
+        title: doc.title,
+        file_type: doc.file_type,
+        category: doc.category,
+      }));
+
     return new Response(
       JSON.stringify({
         response: aiAnswer,
@@ -1703,6 +1725,7 @@ ${productKnowledge}
         auto_execute_task_type: autoExecuteTaskType, // If set, frontend should auto-execute without confirmation
         clarifying_options: clarifyingOptions, // Interactive options for checkbox UI
         imageData: imageData, // Base64 image data if generated
+        matched_documents: matchedDocuments, // Document metadata for retrieval UI
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

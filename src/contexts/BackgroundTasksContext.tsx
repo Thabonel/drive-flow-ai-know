@@ -10,12 +10,20 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 
+export interface MatchedDocument {
+  id: string;
+  title: string;
+  file_type?: string;
+  category?: string;
+}
+
 export interface BackgroundTask {
   id: string;
   query: string;
   status: 'pending' | 'running' | 'completed' | 'failed';
   progress?: string;
   result?: string;
+  matchedDocuments?: MatchedDocument[];
   error?: string;
   startedAt: string;
   completedAt?: string;
@@ -106,6 +114,7 @@ export function BackgroundTasksProvider({ children }: { children: React.ReactNod
       updateTask(task.id, {
         status: 'completed',
         result: data.response || 'No response generated',
+        matchedDocuments: data.matched_documents || [],
         completedAt: new Date().toISOString(),
         progress: undefined,
       });

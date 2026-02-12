@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { MessageSquare, Send, Loader2, Save, PlusCircle, Calendar, X } from 'lucide-react';
+import { MessageSquare, Send, Loader2, Save, PlusCircle, Calendar, X, FileText } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -16,6 +16,7 @@ import { AIProgressIndicator } from '@/components/ai/AIProgressIndicator';
 import { ExtractToTimelineDialog } from '@/components/ai/ExtractToTimelineDialog';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { DocumentViewerModal } from '@/components/DocumentViewerModal';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -36,6 +37,8 @@ export const AIQueryInput = ({ selectedKnowledgeBase, onClearSelection }: AIQuer
   const [isSaving, setIsSaving] = useState(false);
   const [showTimelineDialog, setShowTimelineDialog] = useState(false);
   const [timelineContent, setTimelineContent] = useState('');
+  const [viewerDocument, setViewerDocument] = useState<any>(null);
+  const [isViewerOpen, setIsViewerOpen] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
   const { submitTask, tasks, getTask, clearTask } = useBackgroundTasks();
@@ -324,6 +327,71 @@ export const AIQueryInput = ({ selectedKnowledgeBase, onClearSelection }: AIQuer
     setQuery('');
   };
 
+  const handleOpenDocument = async (docId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('knowledge_documents')
+        .select('*')
+        .eq('id', docId)
+        .single();
+
+      if (error || !data) {
+        toast({ title: 'Error', description: 'Could not load document', variant: 'destructive' });
+        return;
+      }
+
+      setViewerDocument(data);
+      setIsViewerOpen(true);
+    } catch {
+      toast({ title: 'Error', description: 'Failed to open document', variant: 'destructive' });
+    }
+  };
+
+  const renderMessageWithDocRefs = (content: string) => {
+    const docRefPattern = /\[DOC:([a-f0-9-]+):([^\]]+)\]/g;
+    const parts: Array<{ type: 'text' | 'doc'; content: string; docId?: string; docTitle?: string }> = [];
+    let lastIndex = 0;
+    let match: RegExpExecArray | null;
+
+    while ((match = docRefPattern.exec(content)) !== null) {
+      if (match.index > lastIndex) {
+        parts.push({ type: 'text', content: content.slice(lastIndex, match.index) });
+      }
+      parts.push({ type: 'doc', content: match[0], docId: match[1], docTitle: match[2] });
+      lastIndex = match.index + match[0].length;
+    }
+
+    if (lastIndex < content.length) {
+      parts.push({ type: 'text', content: content.slice(lastIndex) });
+    }
+
+    if (parts.every(p => p.type === 'text')) return null;
+
+    return (
+      <div className="prose prose-sm max-w-none dark:prose-invert prose-headings:mt-3 prose-headings:mb-2 prose-p:my-2 prose-pre:my-2 prose-ul:my-2 prose-ol:my-2 prose-li:my-0">
+        {parts.map((part, i) => {
+          if (part.type === 'text') {
+            return (
+              <ReactMarkdown key={i} remarkPlugins={[remarkGfm]}>
+                {part.content}
+              </ReactMarkdown>
+            );
+          }
+          return (
+            <button
+              key={i}
+              onClick={() => handleOpenDocument(part.docId!)}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 my-1 rounded-md border border-primary/30 bg-primary/5 hover:bg-primary/10 transition-colors cursor-pointer text-sm"
+            >
+              <FileText className="h-4 w-4 text-primary flex-shrink-0" />
+              <span className="font-medium text-primary">{part.docTitle}</span>
+            </button>
+          );
+        })}
+      </div>
+    );
+  };
+
   const handleAddToTimeline = () => {
     // Get the last AI response
     const lastAssistantMessage = [...messages].reverse().find(m => m.role === 'assistant');
@@ -402,11 +470,13 @@ export const AIQueryInput = ({ selectedKnowledgeBase, onClearSelection }: AIQuer
                     {message.role === 'assistant' ? (
                       <div className="flex items-start space-x-2">
                         <MessageSquare className="h-4 w-4 mt-0.5 flex-shrink-0" />
-                        <div className="prose prose-sm max-w-none dark:prose-invert prose-headings:mt-3 prose-headings:mb-2 prose-p:my-2 prose-pre:my-2 prose-ul:my-2 prose-ol:my-2 prose-li:my-0">
-                          <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                            {message.content}
-                          </ReactMarkdown>
-                        </div>
+                        {renderMessageWithDocRefs(message.content) || (
+                          <div className="prose prose-sm max-w-none dark:prose-invert prose-headings:mt-3 prose-headings:mb-2 prose-p:my-2 prose-pre:my-2 prose-ul:my-2 prose-ol:my-2 prose-li:my-0">
+                            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                              {message.content}
+                            </ReactMarkdown>
+                          </div>
+                        )}
                       </div>
                     ) : (
                       <p className="text-sm leading-relaxed whitespace-pre-wrap">
@@ -530,6 +600,18 @@ export const AIQueryInput = ({ selectedKnowledgeBase, onClearSelection }: AIQuer
         content={timelineContent}
         sourceType="ai-response"
       />
+
+      {/* Document Viewer Modal for document retrieval */}
+      {viewerDocument && (
+        <DocumentViewerModal
+          document={viewerDocument}
+          isOpen={isViewerOpen}
+          onClose={() => {
+            setIsViewerOpen(false);
+            setViewerDocument(null);
+          }}
+        />
+      )}
     </Card>
   );
 };
