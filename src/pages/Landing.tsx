@@ -58,7 +58,7 @@ const plans = [
       '500 GB storage',
       'Unlimited pitch decks',
       '🔒 Enterprise Security Platform (NEW)',
-      'SOC 2 compliance ready',
+      'Advanced audit logging',
       'Multi-factor authentication (MFA)',
       'Automated incident response',
       'GDPR/CCPA data rights portal',
@@ -87,9 +87,9 @@ const features = [
     benefit: 'Your data stays yours',
   },
   {
-    title: 'Enterprise Security',
-    description: 'SOC 2 ready with automated incident response, GDPR/CCPA compliance, MFA, and real-time security monitoring. Security Score: 9.5/10.',
-    benefit: 'Enterprise grade protection',
+    title: 'Security Features',
+    description: 'Multi-factor authentication, incident detection, GDPR/CCPA data rights portal, and comprehensive audit logging to protect your data.',
+    benefit: 'Built-in protection',
   },
   {
     title: 'Natural Questions',
@@ -102,9 +102,9 @@ const features = [
     benefit: 'Keep control of your data',
   },
   {
-    title: 'Future-Proof AI',
-    description: 'Multi-provider architecture with automatic updates to the latest frontier models. No switching services.',
-    benefit: 'Always latest AI',
+    title: 'Multi-Provider AI',
+    description: 'Built on multiple AI providers with fallback routing. We regularly update to the latest frontier models.',
+    benefit: 'Best available AI',
   },
   {
     title: 'Team Collaboration',
@@ -194,7 +194,7 @@ export default function Landing() {
               <strong className="text-primary">Upload documents once, they stay forever.</strong> Every conversation has access to your entire library.
               No more re-uploading the same files over and over.
               <span className="text-sm md:text-base block">
-                <strong className="text-accent">Enterprise-grade security</strong> with SOC 2 compliance, automated incident response, and 9.5/10 security score.
+                <strong className="text-accent">Built with security in mind</strong> - MFA, audit logging, incident detection, and GDPR/CCPA data rights.
               </span>
             </p>
 
@@ -210,10 +210,10 @@ export default function Landing() {
             {/* Trust Indicators */}
             <div className="flex flex-wrap gap-3 justify-center items-center pt-2 text-xs">
               <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/30 backdrop-blur-sm">
-                <span className="font-medium text-primary">SOC 2 compliant</span>
+                <span className="font-medium text-primary">MFA & audit logging</span>
               </div>
               <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-success/10 border border-success/30 backdrop-blur-sm">
-                <span className="font-medium text-success">Security Score: 9.5/10</span>
+                <span className="font-medium text-success">GDPR/CCPA compliant</span>
               </div>
               <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-accent/10 border border-accent/30 backdrop-blur-sm">
                 <span className="font-medium text-accent">No credit card required</span>
@@ -230,14 +230,13 @@ export default function Landing() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-16">
             <div className="text-center p-6 rounded-2xl bg-primary/5 border border-primary/20 shadow-card hover:shadow-lg transition-all">
               <div className="flex items-center justify-center gap-2 mb-2">
-                <h3 className="text-xl font-bold text-primary">Enterprise Security</h3>
-                <span className="text-xs bg-accent text-white px-2 py-1 rounded-full font-semibold">NEW</span>
+                <h3 className="text-xl font-bold text-primary">Security Built In</h3>
               </div>
-              <p className="text-sm text-muted-foreground">SOC 2 ready with automated incident response, MFA, and real-time security monitoring. Security Score: 9.5/10.</p>
+              <p className="text-sm text-muted-foreground">Multi-factor authentication, incident detection, audit logging, and comprehensive data rights management.</p>
             </div>
             <div className="text-center p-6 rounded-2xl bg-success/5 border border-success/20 shadow-card hover:shadow-lg transition-all">
-              <h3 className="text-xl font-bold text-success mb-2">GDPR/CCPA Compliant</h3>
-              <p className="text-sm text-muted-foreground">Complete data rights portal with automated export, deletion, and consent management. Enterprise-grade privacy protection.</p>
+              <h3 className="text-xl font-bold text-success mb-2">GDPR/CCPA Data Rights</h3>
+              <p className="text-sm text-muted-foreground">Data export, account deletion, and consent management. Your data stays under your control.</p>
             </div>
             <div className="text-center p-6 rounded-2xl bg-accent/5 border border-accent/20 shadow-card hover:shadow-lg transition-all">
               <h3 className="text-xl font-bold text-accent mb-2">Lightning Fast</h3>
@@ -285,21 +284,11 @@ export default function Landing() {
       <section className="py-24 bg-primary text-primary-foreground">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
-            <div className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-accent/20 border border-accent/30 backdrop-blur-xl mb-6">
-              <span className="text-sm font-semibold text-accent">
-                ✨ Enterprise Security Platform - 100% Complete
-              </span>
-            </div>
-            <h2 className="text-4xl font-bold mb-4">Enterprise-Grade Security & Privacy</h2>
+            <h2 className="text-4xl font-bold mb-4">Security & Privacy Features</h2>
             <p className="text-xl opacity-90 max-w-3xl mx-auto">
-              SOC 2 ready with automated incident response, GDPR/CCPA compliance, and real-time security monitoring.
+              Incident detection, GDPR/CCPA data rights, and comprehensive audit logging.
               Unlike other AI tools, we don't use your data to train AI models.
             </p>
-            <div className="flex items-center justify-center gap-4 mt-4">
-              <div className="px-4 py-2 rounded-full bg-accent/20 border border-accent/30">
-                <span className="text-accent font-semibold text-sm">Security Score: 9.5/10</span>
-              </div>
-            </div>
           </div>
 
           <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto mb-12">
@@ -308,8 +297,8 @@ export default function Landing() {
               <p className="opacity-80 text-sm">TOTP-based MFA with automated security monitoring and incident response.</p>
             </div>
             <div className="text-center p-6 rounded-2xl bg-white/10 backdrop-blur-xl">
-              <h3 className="font-semibold mb-2 text-lg">📊 SOC 2 Ready</h3>
-              <p className="opacity-80 text-sm">Automated evidence collection for all security controls and compliance reporting.</p>
+              <h3 className="font-semibold mb-2 text-lg">📊 Audit Logging</h3>
+              <p className="opacity-80 text-sm">Comprehensive audit trail for security events and compliance reporting.</p>
             </div>
             <div className="text-center p-6 rounded-2xl bg-white/10 backdrop-blur-xl">
               <h3 className="font-semibold mb-2 text-lg">🌍 GDPR/CCPA</h3>
@@ -319,8 +308,8 @@ export default function Landing() {
 
           <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
             <div className="text-center p-6 rounded-2xl bg-white/10 backdrop-blur-xl">
-              <h3 className="font-semibold mb-2 text-lg">🚨 Incident Response</h3>
-              <p className="opacity-80 text-sm">Automated brute force detection (6+ failed logins) with real-time security alerts.</p>
+              <h3 className="font-semibold mb-2 text-lg">🚨 Incident Detection</h3>
+              <p className="opacity-80 text-sm">Automated brute force detection with security alerts when suspicious activity is identified.</p>
             </div>
             <div className="text-center p-6 rounded-2xl bg-white/10 backdrop-blur-xl">
               <h3 className="font-semibold mb-2 text-lg">🛡️ XSS Protection</h3>
@@ -426,7 +415,7 @@ export default function Landing() {
                   Professional 16:9 Format
                 </h3>
                 <p className="text-muted-foreground">
-                  Export to PDF, PowerPoint, or present directly. No formatting issues.
+                  Export to PDF, PowerPoint, or present directly in your browser. No formatting issues.
                 </p>
               </div>
 
@@ -514,11 +503,11 @@ export default function Landing() {
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-4xl md:text-5xl font-bold mb-4 text-primary">
-              Powered by the Best AI, Automatically
+              Powered by Leading AI Models
             </h2>
             <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-              We constantly update to the latest frontier models so you never have to switch providers,
-              create new accounts, or worry about falling behind.
+              We integrate with multiple AI providers and regularly update to the latest frontier models,
+              so you get the best performance without managing multiple subscriptions.
             </p>
           </div>
 
@@ -542,15 +531,15 @@ export default function Landing() {
             </div>
 
             <div className="p-8 rounded-2xl bg-card border border-border shadow-card">
-              <h3 className="text-xl font-bold text-primary mb-4">Always Up-to-Date</h3>
+              <h3 className="text-xl font-bold text-primary mb-4">Regularly Updated</h3>
               <p className="text-muted-foreground mb-4">
-                When new frontier models are released, we update automatically. No action needed on your part.
-                You always get state-of-the-art AI performance.
+                When new frontier models are released, we evaluate and integrate them.
+                Built-in fallback routing ensures you always have a working AI, even if a provider has downtime.
               </p>
               <ul className="space-y-2 text-muted-foreground">
                 <li className="flex items-start gap-2">
                   <span className="text-success font-medium">—</span>
-                  <span>Automatic model updates</span>
+                  <span>Regular model updates</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-success font-medium">—</span>
@@ -558,7 +547,7 @@ export default function Landing() {
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-success font-medium">—</span>
-                  <span>No vendor lock-in</span>
+                  <span>Multiple AI providers</span>
                 </li>
               </ul>
             </div>
@@ -614,7 +603,7 @@ export default function Landing() {
                   <div className="flex items-center justify-center gap-2 mb-2">
                     <h3 className="text-2xl font-bold text-primary">{plan.name}</h3>
                     {plan.name === 'Business' && (
-                      <span className="text-xs bg-accent text-white px-2 py-1 rounded-full font-semibold">SECURITY+</span>
+                      <span className="text-xs bg-accent text-white px-2 py-1 rounded-full font-semibold">TEAMS</span>
                     )}
                   </div>
                   <div className="mb-3">
@@ -704,38 +693,36 @@ export default function Landing() {
             </div>
 
             <div className="text-center text-xs text-muted-foreground max-w-4xl mx-auto space-y-3">
-              <p className="font-semibold text-foreground">Enterprise-Grade Security & Legal Information</p>
+              <p className="font-semibold text-foreground">Security & Legal Information</p>
 
               <div className="grid md:grid-cols-3 gap-4 py-2">
                 <div className="px-3 py-2 rounded-lg bg-primary/5 border border-primary/20">
-                  <p className="font-semibold text-primary text-xs">Security Score: 9.5/10</p>
-                  <p className="text-xs">Enterprise Grade</p>
+                  <p className="font-semibold text-primary text-xs">MFA & Audit Logging</p>
+                  <p className="text-xs">Security Features</p>
                 </div>
                 <div className="px-3 py-2 rounded-lg bg-success/5 border border-success/20">
-                  <p className="font-semibold text-success text-xs">SOC 2 Compliant</p>
-                  <p className="text-xs">Audit Ready</p>
+                  <p className="font-semibold text-success text-xs">Incident Detection</p>
+                  <p className="text-xs">Automated Monitoring</p>
                 </div>
                 <div className="px-3 py-2 rounded-lg bg-accent/5 border border-accent/20">
                   <p className="font-semibold text-accent text-xs">GDPR/CCPA</p>
-                  <p className="text-xs">Data Protection</p>
+                  <p className="text-xs">Data Rights Portal</p>
                 </div>
               </div>
 
               <p className="leading-relaxed">
-                <strong className="text-foreground">Enterprise Security:</strong> AI Query Hub employs enterprise-grade security with
-                multi-factor authentication, automated incident response, comprehensive audit logging, and SOC 2 compliance.
-                Your data is protected by industry-leading encryption and privacy controls.
-                <strong className="text-foreground"> We maintain the highest security standards</strong> to protect your information.
+                <strong className="text-foreground">Security:</strong> AI Query Hub includes
+                multi-factor authentication, incident detection, comprehensive audit logging, and GDPR/CCPA data rights.
+                Your data is protected by encryption and privacy controls.
               </p>
 
               <p className="leading-relaxed">
-                <strong className="text-foreground">Professional Service:</strong> While we provide enterprise-grade security and
-                reliability, we recommend following standard business practices including regular backups of critical data.
-                AI Query Hub is designed as a secure document intelligence platform, not a primary backup service.
-                See our comprehensive Terms of Service and Data Policy for complete details.
+                <strong className="text-foreground">Professional Service:</strong> We recommend following standard business practices including regular backups of critical data.
+                AI Query Hub is designed as a document intelligence platform, not a primary backup service.
+                See our Terms of Service and Data Policy for complete details.
               </p>
 
-              <p className="pt-2 text-muted-foreground/80">© 2024 AI Query Hub. All rights reserved. Enterprise-grade AI document intelligence.</p>
+              <p className="pt-2 text-muted-foreground/80">© 2025 AI Query Hub. All rights reserved. AI-powered document intelligence.</p>
             </div>
           </div>
         </div>
