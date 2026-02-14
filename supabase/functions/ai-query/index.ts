@@ -1181,6 +1181,34 @@ serve(async (req) => {
 
     console.log('Final context documents count:', contextDocuments.length);
 
+    // ============================================================================
+    // LOCAL DOCUMENT CONTEXT INTEGRATION (FUTURE ENHANCEMENT)
+    // ============================================================================
+    // TODO: Integrate local document context from client-side indexing
+    // When the hybrid query system is fully deployed, this section will:
+    // 1. Accept local document IDs and context from the request payload
+    // 2. Merge local document content with cloud document context
+    // 3. Provide source attribution for local vs cloud vs team documents
+    // 4. Handle relevance scoring across hybrid document sources
+    //
+    // Expected request payload extension:
+    // {
+    //   query: string,
+    //   knowledge_base_id?: string,
+    //   local_document_context?: {
+    //     documents: LocalDocumentReference[],
+    //     searchQuery: string,
+    //     relevanceThreshold: number
+    //   }
+    // }
+    //
+    // Implementation notes:
+    // - Local documents will be client-indexed via File System Access API
+    // - Content will be pre-processed and sent as structured context
+    // - Source attribution: [Personal], [Team: Name], [Local: FolderName]
+    // - Relevance scoring will combine cloud and local search results
+    // ============================================================================
+
     // Prepare context for AI with source attribution (Personal vs Team)
     let documentContext = '';
     if (contextDocuments.length > 0) {
