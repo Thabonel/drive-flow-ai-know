@@ -5,8 +5,7 @@ vi.mock('@/hooks/useLocalDocuments', () => ({
   useLocalDocuments: vi.fn(() => ({
     isSupported: true,
     isInitialized: true,
-    folders: [],
-    documents: [],
+    isScanning: false,
     indexStats: {
       totalDocuments: 0,
       totalFolders: 0,
@@ -14,13 +13,13 @@ vi.mock('@/hooks/useLocalDocuments', () => ({
       indexSizeBytes: 0,
       documentsNeedingUpdate: 0
     },
-    addFolder: vi.fn(),
-    removeFolder: vi.fn(),
-    scanFolder: vi.fn(),
-    scanAllFolders: vi.fn(),
+    lastScanResult: null,
+    initialize: vi.fn(),
+    requestFolderAccess: vi.fn(),
+    searchLocal: vi.fn(),
+    refreshIndex: vi.fn(),
     getDocumentContent: vi.fn(),
-    error: null,
-    isLoading: false
+    getStats: vi.fn()
   }))
 }));
 
@@ -124,13 +123,13 @@ describe('Local Documents Integration Tests', () => {
       expect(localDocsHook).toBeDefined();
       expect(typeof localDocsHook.isSupported).toBe('boolean');
       expect(typeof localDocsHook.isInitialized).toBe('boolean');
-      expect(Array.isArray(localDocsHook.folders)).toBe(true);
-      expect(Array.isArray(localDocsHook.documents)).toBe(true);
-      expect(typeof localDocsHook.addFolder).toBe('function');
-      expect(typeof localDocsHook.removeFolder).toBe('function');
-      expect(typeof localDocsHook.scanFolder).toBe('function');
-      expect(typeof localDocsHook.scanAllFolders).toBe('function');
+      expect(typeof localDocsHook.isScanning).toBe('boolean');
+      expect(typeof localDocsHook.initialize).toBe('function');
+      expect(typeof localDocsHook.requestFolderAccess).toBe('function');
+      expect(typeof localDocsHook.searchLocal).toBe('function');
+      expect(typeof localDocsHook.refreshIndex).toBe('function');
       expect(typeof localDocsHook.getDocumentContent).toBe('function');
+      expect(typeof localDocsHook.getStats).toBe('function');
     });
 
     it('validates useHybridQuery hook interface', () => {
@@ -151,8 +150,7 @@ describe('Local Documents Integration Tests', () => {
       mockUseLocalDocuments.mockReturnValue({
         isSupported: true,
         isInitialized: true,
-        folders: [{ id: 'test-folder', path: 'Test Documents', enabled: true, grantedAt: Date.now().toString(), lastAccessed: Date.now().toString() }],
-        documents: mockLocalDocuments,
+        isScanning: false,
         indexStats: {
           totalDocuments: 2,
           totalFolders: 1,
@@ -160,22 +158,27 @@ describe('Local Documents Integration Tests', () => {
           indexSizeBytes: 3072,
           documentsNeedingUpdate: 0
         },
-        addFolder: vi.fn(),
-        removeFolder: vi.fn(),
-        scanFolder: vi.fn(),
-        scanAllFolders: vi.fn(),
+        lastScanResult: {
+          foldersScanned: 1,
+          documentsProcessed: 2,
+          documentsUpdated: 0,
+          errors: []
+        },
+        initialize: vi.fn(),
+        requestFolderAccess: vi.fn(),
+        searchLocal: vi.fn().mockResolvedValue(mockSearchResults),
+        refreshIndex: vi.fn(),
         getDocumentContent: vi.fn(),
-        error: null,
-        isLoading: false
+        getStats: vi.fn()
       });
 
       const localDocsHook = useLocalDocuments();
 
       // Verify mocked state
       expect(localDocsHook.isSupported).toBe(true);
-      expect(localDocsHook.folders).toHaveLength(1);
-      expect(localDocsHook.documents).toHaveLength(2);
-      expect(localDocsHook.indexStats.totalDocuments).toBe(2);
+      expect(localDocsHook.indexStats).toBeDefined();
+      expect(localDocsHook.indexStats?.totalDocuments).toBe(2);
+      expect(localDocsHook.indexStats?.totalFolders).toBe(1);
     });
 
     it('tests hybrid query hook with mocked search results', async () => {
@@ -224,8 +227,7 @@ describe('Local Documents Integration Tests', () => {
       mockUseLocalDocuments.mockReturnValueOnce({
         isSupported: true,
         isInitialized: true,
-        folders: [],
-        documents: [],
+        isScanning: false,
         indexStats: {
           totalDocuments: 0,
           totalFolders: 0,
@@ -233,21 +235,20 @@ describe('Local Documents Integration Tests', () => {
           indexSizeBytes: 0,
           documentsNeedingUpdate: 0
         },
-        addFolder: vi.fn(),
-        removeFolder: vi.fn(),
-        scanFolder: vi.fn(),
-        scanAllFolders: vi.fn(),
+        lastScanResult: null,
+        initialize: vi.fn(),
+        requestFolderAccess: vi.fn(),
+        searchLocal: vi.fn(),
+        refreshIndex: vi.fn(),
         getDocumentContent: vi.fn(),
-        error: null,
-        isLoading: false
+        getStats: vi.fn()
       });
 
       // Step 2: After folder addition - folder added, documents indexed
       mockUseLocalDocuments.mockReturnValue({
         isSupported: true,
         isInitialized: true,
-        folders: [{ id: 'test-folder', path: 'Test Documents', enabled: true, grantedAt: Date.now().toString(), lastAccessed: Date.now().toString() }],
-        documents: mockLocalDocuments,
+        isScanning: false,
         indexStats: {
           totalDocuments: 2,
           totalFolders: 1,
@@ -255,13 +256,18 @@ describe('Local Documents Integration Tests', () => {
           indexSizeBytes: 3072,
           documentsNeedingUpdate: 0
         },
-        addFolder: vi.fn(),
-        removeFolder: vi.fn(),
-        scanFolder: vi.fn(),
-        scanAllFolders: vi.fn(),
+        lastScanResult: {
+          foldersScanned: 1,
+          documentsProcessed: 2,
+          documentsUpdated: 0,
+          errors: []
+        },
+        initialize: vi.fn(),
+        requestFolderAccess: vi.fn(),
+        searchLocal: vi.fn().mockResolvedValue(mockSearchResults),
+        refreshIndex: vi.fn(),
         getDocumentContent: vi.fn(),
-        error: null,
-        isLoading: false
+        getStats: vi.fn()
       });
 
       // Step 3: Mock search functionality
@@ -289,12 +295,12 @@ describe('Local Documents Integration Tests', () => {
 
       // Test workflow
       const initialState = useLocalDocuments();
-      expect(initialState.folders).toHaveLength(0);
+      expect(initialState.indexStats?.totalFolders).toBe(0);
 
       // Simulate folder addition workflow
       const afterAddition = useLocalDocuments();
-      expect(afterAddition.folders).toHaveLength(1);
-      expect(afterAddition.documents).toHaveLength(2);
+      expect(afterAddition.indexStats?.totalFolders).toBe(1);
+      expect(afterAddition.indexStats?.totalDocuments).toBe(2);
 
       // Test search functionality
       const hybridQuery = useHybridQuery();
@@ -312,8 +318,7 @@ describe('Local Documents Integration Tests', () => {
       mockUseLocalDocuments.mockReturnValue({
         isSupported: false,
         isInitialized: false,
-        folders: [],
-        documents: [],
+        isScanning: false,
         indexStats: {
           totalDocuments: 0,
           totalFolders: 0,
@@ -321,22 +326,27 @@ describe('Local Documents Integration Tests', () => {
           indexSizeBytes: 0,
           documentsNeedingUpdate: 0
         },
-        addFolder: vi.fn(),
-        removeFolder: vi.fn(),
-        scanFolder: vi.fn(),
-        scanAllFolders: vi.fn(),
+        lastScanResult: {
+          foldersScanned: 0,
+          documentsProcessed: 0,
+          documentsUpdated: 0,
+          errors: ['File System Access API not supported']
+        },
+        initialize: vi.fn(),
+        requestFolderAccess: vi.fn(),
+        searchLocal: vi.fn(),
+        refreshIndex: vi.fn(),
         getDocumentContent: vi.fn(),
-        error: 'File System Access API not supported',
-        isLoading: false
+        getStats: vi.fn()
       });
 
       const localDocsHook = useLocalDocuments();
 
       // Verify error state is handled gracefully
       expect(localDocsHook.isSupported).toBe(false);
-      expect(localDocsHook.error).toBe('File System Access API not supported');
-      expect(localDocsHook.folders).toEqual([]);
-      expect(localDocsHook.documents).toEqual([]);
+      expect(localDocsHook.lastScanResult?.errors).toContain('File System Access API not supported');
+      expect(localDocsHook.indexStats?.totalFolders).toBe(0);
+      expect(localDocsHook.indexStats?.totalDocuments).toBe(0);
     });
 
     it('handles permission denial gracefully', () => {
@@ -346,8 +356,7 @@ describe('Local Documents Integration Tests', () => {
       mockUseLocalDocuments.mockReturnValue({
         isSupported: true,
         isInitialized: true,
-        folders: [],
-        documents: [],
+        isScanning: false,
         indexStats: {
           totalDocuments: 0,
           totalFolders: 0,
@@ -355,21 +364,26 @@ describe('Local Documents Integration Tests', () => {
           indexSizeBytes: 0,
           documentsNeedingUpdate: 0
         },
-        addFolder: vi.fn(),
-        removeFolder: vi.fn(),
-        scanFolder: vi.fn(),
-        scanAllFolders: vi.fn(),
+        lastScanResult: {
+          foldersScanned: 0,
+          documentsProcessed: 0,
+          documentsUpdated: 0,
+          errors: ['Permission denied']
+        },
+        initialize: vi.fn(),
+        requestFolderAccess: vi.fn(),
+        searchLocal: vi.fn(),
+        refreshIndex: vi.fn(),
         getDocumentContent: vi.fn(),
-        error: 'Permission denied',
-        isLoading: false
+        getStats: vi.fn()
       });
 
       const localDocsHook = useLocalDocuments();
 
       // Should remain in consistent state despite error
       expect(localDocsHook.isSupported).toBe(true);
-      expect(localDocsHook.error).toBe('Permission denied');
-      expect(localDocsHook.folders).toEqual([]);
+      expect(localDocsHook.lastScanResult?.errors).toContain('Permission denied');
+      expect(localDocsHook.indexStats?.totalFolders).toBe(0);
     });
 
     it('handles no documents found scenario', () => {
@@ -379,8 +393,7 @@ describe('Local Documents Integration Tests', () => {
       mockUseLocalDocuments.mockReturnValue({
         isSupported: true,
         isInitialized: true,
-        folders: [{ id: 'empty-folder', path: 'Empty Folder', enabled: true, grantedAt: Date.now().toString(), lastAccessed: Date.now().toString() }],
-        documents: [],
+        isScanning: false,
         indexStats: {
           totalDocuments: 0,
           totalFolders: 1,
@@ -388,21 +401,26 @@ describe('Local Documents Integration Tests', () => {
           indexSizeBytes: 0,
           documentsNeedingUpdate: 0
         },
-        addFolder: vi.fn(),
-        removeFolder: vi.fn(),
-        scanFolder: vi.fn(),
-        scanAllFolders: vi.fn(),
+        lastScanResult: {
+          foldersScanned: 1,
+          documentsProcessed: 0,
+          documentsUpdated: 0,
+          errors: []
+        },
+        initialize: vi.fn(),
+        requestFolderAccess: vi.fn(),
+        searchLocal: vi.fn(),
+        refreshIndex: vi.fn(),
         getDocumentContent: vi.fn(),
-        error: null,
-        isLoading: false
+        getStats: vi.fn()
       });
 
       const localDocsHook = useLocalDocuments();
 
       // Should handle empty directory gracefully
-      expect(localDocsHook.folders).toHaveLength(1);
-      expect(localDocsHook.documents).toHaveLength(0);
-      expect(localDocsHook.indexStats.totalDocuments).toBe(0);
+      expect(localDocsHook.indexStats?.totalFolders).toBe(1);
+      expect(localDocsHook.indexStats?.totalDocuments).toBe(0);
+      expect(localDocsHook.lastScanResult?.foldersScanned).toBe(1);
     });
 
     it('handles loading states correctly', () => {
@@ -412,8 +430,7 @@ describe('Local Documents Integration Tests', () => {
       mockUseLocalDocuments.mockReturnValue({
         isSupported: true,
         isInitialized: false,
-        folders: [],
-        documents: [],
+        isScanning: true,
         indexStats: {
           totalDocuments: 0,
           totalFolders: 0,
@@ -421,19 +438,19 @@ describe('Local Documents Integration Tests', () => {
           indexSizeBytes: 0,
           documentsNeedingUpdate: 0
         },
-        addFolder: vi.fn(),
-        removeFolder: vi.fn(),
-        scanFolder: vi.fn(),
-        scanAllFolders: vi.fn(),
+        lastScanResult: null,
+        initialize: vi.fn(),
+        requestFolderAccess: vi.fn(),
+        searchLocal: vi.fn(),
+        refreshIndex: vi.fn(),
         getDocumentContent: vi.fn(),
-        error: null,
-        isLoading: true
+        getStats: vi.fn()
       });
 
       const localDocsHook = useLocalDocuments();
 
       // Should indicate loading state
-      expect(localDocsHook.isLoading).toBe(true);
+      expect(localDocsHook.isScanning).toBe(true);
       expect(localDocsHook.isInitialized).toBe(false);
     });
   });
@@ -493,8 +510,7 @@ describe('Local Documents Integration Tests', () => {
       mockUseLocalDocuments.mockReturnValue({
         isSupported: true,
         isInitialized: true,
-        folders: [{ id: 'large-folder', path: 'Large Collection', enabled: true, grantedAt: Date.now().toString(), lastAccessed: Date.now().toString() }],
-        documents: largeDocumentSet,
+        isScanning: false,
         indexStats: {
           totalDocuments: 1000,
           totalFolders: 1,
@@ -502,21 +518,26 @@ describe('Local Documents Integration Tests', () => {
           indexSizeBytes: 1024 * 1000, // 1MB
           documentsNeedingUpdate: 0
         },
-        addFolder: vi.fn(),
-        removeFolder: vi.fn(),
-        scanFolder: vi.fn(),
-        scanAllFolders: vi.fn(),
+        lastScanResult: {
+          foldersScanned: 1,
+          documentsProcessed: 1000,
+          documentsUpdated: 0,
+          errors: []
+        },
+        initialize: vi.fn(),
+        requestFolderAccess: vi.fn(),
+        searchLocal: vi.fn(),
+        refreshIndex: vi.fn(),
         getDocumentContent: vi.fn(),
-        error: null,
-        isLoading: false
+        getStats: vi.fn()
       });
 
       const localDocsHook = useLocalDocuments();
 
       // Should handle large collections
-      expect(localDocsHook.documents).toHaveLength(1000);
-      expect(localDocsHook.indexStats.totalDocuments).toBe(1000);
-      expect(localDocsHook.indexStats.indexSizeBytes).toBeGreaterThan(0);
+      expect(localDocsHook.lastScanResult?.documentsProcessed).toBe(1000);
+      expect(localDocsHook.indexStats?.totalDocuments).toBe(1000);
+      expect(localDocsHook.indexStats?.indexSizeBytes).toBeGreaterThan(0);
     });
   });
 
@@ -614,8 +635,7 @@ describe('Local Documents Integration Tests', () => {
       const consistentState = {
         isSupported: true,
         isInitialized: true,
-        folders: [{ id: 'folder-1', path: 'Test Folder', enabled: true, grantedAt: Date.now().toString(), lastAccessed: Date.now().toString() }],
-        documents: mockLocalDocuments,
+        isScanning: false,
         indexStats: {
           totalDocuments: 2,
           totalFolders: 1,
@@ -623,13 +643,18 @@ describe('Local Documents Integration Tests', () => {
           indexSizeBytes: 3072,
           documentsNeedingUpdate: 0
         },
-        addFolder: vi.fn(),
-        removeFolder: vi.fn(),
-        scanFolder: vi.fn(),
-        scanAllFolders: vi.fn(),
+        lastScanResult: {
+          foldersScanned: 1,
+          documentsProcessed: 2,
+          documentsUpdated: 0,
+          errors: []
+        },
+        initialize: vi.fn(),
+        requestFolderAccess: vi.fn(),
+        searchLocal: vi.fn(),
+        refreshIndex: vi.fn(),
         getDocumentContent: vi.fn(),
-        error: null,
-        isLoading: false
+        getStats: vi.fn()
       };
 
       mockUseLocalDocuments.mockReturnValue(consistentState);
@@ -638,9 +663,9 @@ describe('Local Documents Integration Tests', () => {
       const call1 = useLocalDocuments();
       const call2 = useLocalDocuments();
 
-      expect(call1.folders).toEqual(call2.folders);
-      expect(call1.documents).toEqual(call2.documents);
       expect(call1.indexStats).toEqual(call2.indexStats);
+      expect(call1.lastScanResult).toEqual(call2.lastScanResult);
+      expect(call1.isInitialized).toEqual(call2.isInitialized);
     });
 
     it('validates error state propagation', () => {
@@ -650,8 +675,7 @@ describe('Local Documents Integration Tests', () => {
       mockUseLocalDocuments.mockReturnValue({
         isSupported: true,
         isInitialized: false,
-        folders: [],
-        documents: [],
+        isScanning: false,
         indexStats: {
           totalDocuments: 0,
           totalFolders: 0,
@@ -659,22 +683,27 @@ describe('Local Documents Integration Tests', () => {
           indexSizeBytes: 0,
           documentsNeedingUpdate: 0
         },
-        addFolder: vi.fn(),
-        removeFolder: vi.fn(),
-        scanFolder: vi.fn(),
-        scanAllFolders: vi.fn(),
+        lastScanResult: {
+          foldersScanned: 0,
+          documentsProcessed: 0,
+          documentsUpdated: 0,
+          errors: ['Database connection failed']
+        },
+        initialize: vi.fn(),
+        requestFolderAccess: vi.fn(),
+        searchLocal: vi.fn(),
+        refreshIndex: vi.fn(),
         getDocumentContent: vi.fn(),
-        error: 'Database connection failed',
-        isLoading: false
+        getStats: vi.fn()
       });
 
       const localDocsHook = useLocalDocuments();
 
       // Error should be properly communicated
-      expect(localDocsHook.error).toBe('Database connection failed');
+      expect(localDocsHook.lastScanResult?.errors).toContain('Database connection failed');
       expect(localDocsHook.isInitialized).toBe(false);
-      expect(localDocsHook.folders).toEqual([]);
-      expect(localDocsHook.documents).toEqual([]);
+      expect(localDocsHook.indexStats?.totalFolders).toBe(0);
+      expect(localDocsHook.indexStats?.totalDocuments).toBe(0);
     });
   });
 });

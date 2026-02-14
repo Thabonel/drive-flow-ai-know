@@ -16,6 +16,9 @@ export interface LocalDocumentIndex {
   };
 }
 
+// Export alias for backward compatibility
+export type LocalDocument = LocalDocumentIndex;
+
 export interface FolderPermission {
   id: string;           // unique identifier for the permission
   path: string;         // display path

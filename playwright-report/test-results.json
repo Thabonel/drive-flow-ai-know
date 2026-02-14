@@ -138,13 +138,13 @@
   "errors": [
     {
       "message": "Error: Playwright Test did not expect test.describe() to be called here.\nMost common reasons include:\n- You are calling test.describe() in a configuration file.\n- You are calling test.describe() in a file that is imported by the configuration file.\n- You have two different versions of @playwright/test. This usually happens\n  when one of the dependencies in your package.json depends on @playwright/test.",
-      "stack": "Error: Playwright Test did not expect test.describe() to be called here.\nMost common reasons include:\n- You are calling test.describe() in a configuration file.\n- You are calling test.describe() in a file that is imported by the configuration file.\n- You have two different versions of @playwright/test. This usually happens\n  when one of the dependencies in your package.json depends on @playwright/test.\n    at TestTypeImpl._currentSuite (/Users/thabonel/Code/aiqueryhub/node_modules/@playwright/test/node_modules/playwright/lib/common/testType.js:75:13)\n    at TestTypeImpl._describe (/Users/thabonel/Code/aiqueryhub/node_modules/@playwright/test/node_modules/playwright/lib/common/testType.js:115:24)\n    at Function.describe (/Users/thabonel/Code/aiqueryhub/node_modules/@playwright/test/node_modules/playwright/lib/transform/transform.js:275:12)\n    at /Users/thabonel/Code/aiqueryhub/src/tests/e2e/screenshot-capture.e2e.test.ts:4:6",
+      "stack": "Error: Playwright Test did not expect test.describe() to be called here.\nMost common reasons include:\n- You are calling test.describe() in a configuration file.\n- You are calling test.describe() in a file that is imported by the configuration file.\n- You have two different versions of @playwright/test. This usually happens\n  when one of the dependencies in your package.json depends on @playwright/test.\n    at TestTypeImpl._currentSuite (/Users/thabonel/Code/aiqueryhub/node_modules/@playwright/test/node_modules/playwright/lib/common/testType.js:75:13)\n    at TestTypeImpl._describe (/Users/thabonel/Code/aiqueryhub/node_modules/@playwright/test/node_modules/playwright/lib/common/testType.js:115:24)\n    at Function.describe (/Users/thabonel/Code/aiqueryhub/node_modules/@playwright/test/node_modules/playwright/lib/transform/transform.js:275:12)\n    at /Users/thabonel/Code/aiqueryhub/src/tests/e2e/attention-system.e2e.test.ts:73:6",
       "location": {
-        "file": "/Users/thabonel/Code/aiqueryhub/src/tests/e2e/screenshot-capture.e2e.test.ts",
+        "file": "/Users/thabonel/Code/aiqueryhub/src/tests/e2e/attention-system.e2e.test.ts",
         "column": 6,
-        "line": 4
+        "line": 73
       },
-      "snippet": "\u001b[90m   at \u001b[39mscreenshot-capture.e2e.test.ts:4\n\n  2 |\n  3 | // Professional screenshot capture for QA evidence\n> 4 | test.describe('Professional QA Screenshot Capture', () => {\n    |      ^\n  5 |   test.beforeEach(async ({ page }) => {\n  6 |     // Mock authentication and data\n  7 |     await page.route('**/rest/v1/**', async (route) => {"
+      "snippet": "\u001b[90m   at \u001b[39mattention-system.e2e.test.ts:73\n\n  71 | }\n  72 |\n> 73 | test.describe('3-2-1 Attention System E2E Tests', () => {\n     |      ^\n  74 |   test.beforeEach(async ({ page }) => {\n  75 |     await setupMockData(page);\n  76 |     await loginUser(page);"
     },
     {
       "message": "Error: No tests found.\nMake sure that arguments are regular expressions matching test files.\nYou may need to escape symbols like \"$\" or \"*\" and quote the arguments.",
@@ -152,8 +152,8 @@
     }
   ],
   "stats": {
-    "startTime": "2026-02-01T11:50:55.586Z",
-    "duration": 108.47399999999993,
+    "startTime": "2026-02-14T10:25:05.235Z",
+    "duration": 193.85900000000004,
     "expected": 0,
     "skipped": 0,
     "unexpected": 0,
