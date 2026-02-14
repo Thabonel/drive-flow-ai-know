@@ -25,9 +25,9 @@ export interface FolderPermission {
 
 export interface LocalDocumentSearchResult {
   document: LocalDocumentIndex;
-  relevanceScore: number;
-  matchedKeywords: string[];
-  summaryExcerpt: string;
+  relevance: number;
+  excerpt: string;
+  matchedFields: string[];
 }
 
 export interface LocalIndexStats {
