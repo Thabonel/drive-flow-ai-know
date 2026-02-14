@@ -24,13 +24,15 @@ describe('LocalDocument Types', () => {
   });
 
   test('FolderPermission has required fields', () => {
-    const mockHandle = {} as FileSystemDirectoryHandle;
     const permission: FolderPermission = {
-      handle: mockHandle,
+      id: 'test-id',
       path: '/Documents',
-      lastScanned: Date.now(),
-      enabled: true
+      enabled: true,
+      grantedAt: new Date().toISOString(),
+      lastAccessed: new Date().toISOString()
     };
     expect(permission.enabled).toBe(true);
+    expect(permission.id).toBe('test-id');
+    expect(permission.path).toBe('/Documents');
   });
 });
