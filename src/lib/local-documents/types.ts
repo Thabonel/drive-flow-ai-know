@@ -17,10 +17,11 @@ export interface LocalDocumentIndex {
 }
 
 export interface FolderPermission {
-  handle: FileSystemDirectoryHandle; // persistent browser permission
-  path: string;                      // display path
-  lastScanned: number;              // timestamp
-  enabled: boolean;                 // user can disable
+  id: string;           // unique identifier for the permission
+  path: string;         // display path
+  enabled: boolean;     // user can disable
+  grantedAt: string;    // ISO timestamp when permission was granted
+  lastAccessed: string; // ISO timestamp of last folder access
 }
 
 export interface LocalDocumentSearchResult {
