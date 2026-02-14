@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
-import { renderHook, waitFor } from '@testing-library/react';
+import { renderHook, waitFor, act } from '@testing-library/react';
 import type { LocalDocumentSearchResult } from '../../lib/local-documents/types';
 
 // Mock functions
@@ -20,7 +20,8 @@ vi.mock('../../integrations/supabase/client', () => ({
   supabase: {
     from: vi.fn(() => ({
       select: vi.fn(() => ({
-        or: mockSupabaseSelect
+        or: mockSupabaseSelect,
+        ilike: mockSupabaseSelect
       }))
     }))
   },
@@ -73,7 +74,10 @@ describe('useHybridQuery', () => {
 
       const { result } = renderHook(() => useHybridQuery());
 
-      const searchResult = await result.current.search('test query');
+      let searchResult;
+      await act(async () => {
+        searchResult = await result.current.search('test query');
+      });
 
       expect(searchResult).toEqual({
         local: localResults,
@@ -89,7 +93,9 @@ describe('useHybridQuery', () => {
     it('handles search options correctly', async () => {
       const { result } = renderHook(() => useHybridQuery());
 
-      await result.current.search('test query', { maxResults: 5 });
+      await act(async () => {
+        await result.current.search('test query', { maxResults: 5 });
+      });
 
       // Verify the search was called with proper parameters
       expect(mockSearchLocal).toHaveBeenCalledWith('test query');
@@ -98,7 +104,10 @@ describe('useHybridQuery', () => {
     it('returns performance timing', async () => {
       const { result } = renderHook(() => useHybridQuery());
 
-      const searchResult = await result.current.search('test query');
+      let searchResult;
+      await act(async () => {
+        searchResult = await result.current.search('test query');
+      });
 
       expect(searchResult.searchTime).toBeGreaterThanOrEqual(0);
       expect(typeof searchResult.searchTime).toBe('number');
@@ -110,7 +119,10 @@ describe('useHybridQuery', () => {
 
       const { result } = renderHook(() => useHybridQuery());
 
-      const searchResult = await result.current.search('test query');
+      let searchResult;
+      await act(async () => {
+        searchResult = await result.current.search('test query');
+      });
 
       expect(searchResult).toEqual({
         local: [],
@@ -145,7 +157,10 @@ describe('useHybridQuery', () => {
 
       const { result } = renderHook(() => useHybridQuery());
 
-      const searchResult = await result.current.searchLocalOnly('test query');
+      let searchResult;
+      await act(async () => {
+        searchResult = await result.current.searchLocalOnly('test query');
+      });
 
       expect(searchResult).toEqual({
         local: localResults,
@@ -172,7 +187,10 @@ describe('useHybridQuery', () => {
 
       const { result } = renderHook(() => useHybridQuery());
 
-      const searchResult = await result.current.searchCloudOnly('test query');
+      let searchResult;
+      await act(async () => {
+        searchResult = await result.current.searchCloudOnly('test query');
+      });
 
       expect(searchResult).toEqual({
         local: [],
@@ -193,7 +211,10 @@ describe('useHybridQuery', () => {
 
       const { result } = renderHook(() => useHybridQuery());
 
-      const searchResult = await result.current.search('test query');
+      let searchResult;
+      await act(async () => {
+        searchResult = await result.current.search('test query');
+      });
 
       expect(searchResult).toEqual({
         local: [],
@@ -215,7 +236,10 @@ describe('useHybridQuery', () => {
 
       const { result } = renderHook(() => useHybridQuery());
 
-      const searchResult = await result.current.search('test query');
+      let searchResult;
+      await act(async () => {
+        searchResult = await result.current.search('test query');
+      });
 
       expect(searchResult).toEqual({
         local: [],
@@ -237,7 +261,10 @@ describe('useHybridQuery', () => {
 
       const { result } = renderHook(() => useHybridQuery());
 
-      const searchResult = await result.current.search('test query');
+      let searchResult;
+      await act(async () => {
+        searchResult = await result.current.search('test query');
+      });
 
       expect(searchResult).toEqual({
         local: [],
@@ -256,7 +283,9 @@ describe('useHybridQuery', () => {
     it('respects localOnly option', async () => {
       const { result } = renderHook(() => useHybridQuery());
 
-      await result.current.search('test query', { localOnly: true });
+      await act(async () => {
+        await result.current.search('test query', { localOnly: true });
+      });
 
       expect(mockSearchLocal).toHaveBeenCalledWith('test query');
       expect(mockSupabaseSelect).not.toHaveBeenCalled();
@@ -265,7 +294,9 @@ describe('useHybridQuery', () => {
     it('respects cloudOnly option', async () => {
       const { result } = renderHook(() => useHybridQuery());
 
-      await result.current.search('test query', { cloudOnly: true });
+      await act(async () => {
+        await result.current.search('test query', { cloudOnly: true });
+      });
 
       expect(mockSearchLocal).not.toHaveBeenCalled();
       expect(mockSupabaseSelect).toHaveBeenCalled();
@@ -302,7 +333,10 @@ describe('useHybridQuery', () => {
 
       const { result } = renderHook(() => useHybridQuery());
 
-      const searchResult = await result.current.search('test query', { maxResults: 6 });
+      let searchResult;
+      await act(async () => {
+        searchResult = await result.current.search('test query', { maxResults: 6 });
+      });
 
       expect(searchResult.totalResults).toBeLessThanOrEqual(6);
     });
@@ -321,7 +355,10 @@ describe('useHybridQuery', () => {
 
       const { result } = renderHook(() => useHybridQuery());
 
-      const searchPromise = result.current.search('test query');
+      let searchPromise;
+      act(() => {
+        searchPromise = result.current.search('test query');
+      });
 
       // Should be loading initially
       await waitFor(() => {
@@ -330,7 +367,9 @@ describe('useHybridQuery', () => {
 
       // Resolve the local search
       resolveLocal([]);
-      await searchPromise;
+      await act(async () => {
+        await searchPromise;
+      });
 
       // Should not be loading after completion
       await waitFor(() => {

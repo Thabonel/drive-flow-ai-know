@@ -25,6 +25,7 @@ import { AgentModeToggle } from "@/components/settings/AgentModeToggle";
 import { MemoryManager } from "@/components/settings/MemoryManager";
 import { MFASettings } from "@/components/settings/MFASettings";
 import { MessagingIntegrations } from "@/components/settings/MessagingIntegrations";
+import { LocalIndexingSettings } from "@/components/settings/LocalIndexingSettings";
 import {
   User,
   Bell,
@@ -411,6 +412,9 @@ const Settings = () => {
                     </div>
                   </CardContent>
                 </Card>
+
+                {/* Local Document Indexing */}
+                <LocalIndexingSettings />
 
                 {/* Multi-Factor Authentication */}
                 <div className="space-y-4">

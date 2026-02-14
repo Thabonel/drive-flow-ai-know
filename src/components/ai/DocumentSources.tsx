@@ -35,14 +35,14 @@ interface UnifiedDocument {
 }
 
 interface DocumentSourcesProps {
-  onDocumentsAdded?: (documents: UnifiedDocument[]) => void;
+  onDocumentsAdded?: (documents: any[]) => void;
 }
 
 // Constants for source types and tab IDs
 const DOCUMENT_SOURCES = {
   UPLOAD: 'upload',
   LOCAL: 'local',
-  GOOGLE: 'google',
+  GOOGLE: 'google_drive', // Fixed to match UnifiedDocument interface
   CLOUD: 'cloud'
 } as const;
 
@@ -58,7 +58,7 @@ const convertGoogleDriveItems = (items: SelectedDriveItem[]): UnifiedDocument[] 
 
     return {
       id: item.folder_id,
-      source: DOCUMENT_SOURCES.GOOGLE as const,
+      source: 'google_drive',
       title: item.folder_name,
       type: item.isFolder ? 'folder' : 'file',
       mimeType: item.mimeType,
@@ -71,7 +71,32 @@ const convertGoogleDriveItems = (items: SelectedDriveItem[]): UnifiedDocument[] 
 };
 
 export const DocumentSources = ({ onDocumentsAdded }: DocumentSourcesProps) => {
-  const [activeTab, setActiveTab] = useState(DOCUMENT_SOURCES.UPLOAD);
+  const [activeTab, setActiveTab] = useState<string>(DOCUMENT_SOURCES.UPLOAD);
+
+  // Adapter function to convert File[] to UnifiedDocument[] for upload callback
+  const handleFilesAdded = (files: File[]) => {
+    if (!onDocumentsAdded) return;
+
+    const unifiedDocuments = files.map(file => ({
+      source: 'upload',
+      title: file.name.replace(/\.[^/.]+$/, ""), // Remove file extension
+      type: 'file',
+      mimeType: file.type,
+      file
+    }));
+
+    onDocumentsAdded(unifiedDocuments);
+  };
+
+  // Adapter function for cloud storage connections
+  const handleCloudConnection = (connection: any) => {
+    if (!onDocumentsAdded || !connection) return;
+
+    // For now, cloud storage connections don't produce documents directly
+    // This is handled by the CloudStorageConnector internally
+    // We'll just log the connection for debugging
+    console.log('Cloud storage connection established:', connection);
+  };
 
   const sources = useMemo(() => [
     {
@@ -154,7 +179,7 @@ export const DocumentSources = ({ onDocumentsAdded }: DocumentSourcesProps) => {
           </div>
 
           <TabsContent value={DOCUMENT_SOURCES.UPLOAD} className="space-y-4">
-            <DragDropUpload onFilesAdded={onDocumentsAdded} />
+            <DragDropUpload onFilesAdded={handleFilesAdded} />
           </TabsContent>
 
           <TabsContent value={DOCUMENT_SOURCES.LOCAL} className="space-y-4">
@@ -191,7 +216,7 @@ export const DocumentSources = ({ onDocumentsAdded }: DocumentSourcesProps) => {
           </TabsContent>
 
           <TabsContent value={DOCUMENT_SOURCES.CLOUD} className="space-y-4">
-            <CloudStorageConnector onConnectionEstablished={onDocumentsAdded} />
+            <CloudStorageConnector onConnectionEstablished={handleCloudConnection} />
           </TabsContent>
         </Tabs>
       </CardContent>

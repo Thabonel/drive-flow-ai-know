@@ -60,9 +60,10 @@ export class DocumentProcessor {
     });
 
     // Handle multi-word phrases like "artificial intelligence"
-    const phrases = content.toLowerCase().match(/\b\w+\s+\w+\b/g) || [];
+    const phraseMatches = content.toLowerCase().match(/\b\w+\s+\w+\b/g);
+    const phrases: string[] = phraseMatches || [];
     phrases.forEach(phrase => {
-      if (phrase.length > 6) { // Only consider longer phrases
+      if (phrase && phrase.length > 6) { // Only consider longer phrases
         wordFreq[phrase] = (wordFreq[phrase] || 0) + 1;
       }
     });
