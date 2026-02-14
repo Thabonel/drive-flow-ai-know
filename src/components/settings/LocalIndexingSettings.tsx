@@ -79,8 +79,6 @@ export const LocalIndexingSettings = () => {
           description: 'You can now add folders to index your local documents.',
         });
       } else {
-        // For now, just disable the UI state
-        // In the future, this could clean up the index
         setLocalIndexingEnabled(false);
         toast({
           title: 'Local Indexing Disabled',

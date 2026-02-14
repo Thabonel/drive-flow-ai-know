@@ -3,7 +3,6 @@ import { LocalDocumentIndexer, type ScanResult, type FolderAccessResult } from '
 import type { LocalIndexStats, LocalDocumentSearchResult } from '../lib/local-documents/types';
 
 export interface UseLocalDocumentsReturn {
-  // State
   isSupported: boolean;
   isInitialized: boolean;
   isScanning: boolean;
@@ -19,25 +18,16 @@ export interface UseLocalDocumentsReturn {
   getStats: () => LocalIndexStats;
 }
 
-/**
- * React hook for managing local document indexing and search functionality.
- * Provides state management and operations for the File System Access API-based
- * local document indexing system.
- */
 export function useLocalDocuments(): UseLocalDocumentsReturn {
-  // Feature detection - check if File System Access API is supported
   const isSupported = typeof window !== 'undefined' && 'showDirectoryPicker' in window;
 
-  // State
   const [isInitialized, setIsInitialized] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
   const [indexStats, setIndexStats] = useState<LocalIndexStats | null>(null);
   const [lastScanResult, setLastScanResult] = useState<ScanResult | null>(null);
 
-  // Refs
   const indexerRef = useRef<LocalDocumentIndexer | null>(null);
 
-  // Initialize the indexer
   const initialize = useCallback(async (): Promise<void> => {
     if (!isSupported || isInitialized) {
       return;
@@ -51,7 +41,6 @@ export function useLocalDocuments(): UseLocalDocumentsReturn {
       await indexerRef.current.initialize();
       setIsInitialized(true);
 
-      // Update initial stats
       const stats = await indexerRef.current.getIndexStats();
       setIndexStats(stats);
     } catch (error) {
@@ -59,7 +48,6 @@ export function useLocalDocuments(): UseLocalDocumentsReturn {
     }
   }, [isSupported, isInitialized]);
 
-  // Request folder access permission
   const requestFolderAccess = useCallback(async (): Promise<FolderAccessResult | undefined> => {
     if (!isSupported || !indexerRef.current) {
       return;
@@ -69,7 +57,6 @@ export function useLocalDocuments(): UseLocalDocumentsReturn {
       const result = await indexerRef.current.requestFolderAccess();
       setLastScanResult(result.scanResult);
 
-      // Update stats after folder access
       const stats = await indexerRef.current.getIndexStats();
       setIndexStats(stats);
 
@@ -80,7 +67,6 @@ export function useLocalDocuments(): UseLocalDocumentsReturn {
     }
   }, [isSupported]);
 
-  // Search local documents
   const searchLocal = useCallback(async (query: string): Promise<LocalDocumentSearchResult[]> => {
     if (!isSupported || !indexerRef.current || !query.trim()) {
       return [];
@@ -94,7 +80,6 @@ export function useLocalDocuments(): UseLocalDocumentsReturn {
     }
   }, [isSupported]);
 
-  // Refresh the document index
   const refreshIndex = useCallback(async (): Promise<ScanResult> => {
     if (!isSupported || !indexerRef.current) {
       const emptyScanResult: ScanResult = {
@@ -112,7 +97,6 @@ export function useLocalDocuments(): UseLocalDocumentsReturn {
       const result = await indexerRef.current.scanAllFolders();
       setLastScanResult(result);
 
-      // Update stats after scan
       const stats = await indexerRef.current.getIndexStats();
       setIndexStats(stats);
 
@@ -132,7 +116,6 @@ export function useLocalDocuments(): UseLocalDocumentsReturn {
     }
   }, [isSupported]);
 
-  // Get document content by ID
   const getDocumentContent = useCallback(async (docId: string): Promise<string | null> => {
     if (!isSupported || !indexerRef.current) {
       return null;
@@ -146,9 +129,7 @@ export function useLocalDocuments(): UseLocalDocumentsReturn {
     }
   }, [isSupported]);
 
-  // Get current index statistics
   const getStats = useCallback((): LocalIndexStats => {
-    // Return current stats or default empty stats
     return indexStats || {
       totalDocuments: 0,
       totalFolders: 0,
@@ -158,7 +139,6 @@ export function useLocalDocuments(): UseLocalDocumentsReturn {
     };
   }, [indexStats]);
 
-  // Cleanup on unmount
   useEffect(() => {
     return () => {
       if (indexerRef.current) {
@@ -169,14 +149,12 @@ export function useLocalDocuments(): UseLocalDocumentsReturn {
   }, []);
 
   return {
-    // State
-    isSupported,
+      isSupported,
     isInitialized,
     isScanning,
     indexStats,
     lastScanResult,
 
-    // Methods
     initialize,
     requestFolderAccess,
     searchLocal,

@@ -30,7 +30,6 @@ export const LocalDocumentIndexer: React.FC = () => {
       await requestFolderAccess();
     } catch (error) {
       console.error('Failed to request folder access:', error);
-      // TODO: Show toast notification
     }
   };
 
@@ -39,7 +38,6 @@ export const LocalDocumentIndexer: React.FC = () => {
       await refreshIndex();
     } catch (error) {
       console.error('Failed to refresh index:', error);
-      // TODO: Show toast notification
     }
   };
 

@@ -5,9 +5,7 @@ export class LocalDocumentStore {
   private dbVersion = 1;
   private db: IDBDatabase | null = null;
 
-  constructor() {
-    // Note: Database is initialized lazily via init() method
-  }
+  constructor() {}
 
   public async init(): Promise<void> {
     await this.initDB();
@@ -22,7 +20,7 @@ export class LocalDocumentStore {
       const request = indexedDB.open(this.dbName, this.dbVersion);
 
       request.onerror = () => {
-        reject(new Error(`Failed to open database: ${request.error?.message}`));
+        reject(new Error(`Failed to open database: ${request.error?.message || 'Unknown database error'}`));
       };
 
       request.onsuccess = () => {
@@ -33,17 +31,14 @@ export class LocalDocumentStore {
       request.onupgradeneeded = (event) => {
         const db = (event.target as IDBOpenDBRequest).result;
 
-        // Create documents object store
         if (!db.objectStoreNames.contains('documents')) {
           const documentsStore = db.createObjectStore('documents', { keyPath: 'id' });
 
-          // Create indexes
           documentsStore.createIndex('filePath', 'filePath', { unique: true });
           documentsStore.createIndex('lastModified', 'lastModified', { unique: false });
           documentsStore.createIndex('keywords', 'keywords', { multiEntry: true });
         }
 
-        // Create permissions object store
         if (!db.objectStoreNames.contains('permissions')) {
           db.createObjectStore('permissions', { keyPath: 'path' });
         }
@@ -61,7 +56,7 @@ export class LocalDocumentStore {
       const request = store.put(document);
 
       request.onerror = () => {
-        reject(new Error(`Failed to add document: ${request.error?.message}`));
+        reject(new Error(`Failed to add document: ${request.error?.message || 'Unknown error'}`));
       };
 
       request.onsuccess = () => {
@@ -80,7 +75,7 @@ export class LocalDocumentStore {
       const request = store.get(id);
 
       request.onerror = () => {
-        reject(new Error(`Failed to get document: ${request.error?.message}`));
+        reject(new Error(`Failed to get document: ${request.error?.message || 'Unknown error'}`));
       };
 
       request.onsuccess = () => {
@@ -99,7 +94,7 @@ export class LocalDocumentStore {
       const request = store.delete(id);
 
       request.onerror = () => {
-        reject(new Error(`Failed to delete document: ${request.error?.message}`));
+        reject(new Error(`Failed to delete document: ${request.error?.message || 'Unknown error'}`));
       };
 
       request.onsuccess = () => {
@@ -118,7 +113,7 @@ export class LocalDocumentStore {
       const request = store.getAll();
 
       request.onerror = () => {
-        reject(new Error(`Failed to get all documents: ${request.error?.message}`));
+        reject(new Error(`Failed to get all documents: ${request.error?.message || 'Unknown error'}`));
       };
 
       request.onsuccess = () => {
@@ -151,7 +146,6 @@ export class LocalDocumentStore {
       }
     }
 
-    // Sort by relevance score descending
     return results.sort((a, b) => b.relevance - a.relevance);
   }
 
@@ -177,7 +171,7 @@ export class LocalDocumentStore {
       const request = store.clear();
 
       request.onerror = () => {
-        reject(new Error(`Failed to clear documents: ${request.error?.message}`));
+        reject(new Error(`Failed to clear documents: ${request.error?.message || 'Unknown error'}`));
       };
 
       request.onsuccess = () => {
@@ -189,19 +183,16 @@ export class LocalDocumentStore {
   private calculateRelevance(document: LocalDocumentIndex, queryLower: string): number {
     let score = 0;
 
-    // Title match (10 points)
     if (document.title.toLowerCase().includes(queryLower)) {
       score += 10;
     }
 
-    // Keyword matches (5 points each)
     for (const keyword of document.keywords) {
       if (keyword.toLowerCase().includes(queryLower)) {
         score += 5;
       }
     }
 
-    // Summary matches (1 point for each occurrence)
     const summaryLower = document.summary.toLowerCase();
     const matches = summaryLower.split(queryLower).length - 1;
     score += matches;
@@ -215,11 +206,8 @@ export class LocalDocumentStore {
     const queryIndex = textLower.indexOf(queryLower);
 
     if (queryIndex === -1) {
-      // Return first 200 characters if no direct match
       return text.length > 200 ? text.substring(0, 200) + '...' : text;
     }
-
-    // Extract context around the match
     const contextWords = 15;
     const words = text.split(' ');
     const queryWordIndex = textLower.substring(0, queryIndex).split(' ').length - 1;

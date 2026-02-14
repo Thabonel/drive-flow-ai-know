@@ -64,8 +64,7 @@ const mockLocalDocuments: LocalDocument[] = [
     fileSize: 1024,
     mimeType: 'text/plain',
     metadata: {
-      author: 'Test User',
-      tags: ['work', 'planning']
+      author: 'Test User'
     }
   },
   {
@@ -79,8 +78,7 @@ const mockLocalDocuments: LocalDocument[] = [
     fileSize: 2048,
     mimeType: 'application/pdf',
     metadata: {
-      author: 'Finance Team',
-      tags: ['finance', 'reporting']
+      author: 'Finance Team'
     }
   }
 ];
@@ -591,7 +589,16 @@ describe('Local Documents Integration Tests', () => {
       mockUseHybridQuery.mockReturnValue({
         search: vi.fn(async () => ({
           local: mockSearchResults,
-          cloud: [{ id: 'cloud-1', title: 'Cloud Document', content: 'Cloud content' }],
+          cloud: [{
+            id: 'cloud-1',
+            user_id: 'test-user-id',
+            google_file_id: 'test-google-id',
+            title: 'Cloud Document',
+            content: 'Cloud content',
+            file_type: 'text/plain',
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          }],
           totalResults: 3,
           searchTime: 200
         })),
@@ -603,7 +610,16 @@ describe('Local Documents Integration Tests', () => {
         })),
         searchCloudOnly: vi.fn(async () => ({
           local: [],
-          cloud: [{ id: 'cloud-1', title: 'Cloud Document', content: 'Cloud content' }],
+          cloud: [{
+            id: 'cloud-1',
+            user_id: 'test-user-id',
+            google_file_id: 'test-google-id',
+            title: 'Cloud Document',
+            content: 'Cloud content',
+            file_type: 'text/plain',
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          }],
           totalResults: 1,
           searchTime: 100
         })),

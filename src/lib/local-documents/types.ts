@@ -1,13 +1,13 @@
 export interface LocalDocumentIndex {
-  id: string;              // file path hash
-  filePath: string;        // absolute file path
-  title: string;          // extracted or filename
-  summary: string;        // AI-generated summary (200-500 words)
-  keywords: string[];     // extracted key terms
-  lastModified: number;   // file system timestamp
-  lastIndexed: number;    // when we last processed it
-  fileSize: number;       // for change detection
-  mimeType: string;       // document type
+  id: string;
+  filePath: string;
+  title: string;
+  summary: string;
+  keywords: string[];
+  lastModified: number;
+  lastIndexed: number;
+  fileSize: number;
+  mimeType: string;
   metadata: {
     author?: string;
     created?: string;
@@ -20,11 +20,11 @@ export interface LocalDocumentIndex {
 export type LocalDocument = LocalDocumentIndex;
 
 export interface FolderPermission {
-  id: string;           // unique identifier for the permission
-  path: string;         // display path
-  enabled: boolean;     // user can disable
-  grantedAt: string;    // ISO timestamp when permission was granted
-  lastAccessed: string; // ISO timestamp of last folder access
+  id: string;
+  path: string;
+  enabled: boolean;
+  grantedAt: string;
+  lastAccessed: string;
 }
 
 export interface LocalDocumentSearchResult {
@@ -40,4 +40,29 @@ export interface LocalIndexStats {
   lastFullScan: number;
   indexSizeBytes: number;
   documentsNeedingUpdate: number;
+}
+
+export interface CloudDocument {
+  id: string;
+  user_id: string;
+  google_file_id: string;
+  title: string;
+  content: string;
+  file_type: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface HybridSearchResults {
+  local: LocalDocumentSearchResult[];
+  cloud: CloudDocument[];
+  totalResults: number;
+  searchTime: number;
+}
+
+export interface ScanResult {
+  foldersScanned: number;
+  documentsProcessed: number;
+  documentsUpdated: number;
+  errors: string[];
 }
