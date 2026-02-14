@@ -6,8 +6,11 @@ export class LocalDocumentStore {
   private db: IDBDatabase | null = null;
 
   constructor() {
-    // Initialize database connection
-    this.initDB();
+    // Note: Database is initialized lazily via init() method
+  }
+
+  public async init(): Promise<void> {
+    await this.initDB();
   }
 
   private async initDB(): Promise<IDBDatabase> {
@@ -152,19 +155,15 @@ export class LocalDocumentStore {
     return results.sort((a, b) => b.relevance - a.relevance);
   }
 
-  async getStats(): Promise<{ totalDocuments: number; totalSize: number; lastUpdated: number | null }> {
+  async getStats(): Promise<{ totalDocuments: number; indexSizeBytes: number }> {
     const documents = await this.getAllDocuments();
 
     const totalDocuments = documents.length;
-    const totalSize = documents.reduce((sum, doc) => sum + doc.fileSize, 0);
-    const lastUpdated = documents.length > 0
-      ? Math.max(...documents.map(doc => doc.lastIndexed))
-      : null;
+    const indexSizeBytes = documents.reduce((sum, doc) => sum + doc.fileSize, 0);
 
     return {
       totalDocuments,
-      totalSize,
-      lastUpdated
+      indexSizeBytes
     };
   }
 
