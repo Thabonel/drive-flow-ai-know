@@ -6,13 +6,32 @@ import type { LocalDocumentSearchResult } from '../lib/local-documents/types';
 // Cloud document type based on knowledge_documents table schema
 export interface CloudDocument {
   id: string;
+  user_id: string;
+  folder_id?: string;
+  google_file_id: string;
   title: string;
-  content: string;
-  ai_summary?: string;
-  metadata?: any;
+  content?: string;
+  file_type: string;
+  file_size?: number;
+  mime_type?: string;
+  drive_created_at?: string;
+  drive_modified_at?: string;
+  is_archived?: boolean;
+  is_outdated?: boolean;
+  is_pinned?: boolean;
+  category?: string;
   tags?: string[];
-  created_at?: string;
-  updated_at?: string;
+  ai_summary?: string;
+  ai_insights?: any; // JSONB field for AI-generated insights
+  file_url?: string;
+  storage_path?: string;
+  original_file_size?: number;
+  microsoft_file_id?: string;
+  team_id?: string;
+  visibility?: string;
+  current_version?: number;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface HybridSearchOptions {
@@ -82,18 +101,45 @@ export function useHybridQuery(): UseHybridQueryReturn {
     }
 
     try {
-      // Simple text search in title, content, and ai_summary
-      // Note: This is a basic implementation. For production, you'd want more sophisticated search
-      const { data, error } = await supabase
-        .from('knowledge_documents')
-        .select('*')
-        .or(`title.ilike.%${query}%,content.ilike.%${query}%,ai_summary.ilike.%${query}%`);
+      // Safe text search using Supabase's built-in textSearch or multiple queries
+      // Since Supabase doesn't support OR with parameterized ilike in a single call,
+      // we'll use multiple queries and merge results (with deduplication)
+      const searchPattern = `%${query}%`;
 
-      if (error) {
-        return { results: [], error: error.message };
+      // Execute parallel searches for title, content, and ai_summary
+      const [titleResults, contentResults, summaryResults] = await Promise.all([
+        supabase
+          .from('knowledge_documents')
+          .select('*')
+          .ilike('title', searchPattern),
+        supabase
+          .from('knowledge_documents')
+          .select('*')
+          .ilike('content', searchPattern),
+        supabase
+          .from('knowledge_documents')
+          .select('*')
+          .ilike('ai_summary', searchPattern)
+      ]);
+
+      // Check for errors in any of the queries
+      const errors = [titleResults.error, contentResults.error, summaryResults.error].filter(Boolean);
+      if (errors.length > 0) {
+        return { results: [], error: errors[0]?.message || 'Search error' };
       }
 
-      return { results: data || [] };
+      // Merge and deduplicate results by id
+      const allResults = [
+        ...(titleResults.data || []),
+        ...(contentResults.data || []),
+        ...(summaryResults.data || [])
+      ];
+
+      const uniqueResults = Array.from(
+        new Map(allResults.map(doc => [doc.id, doc])).values()
+      );
+
+      return { results: uniqueResults };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown cloud search error';
       return { results: [], error: errorMessage };

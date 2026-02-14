@@ -9,20 +9,20 @@
  *
  * ENVIRONMENT VARIABLE OVERRIDES:
  * Set these in Supabase dashboard to override defaults without code changes:
- * - CLAUDE_PRIMARY_MODEL: Main model for complex tasks (default: claude-sonnet-4-5)
+ * - CLAUDE_PRIMARY_MODEL: Main model for complex tasks (default: claude-opus-4-6)
  * - CLAUDE_FAST_MODEL: Fast model for quick responses (default: claude-sonnet-4-5)
  * - CLAUDE_CHEAP_MODEL: Cost-effective model (default: claude-haiku-4-5)
- * - OPENROUTER_MODEL: OpenRouter fallback model (default: openai/gpt-4o)
- * - OPENAI_MODEL: Direct OpenAI model (default: gpt-4o)
- * - GEMINI_MODEL: Google Gemini model (default: google/gemini-2.5-flash)
+ * - OPENROUTER_MODEL: OpenRouter fallback model (default: openai/gpt-4.1)
+ * - OPENAI_MODEL: Direct OpenAI model (default: gpt-4.1)
+ * - GEMINI_MODEL: Google Gemini model (default: google/gemini-3-flash)
  * - LOCAL_MODEL: Local Ollama model (default: llama3)
  */
 
-// Claude model IDs - using current Anthropic API model IDs (January 2026)
+// Claude model IDs - using current Anthropic API model IDs (February 2026)
 // See: https://docs.anthropic.com/en/docs/about-claude/models
 export const CLAUDE_MODELS = {
-  // Primary: Most capable model for complex reasoning and analysis
-  PRIMARY: Deno.env.get('CLAUDE_PRIMARY_MODEL') || 'claude-sonnet-4-5-20250929',
+  // Primary: Most capable model for complex reasoning and analysis (Opus 4.6 - Feb 2026)
+  PRIMARY: Deno.env.get('CLAUDE_PRIMARY_MODEL') || 'claude-opus-4-6',
 
   // Fast: Good balance of speed and capability
   FAST: Deno.env.get('CLAUDE_FAST_MODEL') || 'claude-sonnet-4-5-20250929',
@@ -33,19 +33,19 @@ export const CLAUDE_MODELS = {
 
 // OpenRouter models (for fallback)
 export const OPENROUTER_MODELS = {
-  PRIMARY: Deno.env.get('OPENROUTER_MODEL') || 'openai/gpt-4o',
+  PRIMARY: Deno.env.get('OPENROUTER_MODEL') || 'openai/gpt-4.1',
   FAST: 'openai/gpt-4o-mini',
 } as const;
 
 // Direct OpenAI models
 export const OPENAI_MODELS = {
-  PRIMARY: Deno.env.get('OPENAI_MODEL') || 'gpt-4o',
+  PRIMARY: Deno.env.get('OPENAI_MODEL') || 'gpt-4.1',
   FAST: 'gpt-4o-mini',
 } as const;
 
 // Google Gemini models (via OpenRouter)
 export const GEMINI_MODELS = {
-  PRIMARY: Deno.env.get('GEMINI_MODEL') || 'google/gemini-2.5-flash',
+  PRIMARY: Deno.env.get('GEMINI_MODEL') || 'google/gemini-3-flash',
 } as const;
 
 // Local models (Ollama)
