@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
@@ -14,17 +14,68 @@ import GoogleDrivePicker from '../GoogleDrivePicker';
 import DragDropUpload from '../DragDropUpload';
 import CloudStorageConnector from '../CloudStorageConnector';
 import { LocalDocumentIndexer } from '@/components/local-documents/LocalDocumentIndexer';
+import { SelectedDriveItem } from '@/types/googleDrive';
 
-interface DocumentSourcesProps {
-  onDocumentsAdded?: (documents: any[]) => void;
+// Unified document interface for consistent callback handling
+interface UnifiedDocument {
+  id?: string;
+  source: 'upload' | 'google_drive' | 'local' | 'cloud';
+  title: string;
+  type: 'file' | 'folder';
+  mimeType?: string;
+  // Google Drive specific fields
+  folder_id?: string;
+  folder_name?: string;
+  folder_path?: string | null;
+  isFolder?: boolean;
+  // Upload specific fields
+  file?: File;
+  // Local document specific fields
+  filePath?: string;
 }
 
-export const DocumentSources = ({ onDocumentsAdded }: DocumentSourcesProps) => {
-  const [activeTab, setActiveTab] = useState('upload');
+interface DocumentSourcesProps {
+  onDocumentsAdded?: (documents: UnifiedDocument[]) => void;
+}
 
-  const sources = [
+// Constants for source types and tab IDs
+const DOCUMENT_SOURCES = {
+  UPLOAD: 'upload',
+  LOCAL: 'local',
+  GOOGLE: 'google',
+  CLOUD: 'cloud'
+} as const;
+
+const GOOGLE_DRIVE_FOLDER_MIME_TYPE = 'application/vnd.google-apps.folder';
+
+// Helper function to convert Google Drive items to unified document format
+const convertGoogleDriveItems = (items: SelectedDriveItem[]): UnifiedDocument[] => {
+  return items.map((item) => {
+    if (!item.folder_id || !item.folder_name) {
+      console.warn('Invalid Google Drive item:', item);
+      throw new Error('Google Drive item missing required fields');
+    }
+
+    return {
+      id: item.folder_id,
+      source: DOCUMENT_SOURCES.GOOGLE as const,
+      title: item.folder_name,
+      type: item.isFolder ? 'folder' : 'file',
+      mimeType: item.mimeType,
+      folder_id: item.folder_id,
+      folder_name: item.folder_name,
+      folder_path: item.folder_path,
+      isFolder: item.isFolder
+    };
+  });
+};
+
+export const DocumentSources = ({ onDocumentsAdded }: DocumentSourcesProps) => {
+  const [activeTab, setActiveTab] = useState(DOCUMENT_SOURCES.UPLOAD);
+
+  const sources = useMemo(() => [
     {
-      id: 'upload',
+      id: DOCUMENT_SOURCES.UPLOAD,
       title: 'Upload Files',
       description: 'Drag & drop or browse files from your device',
       icon: Upload,
@@ -32,7 +83,7 @@ export const DocumentSources = ({ onDocumentsAdded }: DocumentSourcesProps) => {
       badgeVariant: 'default' as const
     },
     {
-      id: 'local',
+      id: DOCUMENT_SOURCES.LOCAL,
       title: 'Local Indexing',
       description: 'Index documents from your local file system',
       icon: HardDrive,
@@ -40,7 +91,7 @@ export const DocumentSources = ({ onDocumentsAdded }: DocumentSourcesProps) => {
       badgeVariant: 'secondary' as const
     },
     {
-      id: 'google',
+      id: DOCUMENT_SOURCES.GOOGLE,
       title: 'Google Drive',
       description: 'Sync with your Google Drive folders',
       icon: Cloud,
@@ -48,14 +99,14 @@ export const DocumentSources = ({ onDocumentsAdded }: DocumentSourcesProps) => {
       badgeVariant: 'default' as const
     },
     {
-      id: 'cloud',
+      id: DOCUMENT_SOURCES.CLOUD,
       title: 'Cloud Storage',
       description: 'Connect iCloud, Dropbox, OneDrive & more',
       icon: Wifi,
       badge: 'Coming Soon',
       badgeVariant: 'outline' as const
     }
-  ];
+  ], []);
 
   return (
     <Card>
@@ -102,26 +153,26 @@ export const DocumentSources = ({ onDocumentsAdded }: DocumentSourcesProps) => {
             ))}
           </div>
 
-          <TabsContent value="upload" className="space-y-4">
+          <TabsContent value={DOCUMENT_SOURCES.UPLOAD} className="space-y-4">
             <DragDropUpload onFilesAdded={onDocumentsAdded} />
           </TabsContent>
 
-          <TabsContent value="local" className="space-y-4">
+          <TabsContent value={DOCUMENT_SOURCES.LOCAL} className="space-y-4">
             <LocalDocumentIndexer />
           </TabsContent>
 
-          <TabsContent value="google" className="space-y-4">
+          <TabsContent value={DOCUMENT_SOURCES.GOOGLE} className="space-y-4">
             <div className="space-y-4">
               <GoogleDrivePicker
                 onItemsSelected={(items) => {
-                  // Convert Google Drive items to documents format
-                  const documents = items.map(item => ({
-                    source: 'google_drive',
-                    folder_id: item.folder_id,
-                    title: item.folder_name,
-                    type: 'folder'
-                  }));
-                  onDocumentsAdded?.(documents);
+                  if (!onDocumentsAdded || items.length === 0) return;
+
+                  try {
+                    const unifiedDocuments = convertGoogleDriveItems(items);
+                    onDocumentsAdded(unifiedDocuments);
+                  } catch (error) {
+                    console.error('Failed to convert Google Drive items:', error);
+                  }
                 }}
               />
               <div className="p-4 bg-muted/50 rounded-lg">
@@ -139,7 +190,7 @@ export const DocumentSources = ({ onDocumentsAdded }: DocumentSourcesProps) => {
             </div>
           </TabsContent>
 
-          <TabsContent value="cloud" className="space-y-4">
+          <TabsContent value={DOCUMENT_SOURCES.CLOUD} className="space-y-4">
             <CloudStorageConnector onConnectionEstablished={onDocumentsAdded} />
           </TabsContent>
         </Tabs>
@@ -147,3 +198,5 @@ export const DocumentSources = ({ onDocumentsAdded }: DocumentSourcesProps) => {
     </Card>
   );
 };
+
+export default DocumentSources;
