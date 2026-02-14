@@ -99,7 +99,10 @@ describe('Local Document Indexing - Core Functionality Integration', () => {
           lastModified: Date.now(),
           lastIndexed: Date.now(),
           fileSize: 1024,
-          mimeType: 'text/markdown'
+          mimeType: 'text/markdown',
+          metadata: {
+            author: 'Test Author'
+          }
         },
         relevance: 0.95,
         excerpt: 'Project planning document content...',
@@ -110,8 +113,13 @@ describe('Local Document Indexing - Core Functionality Integration', () => {
     const mockCloudResults = [
       {
         id: 'cloud-1',
+        user_id: 'test-user-id',
+        google_file_id: 'test-google-id',
         title: 'Cloud Document',
-        content: 'Cloud document content'
+        content: 'Cloud document content',
+        file_type: 'text/plain',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       }
     ];
 
@@ -234,7 +242,16 @@ describe('Local Document Indexing - Core Functionality Integration', () => {
     mockUseHybridQuery.mockReturnValue({
       search: vi.fn().mockResolvedValue({
         local: [],
-        cloud: [{ id: 'cloud-1', title: 'Cloud Doc', content: 'Content' }],
+        cloud: [{
+          id: 'cloud-1',
+          user_id: 'test-user-id',
+          google_file_id: 'test-google-id',
+          title: 'Cloud Doc',
+          content: 'Content',
+          file_type: 'text/plain',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        }],
         totalResults: 1,
         searchTime: 100
       }),
@@ -246,7 +263,16 @@ describe('Local Document Indexing - Core Functionality Integration', () => {
       }),
       searchCloudOnly: vi.fn().mockResolvedValue({
         local: [],
-        cloud: [{ id: 'cloud-1', title: 'Cloud Doc', content: 'Content' }],
+        cloud: [{
+          id: 'cloud-1',
+          user_id: 'test-user-id',
+          google_file_id: 'test-google-id',
+          title: 'Cloud Doc',
+          content: 'Content',
+          file_type: 'text/plain',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        }],
         totalResults: 1,
         searchTime: 100
       }),

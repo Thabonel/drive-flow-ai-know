@@ -61,17 +61,10 @@ export interface UseHybridQueryReturn {
   searchCloudOnly: (query: string, options?: HybridSearchOptions) => Promise<HybridSearchResults>;
 }
 
-/**
- * React hook for unified local and cloud document search.
- * Provides hybrid search capabilities with parallel execution and error handling.
- */
 export function useHybridQuery(): UseHybridQueryReturn {
   const [isLoading, setIsLoading] = useState(false);
   const { searchLocal, isSupported: isLocalSupported } = useLocalDocuments();
 
-  /**
-   * Search local documents with error handling
-   */
   const searchLocalSafe = useCallback(async (query: string): Promise<{
     results: LocalDocumentSearchResult[];
     error?: string;
@@ -89,9 +82,6 @@ export function useHybridQuery(): UseHybridQueryReturn {
     }
   }, [searchLocal, isLocalSupported]);
 
-  /**
-   * Search cloud documents with error handling
-   */
   const searchCloudSafe = useCallback(async (query: string): Promise<{
     results: CloudDocument[];
     error?: string;
@@ -101,12 +91,8 @@ export function useHybridQuery(): UseHybridQueryReturn {
     }
 
     try {
-      // Safe text search using Supabase's built-in textSearch or multiple queries
-      // Since Supabase doesn't support OR with parameterized ilike in a single call,
-      // we'll use multiple queries and merge results (with deduplication)
       const searchPattern = `%${query}%`;
 
-      // Execute parallel searches for title, content, and ai_summary
       const [titleResults, contentResults, summaryResults] = await Promise.all([
         supabase
           .from('knowledge_documents')
@@ -122,13 +108,11 @@ export function useHybridQuery(): UseHybridQueryReturn {
           .ilike('ai_summary', searchPattern)
       ]);
 
-      // Check for errors in any of the queries
       const errors = [titleResults.error, contentResults.error, summaryResults.error].filter(Boolean);
       if (errors.length > 0) {
         return { results: [], error: errors[0]?.message || 'Search error' };
       }
 
-      // Merge and deduplicate results by id
       const allResults = [
         ...(titleResults.data || []),
         ...(contentResults.data || []),
@@ -146,9 +130,6 @@ export function useHybridQuery(): UseHybridQueryReturn {
     }
   }, []);
 
-  /**
-   * Apply result limits and combine results
-   */
   const applyOptionsAndCombine = useCallback((
     localResults: LocalDocumentSearchResult[],
     cloudResults: CloudDocument[],
@@ -163,7 +144,6 @@ export function useHybridQuery(): UseHybridQueryReturn {
       return { local: localResults, cloud: cloudResults };
     }
 
-    // Distribute maxResults proportionally between local and cloud
     const localRatio = localResults.length / totalResults;
     const maxLocal = Math.ceil(options.maxResults * localRatio);
     const maxCloud = options.maxResults - Math.min(maxLocal, localResults.length);
@@ -174,9 +154,6 @@ export function useHybridQuery(): UseHybridQueryReturn {
     };
   }, []);
 
-  /**
-   * Search both local and cloud documents in parallel
-   */
   const search = useCallback(async (
     query: string,
     options?: HybridSearchOptions
@@ -185,7 +162,6 @@ export function useHybridQuery(): UseHybridQueryReturn {
     setIsLoading(true);
 
     try {
-      // Handle single-source options
       if (options?.localOnly) {
         return await searchLocalOnly(query, options);
       }
@@ -194,20 +170,17 @@ export function useHybridQuery(): UseHybridQueryReturn {
         return await searchCloudOnly(query, options);
       }
 
-      // Search both sources in parallel
       const [localSearch, cloudSearch] = await Promise.all([
         searchLocalSafe(query),
         searchCloudSafe(query)
       ]);
 
-      // Apply options and combine results
       const { local, cloud } = applyOptionsAndCombine(
         localSearch.results,
         cloudSearch.results,
         options
       );
 
-      // Build errors object if any occurred
       const errors: { local?: string; cloud?: string } | undefined =
         (localSearch.error || cloudSearch.error) ? {
           ...(localSearch.error && { local: localSearch.error }),
@@ -228,9 +201,6 @@ export function useHybridQuery(): UseHybridQueryReturn {
     }
   }, [searchLocalSafe, searchCloudSafe, applyOptionsAndCombine]);
 
-  /**
-   * Search only local documents
-   */
   const searchLocalOnly = useCallback(async (
     query: string,
     options?: HybridSearchOptions
@@ -262,9 +232,6 @@ export function useHybridQuery(): UseHybridQueryReturn {
     }
   }, [searchLocalSafe, applyOptionsAndCombine]);
 
-  /**
-   * Search only cloud documents
-   */
   const searchCloudOnly = useCallback(async (
     query: string,
     options?: HybridSearchOptions
@@ -297,10 +264,8 @@ export function useHybridQuery(): UseHybridQueryReturn {
   }, [searchCloudSafe, applyOptionsAndCombine]);
 
   return {
-    // State
     isLoading,
 
-    // Methods
     search,
     searchLocalOnly,
     searchCloudOnly

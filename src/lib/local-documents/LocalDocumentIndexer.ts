@@ -1,14 +1,8 @@
-import type { LocalDocumentIndex, LocalDocumentSearchResult, LocalIndexStats, FolderPermission } from './types';
+import type { LocalDocumentIndex, LocalDocumentSearchResult, LocalIndexStats, FolderPermission, ScanResult } from './types';
+/// <reference path="../../types/filesystem.d.ts" />
 import { LocalDocumentStore } from './LocalDocumentStore';
 import { FileSystemManager } from './FileSystemManager';
 import { DocumentProcessor } from './DocumentProcessor';
-
-export interface ScanResult {
-  foldersScanned: number;
-  documentsProcessed: number;
-  documentsUpdated: number;
-  errors: string[];
-}
 
 export interface FolderAccessResult {
   permission: FolderPermission;
@@ -30,43 +24,32 @@ export class LocalDocumentIndexer {
     this.processor = new DocumentProcessor();
   }
 
-  /**
-   * Initialize the indexer and start background scanning
-   */
   async initialize(): Promise<void> {
     await this.store.init();
 
-    // Start immediate scan (don't await - fire and forget)
     if (!this.isScanning) {
       this.scanAllFolders().catch(error => {
         console.error('Initial scan failed:', error);
       });
     }
 
-    // Set up background scanning (every hour)
     this.scanInterval = setInterval(() => {
       if (!this.isScanning) {
         this.scanAllFolders().catch(error => {
           console.error('Background scan failed:', error);
         });
       }
-    }, 60 * 60 * 1000); // 1 hour
+    }, 60 * 60 * 1000);
   }
 
-  /**
-   * Request folder access permission and trigger immediate scan
-   */
   async requestFolderAccess(): Promise<FolderAccessResult> {
     const permission = await this.fileManager.requestFolderPermission();
 
-    // In a real implementation, we would store the directory handle
-    // For testing purposes, we'll create a mock handle
     if (typeof window !== 'undefined' && 'showDirectoryPicker' in window) {
       try {
         const directoryHandle = await window.showDirectoryPicker();
         this.directoryHandles.set(permission.id, directoryHandle);
       } catch (error) {
-        // Handle error - user probably cancelled
       }
     }
 
@@ -78,9 +61,6 @@ export class LocalDocumentIndexer {
     };
   }
 
-  /**
-   * Scan all enabled folder permissions and update document index
-   */
   async scanAllFolders(force: boolean = false): Promise<ScanResult> {
     if (this.isScanning && !force) {
       throw new Error('Scan already in progress');
@@ -100,20 +80,26 @@ export class LocalDocumentIndexer {
 
       for (const permission of enabledPermissions) {
         try {
-          // Try to get the stored directory handle, or create a mock one for testing
           let directoryHandle = this.directoryHandles.get(permission.id);
 
           if (!directoryHandle) {
-            // For testing or when handle is not available, create a mock
+            // Create a mock directory handle for cases where permission was stored but handle is lost
             directoryHandle = {
               name: permission.path,
-              values: () => ({
-                async *[Symbol.asyncIterator]() {
-                  // Return empty for when no handle is available
-                  return;
-                }
-              })
-            } as any;
+              kind: 'directory' as const,
+              async *values() {
+                // Empty generator for mock handle - no files to iterate
+                return;
+              },
+              requestPermission: async () => 'granted' as const,
+              queryPermission: async () => 'granted' as const,
+              // Add missing required properties to satisfy TypeScript
+              removeEntry: async () => { throw new Error('Not implemented'); },
+              resolve: async () => null,
+              isSameEntry: async () => false,
+              getDirectoryHandle: async () => { throw new Error('Not implemented'); },
+              getFileHandle: async () => { throw new Error('Not implemented'); }
+            } as FileSystemDirectoryHandle;
           }
 
           const documentFiles = await this.fileManager.scanFolderForDocuments(directoryHandle);
@@ -125,20 +111,16 @@ export class LocalDocumentIndexer {
               const filePath = `${permission.path}/${fileHandle.name}`;
               const docId = this.processor.generateDocumentId(filePath);
 
-              // Check if document already exists and is up to date
               const existingDoc = await this.store.getDocument(docId);
               const processedDoc = await this.processor.processFileIntoIndex(fileHandle, filePath);
 
               if (!existingDoc) {
-                // New document
                 await this.store.addDocument(processedDoc);
                 result.documentsProcessed++;
               } else if (processedDoc.lastModified > existingDoc.lastModified) {
-                // Document was updated
                 await this.store.addDocument(processedDoc);
                 result.documentsUpdated++;
               }
-              // If document exists and is up to date, skip it
             } catch (error) {
               result.errors.push(`Failed to process file ${fileHandle.name}: ${error instanceof Error ? error.message : 'Unknown error'}`);
             }
@@ -156,16 +138,11 @@ export class LocalDocumentIndexer {
     return result;
   }
 
-  /**
-   * Get index statistics
-   */
   async getIndexStats(): Promise<LocalIndexStats> {
     const storeStats = await this.store.getStats();
     const permissions = await this.fileManager.getStoredPermissions();
     const enabledFolders = permissions.filter(p => p.enabled).length;
 
-    // For documentsNeedingUpdate, we would need to check file system timestamps
-    // vs indexed timestamps. For now, return 0 as a placeholder.
     const documentsNeedingUpdate = 0;
 
     return {
@@ -177,24 +154,15 @@ export class LocalDocumentIndexer {
     };
   }
 
-  /**
-   * Search local documents
-   */
   async searchLocal(query: string): Promise<LocalDocumentSearchResult[]> {
     return await this.store.searchDocuments(query);
   }
 
-  /**
-   * Get document content by ID (returns summary for now)
-   */
   async getDocumentContent(docId: string): Promise<string | null> {
     const document = await this.store.getDocument(docId);
     return document ? document.summary : null;
   }
 
-  /**
-   * Clean up resources and stop background scanning
-   */
   dispose(): void {
     if (this.scanInterval) {
       clearInterval(this.scanInterval);

@@ -1,3 +1,4 @@
+/// <reference path="../../types/filesystem.d.ts" />
 import type { FolderPermission } from './types';
 
 export class FileSystemManager {
@@ -9,17 +10,11 @@ export class FileSystemManager {
   ];
 
   constructor() {
-    // Check if File System Access API is supported
     if (!('showDirectoryPicker' in window)) {
       console.warn('File System Access API is not supported in this browser');
     }
   }
 
-  /**
-   * Request permission to access a folder using the File System Access API
-   * @returns Promise<FolderPermission> The folder permission object
-   * @throws Error if API not supported or user cancels
-   */
   async requestFolderPermission(): Promise<FolderPermission> {
     if (!('showDirectoryPicker' in window)) {
       throw new Error('File System Access API is not supported in this browser');
@@ -43,7 +38,6 @@ export class FileSystemManager {
         lastAccessed: new Date().toISOString()
       };
 
-      // Store in localStorage (note: we can't serialize the handle directly)
       await this.storeFolderPermission(folderPermission);
 
       return folderPermission;
@@ -55,10 +49,6 @@ export class FileSystemManager {
     }
   }
 
-  /**
-   * Get all stored folder permissions from localStorage
-   * @returns Promise<FolderPermission[]> Array of folder permissions
-   */
   async getStoredPermissions(): Promise<FolderPermission[]> {
     try {
       const stored = localStorage.getItem(FileSystemManager.STORAGE_KEY);
@@ -74,11 +64,6 @@ export class FileSystemManager {
     }
   }
 
-  /**
-   * Scan a folder for supported document types
-   * @param directoryHandle FileSystemDirectoryHandle to scan
-   * @returns Promise<FileSystemFileHandle[]> Array of document files
-   */
   async scanFolderForDocuments(directoryHandle: FileSystemDirectoryHandle): Promise<FileSystemFileHandle[]> {
     const documentFiles: FileSystemFileHandle[] = [];
 
@@ -100,11 +85,6 @@ export class FileSystemManager {
     return documentFiles;
   }
 
-  /**
-   * Check if a folder permission is still valid
-   * @param directoryHandle FileSystemDirectoryHandle to check
-   * @returns Promise<boolean> True if permission is granted
-   */
   async checkFolderPermission(directoryHandle: FileSystemDirectoryHandle): Promise<boolean> {
     try {
       const permission = await directoryHandle.queryPermission({ mode: 'read' });
@@ -115,10 +95,6 @@ export class FileSystemManager {
     }
   }
 
-  /**
-   * Store a folder permission in localStorage
-   * @param permission FolderPermission to store
-   */
   private async storeFolderPermission(permission: FolderPermission): Promise<void> {
     try {
       const existingPermissions = await this.getStoredPermissions();
@@ -134,11 +110,6 @@ export class FileSystemManager {
     }
   }
 
-  /**
-   * Check if a file type is supported for document processing
-   * @param filename String filename to check
-   * @returns boolean True if file type is supported
-   */
   private isSupportedFileType(filename: string): boolean {
     const extension = filename.toLowerCase().substring(filename.lastIndexOf('.'));
     return this.SUPPORTED_EXTENSIONS.includes(extension);
