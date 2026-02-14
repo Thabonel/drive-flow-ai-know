@@ -417,6 +417,256 @@ Your AI assistant doesn't just wait for questions - it actively helps manage you
 
 ---
 
+## 💻 Local Document Indexing
+
+Index documents directly from your computer's file system for enhanced search capabilities, all while keeping your files secure on your device.
+
+### Browser Requirements
+
+**Supported Browsers:**
+- Chrome 86+ (recommended)
+- Microsoft Edge 86+
+- Opera 72+
+
+**Unsupported Browsers:**
+- Firefox (File System Access API not implemented)
+- Safari (File System Access API not implemented)
+
+*Note: If your browser doesn't support local indexing, you can still use cloud document features and file uploads.*
+
+### Getting Started with Local Indexing
+
+#### Step 1: Enable Local Indexing
+
+1. Navigate to **Settings** from the sidebar
+2. Find the **"Local Document Indexing"** section
+3. Toggle **"Enable Local Indexing"** to ON
+4. Grant permission when prompted by your browser
+
+#### Step 2: Add Your First Folder
+
+1. Click **"Add Folder"** button
+2. Select a folder from your computer using the file picker
+3. Grant permission to access the folder
+4. Wait for the initial scan to complete (usually 1-2 minutes)
+
+#### Step 3: Start Searching
+
+Once indexing is complete, your local documents will automatically be included in AI queries and searches alongside your cloud documents.
+
+### Supported File Types
+
+**Text Documents:**
+- `.txt` - Plain text files
+- `.md` - Markdown documents
+- `.rtf` - Rich Text Format
+
+**Microsoft Office:**
+- `.docx` - Word documents
+- `.xlsx` - Excel spreadsheets (text content only)
+- `.pptx` - PowerPoint presentations (text content only)
+
+**PDFs:**
+- `.pdf` - Portable Document Format (text extraction)
+
+**Web Files:**
+- `.html` - HTML documents
+- `.htm` - HTML documents
+
+**Code Files:**
+- `.js`, `.ts` - JavaScript/TypeScript
+- `.py` - Python
+- `.md` - Markdown
+- `.json` - JSON data files
+- `.csv` - Comma-separated values
+
+*Note: Binary files (images, videos, executables) are indexed by name only, not content.*
+
+### Usage Instructions
+
+#### Managing Your Indexed Folders
+
+**View Index Statistics:**
+- Total documents indexed
+- Number of folders being watched
+- Index size on disk
+- Last scan time
+- Documents needing updates
+
+**Refresh Your Index:**
+1. Click **"Refresh Index"** in settings
+2. This will scan for new, modified, or deleted files
+3. Progress is shown in real-time
+
+**Remove Folders:**
+Currently, folders are automatically removed if access is revoked through your browser's permission settings.
+
+#### Searching Local Documents
+
+**Automatic Integration:**
+- Local documents are automatically included in all AI queries
+- No special syntax needed - just ask questions naturally
+
+**Search Examples:**
+- *"What did I write about project deadlines?"*
+- *"Find my meeting notes from last week"*
+- *"Summarize all documents mentioning budget planning"*
+
+**Local-Only Search:**
+- Use the search filter to search only local documents
+- Helpful when you know the information is in your local files
+
+#### Understanding Search Results
+
+**Document References:**
+- Local documents appear with a folder icon
+- Click document links to view full content
+- Results show file path and last modified date
+
+**Hybrid Results:**
+- Local and cloud documents are combined intelligently
+- Most relevant results appear first regardless of source
+- Search time includes both local and cloud processing
+
+### Privacy and Security
+
+#### Your Data Stays Local
+
+**Complete Privacy:**
+- Documents never leave your computer
+- Only metadata (titles, summaries) are processed
+- Full content remains on your local file system
+
+**Browser Security:**
+- Uses secure File System Access API
+- Permissions can be revoked anytime in browser settings
+- No background file access when not actively using the app
+
+**Index Storage:**
+- Local index stored in browser's secure storage
+- Automatically encrypted by your browser
+- Cleared when you clear browser data
+
+#### Permission Management
+
+**Granting Access:**
+- Browser will ask for permission for each folder
+- You can grant or deny access to specific folders
+- Permissions persist across browser sessions
+
+**Revoking Access:**
+1. Open your browser settings
+2. Navigate to Site Permissions or Privacy settings
+3. Find AI Query Hub
+4. Remove file system permissions for specific folders
+
+### Troubleshooting
+
+#### Common Issues
+
+**"Local document indexing is not supported"**
+- Your browser doesn't support the File System Access API
+- Solution: Use Chrome 86+ or Edge 86+
+- Alternative: Upload files manually or use cloud sync
+
+**"Permission denied when adding folder"**
+- You cancelled the folder selection dialog
+- Solution: Try again and click "Allow" when prompted
+- Note: Some system folders may be restricted
+
+**"Documents not appearing in search"**
+- Index may need refreshing
+- Solution: Click "Refresh Index" in settings
+- Check that files are in supported formats
+
+**"Index size growing too large"**
+- Many large documents in indexed folders
+- Solution: Remove folders with large binary files
+- Consider moving media files to separate folders
+
+**"Search results incomplete"**
+- Some documents may have parsing errors
+- Solution: Check scan results for error messages
+- Unsupported file types are indexed by name only
+
+#### Performance Optimization
+
+**For Large Document Collections:**
+- Index smaller, focused folders rather than entire drives
+- Exclude folders with many binary files (images, videos)
+- Regular refresh keeps index current and optimized
+
+**For Slow Performance:**
+- Check if antivirus is scanning files during indexing
+- Ensure sufficient free disk space for index
+- Close other browser tabs during initial indexing
+
+### Advanced Features
+
+#### Smart Document Discovery
+
+**Automatic Content Analysis:**
+- Documents are automatically summarized
+- Keywords extracted for better search matching
+- Related documents are cross-referenced
+
+**Change Detection:**
+- Modified documents are automatically re-indexed
+- Deleted files are removed from search results
+- New files are discovered during refresh cycles
+
+#### Integration with Cloud Documents
+
+**Unified Search:**
+- Local and cloud documents searched simultaneously
+- Results ranked by relevance across all sources
+- Duplicate detection prevents redundant results
+
+**Seamless Workflow:**
+- Ask questions spanning both local and cloud content
+- AI responses can reference multiple document sources
+- Export search results include both local and cloud references
+
+### Best Practices
+
+#### Organizing for Search
+
+**Folder Structure:**
+- Use descriptive folder names
+- Group related documents together
+- Keep frequently accessed files in top-level folders
+
+**File Naming:**
+- Use clear, descriptive file names
+- Include dates or project names in filenames
+- Avoid special characters that may cause parsing issues
+
+#### Maintenance
+
+**Regular Refreshing:**
+- Refresh index weekly for active document folders
+- After major file reorganization
+- When search results seem incomplete
+
+**Folder Management:**
+- Review indexed folders monthly
+- Remove access to unused or outdated folders
+- Add new project folders as needed
+
+#### Security Hygiene
+
+**Sensitive Documents:**
+- Consider excluding folders with highly sensitive files
+- Use cloud storage with additional security for confidential documents
+- Remember that indexed content is searchable within the app
+
+**Access Control:**
+- Regularly review browser permissions
+- Remove access for folders no longer needed
+- Use separate browser profiles for different work contexts
+
+---
+
 **Welcome to the future of AI-powered productivity!** 🚀
 
 Your Living AI Assistant is ready to transform how you work, learn, and stay organized across all your favorite platforms.
