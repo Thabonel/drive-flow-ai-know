@@ -225,19 +225,25 @@ const Documents = () => {
             <p className="text-muted-foreground text-lg">Browse and search your knowledge documents</p>
           </div>
           <PageHelp
-            title="Find Documents Help"
-            description="Search and browse all documents in your knowledge base. Filter by category, search by title or summary, and sort by various criteria. Click any document card to view, edit, or manage it."
+            title="Documents & Local Indexing Help"
+            description="Search and browse all documents in your knowledge base. Now includes privacy-first local document indexing - keep documents on your PC while enabling AI queries. Use the Document Sources panel to upload to cloud or index local folders."
             tips={[
+              "🔐 NEW: Use 'Local Indexing' tab to access documents on your computer privately",
+              "Grant folder permissions once, then AI creates smart summaries stored locally",
+              "Local documents NEVER leave your PC - complete privacy and offline access",
+              "Search works across both local and cloud documents seamlessly",
+              "Results show 📁 Local or ☁️ Cloud indicators to show document source",
+              "Upload to cloud via 'Upload Documents' tab for sharing and backup",
               "Search documents by title or AI-generated summary content",
               "Filter by category: prompts, marketing, specs, research, planning, etc.",
               "Sort by creation date, modification date, or title",
               "Click a document card to open the viewer/editor modal",
               "Generate AI Insights to extract key concepts and summaries",
-              "Add documents via Document Sources panel (Google Drive, upload, etc.)",
+              "Add cloud documents via Google Drive, Dropbox, or direct upload",
               "Convert archived conversations to documents from the Conversations page",
-              "Use the AI Assistant to query across all your documents",
-              "Pagination shows 12 documents per page",
-              "Create new documents manually with the 'Create Document' button"
+              "Use the AI Assistant to query across all your documents (local + cloud)",
+              "Local indexing requires modern browser (Chrome/Edge recommended)",
+              "Background sync automatically detects changes to local files"
             ]}
           />
         </div>
