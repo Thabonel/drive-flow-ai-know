@@ -98,12 +98,40 @@ Try these example questions to get started:
   },
   {
     id: 'document-upload',
-    title: 'Uploading and Managing Documents',
-    description: 'Learn how to work with documents effectively',
+    title: 'Documents: Upload & Local Access',
+    description: 'Learn how to work with documents - upload to cloud or access locally',
     category: 'getting-started',
-    tags: ['documents', 'upload', 'files', 'knowledge-base'],
+    tags: ['documents', 'upload', 'files', 'local', 'privacy', 'knowledge-base'],
     icon: <FileText className="h-5 w-5" />,
     content: `
+**🔐 NEW: Local Document Access (Privacy-First)**
+Keep documents on your PC while enabling AI queries:
+
+**How Local Access Works:**
+• Click "Local Indexing" tab in Documents section
+• Grant folder permissions (one-time setup)
+• AI creates smart summaries stored locally in browser
+• Documents NEVER leave your computer
+• Search both local and cloud documents together
+
+**Setup Process:**
+1. Go to "Documents" → "Local Indexing" tab
+2. Click "Add Folder" and select folders to index
+3. Browser requests folder permission (click "Allow")
+4. AI scans and creates document summaries
+5. Search works across all your documents seamlessly
+
+**Local Access Benefits:**
+• Complete privacy - documents stay on your PC
+• Works offline for local documents
+• Faster access to local files
+• No upload limits or storage costs
+• Automatic background sync for changes
+
+---
+
+**☁️ Cloud Document Upload**
+
 **Supported File Types:**
 • PDF files (reports, presentations, forms)
 • DOCX (Word documents)
@@ -113,7 +141,7 @@ Try these example questions to get started:
 • JSON (structured data)
 
 **Upload Process:**
-1. Go to "Documents" in the sidebar
+1. Go to "Documents" → "Upload Documents" tab
 2. Click "Upload Document" or drag & drop files
 3. Wait for AI processing (30 seconds to 5 minutes)
 4. View the AI-generated summary
@@ -132,6 +160,105 @@ Group related documents for better searching:
 • "Legal Documents" - Contracts and agreements
 • "Meeting Notes" - All meeting summaries
 • "Research Materials" - Reference documents
+
+**🔍 Hybrid Search:**
+When you ask questions, AI automatically searches:
+• Your local documents (if indexing enabled)
+• Cloud uploaded documents
+• Results show source indicators (📁 Local vs ☁️ Cloud)
+    `
+  },
+  {
+    id: 'local-indexing',
+    title: '🔐 Local Document Indexing',
+    description: 'Privacy-first document access - keep files on your PC',
+    category: 'getting-started',
+    tags: ['local', 'privacy', 'indexing', 'offline', 'browser', 'security'],
+    icon: <Shield className="h-5 w-5" />,
+    content: `
+**What is Local Document Indexing?**
+A privacy-first way to use AI with your documents without uploading them to the cloud. Documents stay on your computer while AI creates smart summaries for searching.
+
+**🔒 Privacy & Security:**
+• Documents NEVER leave your computer
+• AI summaries stored locally in your browser
+• No data transmitted to servers
+• Works completely offline for local files
+• Full control over what gets indexed
+
+**🚀 How It Works:**
+1. **Grant Permissions**: Choose folders to index (one-time setup)
+2. **AI Scanning**: Creates smart summaries of your documents
+3. **Local Storage**: Summaries stored in browser's IndexedDB
+4. **Hybrid Search**: Search local + cloud documents together
+5. **Background Sync**: Automatically detects file changes
+
+**📁 Supported File Types:**
+• PDF documents (reports, presentations)
+• Word documents (.docx, .doc)
+• Text files (.txt, .md, .rtf)
+• Spreadsheets (.xlsx, .xls, .csv)
+• All the same types as cloud upload
+
+**⚡ Key Features:**
+• **Smart Background Sync**: Checks for changes hourly
+• **Manual Refresh**: Force immediate re-scan
+• **Change Detection**: Only processes modified files
+• **Browser Storage**: Uses modern IndexedDB for fast access
+• **Folder Organization**: Index multiple folders separately
+• **Source Indicators**: See which results are local vs cloud
+
+**🔧 Setup Instructions:**
+1. Go to Documents → Local Indexing tab
+2. Click "Add Folder" button
+3. Select folder in file picker dialog
+4. Browser asks for permission → Click "Allow"
+5. AI begins scanning your documents
+6. View progress in the indexing panel
+7. Start searching immediately
+
+**🔍 Using Hybrid Search:**
+When you ask questions, AI searches:
+• 📁 Your local indexed documents
+• ☁️ Cloud uploaded documents
+• Results clearly marked with source
+• One search covers everything
+
+**⚙️ Browser Requirements:**
+• Chrome 86+ (recommended)
+• Edge 86+ (full support)
+• Firefox (limited support)
+• Safari (experimental)
+• Requires HTTPS (secure connection)
+
+**🛠️ Troubleshooting:**
+• **No folder picker?** → Use Chrome or Edge browser
+• **Permission denied?** → Try again, ensure you click "Allow"
+• **Slow scanning?** → Large folders take time, be patient
+• **Missing files?** → Check file types are supported
+• **Not finding documents?** → Try manual refresh button
+
+**💡 Pro Tips:**
+• Index your main document folders (~/Documents, ~/Downloads)
+• Organize files with clear names for better AI understanding
+• Use both local and cloud storage for different needs
+• Local = Privacy, Cloud = Sharing and backup
+• Check Settings → Local Indexing for advanced options
+
+**🔄 How Sync Works:**
+• Runs automatically every hour while app is open
+• Checks file modification timestamps
+• Only processes changed/new files
+• Manual refresh button for immediate sync
+• Progress indicator shows current status
+
+**🎯 Perfect For:**
+• Sensitive documents you can't upload
+• Large document collections
+• Offline document access
+• Privacy-conscious users
+• Corporate compliance requirements
+• Personal document management
     `
   },
 
@@ -388,18 +515,31 @@ With your permission, I can take actions for up to 2 hours:
 • Proactive assistance preferences
 • Account settings and profile
 • Data retention preferences
+• 🔐 Local document indexing settings
+
+**🔐 Local Document Privacy (NEW):**
+• Documents NEVER leave your computer
+• AI summaries stored only in your browser
+• No network transmission of document content
+• Full offline capability for local documents
+• You can disable/enable per folder
+• Browser storage under your complete control
 
 **Data Access:**
 • View all your data through the dashboard
 • Export conversations as PDF or JSON
 • Download original documents anytime
 • Request complete data export (within 30 days)
+• Export local document summaries from browser
+• Clear local indexing data anytime
 
 **Data Deletion:**
 • Delete individual conversations
 • Remove specific documents
 • Disconnect integrations
 • Delete your entire account permanently
+• Clear all local document indexing data
+• Revoke folder permissions instantly
 
 **Privacy Guarantees:**
 • Your data is never sold or shared for marketing
@@ -407,18 +547,29 @@ With your permission, I can take actions for up to 2 hours:
 • Row-level database security (your data isolated)
 • AI processing doesn't retain personal data
 • SOC2 Type II compliant infrastructure
+• Local documents never transmitted or stored on servers
 
 **Data Retention:**
 • Conversations: 30+ days for context (or until you delete)
-• Documents: Until you delete them
+• Cloud documents: Until you delete them
+• Local documents: Always on your computer only
+• Local summaries: Stored in browser until you clear them
 • Usage analytics: 24 months (anonymized)
 • Audit logs: 7 years (for security compliance)
 
 **International Transfers:**
 • Primary storage: Singapore (Supabase)
 • AI processing: Secure cloud providers (US/EU)
-• All transfers use appropriate safeguards
+• Local documents: Never transferred (stay on your PC)
+• All cloud transfers use appropriate safeguards
 • GDPR, CCPA compliant
+
+**Browser Privacy:**
+• Local indexing uses IndexedDB (browser standard)
+• Data isolated per domain (only AI Query Hub can access)
+• Cleared when you clear browser data
+• No tracking or analytics on local document content
+• File System Access API uses secure permission model
     `
   }
 ];

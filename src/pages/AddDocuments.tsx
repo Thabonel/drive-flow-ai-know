@@ -326,13 +326,19 @@ export default function AddDocuments() {
         </div>
         <PageHelp
           title="Add Documents Help"
-          description="Add documents to your knowledge base from multiple sources. After adding, documents appear in the Find Documents page."
+          description="Add documents to your knowledge base from multiple sources OR use privacy-first local indexing. Local documents stay on your PC while cloud uploads enable sharing. Both searchable together."
           tips={[
+            "🔐 Privacy Option: Use local indexing to keep sensitive documents on your PC",
+            "☁️ Sharing Option: Upload to cloud for team access and backup",
             "Upload Files: Drag & drop or browse files (PDF, DOCX, TXT, MD, CSV, JSON)",
-            "Local Folders: Connect folders from your computer",
+            "Local Indexing: Grant folder permissions, AI creates summaries stored locally",
             "Google Drive: Connect your account, select folders, and sync automatically",
             "Microsoft 365: Sync from OneDrive or SharePoint",
             "Amazon S3: Connect S3 buckets with credentials for automatic syncing",
+            "Local documents NEVER leave your computer - complete privacy",
+            "Hybrid search works across both local and cloud documents",
+            "Local indexing requires modern browser (Chrome/Edge recommended)",
+            "Background sync monitors local file changes automatically",
             "Sync All Folders button syncs all connected cloud folders at once",
             "View sync status and last sync time for each connected folder"
           ]}
