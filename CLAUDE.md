@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-AI Query Hub is a React/TypeScript application that enables users to sync documents from Google Drive, create knowledge bases, and query them using AI. It supports multiple AI providers (Claude Opus 4.5 primary, OpenRouter fallback, local Ollama) with centralised model configuration. Includes a timeline manager for productivity and an optional research-agent component for deep research capabilities.
+AI Query Hub is a React/TypeScript application that enables users to sync documents from Google Drive, create knowledge bases, and query them using AI. Features include **local document indexing** for privacy-first document access (keeps documents on user's PC), **hybrid search** combining local and cloud sources, and multiple AI providers (Claude Opus 4.6 primary, OpenRouter fallback, local Ollama). Includes a comprehensive timeline manager for productivity and an optional research-agent component for deep research capabilities.
 
 Built with Vite, React, shadcn-ui, Tailwind CSS, and Supabase backend.
 
@@ -10,7 +10,7 @@ Built with Vite, React, shadcn-ui, Tailwind CSS, and Supabase backend.
 
 - **Frontend**: React 18, TypeScript (strict), Vite, Tailwind CSS, shadcn-ui
 - **Backend**: Supabase (PostgreSQL, Auth, Edge Functions, Realtime, Storage)
-- **AI/ML**: Anthropic Claude API (primary), OpenRouter (fallback), Ollama (offline)
+- **AI/ML**: Anthropic Claude API (Claude Opus 4.6, Sonnet 4.5, Haiku 4.5), OpenRouter (GPT-4.1, fallback), Ollama (offline), Google Gemini 3 Flash (image generation)
 - **Design**: Neumorphic (soft UI) design system - Navy & Gold theme
 - **Hosting**: Static deployment (Netlify/Vercel) + Supabase cloud
 - **Supabase Project**: `fskwutnoxbbflzqrphro` (ap-southeast-1)
@@ -91,17 +91,28 @@ These documents predate the numbered folder structure:
 src/
 +-- components/          # Reusable UI components (80+)
 |   +-- ai/              # AI-specific components
+|   +-- local-documents/ # LOCAL DOCUMENT INDEXING COMPONENTS ✨ NEW
+|   |   +-- LocalDocumentIndexer.tsx      # Main indexing interface
+|   |   +-- FolderPermissionManager.tsx   # Folder access management
+|   |   +-- IndexStatus.tsx              # Progress & statistics
+|   |   +-- LocalDocumentBrowser.tsx     # Browse/preview local docs
 |   +-- timeline/        # Timeline components (48 files)
 |   |   +-- enhanced/    # Enhanced timeline manager
 |   |   +-- mobile/      # Mobile-specific components
 |   +-- ui/              # shadcn-ui library (56+ components)
 |   +-- planning/        # Daily planning flow
 |   +-- templates/       # Template system
-|   +-- settings/        # Settings components
+|   +-- settings/        # Settings components (includes LocalIndexingSettings ✨)
 +-- contexts/            # React contexts (Timeline, BackgroundTasks, PresentationMode)
-+-- hooks/               # Custom hooks (60+)
++-- hooks/               # Custom hooks (60+) - includes useLocalDocuments, useHybridQuery ✨
 +-- lib/                 # Utility libraries (30+ files)
 |   +-- ai/              # AI utilities and prompts
+|   +-- local-documents/ # LOCAL DOCUMENT INDEXING SYSTEM ✨ NEW
+|       +-- LocalDocumentIndexer.ts   # Main indexing engine
+|       +-- LocalDocumentStore.ts     # IndexedDB wrapper
+|       +-- FileSystemManager.ts      # File System Access API
+|       +-- DocumentProcessor.ts      # Content extraction & AI processing
+|       +-- types.ts                  # TypeScript interfaces
 +-- pages/               # Page components (50+)
 +-- integrations/        # External service integrations
 |   +-- supabase/        # Supabase client and auto-generated types
@@ -148,11 +159,81 @@ python mcp/start_mcp_server.py
 
 - **AI Query Assistant**: Shipped (core), iterating on citations and streaming
 - **Knowledge Base Management**: Shipped (core), iterating on bulk operations
+- **Local Document Indexing**: ✅ **SHIPPED** - Privacy-first document access, keeps documents on user's PC
+- **Hybrid Search Engine**: ✅ **SHIPPED** - Seamlessly searches both local and cloud documents
 - **Google Drive Sync**: Shipped
 - **Timeline Manager**: Shipped, ongoing bug fixes
 - **Research Agent**: Functional, optional component
 - **Booking Links**: In development
+- **Updated AI Models**: ✅ **SHIPPED** - Claude Opus 4.6, GPT-4.1, Gemini 3 Flash
+- **Security Enhancements**: ✅ **SHIPPED** - Comprehensive audit logging, encryption, parameterized queries
 - **ANTHROPIC_API_KEY**: Must be set in Supabase dashboard for AI functionality
+
+## ✨ Local Document Indexing System (NEW)
+
+### Overview
+Privacy-first document access that keeps documents on user's PC while enabling AI queries. Uses browser-based indexing with smart summaries for optimal performance and security.
+
+### Key Features
+- **🔐 Privacy-First**: Documents never leave user's machine
+- **🔍 Hybrid Search**: Seamlessly searches both local and cloud documents
+- **⚡ Smart Indexing**: Background processing with AI-generated summaries
+- **💾 Browser Storage**: Uses IndexedDB for local document metadata
+- **📁 File System Access**: Modern File System Access API with fallbacks
+
+### Architecture Components
+
+**Core Services:**
+- `LocalDocumentIndexer` - Main indexing engine with change detection
+- `LocalDocumentStore` - IndexedDB wrapper with full-text search
+- `FileSystemManager` - File System Access API integration
+- `DocumentProcessor` - Content extraction and AI summarization
+- `HybridQueryEngine` - Routes queries between local and cloud sources
+
+**React Hooks:**
+- `useLocalDocuments` - Local document state management
+- `useHybridQuery` - Unified local + cloud search
+
+**UI Components:**
+- `LocalDocumentIndexer` - Main configuration interface
+- `LocalIndexingSettings` - Settings panel integration
+- `LocalDocumentBrowser` - Browse and preview local documents
+- Enhanced `DocumentSources` with local indexing tab
+
+### User Experience
+1. **Setup**: One-time folder selection with persistent permissions
+2. **Scanning**: Smart background sync + manual refresh options
+3. **Querying**: Transparent local/cloud search with source indicators
+4. **Privacy**: Complete offline capability, no data transmission
+
+### Technical Implementation
+
+**File System Integration:**
+```typescript
+// Modern File System Access API
+const directoryHandle = await window.showDirectoryPicker();
+const permissions = await directoryHandle.requestPermission({ mode: 'read' });
+```
+
+**IndexedDB Schema:**
+```typescript
+interface LocalDocumentIndex {
+  id: string;              // file path hash
+  filePath: string;        // absolute file path
+  title: string;          // extracted title
+  summary: string;        // AI-generated summary (200-500 words)
+  keywords: string[];     // extracted key terms
+  lastModified: number;   // file system timestamp
+  lastIndexed: number;    // processing timestamp
+  metadata: DocumentMetadata; // author, created, wordCount, etc.
+}
+```
+
+**Security Features:**
+- Permission isolation per folder
+- Optional IndexedDB encryption
+- No network transmission of document content
+- Secure content extraction with sanitization
 
 ## Rules for AI Agents
 
@@ -285,18 +366,21 @@ All model IDs centralised in `supabase/functions/_shared/models.ts`.
 
 | Tier | Model | Usage |
 |------|-------|-------|
-| PRIMARY | `claude-opus-4-5` (alias) | Complex analysis, document processing |
-| FAST | `claude-sonnet-4-5` (alias) | General queries, metadata generation |
-| CHEAP | `claude-haiku-4-5` (alias) | Summarisation, simple tasks |
+| PRIMARY | `claude-opus-4-6` ✨ **UPDATED** | Complex analysis, document processing, local doc summarization |
+| FAST | `claude-sonnet-4-5-20250929` | General queries, metadata generation |
+| CHEAP | `claude-haiku-4-5-20251001` | Summarisation, simple tasks |
 
-**Fallback**: OpenRouter `openai/gpt-4o` when Claude is unavailable.
+**OpenAI**: `gpt-4.1` ✨ **UPDATED** (1M token context) via OpenRouter fallback.
+**Gemini**: `gemini-3-flash-preview` ✨ **UPDATED** for image generation.
 **Offline**: Ollama `llama3` at `localhost:11434`.
 
 Override via Supabase environment variables:
 ```
-CLAUDE_PRIMARY_MODEL=claude-opus-4-5
-CLAUDE_FAST_MODEL=claude-sonnet-4-5
-CLAUDE_CHEAP_MODEL=claude-haiku-4-5
+CLAUDE_PRIMARY_MODEL=claude-opus-4-6
+CLAUDE_FAST_MODEL=claude-sonnet-4-5-20250929
+CLAUDE_CHEAP_MODEL=claude-haiku-4-5-20251001
+OPENAI_MODEL=gpt-4.1
+GEMINI_MODEL=gemini-3-flash-preview
 ```
 
 ## Environment Variables
@@ -327,6 +411,21 @@ VITE_SUPABASE_ANON_KEY=<your-anon-key>
 3. Context prepared, sent to Claude (or OpenRouter fallback)
 4. Response returned with metadata, saved to `ai_query_history`
 
+### Hybrid Document Search Flow ✨ NEW
+1. User submits query via enhanced `AIQueryInput`
+2. `HybridQueryEngine` searches both local IndexedDB and cloud documents
+3. Local results: Full-text search on summaries, metadata, and content
+4. Cloud results: Traditional RAG pipeline via Edge Functions
+5. Combined results ranked by relevance, presented with source indicators
+6. Fallback: If local summary insufficient, reads full file content
+
+### Local Document Indexing Flow ✨ NEW
+1. User grants folder permissions via `FileSystemManager`
+2. `LocalDocumentIndexer` scans for changes (file timestamps)
+3. `DocumentProcessor` extracts content and generates AI summaries
+4. `LocalDocumentStore` saves metadata and summaries to IndexedDB
+5. Background sync continues with smart change detection
+
 ### State Management
 - `TimelineContext` for shared timeline state (single source of truth)
 - Custom hooks for domain logic (`useTimeline`, `useLayers`, `useTasks`)
@@ -337,6 +436,9 @@ VITE_SUPABASE_ANON_KEY=<your-anon-key>
 - **Adding Edge Functions**: Create in `supabase/functions/`, include CORS, verify auth
 - **Changing AI models**: Update `_shared/models.ts` or set environment variables
 - **Document processing**: `parse-document` -> `ai-document-analysis` -> store in `knowledge_documents`
+- **Local document indexing**: Use `useLocalDocuments` hook → `LocalDocumentStore` → IndexedDB
+- **Hybrid search**: Use `useHybridQuery` hook for unified local + cloud document search
+- **File System Access**: Use `FileSystemManager` for secure folder permission management
 
 ## Path Aliases
 
