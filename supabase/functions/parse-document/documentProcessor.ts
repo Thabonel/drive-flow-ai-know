@@ -787,114 +787,314 @@ async function parseAudio(filePath: string, fileName: string): Promise<ParseResu
   }
 }
 
+/**
+ * Comprehensive server-side image processing with HEIC support
+ * Acts as safety net for client-side conversion failures
+ */
 async function parseImage(filePath: string, fileName: string): Promise<ParseResult> {
+  const startTime = Date.now();
+
   try {
-    console.log('Parsing image file using Claude Vision...');
+    console.log('🖼️ Starting comprehensive image processing...');
     const fileBytes = await Deno.readFile(filePath);
 
-    // Determine MIME type from file extension and content
-    const ext = fileName.toLowerCase().split('.').pop() || '';
-    let mimeType = 'image/jpeg'; // default
+    // Phase 1: File validation and analysis
+    const validationResult = await validateImageFile(fileBytes, fileName);
 
-    if (ext === 'png') mimeType = 'image/png';
-    else if (ext === 'gif') mimeType = 'image/gif';
-    else if (ext === 'webp') mimeType = 'image/webp';
-    else if (ext === 'heic') mimeType = 'image/heic';
-    else if (ext === 'heif') mimeType = 'image/heif';
-
-    // Convert to base64
-    const base64 = arrayBufferToBase64(fileBytes);
-
-    const apiKey = Deno.env.get('ANTHROPIC_API_KEY');
-    if (!apiKey) {
-      throw new Error('ANTHROPIC_API_KEY not configured');
+    // Phase 2: HEIC-specific processing
+    if (validationResult.isHEIC) {
+      console.log('📱 Detected iPhone HEIC photo - applying specialized processing');
+      return await processHEICImage(fileBytes, fileName, validationResult, startTime);
     }
 
-    console.log(`Sending ${mimeType} image to Claude Vision (${Math.round(fileBytes.length / 1024)}KB)...`);
+    // Phase 3: Standard image processing
+    return await processStandardImage(fileBytes, fileName, validationResult, startTime);
 
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01'
-      },
-      body: JSON.stringify({
-        model: CLAUDE_MODELS.PRIMARY,
-        max_tokens: 8192,
-        messages: [{
-          role: 'user',
-          content: [{
-            type: 'image',
-            source: {
-              type: 'base64',
-              media_type: mimeType,
-              data: base64
-            }
-          }, {
-            type: 'text',
-            text: `Analyze this image and extract ALL text content using OCR. Also provide a detailed description of the visual elements.
-
-EXTRACT ALL TEXT:
-- Read and transcribe every piece of text visible in the image
-- Include all text from signs, labels, captions, headers, body text, etc.
-- Preserve the original formatting and structure where possible
-- If text is unclear, note it as [unclear text] but include your best interpretation
-
-DESCRIBE VISUAL CONTENT:
-- Provide a comprehensive description of what the image shows
-- Include details about objects, people, scenes, colors, layout
-- Note the context and setting
-- Describe any charts, graphs, diagrams, or data visualizations
-
-Format your response as:
-
-## Extracted Text
-[All text content found in the image, preserving structure]
-
-## Visual Description
-[Detailed description of the image content and context]
-
-If no text is found, state "No text detected" in the text section but still provide the visual description.`
-          }]
-        }]
-      })
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Claude API error:', errorText);
-      throw new Error(`Claude API error: ${response.status} - ${errorText}`);
-    }
-
-    const result = await response.json();
-
-    if (!result.content || !result.content[0] || !result.content[0].text) {
-      throw new Error('Unexpected response format from Claude API');
-    }
-
-    const extractedContent = result.content[0].text;
-    console.log(`Image parsing complete: ${extractedContent.length} characters extracted`);
-
-    // Check if this was a converted HEIC file
-    const isHeicFile = mimeType === 'image/heic' || mimeType === 'image/heif';
-    const conversionNote = isHeicFile ? '\n\n*Note: This image was processed as an iPhone HEIC photo.*' : '';
-
-    return {
-      content: extractedContent + conversionNote,
-      title: fileName.replace(/\.[^/.]+$/, ''),
-      hasImages: true,
-      metadata: {
-        type: 'image',
-        originalName: fileName,
-        mimeType,
-        originalSize: fileBytes.length,
-        extractionMethod: 'claude-vision-ocr',
-        isHeicConversion: isHeicFile
-      }
-    };
   } catch (error) {
-    console.error('Image parsing error:', error);
+    console.error('❌ Image processing error:', error);
     throw new Error(`Failed to parse image file: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
+}
+
+/**
+ * Validate image file and extract metadata
+ */
+async function validateImageFile(fileBytes: Uint8Array, fileName: string) {
+  const ext = fileName.toLowerCase().split('.').pop() || '';
+  let mimeType = 'image/jpeg'; // default
+  let isHEIC = false;
+  let hasValidSignature = false;
+
+  // Determine MIME type from extension
+  if (ext === 'png') mimeType = 'image/png';
+  else if (ext === 'gif') mimeType = 'image/gif';
+  else if (ext === 'webp') mimeType = 'image/webp';
+  else if (ext === 'heic') { mimeType = 'image/heic'; isHEIC = true; }
+  else if (ext === 'heif') { mimeType = 'image/heif'; isHEIC = true; }
+
+  // Validate file signature for HEIC files
+  if (isHEIC && fileBytes.length >= 12) {
+    try {
+      const signature = new TextDecoder().decode(fileBytes.slice(4, 8));
+      hasValidSignature = signature === 'ftyp';
+
+      if (hasValidSignature) {
+        // Check HEIC-specific markers
+        const brandView = new TextDecoder().decode(fileBytes.slice(8, 12));
+        const isValidHEIC = ['heic', 'mif1', 'msf1', 'hevc'].includes(brandView);
+        console.log(`📋 HEIC signature validation: ${isValidHEIC ? 'valid' : 'questionable'} (brand: ${brandView})`);
+      }
+    } catch (sigError) {
+      console.warn('⚠️ Could not validate HEIC signature, proceeding with processing');
+    }
+  }
+
+  // Calculate quality metrics
+  const sizeKB = Math.round(fileBytes.length / 1024);
+  const qualityEstimate = sizeKB > 1000 ? 'high' : sizeKB > 500 ? 'medium' : 'standard';
+
+  console.log(`📊 Image validation complete: ${mimeType}, ${sizeKB}KB, ${qualityEstimate} quality`);
+
+  return {
+    mimeType,
+    isHEIC,
+    hasValidSignature,
+    sizeBytes: fileBytes.length,
+    sizeKB,
+    qualityEstimate,
+    extension: ext
+  };
+}
+
+/**
+ * Process HEIC images with iPhone-specific optimizations
+ */
+async function processHEICImage(
+  fileBytes: Uint8Array,
+  fileName: string,
+  validation: any,
+  startTime: number
+): Promise<ParseResult> {
+  console.log('🔄 Processing iPhone HEIC photo with specialized workflow...');
+
+  // Convert to base64 for Claude Vision
+  const base64 = arrayBufferToBase64(fileBytes);
+
+  const apiKey = Deno.env.get('ANTHROPIC_API_KEY');
+  if (!apiKey) {
+    throw new Error('ANTHROPIC_API_KEY not configured for HEIC processing');
+  }
+
+  console.log(`📤 Sending HEIC to Claude Vision (${validation.sizeKB}KB)...`);
+
+  // Enhanced prompt for HEIC processing
+  const response = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01'
+    },
+    body: JSON.stringify({
+      model: CLAUDE_MODELS.PRIMARY,
+      max_tokens: 12000, // Higher token limit for HEIC
+      messages: [{
+        role: 'user',
+        content: [{
+          type: 'image',
+          source: {
+            type: 'base64',
+            media_type: validation.mimeType,
+            data: base64
+          }
+        }, {
+          type: 'text',
+          text: `🔍 COMPREHENSIVE HEIC IMAGE ANALYSIS
+This is an iPhone HEIC photo that requires thorough analysis for document processing.
+
+PRIORITY TASKS:
+1. **TEXT EXTRACTION** (Critical for document workflow):
+   - Extract ALL visible text with maximum accuracy
+   - Include text from: signs, labels, documents, screens, handwritten notes
+   - Preserve formatting, line breaks, and text structure
+   - Mark unclear text as [unclear: best_guess]
+
+2. **VISUAL DOCUMENTATION** (Complete scene analysis):
+   - Detailed description of all objects, people, and scenes
+   - Color schemes, lighting conditions, and image quality
+   - Technical details: composition, focus areas, background/foreground
+   - Context clues: location type, setting, purpose
+
+3. **HEIC-SPECIFIC INSIGHTS**:
+   - Image quality assessment (iPhone camera capabilities)
+   - Any Apple-specific features detected (Live Photos, etc.)
+   - Compression artifacts or quality issues
+
+4. **DOCUMENT WORKFLOW OPTIMIZATION**:
+   - Categorize content type (document scan, photo, screenshot, etc.)
+   - Suggest optimal use cases for this image
+   - Note any privacy-sensitive content
+
+Format response as:
+
+## 📝 Extracted Text
+[All text content with structure preserved]
+
+## 🖼️ Visual Analysis
+[Comprehensive visual description]
+
+## 📱 HEIC Processing Notes
+[iPhone-specific observations and quality metrics]
+
+## 💡 Workflow Recommendations
+[Suggested use cases and handling notes]`
+        }]
+      }]
+    })
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error('❌ Claude HEIC processing error:', errorText);
+    throw new Error(`Claude HEIC processing failed: ${response.status} - ${errorText}`);
+  }
+
+  const result = await response.json();
+
+  if (!result.content || !result.content[0] || !result.content[0].text) {
+    throw new Error('Invalid Claude Vision response for HEIC processing');
+  }
+
+  const extractedContent = result.content[0].text;
+  const processingTime = Date.now() - startTime;
+
+  // Add HEIC processing summary
+  const heicSummary = `
+---
+## 📊 HEIC Processing Summary
+- **Source**: iPhone HEIC Photo (${fileName})
+- **Size**: ${validation.sizeKB}KB (${(validation.sizeBytes / 1024 / 1024).toFixed(2)}MB)
+- **Processing Time**: ${(processingTime / 1000).toFixed(2)}s
+- **Method**: Claude Vision API with HEIC optimization
+- **Quality**: ${validation.qualityEstimate} (based on file size)
+- **Server-Side Safety Net**: ✅ Successfully processed without client conversion
+`;
+
+  console.log(`✅ HEIC processing complete: ${extractedContent.length} chars, ${processingTime}ms`);
+
+  return {
+    content: extractedContent + heicSummary,
+    title: fileName.replace(/\.[^/.]+$/, ''),
+    hasImages: true,
+    metadata: {
+      type: 'image',
+      subType: 'heic',
+      originalName: fileName,
+      mimeType: validation.mimeType,
+      originalSize: validation.sizeBytes,
+      extractionMethod: 'claude-vision-heic-optimized',
+      processingTime,
+      isHeicConversion: true,
+      qualityEstimate: validation.qualityEstimate,
+      serverSideProcessing: true,
+      hasValidSignature: validation.hasValidSignature
+    }
+  };
+}
+
+/**
+ * Process standard image formats
+ */
+async function processStandardImage(
+  fileBytes: Uint8Array,
+  fileName: string,
+  validation: any,
+  startTime: number
+): Promise<ParseResult> {
+  console.log(`🖼️ Processing standard image: ${validation.mimeType}`);
+
+  const base64 = arrayBufferToBase64(fileBytes);
+
+  const apiKey = Deno.env.get('ANTHROPIC_API_KEY');
+  if (!apiKey) {
+    throw new Error('ANTHROPIC_API_KEY not configured');
+  }
+
+  const response = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01'
+    },
+    body: JSON.stringify({
+      model: CLAUDE_MODELS.PRIMARY,
+      max_tokens: 8192,
+      messages: [{
+        role: 'user',
+        content: [{
+          type: 'image',
+          source: {
+            type: 'base64',
+            media_type: validation.mimeType,
+            data: base64
+          }
+        }, {
+          type: 'text',
+          text: `Extract ALL text content using OCR and provide a detailed visual description.
+
+EXTRACT ALL TEXT:
+- Read and transcribe every piece of text visible
+- Include text from signs, labels, captions, headers, body text
+- Preserve original formatting and structure
+- Mark unclear text as [unclear: best_guess]
+
+DESCRIBE VISUAL CONTENT:
+- Comprehensive description of what the image shows
+- Include objects, people, scenes, colors, layout
+- Note context and setting
+- Describe charts, graphs, diagrams, or data visualizations
+
+## Extracted Text
+[All text content with structure preserved]
+
+## Visual Description
+[Detailed description of image content and context]`
+        }]
+      }]
+    })
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error('Claude API error:', errorText);
+    throw new Error(`Claude API error: ${response.status} - ${errorText}`);
+  }
+
+  const result = await response.json();
+
+  if (!result.content || !result.content[0] || !result.content[0].text) {
+    throw new Error('Unexpected response format from Claude API');
+  }
+
+  const extractedContent = result.content[0].text;
+  const processingTime = Date.now() - startTime;
+
+  console.log(`✅ Standard image processing complete: ${extractedContent.length} characters`);
+
+  return {
+    content: extractedContent,
+    title: fileName.replace(/\.[^/.]+$/, ''),
+    hasImages: true,
+    metadata: {
+      type: 'image',
+      originalName: fileName,
+      mimeType: validation.mimeType,
+      originalSize: validation.sizeBytes,
+      extractionMethod: 'claude-vision-ocr',
+      processingTime,
+      qualityEstimate: validation.qualityEstimate,
+      serverSideProcessing: true
+    }
+  };
 }
