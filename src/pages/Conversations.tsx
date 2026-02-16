@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ConversationChat } from '@/components/ConversationChat';
 import { ConvertToDocumentModal } from '@/components/ConvertToDocumentModal';
 import { PageHelp } from '@/components/PageHelp';
-import { MessageSquare, Archive, Search, Trash2, PanelLeftClose, PanelLeftOpen, FileText } from 'lucide-react';
+import { MessageSquare, Archive, Search, Trash2, PanelLeftClose, PanelLeftOpen, FileText, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 
@@ -208,16 +208,17 @@ export default function Conversations() {
                 >
                   {sidebarCollapsed ? <PanelLeftOpen className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
                 </Button>
-              </div>
-              {!sidebarCollapsed && (
+                {/* New Chat button - always visible */}
                 <Button
                   size="sm"
                   onClick={handleNewConversation}
                   title="Create new conversation"
+                  className={sidebarCollapsed ? "h-8 w-8 p-0" : ""}
+                  variant={sidebarCollapsed ? "ghost" : "default"}
                 >
-                  New Chat
+                  {sidebarCollapsed ? <Plus className="h-4 w-4" /> : "New Chat"}
                 </Button>
-              )}
+              </div>
             </div>
             {!sidebarCollapsed && <CardDescription>Your AI conversation history</CardDescription>}
           </CardHeader>
