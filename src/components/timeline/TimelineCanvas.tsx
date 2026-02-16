@@ -63,6 +63,17 @@ export function TimelineCanvas({
 }: TimelineCanvasProps) {
   const { checkBudgetViolation, attentionPreferences } = useTimelineContext();
   const svgRef = useRef<SVGSVGElement>(null);
+
+  // DEBUG: Log when TimelineCanvas receives new props
+  useEffect(() => {
+    console.log('📊 TimelineCanvas Debug - Received props:', {
+      pixelsPerHour,
+      pastHours,
+      futureHours,
+      subdivisionMinutes,
+      timestamp: Date.now()
+    });
+  }, [pixelsPerHour, pastHours, futureHours, subdivisionMinutes]);
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [viewportWidth, setViewportWidth] = useState(0);
