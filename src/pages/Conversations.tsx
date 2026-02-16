@@ -208,16 +208,16 @@ export default function Conversations() {
                 >
                   {sidebarCollapsed ? <PanelLeftOpen className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
                 </Button>
-                {/* New Chat button - always visible */}
-                <Button
-                  size="sm"
-                  onClick={handleNewConversation}
-                  title="Create new conversation"
-                  className={sidebarCollapsed ? "h-8 w-8 p-0" : ""}
-                  variant={sidebarCollapsed ? "ghost" : "default"}
-                >
-                  {sidebarCollapsed ? <Plus className="h-4 w-4" /> : "New Chat"}
-                </Button>
+                {/* New Chat button - only show when sidebar is open */}
+                {!sidebarCollapsed && (
+                  <Button
+                    size="sm"
+                    onClick={handleNewConversation}
+                    title="Create new conversation"
+                  >
+                    New Chat
+                  </Button>
+                )}
               </div>
             </div>
             {!sidebarCollapsed && <CardDescription>Your AI conversation history</CardDescription>}
@@ -329,7 +329,18 @@ export default function Conversations() {
         </Card>
 
         {/* Chat Area */}
-        <div className={`h-full overflow-hidden ${sidebarCollapsed ? 'lg:col-span-1' : 'lg:col-span-2'} flex flex-col`}>
+        <div className={`h-full overflow-hidden ${sidebarCollapsed ? 'lg:col-span-1' : 'lg:col-span-2'} flex flex-col relative`}>
+          {/* Floating New Chat Button - visible when sidebar is collapsed */}
+          {sidebarCollapsed && (
+            <Button
+              onClick={handleNewConversation}
+              className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg z-50"
+              size="lg"
+              title="Create new conversation"
+            >
+              <Plus className="h-6 w-6" />
+            </Button>
+          )}
           {selectedConversation || isCreating ? (
             <ConversationChat
               conversationId={selectedConversation || undefined}
