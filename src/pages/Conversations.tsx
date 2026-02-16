@@ -219,16 +219,6 @@ export default function Conversations() {
                 >
                   {sidebarCollapsed ? <PanelLeftOpen className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
                 </Button>
-                {/* New Chat button - only show when sidebar is open */}
-                {!sidebarCollapsed && (
-                  <Button
-                    size="sm"
-                    onClick={handleNewConversation}
-                    title="Create new conversation"
-                  >
-                    New Chat
-                  </Button>
-                )}
               </div>
             </div>
             {!sidebarCollapsed && <CardDescription>Your AI conversation history</CardDescription>}
