@@ -8,6 +8,7 @@ import { Card } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Loader2, Send, Archive, Trash2, Edit2, Check, X, FileText, Calendar, Printer, Download, ChevronDown, ImageIcon } from 'lucide-react';
 import { arrayBufferToBase64 } from '@/lib/base64Utils';
+import heic2any from 'heic2any';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -1395,7 +1396,8 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
   };
 
   const isValidImageFile = (file: File): boolean => {
-    const validTypes = ['image/png', 'image/jpeg', 'image/gif', 'image/webp'];
+    // Accept HEIC/HEIF in addition to standard formats (will convert to JPEG)
+    const validTypes = ['image/png', 'image/jpeg', 'image/gif', 'image/webp', 'image/heic', 'image/heif'];
     const maxSize = 5 * 1024 * 1024; // 5MB
 
     // DEBUG: Log file details to console
@@ -1416,17 +1418,46 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
     if (!isValidImageFile(file)) {
       // More detailed error message with actual detected values
       const fileSizeKB = Math.round(file.size / 1024);
-      toast.error(`Invalid image. Detected: ${file.type} (${fileSizeKB}KB). Supported: PNG, JPEG, GIF, WebP (max 5MB)`);
+      toast.error(`Invalid image. Detected: ${file.type} (${fileSizeKB}KB). Supported: PNG, JPEG, GIF, WebP, HEIC (max 5MB)`);
       return;
     }
     setIsProcessingImage(true);
     try {
-      const base64 = await fileToBase64(file);
-      setPendingImage({ base64, mimeType: file.type, fileName: file.name });
+      let processedFile = file;
+      let mimeType = file.type;
+
+      // Convert HEIC/HEIF to JPEG
+      if (file.type === 'image/heic' || file.type === 'image/heif') {
+        console.log('🔄 Converting HEIC to JPEG...');
+        toast.info('Converting iPhone photo to JPEG...');
+
+        const convertedBlob = await heic2any({
+          blob: file,
+          toType: 'image/jpeg',
+          quality: 0.8
+        }) as Blob;
+
+        // Create a new File object from the converted Blob
+        processedFile = new File([convertedBlob], file.name.replace(/\.(heic|heif)$/i, '.jpg'), {
+          type: 'image/jpeg',
+          lastModified: file.lastModified
+        });
+        mimeType = 'image/jpeg';
+
+        console.log('✅ HEIC converted to JPEG:', {
+          originalSize: Math.round(file.size / 1024) + 'KB',
+          convertedSize: Math.round(processedFile.size / 1024) + 'KB',
+          originalType: file.type,
+          convertedType: mimeType
+        });
+      }
+
+      const base64 = await fileToBase64(processedFile);
+      setPendingImage({ base64, mimeType, fileName: processedFile.name });
       // Image preview indicator in the form shows the image is ready
     } catch (error) {
       console.error('Image processing error:', error);
-      toast.error('Failed to process image');
+      toast.error('Failed to process image. Please try a different format.');
     } finally {
       setIsProcessingImage(false);
     }
