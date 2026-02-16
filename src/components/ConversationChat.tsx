@@ -1397,12 +1397,26 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
   const isValidImageFile = (file: File): boolean => {
     const validTypes = ['image/png', 'image/jpeg', 'image/gif', 'image/webp'];
     const maxSize = 5 * 1024 * 1024; // 5MB
+
+    // DEBUG: Log file details to console
+    console.log('🔍 Image validation debug:', {
+      fileName: file.name,
+      fileType: file.type,
+      fileSize: file.size,
+      fileSizeKB: Math.round(file.size / 1024),
+      isTypeValid: validTypes.includes(file.type),
+      isSizeValid: file.size <= maxSize,
+      validTypes
+    });
+
     return validTypes.includes(file.type) && file.size <= maxSize;
   };
 
   const handleImageFile = async (file: File) => {
     if (!isValidImageFile(file)) {
-      toast.error('Invalid image. Supported: PNG, JPEG, GIF, WebP (max 5MB)');
+      // More detailed error message with actual detected values
+      const fileSizeKB = Math.round(file.size / 1024);
+      toast.error(`Invalid image. Detected: ${file.type} (${fileSizeKB}KB). Supported: PNG, JPEG, GIF, WebP (max 5MB)`);
       return;
     }
     setIsProcessingImage(true);
