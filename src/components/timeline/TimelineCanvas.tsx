@@ -20,8 +20,6 @@ import {
   TIMELINE_HEADER_HEIGHT,
   DEFAULT_PAST_HOURS,
   DEFAULT_FUTURE_HOURS,
-  getScaledUIElements,
-  VIEW_MODE_CONFIG,
 } from '@/lib/timelineConstants';
 
 interface TimelineCanvasProps {
@@ -68,14 +66,6 @@ export function TimelineCanvas({
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [viewportWidth, setViewportWidth] = useState(0);
-
-  // Calculate scaled UI elements based on pixelsPerHour
-  // Find the matching view mode config based on base pixelsPerHour
-  const viewModeConfig = Object.values(VIEW_MODE_CONFIG).find((config: any) =>
-    Math.abs(config.pixelsPerHour - pixelsPerHour) < config.pixelsPerHour * 0.3
-  ) || VIEW_MODE_CONFIG.day; // fallback to day
-
-  const scaledUI = getScaledUIElements(viewModeConfig);
 
   // Update viewport width on resize
   useEffect(() => {
@@ -155,10 +145,10 @@ export function TimelineCanvas({
     const y = e.clientY - rect.top;
 
     // Skip if clicked in header area
-    if (y < scaledUI.headerHeight) return;
+    if (y < TIMELINE_HEADER_HEIGHT) return;
 
     // Calculate which layer was clicked
-    const layerY = y - scaledUI.headerHeight;
+    const layerY = y - TIMELINE_HEADER_HEIGHT;
     const layerIndex = Math.floor(layerY / layerHeight);
     if (layerIndex < 0 || layerIndex >= visibleLayers.length) return;
     const clickedLayer = visibleLayers[layerIndex];
@@ -175,7 +165,7 @@ export function TimelineCanvas({
 
   // Calculate dimensions
   const visibleLayers = layers.filter(l => l.is_visible);
-  const totalHeight = scaledUI.headerHeight + (visibleLayers.length * layerHeight);
+  const totalHeight = TIMELINE_HEADER_HEIGHT + (visibleLayers.length * layerHeight);
   const nowLineX = calculateNowLineX(viewportWidth, isLocked, scrollOffset);
 
   // Helper to calculate budget status for an item
@@ -243,7 +233,7 @@ export function TimelineCanvas({
           scrollOffset={scrollOffset}
           nowLineX={nowLineX}
           viewportWidth={viewportWidth}
-          headerHeight={scaledUI.headerHeight}
+          headerHeight={TIMELINE_HEADER_HEIGHT}
         />
       )}
 
@@ -301,7 +291,7 @@ export function TimelineCanvas({
           x="0"
           y="0"
           width="100%"
-          height={scaledUI.headerHeight}
+          height={TIMELINE_HEADER_HEIGHT}
           fill="currentColor"
           className="text-gray-100 dark:text-gray-800"
         />
@@ -332,7 +322,7 @@ export function TimelineCanvas({
                 <text
                   x={marker.x + 5}
                   y={15}
-                  fontSize={scaledUI.fontSize}
+                  fontSize="10"
                   fill="currentColor"
                   className={
                     marker.isPast
@@ -345,7 +335,7 @@ export function TimelineCanvas({
                 <text
                   x={marker.x + 5}
                   y={30}
-                  fontSize={scaledUI.fontSize * 1.2}
+                  fontSize="12"
                   fontWeight="500"
                   fill="currentColor"
                   className={
@@ -362,7 +352,7 @@ export function TimelineCanvas({
               <text
                 x={marker.x + 3}
                 y={55}
-                fontSize={scaledUI.fontSize}
+                fontSize="10"
                 fill="currentColor"
                 className={
                   marker.isPast
@@ -379,7 +369,7 @@ export function TimelineCanvas({
 
       {/* Layer backgrounds and labels */}
       {visibleLayers.map((layer, index) => {
-        const y = calculateLayerY(index, layerHeight, scaledUI.headerHeight);
+        const y = calculateLayerY(index, layerHeight, TIMELINE_HEADER_HEIGHT);
 
         return (
           <g key={layer.id}>
@@ -401,7 +391,7 @@ export function TimelineCanvas({
               x={10}
               y={y + layerHeight / 2}
               dominantBaseline="middle"
-              fontSize={scaledUI.fontSize * 1.2}
+              fontSize="12"
               fontWeight="500"
               fill="currentColor"
               className="text-gray-600 dark:text-gray-400"
@@ -439,7 +429,7 @@ export function TimelineCanvas({
           if (!layer) return null;
 
           const layerIndex = visibleLayers.indexOf(layer);
-          const y = calculateLayerY(layerIndex, layerHeight, scaledUI.headerHeight);
+          const y = calculateLayerY(layerIndex, layerHeight, TIMELINE_HEADER_HEIGHT);
 
           return (
             <g key={item.id} transform={`translate(0, ${y})`}>
@@ -508,9 +498,9 @@ export function TimelineCanvas({
           rx={2}
         />
         <text
-          x={nowLineX + scaledUI.nowLineLabelWidth}
+          x={nowLineX + 15}
           y={13}
-          fontSize={scaledUI.fontSize}
+          fontSize="10"
           fill="white"
           fontWeight="600"
         >
@@ -527,9 +517,9 @@ export function TimelineCanvas({
           rx={2}
         />
         <text
-          x={nowLineX + scaledUI.nowLineLabelWidth}
+          x={nowLineX + 15}
           y={30}
-          fontSize={scaledUI.fontSize * 1.2}
+          fontSize="12"
           fill="white"
           fontWeight="bold"
         >
@@ -549,9 +539,9 @@ export function TimelineCanvas({
           filter="url(#now-line-glow)"
         />
         <text
-          x={nowLineX + scaledUI.nowLineLabelWidth}
+          x={nowLineX + 16}
           y={48}
-          fontSize={scaledUI.fontSize * 1.2}
+          fontSize="12"
           fill="white"
           fontWeight="bold"
           textAnchor="start"
