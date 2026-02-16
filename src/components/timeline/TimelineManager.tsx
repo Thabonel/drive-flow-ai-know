@@ -51,6 +51,9 @@ import {
   NOW_LINE_POSITION,
   TimelineViewMode,
   VIEW_MODE_CONFIG,
+  getPastHours,
+  getFutureHours,
+  getScaledUIElements,
 } from '@/lib/timelineConstants';
 import { addDays, addWeeks, addMonths, format } from 'date-fns';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -484,7 +487,7 @@ export function TimelineManager({ onCanvasReady }: TimelineManagerProps = {}) {
 
     // Calculate scroll offset to show exactly pastHours before NOW
     // Formula: scrollOffset = pastHours * pixelsPerHour - NOW_LINE_POSITION * viewportWidth
-    const pastHours = viewModeConfig.pastHours;
+    const pastHours = getPastHours(viewModeConfig);
     const targetScrollOffset = pastHours * pixelsPerHour - NOW_LINE_POSITION * estimatedViewportWidth;
 
     // Only set if this is initial load or view mode changed
@@ -511,7 +514,7 @@ export function TimelineManager({ onCanvasReady }: TimelineManagerProps = {}) {
     const estimatedViewportWidth = 1200;
 
     // Calculate new scroll offset for the new view mode
-    const pastHours = viewModeConfig.pastHours;
+    const pastHours = getPastHours(viewModeConfig);
     const newScrollOffset = pastHours * pixelsPerHour - NOW_LINE_POSITION * estimatedViewportWidth;
 
     setScrollOffset(newScrollOffset);
@@ -680,7 +683,7 @@ export function TimelineManager({ onCanvasReady }: TimelineManagerProps = {}) {
       setCalendarViewDate(new Date());
     } else {
       const estimatedViewportWidth = 1200;
-      const pastHours = viewModeConfig.pastHours;
+      const pastHours = getPastHours(viewModeConfig);
       const targetScrollOffset = pastHours * pixelsPerHour - NOW_LINE_POSITION * estimatedViewportWidth;
       setScrollOffset(targetScrollOffset);
     }
@@ -1304,8 +1307,8 @@ export function TimelineManager({ onCanvasReady }: TimelineManagerProps = {}) {
               layerHeight={layerHeight}
               isLocked={settings?.is_locked ?? true}
               showCompleted={true}
-              pastHours={viewModeConfig.pastHours}
-              futureHours={viewModeConfig.futureHours}
+              pastHours={getPastHours(viewModeConfig)}
+              futureHours={getFutureHours(viewModeConfig)}
               subdivisionMinutes={viewModeConfig.subdivisionMinutes}
               onItemClick={handleItemClick}
               onDrag={handleDrag}

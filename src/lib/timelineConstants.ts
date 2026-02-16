@@ -95,26 +95,61 @@ export type TimelineViewMode = 'day' | 'week' | 'month';
 export const VIEW_MODE_CONFIG = {
   day: {
     label: 'Day',
-    pixelsPerHour: 200,  // 200px per hour = very detailed
-    pastHours: 2,        // Show 2 hours in the past
-    futureHours: 18,     // Show 18 hours in the future (total 24h)
-    subdivisionMinutes: 15, // 15-minute intervals for high detail
+    totalHours: 20,           // 20 hours total
+    pastRatio: 0.15,          // 15% past (3 hours)
+    futureRatio: 0.85,        // 85% future (17 hours)
+    pixelsPerHour: 200,
+    subdivisionMinutes: 15,   // 15-minute intervals
   },
   week: {
     label: 'Week',
-    pixelsPerHour: 30,   // 30px per hour = ~720px per day
-    pastHours: 2,        // Show 2 hours in the past
-    futureHours: 144,    // Show 6 days in the future (total 7 days)
-    subdivisionMinutes: 60, // Hourly intervals
+    totalHours: 168,          // 7 days * 24 hours
+    pastRatio: 0.15,          // 15% past (~25 hours ≈ 1 day)
+    futureRatio: 0.85,        // 85% future (~143 hours ≈ 6 days)
+    pixelsPerHour: 30,
+    subdivisionMinutes: 180,  // 3-hour intervals
   },
   month: {
     label: 'Month',
-    pixelsPerHour: 10,   // 10px per hour = ~240px per day = ~7200px per month
-    pastHours: 2,        // Show 2 hours in the past
-    futureHours: 552,    // Show ~3 weeks in the future (total ~30 days)
-    subdivisionMinutes: 360, // 6-hour intervals
+    totalHours: 720,          // 30 days * 24 hours
+    pastRatio: 0.15,          // 15% past (~108 hours ≈ 4.5 days)
+    futureRatio: 0.85,        // 85% future (~612 hours ≈ 25.5 days)
+    pixelsPerHour: 10,
+    subdivisionMinutes: 360,  // 6-hour intervals
   },
 };
+
+// Helper functions for proportional view system
+export function getPastHours(config: typeof VIEW_MODE_CONFIG.day): number {
+  return config.totalHours * config.pastRatio;
+}
+
+export function getFutureHours(config: typeof VIEW_MODE_CONFIG.day): number {
+  return config.totalHours * config.futureRatio;
+}
+
+export function getScaledUIElements(config: typeof VIEW_MODE_CONFIG.day) {
+  const { pixelsPerHour } = config;
+  return {
+    headerHeight: Math.max(40, pixelsPerHour * 0.3),        // Scale with time, minimum 40px
+    layerHeight: Math.max(60, pixelsPerHour * 0.4),         // Scale with time, minimum 60px
+    fontSize: Math.max(8, pixelsPerHour / 20),               // Readable at all scales, minimum 8px
+    nowLineLabelWidth: pixelsPerHour * 0.25,                 // Proportional to scale
+  };
+}
+
+export function getOptimalSubdivision(config: typeof VIEW_MODE_CONFIG.day, viewportWidth: number = ESTIMATED_VIEWPORT_WIDTH): number {
+  // Calculate subdivision to maintain consistent marker density (~30-40 visible markers)
+  const viewportHours = viewportWidth / config.pixelsPerHour;
+  const targetMarkers = 35;
+  const subdivisionMinutes = (viewportHours * 60) / targetMarkers;
+
+  // Round to reasonable intervals (15, 30, 60, 90, 180, 360 minutes)
+  const intervals = [15, 30, 60, 90, 180, 360];
+  return intervals.reduce((prev, curr) =>
+    Math.abs(curr - subdivisionMinutes) < Math.abs(prev - subdivisionMinutes) ? curr : prev
+  );
+}
 
 // Calendar view configuration (Google Calendar style)
 export const CALENDAR_CONFIG = {
