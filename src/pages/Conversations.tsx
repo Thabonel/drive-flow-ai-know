@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -10,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ConversationChat } from '@/components/ConversationChat';
 import { ConvertToDocumentModal } from '@/components/ConvertToDocumentModal';
 import { PageHelp } from '@/components/PageHelp';
-import { MessageSquare, Archive, Search, Trash2, PanelLeftClose, PanelLeftOpen, FileText, Plus } from 'lucide-react';
+import { MessageSquare, Archive, Search, Trash2, PanelLeftClose, PanelLeftOpen, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 
@@ -28,6 +29,7 @@ interface Conversation {
 
 export default function Conversations() {
   const { user } = useAuth();
+  const location = useLocation();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedConversation, setSelectedConversation] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -46,6 +48,15 @@ export default function Conversations() {
       loadConversations();
     }
   }, [user, activeTab]);
+
+  // Handle navigation state for new conversation creation from header
+  useEffect(() => {
+    if (location.state?.createNew) {
+      handleNewConversation();
+      // Clear the navigation state to prevent retriggering
+      window.history.replaceState({}, '', location.pathname);
+    }
+  }, [location]);
 
   const loadConversations = async () => {
     const { data, error } = await supabase
@@ -330,17 +341,6 @@ export default function Conversations() {
 
         {/* Chat Area */}
         <div className={`h-full overflow-hidden ${sidebarCollapsed ? 'lg:col-span-1' : 'lg:col-span-2'} flex flex-col relative`}>
-          {/* Floating New Chat Button - visible when sidebar is collapsed */}
-          {sidebarCollapsed && (
-            <Button
-              onClick={handleNewConversation}
-              className="fixed bottom-6 right-6 rounded-full shadow-lg z-50 px-6 py-3"
-              size="lg"
-              title="Create new conversation"
-            >
-              New Chat
-            </Button>
-          )}
           {selectedConversation || isCreating ? (
             <ConversationChat
               conversationId={selectedConversation || undefined}

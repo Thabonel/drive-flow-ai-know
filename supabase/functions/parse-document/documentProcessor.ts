@@ -789,16 +789,112 @@ async function parseAudio(filePath: string, fileName: string): Promise<ParseResu
 
 async function parseImage(filePath: string, fileName: string): Promise<ParseResult> {
   try {
+    console.log('Parsing image file using Claude Vision...');
+    const fileBytes = await Deno.readFile(filePath);
+
+    // Determine MIME type from file extension and content
+    const ext = fileName.toLowerCase().split('.').pop() || '';
+    let mimeType = 'image/jpeg'; // default
+
+    if (ext === 'png') mimeType = 'image/png';
+    else if (ext === 'gif') mimeType = 'image/gif';
+    else if (ext === 'webp') mimeType = 'image/webp';
+    else if (ext === 'heic') mimeType = 'image/heic';
+    else if (ext === 'heif') mimeType = 'image/heif';
+
+    // Convert to base64
+    const base64 = arrayBufferToBase64(fileBytes);
+
+    const apiKey = Deno.env.get('ANTHROPIC_API_KEY');
+    if (!apiKey) {
+      throw new Error('ANTHROPIC_API_KEY not configured');
+    }
+
+    console.log(`Sending ${mimeType} image to Claude Vision (${Math.round(fileBytes.length / 1024)}KB)...`);
+
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01'
+      },
+      body: JSON.stringify({
+        model: CLAUDE_MODELS.PRIMARY,
+        max_tokens: 8192,
+        messages: [{
+          role: 'user',
+          content: [{
+            type: 'image',
+            source: {
+              type: 'base64',
+              media_type: mimeType,
+              data: base64
+            }
+          }, {
+            type: 'text',
+            text: `Analyze this image and extract ALL text content using OCR. Also provide a detailed description of the visual elements.
+
+EXTRACT ALL TEXT:
+- Read and transcribe every piece of text visible in the image
+- Include all text from signs, labels, captions, headers, body text, etc.
+- Preserve the original formatting and structure where possible
+- If text is unclear, note it as [unclear text] but include your best interpretation
+
+DESCRIBE VISUAL CONTENT:
+- Provide a comprehensive description of what the image shows
+- Include details about objects, people, scenes, colors, layout
+- Note the context and setting
+- Describe any charts, graphs, diagrams, or data visualizations
+
+Format your response as:
+
+## Extracted Text
+[All text content found in the image, preserving structure]
+
+## Visual Description
+[Detailed description of the image content and context]
+
+If no text is found, state "No text detected" in the text section but still provide the visual description.`
+          }]
+        }]
+      })
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Claude API error:', errorText);
+      throw new Error(`Claude API error: ${response.status} - ${errorText}`);
+    }
+
+    const result = await response.json();
+
+    if (!result.content || !result.content[0] || !result.content[0].text) {
+      throw new Error('Unexpected response format from Claude API');
+    }
+
+    const extractedContent = result.content[0].text;
+    console.log(`Image parsing complete: ${extractedContent.length} characters extracted`);
+
+    // Check if this was a converted HEIC file
+    const isHeicFile = mimeType === 'image/heic' || mimeType === 'image/heif';
+    const conversionNote = isHeicFile ? '\n\n*Note: This image was processed as an iPhone HEIC photo.*' : '';
+
     return {
-      content: `Image File: ${fileName}\n\nThis is an image file. OCR text extraction will be implemented with an image processing service.`,
+      content: extractedContent + conversionNote,
       title: fileName.replace(/\.[^/.]+$/, ''),
+      hasImages: true,
       metadata: {
         type: 'image',
-        originalName: fileName
+        originalName: fileName,
+        mimeType,
+        originalSize: fileBytes.length,
+        extractionMethod: 'claude-vision-ocr',
+        isHeicConversion: isHeicFile
       }
     };
   } catch (error) {
     console.error('Image parsing error:', error);
-    throw error;
+    throw new Error(`Failed to parse image file: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }

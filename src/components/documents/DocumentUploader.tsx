@@ -6,6 +6,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
+import heic2any from 'heic2any';
 
 interface DocumentUploaderProps {
   timelineItemId: string;
@@ -28,6 +29,12 @@ const ALLOWED_TYPES = {
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document': '.docx',
   'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': '.xlsx',
   'application/vnd.openxmlformats-officedocument.presentationml.presentation': '.pptx',
+  'image/jpeg': '.jpg',
+  'image/png': '.png',
+  'image/gif': '.gif',
+  'image/webp': '.webp',
+  'image/heic': '.heic',
+  'image/heif': '.heif',
 };
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
@@ -47,12 +54,14 @@ export function DocumentUploader({
   const validateFile = (file: File): string | null => {
     // Check file type
     if (!Object.keys(ALLOWED_TYPES).includes(file.type)) {
-      return `Invalid file type. Allowed: PDF, DOCX, XLSX, PPTX`;
+      return `Invalid file type. Allowed: PDF, DOCX, XLSX, PPTX, Images (JPG, PNG, GIF, WebP, HEIC)`;
     }
 
-    // Check file size
-    if (file.size > MAX_FILE_SIZE) {
-      return `File too large. Maximum size: 10MB`;
+    // Check file size (higher limit for images)
+    const maxSize = file.type.startsWith('image/') ? 25 * 1024 * 1024 : MAX_FILE_SIZE; // 25MB for images, 10MB for docs
+    if (file.size > maxSize) {
+      const maxSizeMB = Math.round(maxSize / 1024 / 1024);
+      return `File too large. Maximum size: ${maxSizeMB}MB`;
     }
 
     // Check file name length
@@ -88,9 +97,38 @@ export function DocumentUploader({
         throw new Error(validationError);
       }
 
+      // Convert HEIC/HEIF to JPEG for iPhone photos
+      let processedFile = file;
+      if (file.type === 'image/heic' || file.type === 'image/heif') {
+        console.log('🔄 Converting HEIC to JPEG...');
+        toast({
+          title: 'Converting photo',
+          description: 'Converting iPhone photo to JPEG format...',
+        });
+
+        try {
+          const convertedBlob = await heic2any({
+            blob: file,
+            toType: 'image/jpeg',
+            quality: 0.8
+          }) as Blob;
+
+          // Create a new File object from the converted Blob
+          processedFile = new File([convertedBlob], file.name.replace(/\.(heic|heif)$/i, '.jpg'), {
+            type: 'image/jpeg',
+            lastModified: file.lastModified
+          });
+
+          console.log('✅ HEIC conversion successful');
+        } catch (conversionError) {
+          console.error('❌ HEIC conversion failed:', conversionError);
+          throw new Error('Failed to convert HEIC image. Please try a different format.');
+        }
+      }
+
       // Generate storage path: userId/timelineItemId/fileName
       const timestamp = Date.now();
-      const sanitizedFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+      const sanitizedFileName = processedFile.name.replace(/[^a-zA-Z0-9.-]/g, '_');
       const storagePath = `${user.id}/${timelineItemId}/${timestamp}_${sanitizedFileName}`;
 
       // Update progress
@@ -98,10 +136,10 @@ export function DocumentUploader({
         prev.map((f) => (f.id === fileId ? { ...f, progress: 10 } : f))
       );
 
-      // Upload to Supabase Storage
+      // Upload to Supabase Storage (using processed file)
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('timeline-documents')
-        .upload(storagePath, file, {
+        .upload(storagePath, processedFile, {
           cacheControl: '3600',
           upsert: false,
         });
@@ -125,16 +163,16 @@ export function DocumentUploader({
         prev.map((f) => (f.id === fileId ? { ...f, progress: 75 } : f))
       );
 
-      // Insert document record
+      // Insert document record (using processed file metadata)
       const { error: insertError } = await supabase
         .from('timeline_item_documents')
         .insert({
           timeline_item_id: timelineItemId,
           uploaded_by_user_id: user.id,
-          file_name: file.name,
+          file_name: processedFile.name, // Use processed file name (HEIC converted to .jpg)
           file_url: urlData.publicUrl,
-          file_size: file.size,
-          mime_type: file.type,
+          file_size: processedFile.size, // Use processed file size
+          mime_type: processedFile.type, // Use processed file type (image/jpeg for converted HEIC)
           storage_path: storagePath,
           uploaded_via_assistant: !!assistantRelationshipId,
           assistant_relationship_id: assistantRelationshipId,
@@ -156,7 +194,7 @@ export function DocumentUploader({
         await supabase.rpc('log_assistant_activity', {
           p_relationship_id: assistantRelationshipId,
           p_action_type: 'attached_document',
-          p_description: `Attached document: ${file.name}`,
+          p_description: `Attached document: ${processedFile.name}`,
           p_target_type: 'timeline_item',
           p_target_id: timelineItemId,
         });
@@ -167,9 +205,13 @@ export function DocumentUploader({
         setUploadingFiles((prev) => prev.filter((f) => f.id !== fileId));
       }, 2000);
 
+      const uploadMessage = processedFile !== file ?
+        `${file.name} (converted to ${processedFile.name}) has been attached` :
+        `${processedFile.name} has been attached`;
+
       toast({
         title: 'Document uploaded',
-        description: `${file.name} has been attached`,
+        description: uploadMessage,
       });
 
       onUploadComplete?.();
@@ -275,7 +317,7 @@ export function DocumentUploader({
           Drag and drop files here, or click to browse
         </p>
         <p className="text-xs text-muted-foreground mb-4">
-          PDF, DOCX, XLSX, PPTX • Max 10MB per file
+          PDF, DOCX, XLSX, PPTX, Images (JPG, PNG, GIF, WebP, HEIC) • Max 25MB for images, 10MB for documents
         </p>
         <input
           type="file"

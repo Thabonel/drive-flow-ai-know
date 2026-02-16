@@ -7,7 +7,7 @@ import { KeyboardShortcutsHelp } from '@/components/KeyboardShortcutsHelp';
 import { BackgroundTaskIndicator } from '@/components/BackgroundTaskIndicator';
 import { useOffline } from '@/hooks/useOffline';
 import { useUserSettings } from '@/hooks/useUserSettings';
-import { LogOut, Settings, User } from 'lucide-react';
+import { LogOut, Settings, User, Plus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import {
   Tooltip,
@@ -29,6 +29,13 @@ const Header = () => {
     navigate('/');
   };
 
+  const handleNewConversation = () => {
+    navigate('/conversations', {
+      state: { createNew: true },
+      replace: false
+    });
+  };
+
   const getInitials = (name: string) => {
     return name.split(' ').map(n => n[0]).join('').toUpperCase();
   };
@@ -39,6 +46,26 @@ const Header = () => {
         <div className="flex items-center gap-4">
           <SidebarTrigger />
           <h2 className="text-lg font-semibold text-foreground hidden sm:block">AI Query Hub</h2>
+        </div>
+
+        <div className="flex items-center gap-2">
+          {/* New Chat Button */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                size="sm"
+                onClick={handleNewConversation}
+                className="bg-primary hover:bg-primary/90"
+                title="Start new conversation"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                <span className="hidden sm:inline">New Chat</span>
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">
+              Start new conversation
+            </TooltipContent>
+          </Tooltip>
         </div>
 
         <div className="flex items-center gap-2">
