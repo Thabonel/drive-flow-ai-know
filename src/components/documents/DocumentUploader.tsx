@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { Upload, X, FileText, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
+import { Upload, X, FileText, Loader2, CheckCircle, AlertCircle, ImageIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -7,6 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import heic2any from 'heic2any';
+import { HEICWorkflow } from '../HEICWorkflow';
 
 interface DocumentUploaderProps {
   timelineItemId: string;
@@ -50,6 +51,8 @@ export function DocumentUploader({
   const { toast } = useToast();
   const [uploadingFiles, setUploadingFiles] = useState<UploadingFile[]>([]);
   const [isDragging, setIsDragging] = useState(false);
+  const [showHEICWorkflow, setShowHEICWorkflow] = useState(false);
+  const [currentHEICFile, setCurrentHEICFile] = useState<File | null>(null);
 
   const validateFile = (file: File): string | null => {
     // Check file type
@@ -252,12 +255,36 @@ export function DocumentUploader({
         return;
       }
 
-      // Upload each file
+      // Check for HEIC files and handle them with workflow
+      const heicFiles = fileArray.filter(file =>
+        file.type === 'image/heic' || file.type === 'image/heif'
+      );
+
+      const otherFiles = fileArray.filter(file =>
+        file.type !== 'image/heic' && file.type !== 'image/heif'
+      );
+
+      // If there's exactly one HEIC file, show the comprehensive workflow
+      if (heicFiles.length === 1 && otherFiles.length === 0) {
+        setCurrentHEICFile(heicFiles[0]);
+        setShowHEICWorkflow(true);
+        return;
+      }
+
+      // If there are multiple HEIC files, process them with simple conversion
+      if (heicFiles.length > 1) {
+        toast({
+          title: 'Multiple HEIC files',
+          description: 'Processing multiple HEIC files with automatic conversion',
+        });
+      }
+
+      // Upload each file (HEIC files will be converted automatically)
       fileArray.forEach((file) => {
         uploadFile(file);
       });
     },
-    [uploadingFiles.length, maxFiles, uploadFile]
+    [uploadingFiles.length, maxFiles, uploadFile, setCurrentHEICFile, setShowHEICWorkflow, toast]
   );
 
   const handleDrop = useCallback(
@@ -298,6 +325,36 @@ export function DocumentUploader({
   const removeUploadingFile = (id: string) => {
     setUploadingFiles((prev) => prev.filter((f) => f.id !== id));
   };
+
+  const handleHEICWorkflowComplete = useCallback((convertedFile: File, originalFile: File) => {
+    // Close the workflow
+    setShowHEICWorkflow(false);
+    setCurrentHEICFile(null);
+
+    // Upload the converted file
+    uploadFile(convertedFile);
+
+    toast({
+      title: 'HEIC conversion completed',
+      description: `${originalFile.name} converted and uploaded as ${convertedFile.name}`,
+    });
+  }, [uploadFile, toast]);
+
+  const handleHEICWorkflowCancel = useCallback(() => {
+    setShowHEICWorkflow(false);
+    setCurrentHEICFile(null);
+  }, []);
+
+  // Show HEIC workflow if applicable
+  if (showHEICWorkflow && currentHEICFile) {
+    return (
+      <HEICWorkflow
+        initialFile={currentHEICFile}
+        onComplete={handleHEICWorkflowComplete}
+        onCancel={handleHEICWorkflowCancel}
+      />
+    );
+  }
 
   return (
     <div className="space-y-4">
