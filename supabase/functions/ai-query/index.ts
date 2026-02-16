@@ -1005,7 +1005,7 @@ serve(async (req) => {
 
     // Validate image if provided
     if (image) {
-      const validImageTypes = ['image/png', 'image/jpeg', 'image/gif', 'image/webp'];
+      const validImageTypes = ['image/png', 'image/jpeg', 'image/gif', 'image/webp', 'image/heic', 'image/heif'];
       if (!image.base64 || typeof image.base64 !== 'string') {
         return new Response(
           JSON.stringify({ error: 'Image base64 data is required' }),
@@ -1014,7 +1014,7 @@ serve(async (req) => {
       }
       if (!image.media_type || !validImageTypes.includes(image.media_type)) {
         return new Response(
-          JSON.stringify({ error: 'Invalid image media type. Supported: PNG, JPEG, GIF, WebP' }),
+          JSON.stringify({ error: 'Invalid image media type. Supported: PNG, JPEG, GIF, WebP, HEIC, HEIF' }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
