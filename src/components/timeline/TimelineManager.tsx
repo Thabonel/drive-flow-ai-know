@@ -423,20 +423,6 @@ export function TimelineManager({ onCanvasReady }: TimelineManagerProps = {}) {
   const basePixelsPerHour = viewModeConfig.pixelsPerHour;
   const pixelsPerHour = (settings?.zoom_horizontal || 100) / 100 * basePixelsPerHour;
 
-  // DEBUG: Log view mode changes and calculated values
-  console.log('🔍 Timeline Debug - View Mode:', {
-    viewMode,
-    viewModeConfig: {
-      label: viewModeConfig.label,
-      pixelsPerHour: viewModeConfig.pixelsPerHour,
-      pastHours: viewModeConfig.pastHours,
-      futureHours: viewModeConfig.futureHours,
-      subdivisionMinutes: viewModeConfig.subdivisionMinutes
-    },
-    calculatedPixelsPerHour: pixelsPerHour,
-    zoomHorizontal: settings?.zoom_horizontal || 100
-  });
-
   // Helper to get selected date for attention budget calculation
   const getSelectedDateForBudget = (): Date => {
     // For day view, use current date
@@ -1308,16 +1294,8 @@ export function TimelineManager({ onCanvasReady }: TimelineManagerProps = {}) {
           />
         ) : (
           <>
-            {/* DEBUG: Log props being passed to TimelineCanvas */}
-            {console.log('🎯 Timeline Debug - Props to TimelineCanvas:', {
-              pixelsPerHour,
-              pastHours: viewModeConfig.pastHours,
-              futureHours: viewModeConfig.futureHours,
-              subdivisionMinutes: viewModeConfig.subdivisionMinutes,
-              itemCount: items.length,
-              layerCount: layers.length,
-            }) || null}
             <TimelineCanvas
+              key={`timeline-${viewMode}`}
               items={items}
               layers={layers}
               nowTime={nowTime}
