@@ -137,23 +137,24 @@ describe('CORS Security', () => {
     // Clear ALLOWED_ORIGINS to test unconfigured state
     Deno.env.delete('ALLOWED_ORIGINS');
 
-    // Mock console.warn to capture warnings
-    const originalWarn = console.warn;
-    let warnMessage = '';
-    console.warn = (message: string) => {
-      warnMessage = message;
+    // Mock console.error to capture security warnings (CORS uses console.error, not console.warn)
+    const originalError = console.error;
+    let errorMessage = '';
+    console.error = (message: string) => {
+      errorMessage = message;
     };
 
     try {
       // Test production-like origin (not localhost)
       const allowed = isOriginAllowed('https://production-site.com');
 
-      // In the current implementation, this unfortunately returns true
-      // But we're going to fix this in our implementation
-      expect(warnMessage).toContain('SECURITY WARNING: CORS is not configured');
-      expect(warnMessage).toContain('ALLOWED_ORIGINS');
+      // Should be blocked (false) and should log security warning
+      expect(allowed).toBe(false);
+      expect(errorMessage).toContain('SECURITY CRITICAL: CORS is not configured for production');
+      expect(errorMessage).toContain('ALLOWED_ORIGINS');
+      expect(errorMessage).toContain('BLOCKING unauthorized origin');
     } finally {
-      console.warn = originalWarn;
+      console.error = originalError;
     }
   });
 });
