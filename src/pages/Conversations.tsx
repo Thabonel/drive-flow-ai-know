@@ -334,11 +334,11 @@ export default function Conversations() {
           {sidebarCollapsed && (
             <Button
               onClick={handleNewConversation}
-              className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg z-50"
+              className="fixed bottom-6 right-6 rounded-full shadow-lg z-50 px-6 py-3"
               size="lg"
               title="Create new conversation"
             >
-              <Plus className="h-6 w-6" />
+              New Chat
             </Button>
           )}
           {selectedConversation || isCreating ? (
