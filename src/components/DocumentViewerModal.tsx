@@ -795,7 +795,6 @@ export const DocumentViewerModal = ({ document, isOpen, onClose }: DocumentViewe
                     )}
                   </div>
                 )}
-                )}
               </>
             )}
           </div>
