@@ -123,19 +123,19 @@ export const VIEW_MODE_CONFIG = {
 // Maps view modes to target zoom levels that achieve the same visual scale
 export const ZOOM_TARGET_CONFIG = {
   day: {
-    targetZoom: 200,        // 200% zoom for detailed view (200/100 * 100 = 200px/hour)
+    targetZoom: 150,        // 150% zoom for detailed view (balanced for readability)
     pastHours: 2,
     futureHours: 18,
     subdivisionMinutes: 15,
   },
   week: {
-    targetZoom: 30,         // 30% zoom to show ~7 days (30/100 * 100 = 30px/hour)
+    targetZoom: 60,         // 60% zoom to show ~7 days (allows room for adjustment)
     pastHours: 2,
     futureHours: 144,
     subdivisionMinutes: 60,
   },
   month: {
-    targetZoom: 20,         // 20% zoom (MIN_ZOOM) to show ~30 days (20/100 * 100 = 20px/hour)
+    targetZoom: 40,         // 40% zoom to show ~30 days (above MIN_ZOOM for flexibility)
     pastHours: 2,
     futureHours: 552,
     subdivisionMinutes: 360,
