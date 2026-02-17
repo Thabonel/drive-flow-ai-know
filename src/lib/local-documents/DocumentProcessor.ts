@@ -154,31 +154,23 @@ export class DocumentProcessor {
   }
 
   private extractTitle(filename: string, content: string): string {
-    const nameWithoutExt = filename.replace(/\.[^/.]+$/, '');
-
-    // For now, just use filename. Could extract title from content in future
-    return nameWithoutExt;
+    return filename.replace(/\.[^/.]+$/, '');
   }
 
   private async parseExcelFile(file: File): Promise<string> {
     try {
-      console.log('Parsing Excel file using SheetJS...');
-
-      // Dynamic import to avoid bundle size impact
       const XLSX = await import('xlsx');
 
-      // Read file as array buffer
       const arrayBuffer = await file.arrayBuffer();
       const workbook = XLSX.read(arrayBuffer, {
         type: 'array',
-        cellFormula: false, // Skip formulas for simplicity
-        cellStyles: false,  // Skip styles for performance
-        cellDates: true,    // Parse dates properly
+        cellFormula: false,
+        cellStyles: false,
+        cellDates: true,
       });
 
       let extractedContent = '';
 
-      // Process each sheet
       workbook.SheetNames.forEach((sheetName, index) => {
         const worksheet = workbook.Sheets[sheetName];
 
@@ -188,7 +180,6 @@ export class DocumentProcessor {
           extractedContent += `--- Sheet: ${sheetName} ---\n`;
         }
 
-        // Convert sheet to CSV format for text extraction
         const csvData = XLSX.utils.sheet_to_csv(worksheet, {
           skipHidden: true,
           blankrows: false,
@@ -199,34 +190,24 @@ export class DocumentProcessor {
         }
       });
 
-      console.log(`Excel parsing complete. Extracted ${extractedContent.length} characters.`);
       return extractedContent || '[Empty Excel file]';
 
     } catch (error) {
-      console.error('Excel parsing failed:', error);
       return `[Excel file - parsing failed: ${error instanceof Error ? error.message : 'Unknown error'}]`;
     }
   }
 
   private async parseCSVFile(file: File): Promise<string> {
     try {
-      console.log('Parsing CSV file...');
-
-      // For CSV files, we can read directly as text
       const text = await file.text();
-
-      // Simple validation that it looks like CSV
       const lines = text.split('\n').filter(line => line.trim());
+
       if (lines.length === 0) {
         return '[Empty CSV file]';
       }
 
-      // For better parsing, we could use papaparse, but for now keep it simple
-      console.log(`CSV parsing complete. ${lines.length} rows found.`);
       return text;
-
     } catch (error) {
-      console.error('CSV parsing failed:', error);
       return `[CSV file - parsing failed: ${error instanceof Error ? error.message : 'Unknown error'}]`;
     }
   }
