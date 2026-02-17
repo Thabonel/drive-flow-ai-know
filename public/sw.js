@@ -465,14 +465,35 @@ function calculateAttentionBudgetOffline(timelineData, preferences, date) {
   };
 }
 
-// Get cached timeline data from localStorage
+// Get cached timeline data from Cache API (localStorage not available in service workers)
 async function getCachedTimelineData() {
   try {
-    const cached = localStorage.getItem('timeline-cache');
-    return cached ? JSON.parse(cached) : [];
+    const cache = await caches.open(ATTENTION_DATA_CACHE);
+    const cachedResponse = await cache.match('timeline-cache');
+
+    if (cachedResponse) {
+      return await cachedResponse.json();
+    }
+    return [];
   } catch (error) {
     console.error('Failed to get cached timeline data:', error);
     return [];
+  }
+}
+
+// Cache timeline data using Cache API
+async function cacheTimelineData(data) {
+  try {
+    const cache = await caches.open(ATTENTION_DATA_CACHE);
+    const response = new Response(JSON.stringify(data), {
+      headers: {
+        'Content-Type': 'application/json',
+        'Cache-Timestamp': new Date().toISOString()
+      }
+    });
+    await cache.put('timeline-cache', response);
+  } catch (error) {
+    console.error('Failed to cache timeline data:', error);
   }
 }
 
