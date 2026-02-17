@@ -170,6 +170,18 @@ export function TimelineManager({ onCanvasReady }: TimelineManagerProps = {}) {
     const stored = localStorage.getItem('timeline-view-type');
     return (stored === 'calendar' ? 'calendar' : 'timeline') as ViewType;
   });
+
+  // Dynamic time window settings (override static VIEW_MODE_CONFIG when set)
+  const [dynamicTimeWindow, setDynamicTimeWindow] = useState<{
+    pastHours: number;
+    futureHours: number;
+    subdivisionMinutes: number;
+  } | null>(null);
+
+  // Reset dynamic time window when view mode changes
+  useEffect(() => {
+    setDynamicTimeWindow(null);
+  }, [viewMode]);
   const [initialFormValues, setInitialFormValues] = useState<{ startTime?: string; layerId?: string } | null>(null);
   const [jumpToDate, setJumpToDate] = useState<string>('');
   const [calendarViewDate, setCalendarViewDate] = useState<Date>(new Date());
@@ -241,7 +253,7 @@ export function TimelineManager({ onCanvasReady }: TimelineManagerProps = {}) {
   // This detects when items are added externally and navigates to show them
   useEffect(() => {
     if (items.length === 0) {
-      prevItemIdsRef.current = new Set();
+      prevItemIdsRef.current = new Set<string>();
       prevItemsCountRef.current = 0;
       prevViewTypeRef.current = viewType;
       return;
@@ -420,8 +432,18 @@ export function TimelineManager({ onCanvasReady }: TimelineManagerProps = {}) {
   const lastTickRef = useRef<number>(Date.now());
   const initializedScrollRef = useRef<boolean>(false);
 
+  // Estimated viewport width for scroll calculations (typical desktop width)
+  const estimatedViewportWidth = 1200;
+
   // Calculate zoom-adjusted values using fixed base scale
   const viewModeConfig = VIEW_MODE_CONFIG[viewMode];
+
+  // Get effective time window settings (dynamic overrides static)
+  const effectiveTimeWindow = dynamicTimeWindow || {
+    pastHours: viewModeConfig.pastHours,
+    futureHours: viewModeConfig.futureHours,
+    subdivisionMinutes: viewModeConfig.subdivisionMinutes,
+  };
   const pixelsPerHour = (settings?.zoom_horizontal || 100) / 100 * BASE_PIXELS_PER_HOUR;
 
   // Helper to get selected date for attention budget calculation
@@ -485,7 +507,7 @@ export function TimelineManager({ onCanvasReady }: TimelineManagerProps = {}) {
 
     // Calculate scroll offset to show exactly pastHours before NOW
     // Formula: scrollOffset = pastHours * pixelsPerHour - NOW_LINE_POSITION * viewportWidth
-    const pastHours = viewModeConfig.pastHours;
+    const pastHours = effectiveTimeWindow.pastHours;
     const targetScrollOffset = pastHours * pixelsPerHour - NOW_LINE_POSITION * estimatedViewportWidth;
 
     // Only set if this is initial load or view mode changed
@@ -501,7 +523,7 @@ export function TimelineManager({ onCanvasReady }: TimelineManagerProps = {}) {
         targetScrollOffset,
       });
     }
-  }, [settings, viewModeConfig.pastHours, pixelsPerHour]);
+  }, [settings, effectiveTimeWindow.pastHours, pixelsPerHour]);
 
   // Recalculate scroll offset when view mode changes
   useEffect(() => {
@@ -512,7 +534,7 @@ export function TimelineManager({ onCanvasReady }: TimelineManagerProps = {}) {
     const estimatedViewportWidth = 1200;
 
     // Calculate new scroll offset for the new view mode
-    const pastHours = viewModeConfig.pastHours;
+    const pastHours = effectiveTimeWindow.pastHours;
     const newScrollOffset = pastHours * pixelsPerHour - NOW_LINE_POSITION * estimatedViewportWidth;
 
     setScrollOffset(newScrollOffset);
@@ -523,7 +545,7 @@ export function TimelineManager({ onCanvasReady }: TimelineManagerProps = {}) {
       pixelsPerHour,
       newScrollOffset,
     });
-  }, [viewMode, viewModeConfig.pastHours, pixelsPerHour]);
+  }, [viewMode, effectiveTimeWindow.pastHours, pixelsPerHour]);
 
   // Handle item click
   const handleItemClick = (item: TimelineItem) => {
@@ -592,10 +614,15 @@ export function TimelineManager({ onCanvasReady }: TimelineManagerProps = {}) {
   // Helper function to update time window settings (pastHours, futureHours, subdivisionMinutes)
   // This is separate from zoom to allow independent control
   const handleTimeWindowChange = async (settings: { pastHours: number; futureHours: number; subdivisionMinutes: number }) => {
-    // For now, we'll store these in VIEW_MODE_CONFIG but this could be moved to database settings later
-    // This is a temporary approach to maintain the time window behavior without the problematic pixelsPerHour coupling
     console.log('Time window settings updated:', settings);
-    // TODO: Could be extended to store in Supabase settings if persistent time windows are needed
+    setDynamicTimeWindow(settings);
+
+    // Recalculate scroll offset based on new pastHours setting
+    const estimatedViewportWidth = 1200;
+    const newScrollOffset = settings.pastHours * pixelsPerHour - NOW_LINE_POSITION * estimatedViewportWidth;
+    setScrollOffset(newScrollOffset);
+
+    // Could be extended to store in Supabase settings if persistent time windows are needed
   };
 
   // Handle fit all layers
@@ -690,7 +717,7 @@ export function TimelineManager({ onCanvasReady }: TimelineManagerProps = {}) {
       setCalendarViewDate(new Date());
     } else {
       const estimatedViewportWidth = 1200;
-      const pastHours = viewModeConfig.pastHours;
+      const pastHours = effectiveTimeWindow.pastHours;
       const targetScrollOffset = pastHours * pixelsPerHour - NOW_LINE_POSITION * estimatedViewportWidth;
       setScrollOffset(targetScrollOffset);
     }
@@ -1316,9 +1343,9 @@ export function TimelineManager({ onCanvasReady }: TimelineManagerProps = {}) {
               layerHeight={layerHeight}
               isLocked={settings?.is_locked ?? true}
               showCompleted={true}
-              pastHours={viewModeConfig.pastHours}
-              futureHours={viewModeConfig.futureHours}
-              subdivisionMinutes={viewModeConfig.subdivisionMinutes}
+              pastHours={effectiveTimeWindow.pastHours}
+              futureHours={effectiveTimeWindow.futureHours}
+              subdivisionMinutes={effectiveTimeWindow.subdivisionMinutes}
               onItemClick={handleItemClick}
               onDrag={handleDrag}
               onItemDrop={handleItemDrop}

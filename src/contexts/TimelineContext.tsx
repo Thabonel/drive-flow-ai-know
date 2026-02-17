@@ -136,7 +136,12 @@ export function TimelineProvider({ children }: { children: React.ReactNode }) {
 
   // Fetch settings
   const fetchSettings = useCallback(async () => {
-    if (!user) return;
+    if (!user) {
+      console.warn('Cannot fetch settings: no user');
+      return;
+    }
+
+    console.log('Fetching settings for user:', user.id);
 
     try {
       const { data, error } = await supabase
@@ -145,9 +150,15 @@ export function TimelineProvider({ children }: { children: React.ReactNode }) {
         .eq('user_id', user.id)
         .single();
 
-      if (error && error.code !== 'PGRST116') throw error;
+      console.log('Fetch settings response:', { data, error });
+
+      if (error && error.code !== 'PGRST116') {
+        console.error('Supabase error fetching settings:', error);
+        throw error;
+      }
 
       if (!data) {
+        console.log('No settings found, creating default settings');
         // Create default settings
         const { data: newSettings, error: insertError } = await supabase
           .from('timeline_settings')
@@ -162,16 +173,21 @@ export function TimelineProvider({ children }: { children: React.ReactNode }) {
           .select()
           .single();
 
-        if (insertError) throw insertError;
+        if (insertError) {
+          console.error('Error inserting default settings:', insertError);
+          throw insertError;
+        }
+        console.log('Default settings created:', newSettings);
         setSettings(newSettings);
       } else {
+        console.log('Settings loaded:', data);
         setSettings(data);
       }
     } catch (error) {
       console.error('Error fetching settings:', error);
       toast({
         title: 'Error',
-        description: 'Failed to fetch timeline settings',
+        description: `Failed to fetch timeline settings: ${error instanceof Error ? error.message : 'Unknown error'}`,
         variant: 'destructive',
       });
     } finally {
@@ -874,22 +890,32 @@ export function TimelineProvider({ children }: { children: React.ReactNode }) {
 
   // Update settings
   const updateSettings = useCallback(async (updates: Partial<TimelineSettings>) => {
-    if (!user || !settings) return;
+    if (!user || !settings) {
+      console.warn('Cannot update settings: missing user or settings', { user: !!user, settings: !!settings });
+      return;
+    }
+
+    console.log('Updating settings:', { updates, userId: user.id, currentSettings: settings });
 
     try {
-      const { error } = await supabase
+      const { error, data } = await supabase
         .from('timeline_settings')
         .update(updates)
-        .eq('user_id', user.id);
+        .eq('user_id', user.id)
+        .select(); // Add select to see what was updated
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase error updating settings:', error);
+        throw error;
+      }
 
+      console.log('Settings updated successfully:', data);
       setSettings({ ...settings, ...updates });
     } catch (error) {
       console.error('Error updating settings:', error);
       toast({
         title: 'Error',
-        description: 'Failed to update settings',
+        description: `Failed to update settings: ${error instanceof Error ? error.message : 'Unknown error'}`,
         variant: 'destructive',
       });
     }
