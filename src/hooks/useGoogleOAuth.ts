@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { getOAuthConfig, validateOAuthEnvironment, detectOAuthEnvironment } from '@/config/oauth';
 
 interface OAuthConfig {
   google: {
@@ -26,7 +27,7 @@ export const useGoogleOAuth = () => {
   const { toast } = useToast();
   const { user } = useAuth();
 
-  // Use hardcoded OAuth configuration (consistent with working Google Drive and Calendar hooks)
+  // Use centralized OAuth configuration with environment detection
   //
   // ARCHITECTURAL NOTE: This is the standard OAuth 2.0 pattern for multi-user SaaS applications
   // - Client ID is PUBLIC by design and safe to hardcode in frontend code
@@ -35,40 +36,30 @@ export const useGoogleOAuth = () => {
   // - Client Secret is stored server-side only (GOOGLE_CLIENT_SECRET env var in Supabase)
   //
   // Authorization Code Flow (with refresh tokens):
-  // 1. Frontend uses initCodeClient() with ux_mode: 'popup' to get an authorization code
+  // 1. Frontend uses manual popup with authorization code flow
   // 2. Authorization code is sent to store-google-tokens Edge Function
-  // 3. Edge Function exchanges code for access_token + refresh_token using redirect_uri: 'postmessage'
+  // 3. Edge Function exchanges code for access_token + refresh_token
   // 4. Tokens stored in user_google_tokens table with RLS
   // 5. When access_token expires, refresh-google-token Edge Function uses refresh_token
   //    to silently obtain a new access_token (no user interaction needed)
-  //
-  // IMPORTANT: For popup-based code flow, Google's GIS library uses postMessage internally.
-  // The token exchange MUST use redirect_uri: 'postmessage' (NOT a URL) to match.
-  const getOAuthConfig = useCallback((): OAuthConfig => {
-    const currentOrigin = window.location.origin;
-    return {
-      google: {
-        client_id: '1050361175911-2caa9uiuf4tmi5pvqlt0arl1h592hurm.apps.googleusercontent.com',
-        redirect_uri: 'postmessage',
-      },
-      microsoft: {
-        client_id: '', // Not implemented yet
-        tenant_id: 'common',
-        redirect_uri: `${currentOrigin}/auth/microsoft/callback`,
-      },
-      dropbox: {
-        client_id: '', // Not implemented yet
-        redirect_uri: `${currentOrigin}/auth/dropbox/callback`,
-      },
-    };
+  const getOAuthConfigLocal = useCallback((): OAuthConfig => {
+    return getOAuthConfig();
   }, []);
 
-  // Initialize OAuth configuration on mount - now synchronous since hardcoded
+  // Initialize OAuth configuration on mount with environment validation
   useEffect(() => {
     if (!oauthConfig) {
-      setOAuthConfig(getOAuthConfig());
+      // Validate environment and log any issues
+      const validation = validateOAuthEnvironment();
+      const env = detectOAuthEnvironment();
+
+      if (!validation.valid && env.debugEnabled) {
+        console.warn('🚨 OAuth Environment Issues:', validation.issues);
+      }
+
+      setOAuthConfig(getOAuthConfigLocal());
     }
-  }, [oauthConfig, getOAuthConfig]);
+  }, [oauthConfig, getOAuthConfigLocal]);
 
   // Load Google Identity Services script securely
   const loadGoogleScript = useCallback((): Promise<void> => {
@@ -138,11 +129,23 @@ export const useGoogleOAuth = () => {
       throw new Error('User not authenticated');
     }
 
-    const config = oauthConfig || getOAuthConfig();
+    const config = oauthConfig || getOAuthConfigLocal();
+    const env = detectOAuthEnvironment();
     setIsLoading(true);
 
     try {
-      const redirectUri = `${window.location.origin}/auth/google/callback`;
+      const redirectUri = config.google.redirect_uri;
+
+      if (env.debugEnabled) {
+        console.log('🔧 OAuth Debug - Initiating Google OAuth:', {
+          environment: env.name,
+          origin: env.origin,
+          redirectUri,
+          clientId: config.google.client_id.substring(0, 20) + '...',
+          scope,
+          timestamp: new Date().toISOString(),
+        });
+      }
 
       toast({
         title: 'Opening Google Sign-In',

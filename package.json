@@ -92,6 +92,7 @@
     "mixpanel-browser": "^2.71.1",
     "next-themes": "^0.4.6",
     "openai": "^6.7.0",
+    "papaparse": "^5.5.3",
     "playwright": "^1.58.1",
     "pptxgenjs": "^4.0.1",
     "react": "^18.2.0",
@@ -109,6 +110,7 @@
     "tailwind-merge": "^3.3.1",
     "tailwindcss-animate": "^1.0.7",
     "vaul": "^1.1.2",
+    "xlsx": "^0.18.5",
     "zod": "^4.0.0"
   },
   "devDependencies": {
