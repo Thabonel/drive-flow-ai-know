@@ -8,6 +8,9 @@ export const DEFAULT_PIXELS_PER_HOUR = 100; // Base scale
 export const MIN_PIXELS_PER_HOUR = 20;
 export const MAX_PIXELS_PER_HOUR = 300;
 
+// Base scale for zoom-based timeline (replaces view-mode specific scaling)
+export const BASE_PIXELS_PER_HOUR = 100;
+
 // Vertical spacing defaults
 export const DEFAULT_LAYER_HEIGHT = 80;
 export const MIN_LAYER_HEIGHT = 40;
@@ -116,6 +119,29 @@ export const VIEW_MODE_CONFIG = {
   },
 };
 
+// Zoom-based view mode configuration (replaces pixelsPerHour-based approach)
+// Maps view modes to target zoom levels that achieve the same visual scale
+export const ZOOM_TARGET_CONFIG = {
+  day: {
+    targetZoom: 200,        // 200% zoom for detailed view (200/100 * 100 = 200px/hour)
+    pastHours: 2,
+    futureHours: 18,
+    subdivisionMinutes: 15,
+  },
+  week: {
+    targetZoom: 30,         // 30% zoom to show ~7 days (30/100 * 100 = 30px/hour)
+    pastHours: 2,
+    futureHours: 144,
+    subdivisionMinutes: 60,
+  },
+  month: {
+    targetZoom: 20,         // 20% zoom (MIN_ZOOM) to show ~30 days (20/100 * 100 = 20px/hour)
+    pastHours: 2,
+    futureHours: 552,
+    subdivisionMinutes: 360,
+  }
+} as const;
+
 // Calendar view configuration (Google Calendar style)
 export const CALENDAR_CONFIG = {
   day: {
@@ -164,3 +190,15 @@ export const ESTIMATED_VIEWPORT_WIDTH = 1200;
 
 // Snap interval for timeline items (minutes)
 export const SNAP_INTERVAL_MINUTES = 15;
+
+// Helper function to calculate zoom level for a target pixels per hour
+export function calculateZoomForTarget(targetPixelsPerHour: number): number {
+  // Formula: zoom = (targetPixelsPerHour / BASE_PIXELS_PER_HOUR) * 100
+  return Math.round((targetPixelsPerHour / BASE_PIXELS_PER_HOUR) * 100);
+}
+
+// Helper function to get zoom target for a view mode
+export function getZoomTargetForMode(mode: TimelineViewMode): number {
+  const config = ZOOM_TARGET_CONFIG[mode];
+  return Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, config.targetZoom));
+}

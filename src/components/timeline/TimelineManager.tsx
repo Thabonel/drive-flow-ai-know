@@ -51,6 +51,8 @@ import {
   NOW_LINE_POSITION,
   TimelineViewMode,
   VIEW_MODE_CONFIG,
+  BASE_PIXELS_PER_HOUR,
+  ZOOM_TARGET_CONFIG,
 } from '@/lib/timelineConstants';
 import { addDays, addWeeks, addMonths, format } from 'date-fns';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -418,10 +420,9 @@ export function TimelineManager({ onCanvasReady }: TimelineManagerProps = {}) {
   const lastTickRef = useRef<number>(Date.now());
   const initializedScrollRef = useRef<boolean>(false);
 
-  // Calculate zoom-adjusted values based on view mode
+  // Calculate zoom-adjusted values using fixed base scale
   const viewModeConfig = VIEW_MODE_CONFIG[viewMode];
-  const basePixelsPerHour = viewModeConfig.pixelsPerHour;
-  const pixelsPerHour = (settings?.zoom_horizontal || 100) / 100 * basePixelsPerHour;
+  const pixelsPerHour = (settings?.zoom_horizontal || 100) / 100 * BASE_PIXELS_PER_HOUR;
 
   // Helper to get selected date for attention budget calculation
   const getSelectedDateForBudget = (): Date => {
@@ -586,6 +587,15 @@ export function TimelineManager({ onCanvasReady }: TimelineManagerProps = {}) {
     const currentZoom = settings?.zoom_horizontal ?? 100;
     const newZoom = Math.max(currentZoom - ZOOM_STEP, MIN_ZOOM);
     await handleZoomHorizontalChange(newZoom);
+  };
+
+  // Helper function to update time window settings (pastHours, futureHours, subdivisionMinutes)
+  // This is separate from zoom to allow independent control
+  const handleTimeWindowChange = async (settings: { pastHours: number; futureHours: number; subdivisionMinutes: number }) => {
+    // For now, we'll store these in VIEW_MODE_CONFIG but this could be moved to database settings later
+    // This is a temporary approach to maintain the time window behavior without the problematic pixelsPerHour coupling
+    console.log('Time window settings updated:', settings);
+    // TODO: Could be extended to store in Supabase settings if persistent time windows are needed
   };
 
   // Handle fit all layers
@@ -1154,6 +1164,8 @@ export function TimelineManager({ onCanvasReady }: TimelineManagerProps = {}) {
               <ViewModeSwitcher
                 currentMode={viewMode}
                 onModeChange={setViewMode}
+                onZoomChange={handleZoomHorizontalChange}
+                onTimeWindowChange={handleTimeWindowChange}
               />
 
               <Popover>
