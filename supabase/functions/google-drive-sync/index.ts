@@ -137,10 +137,13 @@ serve(async (req) => {
     const processedDocuments = [];
     for (const file of driveFiles) {
       let content: string | null = null;
+      let sheetData: any = null;
+      let sheetMetadata: any = null;
+
       if (file.mimeType === 'application/vnd.google-apps.document') {
         try {
           const exportRes = await fetch(`https://www.googleapis.com/drive/v3/files/${file.id}/export?mimeType=text/plain`, {
-            headers: { 
+            headers: {
               Authorization: `Bearer ${googleToken}`,
               'Content-Type': 'application/json'
             }
@@ -153,22 +156,68 @@ serve(async (req) => {
         } catch (error) {
           console.log(`Could not export document ${file.name}:`, error);
         }
+      } else if (file.mimeType === 'application/vnd.google-apps.spreadsheet') {
+        try {
+          // Get spreadsheet metadata and data
+          const [metadata, sheetsData] = await Promise.all([
+            getSheetMetadata(googleToken, file.id),
+            getAllSheetData(googleToken, file.id)
+          ]);
+
+          sheetMetadata = {
+            title: metadata.properties?.title || file.name,
+            sheets: metadata.sheets?.map(sheet => ({
+              name: sheet.properties?.title,
+              sheetId: sheet.properties?.sheetId,
+              gridProperties: sheet.properties?.gridProperties,
+              rowCount: sheet.properties?.gridProperties?.rowCount || 0,
+              columnCount: sheet.properties?.gridProperties?.columnCount || 0
+            })) || [],
+            totalSheets: metadata.sheets?.length || 0
+          };
+
+          sheetData = {
+            sheets: sheetsData
+          };
+
+          // Convert spreadsheet data to AI-queryable text
+          content = convertSpreadsheetToText(sheetData, sheetMetadata);
+
+        } catch (error) {
+          console.log(`Could not process spreadsheet ${file.name}:`, error);
+        }
+      }
+
+      // Determine file type more precisely
+      let fileType = 'file';
+      if (file.mimeType === 'application/vnd.google-apps.document') {
+        fileType = 'document';
+      } else if (file.mimeType === 'application/vnd.google-apps.spreadsheet') {
+        fileType = 'spreadsheet';
+      }
+
+      const documentData: any = {
+        user_id,
+        folder_id: folder.id,
+        google_file_id: file.id,
+        title: file.name,
+        content,
+        file_type: fileType,
+        mime_type: file.mimeType,
+        drive_created_at: file.createdTime,
+        drive_modified_at: file.modifiedTime,
+        file_size: file.size || null,
+      };
+
+      // Add spreadsheet-specific data if it's a spreadsheet
+      if (fileType === 'spreadsheet') {
+        documentData.sheet_data = sheetData;
+        documentData.sheet_metadata = sheetMetadata;
       }
 
       const { data: document, error: docError } = await supabaseClient
         .from('knowledge_documents')
-        .upsert({
-          user_id,
-          folder_id: folder.id,
-          google_file_id: file.id,
-          title: file.name,
-          content,
-          file_type: file.mimeType.startsWith('application/vnd.google-apps') ? 'document' : 'file',
-          mime_type: file.mimeType,
-          drive_created_at: file.createdTime,
-          drive_modified_at: file.modifiedTime,
-          file_size: file.size || null,
-        }, {
+        .upsert(documentData, {
           onConflict: 'user_id,google_file_id',
         })
         .select()
@@ -280,4 +329,155 @@ async function chunkAndStoreDocument(supabaseClient: any, document: any, content
   }
 
   console.log(`Chunked document ${document.title} into ${chunks.length} chunks`);
+}
+
+// Helper functions for Google Sheets integration
+
+// Get metadata about a specific spreadsheet
+async function getSheetMetadata(token: string, sheetId: string) {
+  const response = await fetch(
+    `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}?fields=sheets(properties),properties`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    }
+  );
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error('Google Sheets API error:', errorText);
+    throw new Error(`Failed to get sheet metadata: ${response.status} ${response.statusText}`);
+  }
+
+  return await response.json();
+}
+
+// Get data from all sheets in a spreadsheet
+async function getAllSheetData(token: string, sheetId: string) {
+  try {
+    // First get metadata to know all sheet names
+    const metadata = await getSheetMetadata(token, sheetId);
+    const sheets = metadata.sheets || [];
+
+    const sheetsData = [];
+
+    // Read data from each sheet
+    for (const sheet of sheets) {
+      const sheetName = sheet.properties?.title || `Sheet${sheet.properties?.sheetId}`;
+
+      try {
+        const response = await fetch(
+          `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${encodeURIComponent(sheetName)}!A1:ZZ1000`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          }
+        );
+
+        if (response.ok) {
+          const data = await response.json();
+          const values = data.values || [];
+
+          if (values.length > 0) {
+            sheetsData.push({
+              name: sheetName,
+              range: data.range,
+              data: values,
+              headers: values[0] || [],
+              rowCount: values.length,
+              columnCount: values[0]?.length || 0
+            });
+          } else {
+            // Empty sheet
+            sheetsData.push({
+              name: sheetName,
+              range: `${sheetName}!A1:A1`,
+              data: [],
+              headers: [],
+              rowCount: 0,
+              columnCount: 0
+            });
+          }
+        } else {
+          console.log(`Could not read sheet ${sheetName}: ${response.status} ${response.statusText}`);
+        }
+      } catch (error) {
+        console.log(`Error reading sheet ${sheetName}:`, error);
+      }
+    }
+
+    return sheetsData;
+  } catch (error) {
+    console.error('Error getting all sheet data:', error);
+    throw error;
+  }
+}
+
+// Convert spreadsheet data to AI-queryable text format
+function convertSpreadsheetToText(sheetData: any, sheetMetadata: any): string {
+  if (!sheetData?.sheets || sheetData.sheets.length === 0) {
+    return `SPREADSHEET: ${sheetMetadata?.title || 'Untitled'}\n\nThis spreadsheet appears to be empty or could not be read.`;
+  }
+
+  const sections = [];
+  sections.push(`SPREADSHEET: ${sheetMetadata?.title || 'Untitled'}`);
+  sections.push(`Total Sheets: ${sheetData.sheets.length}`);
+  sections.push('');
+
+  for (const sheet of sheetData.sheets) {
+    sections.push(`== SHEET: ${sheet.name} ==`);
+    sections.push(`Dimensions: ${sheet.rowCount} rows × ${sheet.columnCount} columns`);
+
+    if (sheet.data && sheet.data.length > 0) {
+      const headers = sheet.headers || [];
+      if (headers.length > 0) {
+        sections.push(`Columns: ${headers.join(' | ')}`);
+      }
+
+      // Add sample data (first 5 rows after headers)
+      const dataRows = sheet.data.slice(1, 6);
+      if (dataRows.length > 0) {
+        sections.push('Sample Data:');
+        dataRows.forEach((row: any[], index: number) => {
+          const rowData = headers.map((header: string, colIndex: number) =>
+            `${header}: ${row[colIndex] || '(empty)'}`
+          ).join(', ');
+          sections.push(`Row ${index + 2}: ${rowData}`);
+        });
+      }
+
+      // Add summary statistics if numeric data is found
+      if (headers.length > 0 && sheet.data.length > 1) {
+        const numericColumns = [];
+        for (let colIndex = 0; colIndex < headers.length; colIndex++) {
+          const columnValues = sheet.data.slice(1).map(row => row[colIndex]);
+          const numericValues = columnValues.filter(val => val && !isNaN(parseFloat(val))).map(val => parseFloat(val));
+
+          if (numericValues.length > 0) {
+            const sum = numericValues.reduce((a, b) => a + b, 0);
+            const avg = sum / numericValues.length;
+            const min = Math.min(...numericValues);
+            const max = Math.max(...numericValues);
+
+            numericColumns.push(`${headers[colIndex]}: ${numericValues.length} values, avg=${avg.toFixed(2)}, min=${min}, max=${max}`);
+          }
+        }
+
+        if (numericColumns.length > 0) {
+          sections.push('Numeric Column Summary:');
+          sections.push(...numericColumns);
+        }
+      }
+    } else {
+      sections.push('This sheet is empty.');
+    }
+
+    sections.push('');
+  }
+
+  return sections.join('\n');
 }
