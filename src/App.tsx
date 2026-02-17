@@ -30,7 +30,6 @@ const Auth = React.lazy(() => import("./pages/Auth"));
 const ResetPassword = React.lazy(() => import("./pages/ResetPassword"));
 const ConfirmEmail = React.lazy(() => import("./pages/ConfirmEmail"));
 const GoogleDrive = React.lazy(() => import("./pages/GoogleDrive"));
-const GoogleSheets = React.lazy(() => import("./pages/GoogleSheets"));
 const Documents = React.lazy(() => import("./pages/Documents"));
 const AddDocuments = React.lazy(() => import("./pages/AddDocuments"));
 const KnowledgeBases = React.lazy(() => import("./pages/KnowledgeBases"));
@@ -251,11 +250,6 @@ const App = () => (
                   <Route path="/drive" element={
                     <ProtectedRoute>
                       <GoogleDrive />
-                    </ProtectedRoute>
-                  } />
-                  <Route path="/sheets" element={
-                    <ProtectedRoute>
-                      <GoogleSheets />
                     </ProtectedRoute>
                   } />
                   <Route path="/documents" element={

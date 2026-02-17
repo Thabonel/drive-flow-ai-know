@@ -15,6 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { FileText, Edit, Copy, Save, X, Tag, Calendar, Printer, Download, ChevronDown, FileImage, Sparkles, Loader2 } from 'lucide-react';
 import { PDFViewer } from '@/components/PDFViewer';
 import { DocumentDiffView } from '@/components/DocumentDiffView';
+import { SpreadsheetViewer } from '@/components/SpreadsheetViewer';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -44,6 +45,53 @@ interface DocumentViewerModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
+
+// Helper function to transform database spreadsheet data to SpreadsheetViewer format
+const transformSpreadsheetData = (document: any) => {
+  if (!document.sheet_data?.sheets) {
+    return null;
+  }
+
+  const sheets = document.sheet_data.sheets.map((sheet: any) => {
+    // Transform 2D array data to array of objects
+    if (sheet.data && sheet.data.length > 0) {
+      const headers = sheet.headers || sheet.data[0] || [];
+      const dataRows = sheet.data.slice(1); // Skip header row
+
+      const transformedData = dataRows.map((row: any[]) => {
+        const rowObj: Record<string, any> = {};
+        headers.forEach((header: string, index: number) => {
+          rowObj[header || `Column ${index + 1}`] = row[index] || '';
+        });
+        return rowObj;
+      });
+
+      return {
+        name: sheet.name,
+        data: transformedData,
+        charts: sheet.charts || [],
+        formulas: sheet.formulas || []
+      };
+    }
+
+    return {
+      name: sheet.name,
+      data: [],
+      charts: [],
+      formulas: []
+    };
+  });
+
+  return {
+    sheets,
+    metadata: {
+      totalSheets: sheets.length,
+      hasFormulas: sheets.some(sheet => sheet.formulas?.length > 0),
+      hasCharts: sheets.some(sheet => sheet.charts?.length > 0),
+      dataTypes: ['text', 'number'] // Basic types for now
+    }
+  };
+};
 
 export const DocumentViewerModal = ({ document, isOpen, onClose }: DocumentViewerModalProps) => {
   const [isEditing, setIsEditing] = useState(false);
@@ -634,8 +682,60 @@ export const DocumentViewerModal = ({ document, isOpen, onClose }: DocumentViewe
               />
             ) : (
               <>
-                {/* Show tabs if original file is available (PDF, etc.) */}
-                {document.file_url && (document.file_type === 'pdf' || document.mime_type === 'application/pdf') ? (
+                {/* Show spreadsheet view for Google Sheets */}
+                {document.file_type === 'spreadsheet' ? (
+                  <Tabs defaultValue="spreadsheet" className="w-full">
+                    <TabsList className="grid w-full grid-cols-2">
+                      <TabsTrigger value="spreadsheet" className="flex items-center gap-2">
+                        <FileText className="h-4 w-4" />
+                        Spreadsheet View
+                      </TabsTrigger>
+                      <TabsTrigger value="ai-summary" className="flex items-center gap-2">
+                        <FileText className="h-4 w-4" />
+                        AI Summary
+                      </TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="spreadsheet" className="mt-4">
+                      {(() => {
+                        const spreadsheetData = transformSpreadsheetData(document);
+                        return spreadsheetData ? (
+                          <SpreadsheetViewer
+                            data={spreadsheetData}
+                            title={formData.title}
+                          />
+                        ) : (
+                          <div className="p-6 border rounded-md bg-background min-h-[300px] flex items-center justify-center text-muted-foreground">
+                            Unable to display spreadsheet data. The file may be empty or in an unsupported format.
+                          </div>
+                        );
+                      })()}
+                    </TabsContent>
+                    <TabsContent value="ai-summary" className="mt-4">
+                      <div className="p-6 border rounded-md bg-background min-h-[300px] select-text prose prose-slate dark:prose-invert max-w-none overflow-x-hidden break-all prose-headings:text-foreground prose-p:text-foreground prose-li:text-foreground prose-strong:text-foreground prose-a:text-primary prose-code:text-foreground prose-code:break-all prose-table:border-collapse prose-th:border prose-th:border-slate-300 prose-th:p-2 prose-td:border prose-td:border-slate-300 prose-td:p-2">
+                        {shouldRenderAsHTML(formData.content, document?.metadata) ? (
+                          <div
+                            className="break-all [overflow-wrap:anywhere]"
+                            dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(formData.content || 'No content available') }}
+                          />
+                        ) : (
+                          <div className="break-all [overflow-wrap:anywhere]">
+                            <ReactMarkdown>
+                              {formData.content || 'No AI-generated summary available for this spreadsheet'}
+                            </ReactMarkdown>
+                          </div>
+                        )}
+                      </div>
+                      <div className="mt-2 text-xs text-muted-foreground">
+                        <p>
+                          <strong>Note:</strong> This is an AI-generated summary of the spreadsheet data optimized for search and querying.
+                          Use the "Spreadsheet View" tab to see the actual tabular data.
+                        </p>
+                      </div>
+                    </TabsContent>
+                  </Tabs>
+                ) : (
+                  /* Show tabs if original file is available (PDF, etc.) */
+                  document.file_url && (document.file_type === 'pdf' || document.mime_type === 'application/pdf') ? (
                   <Tabs defaultValue="original" className="w-full">
                     <TabsList className="grid w-full grid-cols-2">
                       <TabsTrigger value="original" className="flex items-center gap-2">
@@ -694,6 +794,7 @@ export const DocumentViewerModal = ({ document, isOpen, onClose }: DocumentViewe
                       </div>
                     )}
                   </div>
+                )}
                 )}
               </>
             )}

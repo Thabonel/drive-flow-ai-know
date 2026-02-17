@@ -1094,10 +1094,10 @@ serve(async (req) => {
       if (knowledgeBase.source_document_ids && knowledgeBase.source_document_ids.length > 0) {
         console.log('Fetching documents from knowledge base, count:', knowledgeBase.source_document_ids.length);
 
-        // Fetch documents (personal OR team)
+        // Fetch documents (personal OR team) - include spreadsheet data
         const { data: documents, error: docsError } = await supabaseService
           .from('knowledge_documents')
-          .select('id, title, content, ai_summary, tags, file_type, category, user_id, team_id')
+          .select('id, title, content, ai_summary, tags, file_type, category, user_id, team_id, sheet_data, sheet_metadata')
           .in('id', knowledgeBase.source_document_ids)
           .or(teamIds.length > 0
             ? `user_id.eq.${user_id},and(team_id.in.(${teamIds.join(',')}),visibility.eq.team)`
@@ -1144,7 +1144,7 @@ serve(async (req) => {
         // Cast query for marketing documents with broader search (personal OR team)
         const { data: marketingDocs, error: marketingError } = await supabaseService
           .from('knowledge_documents')
-          .select('id, title, content, ai_summary, tags, file_type, category, user_id, team_id')
+          .select('id, title, content, ai_summary, tags, file_type, category, user_id, team_id, sheet_data, sheet_metadata')
           .or(teamIds.length > 0
             ? `and(user_id.eq.${user_id},or(title.ilike.%marketing%,content.ilike.%marketing%,tags.cs.["marketing"],title.ilike.%wheels%,title.ilike.%wins%,file_type.eq.json)),and(team_id.in.(${teamIds.join(',')}),visibility.eq.team,or(title.ilike.%marketing%,content.ilike.%marketing%,tags.cs.["marketing"]))`
             : `user_id.eq.${user_id},or(title.ilike.%marketing%,content.ilike.%marketing%,tags.cs.["marketing"],title.ilike.%wheels%,title.ilike.%wins%,file_type.eq.json)`)
@@ -1164,7 +1164,7 @@ serve(async (req) => {
         // Get recent documents (personal OR team)
         const { data: documents, error: docsError } = await supabaseService
           .from('knowledge_documents')
-          .select('id, title, content, ai_summary, tags, file_type, category, user_id, team_id')
+          .select('id, title, content, ai_summary, tags, file_type, category, user_id, team_id, sheet_data, sheet_metadata')
           .or(teamIds.length > 0
             ? `user_id.eq.${user_id},and(team_id.in.(${teamIds.join(',')}),visibility.eq.team)`
             : `user_id.eq.${user_id}`)
@@ -1213,8 +1213,21 @@ serve(async (req) => {
     let documentContext = '';
     if (contextDocuments.length > 0) {
       documentContext = contextDocuments.map((doc, index) => {
-        // Use full content if no summary, but limit to reasonable size for AI
-        const content = doc.ai_summary || doc.content?.substring(0, 3000) || 'No content available';
+        let content = doc.ai_summary || doc.content?.substring(0, 3000) || 'No content available';
+
+        // Enhanced context for spreadsheets
+        if (doc.file_type === 'spreadsheet') {
+          // Add spreadsheet metadata if available
+          if (doc.sheet_metadata) {
+            const metadata = doc.sheet_metadata;
+            const sheetInfo = `\nSpreadsheet Info: ${metadata.totalSheets} sheets`;
+            content = content + sheetInfo;
+          }
+
+          // Use the AI-optimized text content that was generated during sync
+          // This already contains structured sheet data for AI querying
+          console.log(`Spreadsheet ${index + 1}: ${doc.title} - Using AI-generated text summary`);
+        }
 
         // Determine source: Personal or Team
         const isTeamDoc = doc.team_id && doc.team_id !== null;
@@ -1222,7 +1235,7 @@ serve(async (req) => {
           ? `Team: ${teamNamesMap.get(doc.team_id) || 'Unknown Team'}`
           : 'Personal';
 
-        console.log(`Document ${index + 1}: ${doc.title} - Source: ${source} - Content length: ${content.length}`);
+        console.log(`Document ${index + 1}: ${doc.title} - Source: ${source} - Type: ${doc.file_type} - Content length: ${content.length}`);
         return `[DOC_ID:${doc.id}] [${source}] Title: ${doc.title}\nContent: ${content}\nTags: ${doc.tags?.join(', ') || 'None'}\nFile Type: ${doc.file_type}\n---`;
       }).join('\n');
     }
