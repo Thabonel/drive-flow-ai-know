@@ -89,12 +89,12 @@ export const getOAuthConfig = (): OAuthConfig => {
       redirect_uri: env.redirectUri,
     },
     microsoft: {
-      client_id: '', // Not implemented yet
+      client_id: '',
       tenant_id: 'common',
       redirect_uri: `${env.origin}/auth/microsoft/callback`,
     },
     dropbox: {
-      client_id: '', // Not implemented yet
+      client_id: '',
       redirect_uri: `${env.origin}/auth/dropbox/callback`,
     },
   };
@@ -133,28 +133,3 @@ export const validateOAuthEnvironment = (): { valid: boolean; issues: string[] }
   return { valid, issues };
 };
 
-/**
- * Get authorized redirect URIs that should be configured in Google Cloud Console
- */
-export const getRequiredGoogleRedirectURIs = (): string[] => {
-  return [
-    // Development
-    'http://localhost:3000/auth/google/callback',
-    'http://localhost:8080/auth/google/callback',
-    'http://localhost:8081/auth/google/callback',
-    'http://localhost:8082/auth/google/callback',
-    'http://localhost:8083/auth/google/callback',
-    'http://localhost:8084/auth/google/callback',
-    'http://localhost:8085/auth/google/callback',
-    'http://localhost:8086/auth/google/callback',
-    'http://127.0.0.1:3000/auth/google/callback',
-    'http://127.0.0.1:8080/auth/google/callback',
-
-    // Staging/Preview (add your actual staging domains here)
-    'https://your-staging-domain.netlify.app/auth/google/callback',
-    'https://your-preview.vercel.app/auth/google/callback',
-
-    // Production (add your actual production domain here)
-    'https://your-production-domain.com/auth/google/callback',
-  ];
-};

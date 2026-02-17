@@ -41,7 +41,6 @@ const GoogleCallback = () => {
 
     // Handle OAuth errors
     if (error) {
-      console.error('OAuth error received:', { error, errorDescription });
       setStatus('error');
 
       if (window.opener) {
@@ -66,7 +65,6 @@ const GoogleCallback = () => {
 
     // Validate authorization code
     if (!code) {
-      console.error('No authorization code received from Google');
       setStatus('error');
 
       if (window.opener) {

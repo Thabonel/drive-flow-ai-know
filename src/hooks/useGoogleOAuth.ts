@@ -65,17 +65,13 @@ export const useGoogleOAuth = () => {
   const loadGoogleScript = useCallback((): Promise<void> => {
     return new Promise((resolve, reject) => {
       if (window.google?.accounts?.oauth2) {
-        console.log('Google Identity Services already loaded');
         resolve();
         return;
       }
-
-      console.log('Loading Google Identity Services script...');
       const script = document.createElement('script');
       script.src = 'https://accounts.google.com/gsi/client';
       script.async = true;
       script.onload = () => {
-        console.log('Google Identity Services script loaded successfully');
         // Give it a moment to initialize
         setTimeout(() => {
           if (window.google?.accounts?.oauth2) {
@@ -96,7 +92,6 @@ export const useGoogleOAuth = () => {
   // Refresh the access token using the stored refresh token (transparent to user)
   const refreshAccessToken = useCallback(async (): Promise<string | null> => {
     try {
-      console.log('Attempting to refresh Google access token...');
       const { data, error } = await supabase.functions.invoke('refresh-google-token', {});
 
       if (error) {
@@ -105,13 +100,11 @@ export const useGoogleOAuth = () => {
       }
 
       if (data?.needs_reauth) {
-        console.log('Token refresh requires re-authentication:', data.error);
         setIsAuthenticated(false);
         return null;
       }
 
       if (data?.access_token) {
-        console.log('Token refresh successful, refreshed:', data.refreshed);
         return data.access_token;
       }
 
@@ -163,11 +156,6 @@ export const useGoogleOAuth = () => {
       authUrl.searchParams.set('access_type', 'offline');
       authUrl.searchParams.set('prompt', 'consent');
 
-      console.log('Google OAuth initialization (manual popup):', {
-        clientId: config.google.client_id?.substring(0, 20) + '...',
-        redirectUri,
-        scope,
-      });
 
       // Open centered popup
       const width = 500;
@@ -216,8 +204,6 @@ export const useGoogleOAuth = () => {
         }
 
         try {
-          console.log('Authorization code received, exchanging for tokens...');
-
           const { data, error } = await supabase.functions.invoke('store-google-tokens', {
             body: {
               code,
@@ -229,10 +215,6 @@ export const useGoogleOAuth = () => {
           if (error) throw new Error(`Token exchange failed: ${error.message}`);
           if (data?.error) throw new Error(`Token exchange failed: ${data.error}`);
 
-          console.log('Tokens exchanged and stored successfully:', {
-            success: data?.success,
-            hasRefreshToken: data?.has_refresh_token,
-          });
           setIsAuthenticated(true);
 
           toast({
@@ -307,14 +289,12 @@ export const useGoogleOAuth = () => {
       if (isExpiringSoon) {
         // Token is expired or expiring soon - try to refresh
         if (tokenRecord.refresh_token) {
-          console.log('Google token expiring soon, attempting auto-refresh...');
           const newToken = await refreshAccessToken();
           if (newToken) {
             setIsAuthenticated(true);
             return true;
           }
         }
-        console.log('Google token expired and cannot be refreshed');
         setIsAuthenticated(false);
         return false;
       }
