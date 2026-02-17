@@ -98,13 +98,14 @@ interface ResponsiveTimelineHeaderProps {
   onReorderLayers: (newOrder: TimelineLayer[]) => Promise<void>;
 
   // Zoom controls
-  onZoomHorizontalChange: (value: number) => void;
+  onZoomHorizontalChange: (value: number) => Promise<void>;
   onZoomVerticalChange: (value: number) => void;
   onFitAllLayers: () => void;
 
   // View switching
   onViewTypeChange: (type: ViewType) => void;
   onViewModeChange: (mode: TimelineViewMode) => void;
+  onTimeWindowChange: (settings: { pastHours: number; futureHours: number; subdivisionMinutes: number }) => Promise<void>;
 
   // Attention system
   items: TimelineItem[];
@@ -534,6 +535,8 @@ export const ResponsiveTimelineHeader: React.FC<ResponsiveTimelineHeaderProps> =
           <ViewModeSwitcher
             currentMode={props.viewMode}
             onModeChange={props.onViewModeChange}
+            onZoomChange={props.onZoomHorizontalChange}
+            onTimeWindowChange={props.onTimeWindowChange}
           />
 
           {/* Navigate back */}

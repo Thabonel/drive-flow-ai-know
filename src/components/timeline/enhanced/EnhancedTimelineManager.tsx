@@ -55,6 +55,8 @@ import {
   MIN_ZOOM,
   MAX_ZOOM,
   NOW_LINE_POSITION,
+  BASE_PIXELS_PER_HOUR,
+  ZOOM_TARGET_CONFIG,
 } from '@/lib/timelineConstants';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -151,10 +153,9 @@ export const EnhancedTimelineManager: React.FC<EnhancedTimelineManagerProps> = (
   const hasCheckedInitialLoadRef = useRef<boolean>(false);
   const prevViewTypeRef = useRef<ViewType>(viewType);
 
-  // Calculate zoom-adjusted values
+  // Calculate zoom-adjusted values using fixed base scale
   const viewModeConfig = VIEW_MODE_CONFIG[viewMode];
-  const basePixelsPerHour = viewModeConfig.pixelsPerHour;
-  const pixelsPerHour = (settings?.zoom_horizontal || 100) / 100 * basePixelsPerHour;
+  const pixelsPerHour = (settings?.zoom_horizontal || 100) / 100 * BASE_PIXELS_PER_HOUR;
   const layerHeight = (settings?.zoom_vertical || 80) / 100 * DEFAULT_LAYER_HEIGHT;
 
   // Real-time auto-scroll effect (preserved from original)
@@ -246,6 +247,15 @@ export const EnhancedTimelineManager: React.FC<EnhancedTimelineManagerProps> = (
     if (layers.length === 0) return;
     // Implement fit all layers logic
     handleZoomVerticalChange(80); // Reset to default
+  };
+
+  // Helper function to update time window settings (pastHours, futureHours, subdivisionMinutes)
+  // This is separate from zoom to allow independent control
+  const handleTimeWindowChange = async (settings: { pastHours: number; futureHours: number; subdivisionMinutes: number }) => {
+    // For now, we'll store these in VIEW_MODE_CONFIG but this could be moved to database settings later
+    // This is a temporary approach to maintain the time window behavior without the problematic pixelsPerHour coupling
+    console.log('Enhanced Timeline - Time window settings updated:', settings);
+    // TODO: Could be extended to store in Supabase settings if persistent time windows are needed
   };
 
   const getJumpLabel = (): string => {
@@ -430,6 +440,7 @@ export const EnhancedTimelineManager: React.FC<EnhancedTimelineManagerProps> = (
               setViewMode(mode);
               localStorage.setItem('timeline-view-mode', mode);
             }}
+            onTimeWindowChange={handleTimeWindowChange}
 
             // Attention system
             items={items}
