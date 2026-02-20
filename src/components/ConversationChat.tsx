@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
+import { safeFunctionInvoke } from '@/lib/edge-function-wrapper';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
@@ -810,11 +811,14 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
 
         try {
           // Step 1: Extract and plan tasks via agent-translate
-          const { data: translateData, error: translateError } = await supabase.functions.invoke('agent-translate', {
+          const { data: translateData, error: translateError } = await safeFunctionInvoke('agent-translate', {
             body: {
               unstructured_input: originalMessage,
               timezone_offset: getTimezoneOffset(),
             },
+          }, {
+            userMessage: 'Failed to process your message. Please try again.',
+            reportToAdmin: true,
           });
 
           if (translateError) {
@@ -832,9 +836,13 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
           }
 
           // Step 2: Execute via agent-orchestrator (skip confirmation dialog)
-          const { data: orchestratorData, error: orchestratorError } = await supabase.functions.invoke(
+          const { data: orchestratorData, error: orchestratorError } = await safeFunctionInvoke(
             'agent-orchestrator',
-            { body: { session_id: translateData.session_id } }
+            { body: { session_id: translateData.session_id } },
+            {
+              userMessage: 'Failed to execute your request. Please try again.',
+              reportToAdmin: true,
+            }
           );
 
           if (orchestratorError) {
@@ -974,13 +982,16 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
     } catch (error: any) {
       console.error('Error:', error);
 
-      // Provide more specific error messages
+      // Provide specific error messages for remaining operations
+      // Note: Edge Function errors are now handled by safeFunctionInvoke wrappers
       const errorStr = String(error?.message || error);
       if (errorStr.includes('Failed to create conversation')) {
         toast.error('Unable to create conversation. Please try again.');
-      } else if (errorStr.includes('network') || errorStr.includes('fetch')) {
-        toast.error('Network error. Please check your connection and try again.');
+      } else if (errorStr.includes('database') || errorStr.includes('supabase')) {
+        toast.error('Failed to save conversation. Please try again.');
       } else {
+        // Generic fallback for any remaining unexpected errors
+        console.warn('Unexpected error in conversation:', errorStr);
         toast.error('An unexpected error occurred. Please try again.');
       }
     } finally {
