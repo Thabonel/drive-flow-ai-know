@@ -26,6 +26,8 @@ import { MemoryManager } from "@/components/settings/MemoryManager";
 import { MFASettings } from "@/components/settings/MFASettings";
 import { MessagingIntegrations } from "@/components/settings/MessagingIntegrations";
 import { LocalIndexingSettings } from "@/components/settings/LocalIndexingSettings";
+import { GoogleIntegrationHealth } from "@/components/integrations/GoogleIntegrationHealth";
+import { GoogleOAuthTestButton } from "@/components/integrations/GoogleOAuthTestButton";
 import {
   User,
   Bell,
@@ -454,6 +456,12 @@ const Settings = () => {
                     </div>
                   </CardContent>
                 </Card>
+
+                {/* Google Integration Health Monitor */}
+                <GoogleIntegrationHealth />
+
+                {/* Google OAuth Test Button */}
+                <GoogleOAuthTestButton />
 
                 <Card>
                   <CardHeader>
