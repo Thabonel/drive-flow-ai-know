@@ -25,7 +25,8 @@ export interface ErrorHandlingOptions {
 /**
  * Enhanced error handler for Edge Function calls
  * - Production: Shows user-friendly messages, reports to admin
- * - Staging/Dev: Shows detailed errors for debugging
+ * - Staging: Silent mode - detailed console logs only (no toasts)
+ * - Development: Shows detailed error toasts for immediate debugging
  */
 export const handleEdgeFunctionError = (
   error: any,
@@ -84,11 +85,15 @@ export const handleEdgeFunctionError = (
           variant: 'destructive',
         });
       }
+    } else if (config.isStaging) {
+      // Staging: Silent mode - no toasts, console logging only for debugging
+      // This prevents user-facing popups while still providing detailed logs for developers
+      // (Toast suppressed in staging to avoid bothering users while still debugging)
     } else {
-      // Development/Staging: Show detailed errors
+      // Development: Show detailed errors for immediate debugging feedback
       toast({
         title: `${context} Error`,
-        description: `${errorMessage} ${config.isDevelopment ? '(Dev Mode)' : '(Staging)'}`,
+        description: `${errorMessage} (Dev Mode)`,
         variant: 'destructive',
       });
     }
