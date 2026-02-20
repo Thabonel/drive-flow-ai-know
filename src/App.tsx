@@ -20,6 +20,7 @@ import { RouteErrorBoundary } from "@/components/RouteErrorBoundary";
 import { ServiceWorkerManager } from "@/components/ServiceWorkerManager";
 import { isSupabaseConfigured } from "@/integrations/supabase/client";
 import { config } from "@/config/environment";
+import { initializeGlobalErrorHandling } from "@/lib/global-error-handler";
 import Header from "./layout/Header";
 import PrivacyPolicyWidget from "@/components/legal/PrivacyPolicyWidget";
 import TermsModal from "@/components/legal/TermsModal";
@@ -198,6 +199,14 @@ function MobileInitializer() {
   return null;
 }
 
+// Global error handler initialization component
+function ErrorHandlerInitializer() {
+  React.useEffect(() => {
+    initializeGlobalErrorHandling();
+  }, []);
+  return null;
+}
+
 
 const App = () => (
   <ErrorBoundary>
@@ -223,6 +232,7 @@ const App = () => (
                   onOfflineReady={() => console.log('App ready for offline use')}
                 />
                 <MobileInitializer />
+                <ErrorHandlerInitializer />
                 <PWAInstallPrompt />
                 <PrivacyPolicyWidget />
                 <TermsModal />

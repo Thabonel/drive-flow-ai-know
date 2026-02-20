@@ -259,7 +259,7 @@ export const useGoogleOAuth = () => {
       });
       throw error;
     }
-  }, [user, oauthConfig, getOAuthConfig, toast]);
+  }, [user, oauthConfig, getOAuthConfigLocal, toast]);
 
   // Check if user has valid Google tokens, with auto-refresh support
   const checkConnection = useCallback(async (): Promise<boolean> => {

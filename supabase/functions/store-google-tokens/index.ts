@@ -123,6 +123,21 @@ serve(async (req) => {
     const user_id = user.id;
     const body = await req.json();
 
+    // Health check mode - just validate environment variables
+    if (body.health_check) {
+      const clientSecret = Deno.env.get('GOOGLE_CLIENT_SECRET');
+      return new Response(
+        JSON.stringify({
+          health: 'ok',
+          has_google_client_secret: !!clientSecret,
+          environment_status: clientSecret ? 'configured' : 'missing_google_client_secret',
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
+    }
+
     // Determine flow: authorization code exchange or direct token storage
     // If 'code' is present, exchange it for tokens via Google's token endpoint
     // If 'access_token' is present, store directly (legacy/fallback support)
