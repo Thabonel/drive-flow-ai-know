@@ -82,13 +82,14 @@ interface Message {
 interface ConversationChatProps {
   conversationId?: string;
   isTemporary?: boolean;
+  knowledgeBaseId?: string;
   onConversationCreated?: (id: string) => void;
   onConversationDeleted?: () => void;
   onConversationSummarized?: () => void;
   onDocumentAccessChange?: (useDocuments: boolean) => void;
 }
 
-export function ConversationChat({ conversationId: initialConversationId, isTemporary = false, onConversationCreated, onConversationDeleted, onConversationSummarized, onDocumentAccessChange }: ConversationChatProps) {
+export function ConversationChat({ conversationId: initialConversationId, isTemporary = false, knowledgeBaseId, onConversationCreated, onConversationDeleted, onConversationSummarized, onDocumentAccessChange }: ConversationChatProps) {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [conversationId, setConversationId] = useState<string | null>(initialConversationId || null);
@@ -672,6 +673,7 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
             query: userMessage,
             conversationContext,
             use_documents: forceUseDocuments,
+            knowledge_base_id: knowledgeBaseId || undefined,
             image: imageData ? {
               base64: imageData.base64,
               media_type: imageData.mimeType,
