@@ -45,6 +45,12 @@ const navigationItems = [
     description: 'Browse & manage files'
   },
   {
+    title: 'Knowledge Bases',
+    url: '/knowledge',
+    icon: BookOpen,
+    description: 'Organize & query document collections'
+  },
+  {
     title: 'Pitch Deck',
     url: '/pitch-deck',
     icon: Presentation,
