@@ -46,6 +46,7 @@ const DocumentList = React.lazy(() => import("./components/DocumentList"));
 const Conversations = React.lazy(() => import("./pages/Conversations"));
 const MicrosoftCallback = React.lazy(() => import("./pages/MicrosoftCallback"));
 const GoogleCallback = React.lazy(() => import("./pages/auth/GoogleCallback"));
+const EnhancedGoogleCallback = React.lazy(() => import("./pages/auth/EnhancedGoogleCallback"));
 const DropboxCallback = React.lazy(() => import("./pages/auth/DropboxCallback"));
 const Terms = React.lazy(() => import("./pages/Terms"));
 const Privacy = React.lazy(() => import("./pages/Privacy"));
@@ -246,6 +247,7 @@ const App = () => (
                   <Route path="/auth/confirm" element={<ConfirmEmail />} />
                   <Route path="/auth/microsoft/callback" element={<MicrosoftCallback />} />
                   <Route path="/auth/google/callback" element={<GoogleCallback />} />
+                  <Route path="/auth/google/enhanced-callback" element={<EnhancedGoogleCallback />} />
                   <Route path="/auth/dropbox/callback" element={<DropboxCallback />} />
                   <Route path="/" element={
                     <PublicRoute>

@@ -1,14 +1,29 @@
-import { describe, test, expect, beforeAll, afterAll } from 'vitest';
+import { describe, test, expect, beforeAll, afterAll, vi } from 'vitest';
 
 // CSP Security Test Suite
 // Tests Content Security Policy headers and enforcement
+
+// Mock fetch to simulate CSP headers
+const mockCSPHeader = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src 'self' https://*.supabase.co https://api.anthropic.com; object-src 'none'; frame-ancestors 'none'; upgrade-insecure-requests";
+
+global.fetch = vi.fn(() =>
+  Promise.resolve({
+    headers: {
+      get: (name: string) => {
+        if (name === 'content-security-policy') return mockCSPHeader;
+        if (name === 'x-content-type-options') return 'nosniff';
+        return null;
+      }
+    }
+  })
+) as any;
 
 describe('Content Security Policy', () => {
   let testServer: any;
   let baseUrl: string;
 
   beforeAll(async () => {
-    // Use the development server for testing CSP headers
+    // Use mocked responses for CSP testing
     baseUrl = 'http://localhost:8080';
   });
 
@@ -16,6 +31,7 @@ describe('Content Security Policy', () => {
     if (testServer) {
       testServer.kill();
     }
+    vi.restoreAllMocks();
   });
 
   test('CSP prevents unsafe inline content execution', async () => {

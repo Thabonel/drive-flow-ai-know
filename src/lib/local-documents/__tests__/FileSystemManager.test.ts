@@ -16,6 +16,20 @@ Object.defineProperty(window, 'showDirectoryPicker', {
   value: vi.fn().mockResolvedValue(mockDirectoryHandle)
 });
 
+// Mock localStorage with actual storage behavior
+const localStorageData: Record<string, string> = {};
+const localStorageMock = {
+  getItem: vi.fn((key: string) => localStorageData[key] || null),
+  setItem: vi.fn((key: string, value: string) => { localStorageData[key] = value; }),
+  removeItem: vi.fn((key: string) => { delete localStorageData[key]; }),
+  clear: vi.fn(() => { Object.keys(localStorageData).forEach(key => delete localStorageData[key]); }),
+};
+
+Object.defineProperty(global, 'localStorage', {
+  value: localStorageMock,
+  writable: true
+});
+
 // Mock crypto.randomUUID
 Object.defineProperty(global, 'crypto', {
   value: {
@@ -28,9 +42,8 @@ describe('FileSystemManager', () => {
 
   beforeEach(() => {
     manager = new FileSystemManager();
-    // Clear localStorage before each test
-    localStorage.clear();
-    // Reset all mocks
+    // Clear localStorage data and mocks before each test
+    Object.keys(localStorageData).forEach(key => delete localStorageData[key]);
     vi.clearAllMocks();
   });
 
@@ -45,11 +58,16 @@ describe('FileSystemManager', () => {
 
   test('retrieves stored folder permissions', async () => {
     // First add a permission
-    await manager.requestFolderPermission();
+    const permission = await manager.requestFolderPermission();
+
+    // Verify the permission was stored
+    expect(permission).toBeDefined();
+    expect(permission.path).toBe('Documents');
 
     const permissions = await manager.getStoredPermissions();
     expect(permissions).toHaveLength(1);
     expect(permissions[0].path).toBe('Documents');
+    expect(permissions[0].id).toBe('mock-uuid-123');
   });
 
   test('scans folder for supported documents', async () => {

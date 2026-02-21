@@ -1,5 +1,5 @@
 import { describe, test, expect, beforeEach, afterEach, vi } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import TermsModal from './TermsModal';
 
 // Mock localStorage
@@ -25,7 +25,9 @@ describe('Terms of Service Modal', () => {
   });
 
   test('new users must accept terms before accessing app', async () => {
-    render(<TermsModal />);
+    await act(async () => {
+      render(<TermsModal />);
+    });
 
     // Modal should be visible for new users
     expect(screen.getByRole('dialog')).toBeInTheDocument();
@@ -39,7 +41,7 @@ describe('Terms of Service Modal', () => {
     expect(acceptButton).toHaveProperty('disabled', true);
   });
 
-  test('modal does not show for users who already accepted', () => {
+  test('modal does not show for users who already accepted', async () => {
     // Mock existing terms acceptance
     localStorageMock.getItem.mockReturnValue(
       JSON.stringify({
@@ -49,14 +51,18 @@ describe('Terms of Service Modal', () => {
       })
     );
 
-    render(<TermsModal />);
+    await act(async () => {
+      render(<TermsModal />);
+    });
 
     // Should not show modal
     expect(screen.queryByRole('dialog')).toBeNull();
   });
 
   test('accept button enables after scrolling to bottom', async () => {
-    render(<TermsModal />);
+    await act(async () => {
+      render(<TermsModal />);
+    });
 
     const acceptButton = screen.getByRole('button', { name: /I Accept/i });
     const scrollContainer = screen.getByTestId('terms-content');
@@ -87,7 +93,9 @@ describe('Terms of Service Modal', () => {
   });
 
   test('accepting terms saves acceptance and closes modal', async () => {
-    render(<TermsModal />);
+    await act(async () => {
+      render(<TermsModal />);
+    });
 
     // Enable accept button by scrolling
     const acceptButton = screen.getByRole('button', { name: /I Accept/i });
@@ -118,8 +126,10 @@ describe('Terms of Service Modal', () => {
     });
   });
 
-  test('modal is unescapable until terms accepted', () => {
-    render(<TermsModal />);
+  test('modal is unescapable until terms accepted', async () => {
+    await act(async () => {
+      render(<TermsModal />);
+    });
 
     const modal = screen.getByRole('dialog');
 

@@ -7,13 +7,14 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Brain, Plus, BookOpen, Lightbulb, BarChart3, Clock } from 'lucide-react';
+import { Brain, Plus, BookOpen, Lightbulb, BarChart3, Clock, Settings } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { PageHelp } from '@/components/PageHelp';
 import { AIQueryInput } from '@/components/AIQueryInput';
+import { BulkDocumentManager } from '@/components/BulkDocumentManager';
 
 const KnowledgeBases = () => {
   const { user } = useAuth();
@@ -23,6 +24,7 @@ const KnowledgeBases = () => {
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [selectedKB, setSelectedKB] = useState<any>(null);
   const [isEditing, setIsEditing] = useState(false);
+  const [showDocumentManager, setShowDocumentManager] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -532,13 +534,24 @@ const KnowledgeBases = () => {
               {isEditing ? 'Edit Knowledge Base' : selectedKB?.title}
               <div className="flex gap-2">
                 {!isEditing && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setIsEditing(true)}
-                  >
-                    Edit
-                  </Button>
+                  <>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowDocumentManager(true)}
+                      className="gap-2"
+                    >
+                      <Settings className="h-4 w-4" />
+                      Manage Documents
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setIsEditing(true)}
+                    >
+                      Edit
+                    </Button>
+                  </>
                 )}
                 <Button
                   variant="destructive"
@@ -659,6 +672,14 @@ const KnowledgeBases = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Bulk Document Manager */}
+      {showDocumentManager && selectedKB && (
+        <BulkDocumentManager
+          knowledgeBase={selectedKB}
+          onClose={() => setShowDocumentManager(false)}
+        />
+      )}
     </>
   );
 };
