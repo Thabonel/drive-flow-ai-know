@@ -559,6 +559,73 @@ async function claudeCompletion(
         },
         required: ["sheet_id"]
       }
+    },
+    {
+      name: "save_document",
+      description: "Save a document to the user's library. Use this when the user asks you to create, write, save, or store a document. If a knowledge_base_name is provided, the document will be added to that knowledge base (creating it if it doesn't exist).",
+      input_schema: {
+        type: "object",
+        properties: {
+          title: {
+            type: "string",
+            description: "The title of the document"
+          },
+          content: {
+            type: "string",
+            description: "The full content/text of the document"
+          },
+          knowledge_base_name: {
+            type: "string",
+            description: "Optional name of a knowledge base to add this document to. Will find by case-insensitive title match or create a new one."
+          }
+        },
+        required: ["title", "content"]
+      }
+    },
+    {
+      name: "create_knowledge_base",
+      description: "Create a new knowledge base. Use this when the user wants to create or set up a new knowledge base for organizing documents.",
+      input_schema: {
+        type: "object",
+        properties: {
+          title: {
+            type: "string",
+            description: "The title of the knowledge base"
+          },
+          description: {
+            type: "string",
+            description: "Optional description of what this knowledge base contains"
+          }
+        },
+        required: ["title"]
+      }
+    },
+    {
+      name: "add_documents_to_kb",
+      description: "Add existing documents to a knowledge base by searching for them by title. Use this when the user wants to organize existing documents into a knowledge base.",
+      input_schema: {
+        type: "object",
+        properties: {
+          knowledge_base_name: {
+            type: "string",
+            description: "The name of the knowledge base to add documents to"
+          },
+          document_search: {
+            type: "string",
+            description: "Search term to find documents by title (partial match supported)"
+          }
+        },
+        required: ["knowledge_base_name", "document_search"]
+      }
+    },
+    {
+      name: "list_knowledge_bases",
+      description: "List all of the user's knowledge bases with their document counts and last updated dates. Use this before creating a knowledge base to check if one already exists, or when the user asks about their knowledge bases.",
+      input_schema: {
+        type: "object",
+        properties: {},
+        required: []
+      }
     }
   ];
 
@@ -748,6 +815,227 @@ async function claudeCompletion(
             tool_use_id: toolUse.id,
             content: JSON.stringify(analyzeResult)
           });
+        } else if (toolUse.name === 'save_document') {
+          console.log('Processing save_document:', toolUse.input.title);
+          try {
+            const dbClient = createClient(
+              Deno.env.get('SUPABASE_URL') ?? '',
+              Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+            );
+
+            // Create the document
+            const { data: newDoc, error: docError } = await dbClient
+              .from('knowledge_documents')
+              .insert([{
+                title: toolUse.input.title,
+                content: toolUse.input.content,
+                file_type: 'ai_generated',
+                user_id: userId,
+                category: 'general',
+                source: 'ai_chat'
+              }])
+              .select()
+              .single();
+
+            if (docError) throw new Error(docError.message);
+
+            let kbInfo = '';
+
+            // If knowledge_base_name provided, find or create KB and add doc
+            if (toolUse.input.knowledge_base_name) {
+              const kbName = toolUse.input.knowledge_base_name;
+
+              // Try to find existing KB (case-insensitive)
+              const { data: existingKBs } = await dbClient
+                .from('knowledge_bases')
+                .select('id, title, source_document_ids')
+                .eq('user_id', userId)
+                .ilike('title', kbName);
+
+              let kbId: string;
+              let kbTitle: string;
+
+              if (existingKBs && existingKBs.length > 0) {
+                // Use existing KB
+                const kb = existingKBs[0];
+                kbId = kb.id;
+                kbTitle = kb.title;
+                const updatedIds = [...(kb.source_document_ids || []), newDoc.id];
+                await dbClient
+                  .from('knowledge_bases')
+                  .update({ source_document_ids: updatedIds, updated_at: new Date().toISOString() })
+                  .eq('id', kbId)
+                  .eq('user_id', userId);
+              } else {
+                // Create new KB
+                const { data: newKB, error: kbError } = await dbClient
+                  .from('knowledge_bases')
+                  .insert([{
+                    title: kbName,
+                    type: 'general',
+                    user_id: userId,
+                    content: {},
+                    source_document_ids: [newDoc.id],
+                    is_active: true
+                  }])
+                  .select()
+                  .single();
+                if (kbError) throw new Error(kbError.message);
+                kbId = newKB.id;
+                kbTitle = newKB.title;
+              }
+              kbInfo = `, added to knowledge base "${kbTitle}"`;
+            }
+
+            toolResults.push({
+              type: 'tool_result',
+              tool_use_id: toolUse.id,
+              content: JSON.stringify({ success: true, document_id: newDoc.id, title: newDoc.title, message: `Document "${newDoc.title}" saved successfully${kbInfo}` })
+            });
+          } catch (err) {
+            console.error('save_document error:', err);
+            toolResults.push({
+              type: 'tool_result',
+              tool_use_id: toolUse.id,
+              content: JSON.stringify({ success: false, error: err.message })
+            });
+          }
+        } else if (toolUse.name === 'create_knowledge_base') {
+          console.log('Processing create_knowledge_base:', toolUse.input.title);
+          try {
+            const dbClient = createClient(
+              Deno.env.get('SUPABASE_URL') ?? '',
+              Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+            );
+
+            const { data: newKB, error: kbError } = await dbClient
+              .from('knowledge_bases')
+              .insert([{
+                title: toolUse.input.title,
+                description: toolUse.input.description || '',
+                type: 'general',
+                user_id: userId,
+                content: {},
+                source_document_ids: [],
+                is_active: true
+              }])
+              .select()
+              .single();
+
+            if (kbError) throw new Error(kbError.message);
+
+            toolResults.push({
+              type: 'tool_result',
+              tool_use_id: toolUse.id,
+              content: JSON.stringify({ success: true, knowledge_base_id: newKB.id, title: newKB.title, message: `Knowledge base "${newKB.title}" created successfully` })
+            });
+          } catch (err) {
+            console.error('create_knowledge_base error:', err);
+            toolResults.push({
+              type: 'tool_result',
+              tool_use_id: toolUse.id,
+              content: JSON.stringify({ success: false, error: err.message })
+            });
+          }
+        } else if (toolUse.name === 'add_documents_to_kb') {
+          console.log('Processing add_documents_to_kb:', toolUse.input.knowledge_base_name, toolUse.input.document_search);
+          try {
+            const dbClient = createClient(
+              Deno.env.get('SUPABASE_URL') ?? '',
+              Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+            );
+
+            // Find the KB
+            const { data: kbs } = await dbClient
+              .from('knowledge_bases')
+              .select('id, title, source_document_ids')
+              .eq('user_id', userId)
+              .ilike('title', `%${toolUse.input.knowledge_base_name}%`);
+
+            if (!kbs || kbs.length === 0) {
+              toolResults.push({
+                type: 'tool_result',
+                tool_use_id: toolUse.id,
+                content: JSON.stringify({ success: false, error: `No knowledge base found matching "${toolUse.input.knowledge_base_name}"` })
+              });
+            } else {
+              const kb = kbs[0];
+
+              // Search for documents by title
+              const { data: matchingDocs } = await dbClient
+                .from('knowledge_documents')
+                .select('id, title')
+                .eq('user_id', userId)
+                .ilike('title', `%${toolUse.input.document_search}%`);
+
+              if (!matchingDocs || matchingDocs.length === 0) {
+                toolResults.push({
+                  type: 'tool_result',
+                  tool_use_id: toolUse.id,
+                  content: JSON.stringify({ success: false, error: `No documents found matching "${toolUse.input.document_search}"` })
+                });
+              } else {
+                const newDocIds = matchingDocs.map(d => d.id);
+                const updatedIds = [...new Set([...(kb.source_document_ids || []), ...newDocIds])];
+                await dbClient
+                  .from('knowledge_bases')
+                  .update({ source_document_ids: updatedIds, updated_at: new Date().toISOString() })
+                  .eq('id', kb.id)
+                  .eq('user_id', userId);
+
+                toolResults.push({
+                  type: 'tool_result',
+                  tool_use_id: toolUse.id,
+                  content: JSON.stringify({ success: true, documents_added: matchingDocs.length, document_titles: matchingDocs.map(d => d.title), knowledge_base: kb.title })
+                });
+              }
+            }
+          } catch (err) {
+            console.error('add_documents_to_kb error:', err);
+            toolResults.push({
+              type: 'tool_result',
+              tool_use_id: toolUse.id,
+              content: JSON.stringify({ success: false, error: err.message })
+            });
+          }
+        } else if (toolUse.name === 'list_knowledge_bases') {
+          console.log('Processing list_knowledge_bases for user:', userId);
+          try {
+            const dbClient = createClient(
+              Deno.env.get('SUPABASE_URL') ?? '',
+              Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+            );
+
+            const { data: kbs, error: kbError } = await dbClient
+              .from('knowledge_bases')
+              .select('id, title, description, type, source_document_ids, updated_at, is_active')
+              .eq('user_id', userId)
+              .order('updated_at', { ascending: false });
+
+            if (kbError) throw new Error(kbError.message);
+
+            const kbList = (kbs || []).map(kb => ({
+              title: kb.title,
+              description: kb.description,
+              type: kb.type,
+              document_count: kb.source_document_ids?.length || 0,
+              last_updated: kb.updated_at,
+              is_active: kb.is_active
+            }));
+
+            toolResults.push({
+              type: 'tool_result',
+              tool_use_id: toolUse.id,
+              content: JSON.stringify({ success: true, knowledge_bases: kbList, total: kbList.length })
+            });
+          } catch (err) {
+            console.error('list_knowledge_bases error:', err);
+            toolResults.push({
+              type: 'tool_result',
+              tool_use_id: toolUse.id,
+              content: JSON.stringify({ success: false, error: err.message })
+            });
+          }
         } else {
           // Unknown tool - return empty result
           console.log('Unknown tool requested:', toolUse.name);
