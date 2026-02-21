@@ -39,16 +39,10 @@ const navigationItems = [
     description: 'Ask questions & get insights'
   },
   {
-    title: 'Documents',
-    url: '/documents',
-    icon: FileText,
-    description: 'Browse & manage files'
-  },
-  {
-    title: 'Knowledge Bases',
-    url: '/knowledge',
+    title: 'Library',
+    url: '/library',
     icon: BookOpen,
-    description: 'Organize & query document collections'
+    description: 'Documents & Knowledge Bases'
   },
   {
     title: 'Pitch Deck',

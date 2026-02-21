@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, useLocation, useNavigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation, useNavigate, Navigate, useSearchParams } from "react-router-dom";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { offlineEnabled } from "@/lib/ai";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
@@ -69,6 +69,7 @@ const TeamTimeline = React.lazy(() => import("./pages/Team/TeamTimeline"));
 const CreateTeam = React.lazy(() => import("./pages/Team/CreateTeam"));
 const AcceptInvite = React.lazy(() => import("./pages/Team/AcceptInvite"));
 const PresentationAudience = React.lazy(() => import("./pages/PresentationAudience"));
+const Library = React.lazy(() => import("./pages/Library"));
 
 const queryClient = new QueryClient();
 
@@ -266,21 +267,15 @@ const App = () => (
                       <GoogleDrive />
                     </ProtectedRoute>
                   } />
-                  <Route path="/documents" element={
+                  <Route path="/library" element={
                     <ProtectedRoute>
-                      <Documents />
+                      <Library />
                     </ProtectedRoute>
                   } />
-                  <Route path="/add-documents" element={
-                    <ProtectedRoute>
-                      <AddDocuments />
-                    </ProtectedRoute>
-                  } />
-                  <Route path="/knowledge" element={
-                    <ProtectedRoute>
-                      <KnowledgeBases />
-                    </ProtectedRoute>
-                  } />
+                  {/* Backwards-compat redirects to unified Library page */}
+                  <Route path="/documents" element={<Navigate to="/library?tab=documents" replace />} />
+                  <Route path="/add-documents" element={<Navigate to="/library?tab=sources" replace />} />
+                  <Route path="/knowledge" element={<Navigate to="/library?tab=knowledge-bases" replace />} />
                   <Route path="/pitch-deck" element={
                     <ProtectedRoute>
                       <PitchDeck />
