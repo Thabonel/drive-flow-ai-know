@@ -10,13 +10,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import {
   Brain, Plus, BookOpen, Lightbulb, BarChart3, Clock, Search,
   PanelLeftClose, PanelLeftOpen, Edit2, Trash2, Loader2, Sparkles,
-  Check, X,
+  Check, X, ArrowUpDown,
 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
-import { DocumentSearchFilter } from '@/components/DocumentSearchFilter';
 import { DocumentGrid } from '@/components/DocumentGrid';
 import { DocumentViewerModal } from '@/components/DocumentViewerModal';
 import { PaginationControls } from '@/components/PaginationControls';
@@ -429,9 +428,9 @@ const KnowledgeBases = () => {
 
   return (
     <div className="w-full h-[calc(100vh-48px)] overflow-hidden">
-      <div className={`grid grid-cols-1 gap-2 h-full ${sidebarCollapsed ? 'lg:grid-cols-[80px_1fr]' : 'lg:grid-cols-3'}`}>
+      <div className={`grid grid-cols-1 gap-2 h-full ${sidebarCollapsed ? 'lg:grid-cols-[80px_1fr]' : 'lg:grid-cols-[280px_1fr]'}`}>
         {/* Sidebar */}
-        <Card className={`h-full flex flex-col overflow-hidden transition-all duration-200 ${sidebarCollapsed ? 'lg:w-20' : 'lg:col-span-1'}`}>
+        <Card className={`h-full flex flex-col overflow-hidden transition-all duration-200 ${sidebarCollapsed ? 'lg:w-20' : ''}`}>
           <CardHeader className="flex-shrink-0">
             <div className="flex items-center gap-2">
               {!sidebarCollapsed && <CardTitle>Knowledge Bases</CardTitle>}
@@ -448,7 +447,7 @@ const KnowledgeBases = () => {
             {!sidebarCollapsed && <CardDescription>Select or create a knowledge base</CardDescription>}
           </CardHeader>
 
-          <CardContent className={`space-y-3 flex-1 flex flex-col overflow-hidden transition-opacity duration-200 ${sidebarCollapsed ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
+          <CardContent className={`space-y-2 flex-1 flex flex-col overflow-hidden transition-opacity duration-200 ${sidebarCollapsed ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
             {!sidebarCollapsed && (
               <>
                 {/* Search */}
@@ -458,7 +457,7 @@ const KnowledgeBases = () => {
                     placeholder="Search knowledge bases..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-8"
+                    className="pl-8 h-8 text-sm"
                   />
                 </div>
 
@@ -467,10 +466,10 @@ const KnowledgeBases = () => {
                   <Button
                     variant="outline"
                     size="sm"
-                    className="w-full flex-shrink-0"
+                    className="w-full flex-shrink-0 h-8 text-xs"
                     onClick={() => setIsCreating(true)}
                   >
-                    <Plus className="h-4 w-4 mr-2" />
+                    <Plus className="h-3.5 w-3.5 mr-1.5" />
                     Create Knowledge Base
                   </Button>
                 ) : (
@@ -523,7 +522,7 @@ const KnowledgeBases = () => {
                             }`}
                             onClick={() => setSelectedKBId(kb.id)}
                           >
-                            <CardContent className="p-3">
+                            <CardContent className="p-2">
                               <div className="flex items-start gap-2">
                                 <TypeIcon className="h-4 w-4 mt-0.5 flex-shrink-0 text-muted-foreground" />
                                 <div className="flex-1 min-w-0">
@@ -554,11 +553,11 @@ const KnowledgeBases = () => {
         </Card>
 
         {/* Main Area */}
-        <div className={`h-full overflow-hidden ${sidebarCollapsed ? 'lg:col-span-1' : 'lg:col-span-2'} flex flex-col`}>
+        <div className="h-full overflow-hidden flex flex-col">
           {selectedKB ? (
             <div className="flex flex-col h-full overflow-hidden">
               {/* KB Header */}
-              <div className="flex-shrink-0 p-4 border-b">
+              <div className="flex-shrink-0 p-3 border-b">
                 {isEditing ? (
                   <form onSubmit={handleEditSubmit} className="space-y-3">
                     <Input
@@ -628,7 +627,7 @@ const KnowledgeBases = () => {
 
               {/* AI Suggestions */}
               {suggestedDocs.length > 0 && (
-                <div className="flex-shrink-0 p-4 border-b bg-muted/30">
+                <div className="flex-shrink-0 p-3 border-b bg-muted/30">
                   <div className="flex items-center justify-between mb-2">
                     <h3 className="text-sm font-medium flex items-center gap-1">
                       <Sparkles className="h-4 w-4" />
@@ -660,29 +659,70 @@ const KnowledgeBases = () => {
               )}
 
               {/* Scoped AI Chat */}
-              <div className="flex-shrink-0 px-4 pt-3 max-h-[300px] overflow-hidden">
+              <div className="flex-shrink-0 px-3 pt-2 max-h-[160px] overflow-hidden">
                 <ConversationChat
                   isTemporary={true}
                   knowledgeBaseId={selectedKB.id}
                 />
               </div>
 
-              {/* Document Filters */}
-              <div className="flex-shrink-0 px-4 pt-3">
-                <DocumentSearchFilter
-                  searchTerm={docSearchTerm}
-                  onSearchChange={setDocSearchTerm}
-                  selectedCategory={docSelectedCategory}
-                  onCategoryChange={setDocSelectedCategory}
-                  categories={categories}
-                  sortBy={docSortBy}
-                  onSortChange={setDocSortBy}
-                />
+              {/* Document Filters - compact inline */}
+              <div className="flex-shrink-0 px-3 pt-2 flex flex-wrap items-center gap-2">
+                <div className="relative flex-1 min-w-[160px] max-w-[260px]">
+                  <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                  <Input
+                    placeholder="Search docs..."
+                    value={docSearchTerm}
+                    onChange={(e) => setDocSearchTerm(e.target.value)}
+                    className="pl-7 pr-7 h-8 text-sm"
+                  />
+                  {docSearchTerm && (
+                    <button
+                      onClick={() => setDocSearchTerm('')}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  )}
+                </div>
+                <Select value={docSortBy} onValueChange={setDocSortBy}>
+                  <SelectTrigger className="h-8 text-sm w-[150px]">
+                    <ArrowUpDown className="h-3.5 w-3.5 mr-1 flex-shrink-0" />
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="created_desc">Newest</SelectItem>
+                    <SelectItem value="created_asc">Oldest</SelectItem>
+                    <SelectItem value="title_asc">Title A-Z</SelectItem>
+                    <SelectItem value="title_desc">Title Z-A</SelectItem>
+                  </SelectContent>
+                </Select>
+                <div className="flex flex-wrap gap-1">
+                  <Button
+                    variant={docSelectedCategory === null ? 'default' : 'outline'}
+                    size="sm"
+                    className="h-7 text-xs px-2"
+                    onClick={() => setDocSelectedCategory(null)}
+                  >
+                    All
+                  </Button>
+                  {categories.map((cat) => (
+                    <Button
+                      key={cat}
+                      variant={docSelectedCategory === cat ? 'default' : 'outline'}
+                      size="sm"
+                      className="h-7 text-xs px-2"
+                      onClick={() => setDocSelectedCategory(cat)}
+                    >
+                      {cat.charAt(0).toUpperCase() + cat.slice(1)}
+                    </Button>
+                  ))}
+                </div>
               </div>
 
               {/* Documents Grid */}
-              <div className="flex-1 overflow-y-auto p-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+              <div className="flex-1 overflow-y-auto p-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
                   <DocumentGrid
                     documents={paginatedDocuments}
                     isLoading={isLoadingDocs}
