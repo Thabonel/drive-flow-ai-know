@@ -51,7 +51,7 @@ const Settings = () => {
   const [notifications, setNotifications] = useState(true);
   const [autoSync, setAutoSync] = useState(false);
   const [activeTab, setActiveTab] = useState("general");
-  const { offlineMode, setOfflineMode } = useUserSettings();
+  const { offlineMode, setOfflineMode, setThemePreference } = useUserSettings();
   const { theme, setTheme } = useTheme();
 
   useEffect(() => {
@@ -294,7 +294,10 @@ const Settings = () => {
                         ].map(({ value, label }) => (
                           <button
                             key={value}
-                            onClick={() => setTheme(value as any)}
+                            onClick={() => {
+                              setTheme(value as any);
+                              setThemePreference(value);
+                            }}
                             className={`
                               flex items-center gap-2 p-3 rounded-lg border-2 transition-all
                               hover:border-primary hover:bg-accent/50
