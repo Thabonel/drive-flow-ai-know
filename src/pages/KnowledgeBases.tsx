@@ -320,7 +320,13 @@ const KnowledgeBases = () => {
         return;
       }
 
-      // Use AI to score relevance
+      // Cap candidates to avoid 413 payload-too-large on the edge function
+      const candidates = unassigned.slice(0, 25).map((d) => ({
+        id: d.id,
+        title: d.title,
+        summary: d.ai_summary?.slice(0, 60) || '',
+      }));
+
       const { data: { session } } = await supabase.auth.getSession();
       const authToken = session?.access_token;
       if (!authToken) throw new Error('Not authenticated');
@@ -330,7 +336,7 @@ const KnowledgeBases = () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}` },
         body: JSON.stringify({
-          query: `Given a knowledge base titled "${selectedKB.title}" (type: ${selectedKB.type}, description: ${selectedKB.description || 'none'}), which of these documents would be most relevant to add? Return a JSON array of the most relevant document IDs (up to 5). Documents: ${JSON.stringify(unassigned.map((d) => ({ id: d.id, title: d.title, summary: d.ai_summary?.slice(0, 100) })))}. Respond with ONLY a JSON array of IDs like ["id1","id2"].`,
+          query: `Given a knowledge base titled "${selectedKB.title}" (type: ${selectedKB.type}), which of these documents are most relevant to add? Return ONLY a JSON array of up to 5 document IDs like ["id1","id2"]. Documents: ${JSON.stringify(candidates)}`,
           use_documents: false,
         }),
       });
