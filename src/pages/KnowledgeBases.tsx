@@ -4,11 +4,10 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
-  Brain, Plus, BookOpen, Lightbulb, BarChart3, Clock, Search,
+  Brain, Plus, BookOpen, Lightbulb, BarChart3, Search,
   PanelLeftClose, PanelLeftOpen, Edit2, Trash2, Loader2, Sparkles,
   Check, X, ArrowUpDown,
 } from 'lucide-react';
@@ -216,6 +215,9 @@ const KnowledgeBases = () => {
       setIsEditing(false);
       toast({ title: 'Updated', description: 'Knowledge base updated.' });
     },
+    onError: (error) => {
+      toast({ title: 'Error', description: error instanceof Error ? error.message : 'Failed to update knowledge base', variant: 'destructive' });
+    },
   });
 
   // Delete KB mutation
@@ -233,6 +235,9 @@ const KnowledgeBases = () => {
       setSelectedKBId(null);
       setDeleteConfirmOpen(false);
       toast({ title: 'Deleted', description: 'Knowledge base has been deleted.' });
+    },
+    onError: (error) => {
+      toast({ title: 'Error', description: error instanceof Error ? error.message : 'Failed to delete knowledge base', variant: 'destructive' });
     },
   });
 
@@ -680,6 +685,7 @@ const KnowledgeBases = () => {
                     <button
                       onClick={() => setDocSearchTerm('')}
                       className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                      aria-label="Clear search"
                     >
                       <X className="h-3.5 w-3.5" />
                     </button>
