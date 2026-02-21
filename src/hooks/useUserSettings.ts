@@ -5,6 +5,11 @@ import { useState } from 'react';
 
 export type ModelPreference = 'anthropic' | 'openrouter' | 'ollama';
 
+interface UserSettingsData {
+  model_preference: ModelPreference;
+  theme: string | null;
+}
+
 export function useUserSettings() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -18,7 +23,7 @@ export function useUserSettings() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('user_settings')
-        .select('model_preference')
+        .select('model_preference, theme')
         .eq('user_id', user!.id)
         .maybeSingle();
 
@@ -26,7 +31,10 @@ export function useUserSettings() {
         throw new Error(error.message);
       }
 
-      return (data?.model_preference as ModelPreference) || 'anthropic';
+      return {
+        model_preference: (data?.model_preference as ModelPreference) || 'anthropic',
+        theme: (data?.theme as string) || null,
+      } as UserSettingsData;
     }
   });
 
@@ -50,9 +58,27 @@ export function useUserSettings() {
     }
   });
 
+  const updateTheme = useMutation({
+    mutationFn: async (theme: string) => {
+      const { error } = await supabase
+        .from('user_settings')
+        .upsert(
+          { user_id: user!.id, theme },
+          { onConflict: 'user_id' }
+        );
+      if (error) throw new Error(error.message);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['user-settings', user?.id] });
+    }
+  });
+
   return {
-    modelPreference: settings.data as ModelPreference | undefined,
+    modelPreference: settings.data?.model_preference,
     setModelPreference: updatePreference.mutate,
+    themePreference: settings.data?.theme ?? null,
+    setThemePreference: updateTheme.mutate,
+    isLoaded: !settings.isLoading && settings.isFetched,
     offlineMode,
     setOfflineMode,
   };

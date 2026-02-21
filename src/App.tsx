@@ -9,6 +9,7 @@ import { offlineEnabled } from "@/lib/ai";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { useKeyboardShortcuts, globalShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { ThemeProvider } from "@/components/ThemeProvider";
+import { ThemeSyncProvider } from "@/components/ThemeSyncProvider";
 import { AppSidebar } from "@/components/AppSidebar";
 import { BackgroundTasksProvider } from "@/contexts/BackgroundTasksContext";
 import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
@@ -225,6 +226,7 @@ const App = () => (
             ) : (
               <BrowserRouter>
                 <AuthProvider>
+                <ThemeSyncProvider>
                 <BackgroundTasksProvider>
                 <ChunkLoadErrorHandler onError={(error) => console.error('Global ChunkLoadError:', error)} />
                 <ServiceWorkerManager
@@ -401,6 +403,7 @@ const App = () => (
                   <Route path="*" element={<NotFound />} />
                 </Routes>
                 </BackgroundTasksProvider>
+                </ThemeSyncProvider>
               </AuthProvider>
             </BrowserRouter>
             )}
