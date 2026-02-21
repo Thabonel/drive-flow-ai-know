@@ -1,4 +1,4 @@
-import { Home, FileText, BookOpen, Settings, LogOut, HelpCircle, Clock, Users, UserCog, Building2, Calendar, MessageSquare, Presentation, Plus } from 'lucide-react';
+import { Home, FileText, BookOpen, Brain, Settings, LogOut, HelpCircle, Clock, Users, UserCog, Building2, Calendar, MessageSquare, Presentation, Plus } from 'lucide-react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { usePresentationMode } from '@/contexts/PresentationModeContext';
@@ -39,10 +39,16 @@ const navigationItems = [
     description: 'Ask questions & get insights'
   },
   {
-    title: 'Library',
-    url: '/library',
-    icon: BookOpen,
-    description: 'Documents & Knowledge Bases'
+    title: 'Documents',
+    url: '/documents',
+    icon: FileText,
+    description: 'Browse & search documents'
+  },
+  {
+    title: 'Knowledge Bases',
+    url: '/knowledge',
+    icon: Brain,
+    description: 'AI-powered document collections'
   },
   {
     title: 'Pitch Deck',

@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, useLocation, useNavigate, Navigate, useSearchParams } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { offlineEnabled } from "@/lib/ai";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
@@ -69,7 +69,6 @@ const TeamTimeline = React.lazy(() => import("./pages/Team/TeamTimeline"));
 const CreateTeam = React.lazy(() => import("./pages/Team/CreateTeam"));
 const AcceptInvite = React.lazy(() => import("./pages/Team/AcceptInvite"));
 const PresentationAudience = React.lazy(() => import("./pages/PresentationAudience"));
-const Library = React.lazy(() => import("./pages/Library"));
 
 const queryClient = new QueryClient();
 
@@ -96,7 +95,7 @@ function AppLayout({ children }: { children: React.ReactNode }) {
           <AppSidebar />
           <main className="flex-1 overflow-x-hidden">
             <Header />
-            <div className={`${location.pathname === '/conversations' ? '' : 'p-6'} max-w-full overflow-x-hidden`}>
+            <div className={`${location.pathname === '/conversations' || location.pathname === '/knowledge' ? '' : 'p-6'} max-w-full overflow-x-hidden`}>
               <Suspense fallback={
                 <div className="min-h-screen flex items-center justify-center">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -267,15 +266,21 @@ const App = () => (
                       <GoogleDrive />
                     </ProtectedRoute>
                   } />
-                  <Route path="/library" element={
+                  <Route path="/documents" element={
                     <ProtectedRoute>
-                      <Library />
+                      <Documents />
                     </ProtectedRoute>
                   } />
-                  {/* Backwards-compat redirects to unified Library page */}
-                  <Route path="/documents" element={<Navigate to="/library?tab=documents" replace />} />
-                  <Route path="/add-documents" element={<Navigate to="/library?tab=sources" replace />} />
-                  <Route path="/knowledge" element={<Navigate to="/library?tab=knowledge-bases" replace />} />
+                  <Route path="/add-documents" element={
+                    <ProtectedRoute>
+                      <AddDocuments />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/knowledge" element={
+                    <ProtectedRoute>
+                      <KnowledgeBases />
+                    </ProtectedRoute>
+                  } />
                   <Route path="/pitch-deck" element={
                     <ProtectedRoute>
                       <PitchDeck />

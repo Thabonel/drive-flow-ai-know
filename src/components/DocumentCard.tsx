@@ -2,10 +2,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { FileText, Calendar as CalendarIcon, Tag, BookOpen, Edit, Trash2, BarChart3, FileSpreadsheet, Clock } from 'lucide-react';
+import { FileText, Calendar as CalendarIcon, Tag, BookOpen, Edit, Trash2, BarChart3, FileSpreadsheet, Clock, Brain } from 'lucide-react';
 import { DocumentVisualizationPanel } from './DocumentVisualizationPanel';
 import { SpreadsheetViewer } from './SpreadsheetViewer';
 import { ExtractToTimelineDialog } from './ai/ExtractToTimelineDialog';
+import { AddToKnowledgeBaseDialog } from './AddToKnowledgeBaseDialog';
 import { useState } from 'react';
 import {
   Tooltip,
@@ -55,6 +56,7 @@ export const DocumentCard = ({
   const [showVisualization, setShowVisualization] = useState(false);
   const [showSpreadsheet, setShowSpreadsheet] = useState(false);
   const [showTimelineDialog, setShowTimelineDialog] = useState(false);
+  const [showKBDialog, setShowKBDialog] = useState(false);
 
   const hasSpreadsheetData = doc.metadata?.spreadsheetData || 
                            doc.file_type?.includes('spreadsheet') || 
@@ -217,6 +219,19 @@ export const DocumentCard = ({
               Add to Timeline
             </Button>
           )}
+
+          {/* Add to Knowledge Base */}
+          {(doc.content || doc.ai_summary) && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowKBDialog(true)}
+              className="w-full"
+            >
+              <Brain className="h-4 w-4 mr-2" />
+              Add to Knowledge Base
+            </Button>
+          )}
         </div>
       </CardContent>
     </Card>
@@ -270,6 +285,14 @@ export const DocumentCard = ({
       content={doc.content || doc.ai_summary || ''}
       sourceType="document"
       sourceTitle={doc.title}
+    />
+
+    {/* Add to Knowledge Base Dialog */}
+    <AddToKnowledgeBaseDialog
+      open={showKBDialog}
+      onClose={() => setShowKBDialog(false)}
+      documentId={doc.id}
+      documentTitle={doc.title}
     />
     </>
     </TooltipProvider>
