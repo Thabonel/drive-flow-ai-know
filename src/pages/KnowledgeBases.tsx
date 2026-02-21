@@ -304,12 +304,12 @@ const KnowledgeBases = () => {
     setSuggestedDocs([]);
 
     try {
-      // Get all user documents not already in this KB
       const currentIds: string[] = selectedKB.source_document_ids || [];
       const { data: allDocs, error } = await supabase
         .from('knowledge_documents')
         .select('id, title, ai_summary, category, file_type')
-        .eq('user_id', user.id);
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
 
       if (error) throw new Error(error.message);
 
@@ -320,23 +320,27 @@ const KnowledgeBases = () => {
         return;
       }
 
-      // Cap candidates to avoid 413 payload-too-large on the edge function
-      const candidates = unassigned.slice(0, 25).map((d) => ({
+      // Build compact candidate list - send all titles but cap summaries to fit payload
+      const maxCandidates = 40;
+      const summaryLen = unassigned.length > 20 ? 80 : 120;
+      const candidates = unassigned.slice(0, maxCandidates).map((d) => ({
         id: d.id,
-        title: d.title,
-        summary: d.ai_summary?.slice(0, 60) || '',
+        t: d.title,
+        c: d.category || '',
+        s: d.ai_summary?.slice(0, summaryLen) || '',
       }));
 
       const { data: { session } } = await supabase.auth.getSession();
       const authToken = session?.access_token;
       if (!authToken) throw new Error('Not authenticated');
 
+      const kbDesc = selectedKB.description ? `, description: "${selectedKB.description.slice(0, 100)}"` : '';
       const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
       const response = await fetch(`${SUPABASE_URL}/functions/v1/ai-query`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}` },
         body: JSON.stringify({
-          query: `Given a knowledge base titled "${selectedKB.title}" (type: ${selectedKB.type}), which of these documents are most relevant to add? Return ONLY a JSON array of up to 5 document IDs like ["id1","id2"]. Documents: ${JSON.stringify(candidates)}`,
+          query: `Pick documents most relevant to a knowledge base titled "${selectedKB.title}" (type: ${selectedKB.type}${kbDesc}). Each candidate has id, t(title), c(category), s(summary). Return ONLY a JSON array of up to 5 IDs like ["id1","id2"]. Candidates: ${JSON.stringify(candidates)}`,
           use_documents: false,
         }),
       });
