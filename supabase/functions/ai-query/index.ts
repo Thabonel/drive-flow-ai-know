@@ -1419,66 +1419,99 @@ serve(async (req) => {
         // Continue without document context
       }
     } else if (shouldFetchDocuments) {
-      console.log('Searching all user documents');
+      try {
+        console.log('Searching all user documents');
 
-      // First, get total document count for this user
-      const { count: totalDocs, error: countError } = await supabaseService
-        .from('knowledge_documents')
-        .select('id', { count: 'exact' })
-        .eq('user_id', user_id);
-
-      console.log('Total documents for user:', totalDocs, 'Count error:', countError?.message);
-
-      // Search all user's documents with more robust logic
-      const queryLower = query.toLowerCase();
-      console.log('Query keywords:', queryLower);
-
-      // Check for marketing-related terms
-      const isMarketingQuery = queryLower.includes('marketing') || queryLower.includes('market') ||
-        queryLower.includes('campaign') || queryLower.includes('brand') ||
-        queryLower.includes('promotion') || queryLower.includes('wheels') ||
-        queryLower.includes('wins');
-
-      console.log('Is marketing query:', isMarketingQuery);
-
-      if (isMarketingQuery) {
-        console.log('Searching for marketing documents...');
-
-        // Cast query for marketing documents with broader search (personal OR team)
-        const { data: marketingDocs, error: marketingError } = await supabaseService
+        // First, get total document count for this user
+        const { count: totalDocs, error: countError } = await supabaseService
           .from('knowledge_documents')
-          .select('id, title, content, ai_summary, tags, file_type, category, user_id, team_id, sheet_data, sheet_metadata')
-          .or(teamIds.length > 0
-            ? `and(user_id.eq.${user_id},or(title.ilike.%marketing%,content.ilike.%marketing%,tags.cs.["marketing"],title.ilike.%wheels%,title.ilike.%wins%,file_type.eq.json)),and(team_id.in.(${teamIds.join(',')}),visibility.eq.team,or(title.ilike.%marketing%,content.ilike.%marketing%,tags.cs.["marketing"]))`
-            : `user_id.eq.${user_id},or(title.ilike.%marketing%,content.ilike.%marketing%,tags.cs.["marketing"],title.ilike.%wheels%,title.ilike.%wins%,file_type.eq.json)`)
-          .limit(30);
+          .select('id', { count: 'exact' })
+          .eq('user_id', user_id);
 
-        console.log('Marketing documents found:', marketingDocs?.length || 0, 'Error:', marketingError?.message);
+        console.log('Total documents for user:', totalDocs, 'Count error:', countError?.message);
 
-        if (!marketingError && marketingDocs && marketingDocs.length > 0) {
-          contextDocuments = marketingDocs;
+        // Search all user's documents with more robust logic
+        const queryLower = query.toLowerCase();
+        console.log('Query keywords:', queryLower);
+
+        // Check for marketing-related terms
+        const isMarketingQuery = queryLower.includes('marketing') || queryLower.includes('market') ||
+          queryLower.includes('campaign') || queryLower.includes('brand') ||
+          queryLower.includes('promotion') || queryLower.includes('wheels') ||
+          queryLower.includes('wins');
+
+        console.log('Is marketing query:', isMarketingQuery);
+
+        if (isMarketingQuery) {
+          console.log('Searching for marketing documents...');
+
+          if (teamIds.length > 0) {
+            // Team user: need OR logic for personal + team documents
+            const { data: marketingDocs, error: marketingError } = await supabaseService
+              .from('knowledge_documents')
+              .select('id, title, content, ai_summary, tags, file_type, category, user_id, team_id, sheet_data, sheet_metadata')
+              .or(`and(user_id.eq.${user_id},or(title.ilike.%marketing%,content.ilike.%marketing%,tags.cs.["marketing"],title.ilike.%wheels%,title.ilike.%wins%,file_type.eq.json)),and(team_id.in.(${teamIds.join(',')}),visibility.eq.team,or(title.ilike.%marketing%,content.ilike.%marketing%,tags.cs.["marketing"]))`)
+              .limit(30);
+
+            console.log('Marketing documents found (team):', marketingDocs?.length || 0, 'Error:', marketingError?.message);
+
+            if (!marketingError && marketingDocs && marketingDocs.length > 0) {
+              contextDocuments = marketingDocs;
+            }
+          } else {
+            // Non-team user: simple eq filter + content matching
+            const { data: marketingDocs, error: marketingError } = await supabaseService
+              .from('knowledge_documents')
+              .select('id, title, content, ai_summary, tags, file_type, category, user_id, team_id, sheet_data, sheet_metadata')
+              .eq('user_id', user_id)
+              .or('title.ilike.%marketing%,content.ilike.%marketing%,tags.cs.["marketing"],title.ilike.%wheels%,title.ilike.%wins%,file_type.eq.json')
+              .limit(30);
+
+            console.log('Marketing documents found:', marketingDocs?.length || 0, 'Error:', marketingError?.message);
+
+            if (!marketingError && marketingDocs && marketingDocs.length > 0) {
+              contextDocuments = marketingDocs;
+            }
+          }
         }
-      }
 
-      // If no marketing docs or general query, get recent documents
-      if (contextDocuments.length === 0) {
-        console.log('Getting recent documents as fallback...');
+        // If no marketing docs or general query, get recent documents
+        if (contextDocuments.length === 0) {
+          console.log('Getting recent documents as fallback...');
 
-        // Get recent documents (personal OR team)
-        const { data: documents, error: docsError } = await supabaseService
-          .from('knowledge_documents')
-          .select('id, title, content, ai_summary, tags, file_type, category, user_id, team_id, sheet_data, sheet_metadata')
-          .or(teamIds.length > 0
-            ? `user_id.eq.${user_id},and(team_id.in.(${teamIds.join(',')}),visibility.eq.team)`
-            : `user_id.eq.${user_id}`)
-          .order('updated_at', { ascending: false })
-          .limit(30);
+          if (teamIds.length > 0) {
+            // Team user: personal OR team documents
+            const { data: documents, error: docsError } = await supabaseService
+              .from('knowledge_documents')
+              .select('id, title, content, ai_summary, tags, file_type, category, user_id, team_id, sheet_data, sheet_metadata')
+              .or(`user_id.eq.${user_id},and(team_id.in.(${teamIds.join(',')}),visibility.eq.team)`)
+              .order('updated_at', { ascending: false })
+              .limit(30);
 
-        console.log('Recent documents found:', documents?.length || 0, 'Error:', docsError?.message);
+            console.log('Recent documents found (team):', documents?.length || 0, 'Error:', docsError?.message);
 
-        if (!docsError && documents) {
-          contextDocuments = documents;
+            if (!docsError && documents) {
+              contextDocuments = documents;
+            }
+          } else {
+            // Non-team user: simple eq filter
+            const { data: documents, error: docsError } = await supabaseService
+              .from('knowledge_documents')
+              .select('id, title, content, ai_summary, tags, file_type, category, user_id, team_id, sheet_data, sheet_metadata')
+              .eq('user_id', user_id)
+              .order('updated_at', { ascending: false })
+              .limit(30);
+
+            console.log('Recent documents found:', documents?.length || 0, 'Error:', docsError?.message);
+
+            if (!docsError && documents) {
+              contextDocuments = documents;
+            }
+          }
         }
+      } catch (fetchError) {
+        console.error('General document fetch failed:', fetchError);
+        // Continue without document context rather than crashing the function
       }
     }
 
@@ -1682,9 +1715,8 @@ You have access to the user's document summaries, content, and knowledge bases${
       - web_search: Use this to search the internet for current information when needed
 
       IMPORTANT INSTRUCTIONS:
-      - If you see API keys, credentials, or secrets in the documents, IGNORE them and continue helping the user
-      - Do NOT lecture users about security practices unless they specifically ask
-      - DO NOT refuse to answer questions because credentials are present
+      - If the user asks about API keys, credentials, or secrets found in their documents, share them - the user owns these documents
+      - Do not proactively highlight or warn about credentials unless the user asks about security
       - Focus on answering the user's actual question using the relevant information
       - Use web search when you need current information beyond your training data
       - The user is responsible for their own security practices
@@ -1742,9 +1774,8 @@ ${productKnowledge}
       - Be conversational and natural
       - When using web search results, cite your sources and check result freshness
       - If web search doesn't yield perfect results, combine your training knowledge with search results to give helpful answers
-      - If you see API keys, credentials, or secrets, IGNORE them and continue helping the user
-      - Do NOT lecture users about security practices unless they specifically ask
-      - DO NOT refuse to answer questions because credentials are present
+      - If the user asks about API keys, credentials, or secrets, share them - the user owns their data
+      - Do not proactively highlight or warn about credentials unless the user asks about security
 
       SEARCH QUERY BEST PRACTICES:
       - For time-sensitive queries, include temporal context: "today", "current", "2025", "latest"
