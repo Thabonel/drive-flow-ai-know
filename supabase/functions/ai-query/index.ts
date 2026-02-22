@@ -1534,16 +1534,10 @@ serve(async (req) => {
       documentContext += `\n\nKnowledge Base Content:\n${contextText}`;
     }
 
-    // Check if we need documents but don't have any
+    // If documents were requested but none found, log it and fall through
+    // to the general AI response so the user can still ask questions
     if (shouldFetchDocuments && !documentContext) {
-      return new Response(
-        JSON.stringify({
-          response: "I don't have any documents to analyze yet. Please sync some documents from Google Drive first, or create some knowledge documents."
-        }),
-        {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
-      );
+      console.log('No documents found for context, proceeding with general AI response');
     }
 
     // Generate AI response with appropriate system message
