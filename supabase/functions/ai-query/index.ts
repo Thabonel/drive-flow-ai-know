@@ -1186,7 +1186,7 @@ serve(async (req) => {
   const corsHeaders = getCorsHeaders(origin);
 
   try {
-    console.log('ai-query version: 203-rpc');
+    console.log('ai-query version: 204-direct-kb');
     console.log('AI Query function called');
 
     // Get authorization header
@@ -1361,33 +1361,62 @@ serve(async (req) => {
     console.log('User is member of teams:', teamIds.length, 'teams');
 
     if (shouldFetchDocuments && knowledge_base_id) {
-      console.log('Fetching KB documents via RPC for:', knowledge_base_id);
+      console.log('Fetching KB documents for:', knowledge_base_id);
 
-      // Single RPC call to stored procedure - bypasses JS query builder issues
-      const { data: kbData, error: kbError } = await supabaseService
-        .rpc('get_kb_documents_for_ai', {
-          p_knowledge_base_id: knowledge_base_id,
-          p_user_id: user_id
-        });
+      try {
+        // Step 1: Get the knowledge base record (service role bypasses RLS)
+        const { data: kb, error: kbError } = await supabaseService
+          .from('knowledge_bases')
+          .select('id, title, description, ai_generated_content, source_document_ids, user_id, team_id')
+          .eq('id', knowledge_base_id)
+          .maybeSingle();
 
-      if (kbError) {
-        console.error('RPC get_kb_documents_for_ai error:', kbError);
-        // Don't crash - fall through to general AI response without document context
-      } else if (!kbData) {
-        console.log('KB not found or access denied for ID:', knowledge_base_id, '- proceeding without document context');
-      } else {
-        console.log('RPC result:', { kb_title: kbData?.kb_title, documents: kbData?.documents?.length || 0 });
-
-        if (kbData.documents) {
-          contextDocuments = kbData.documents;
-          console.log('Loaded', contextDocuments.length, 'documents via RPC');
-          console.log('Loaded document titles:', contextDocuments.map((d: any) => d.title));
+        if (kbError) {
+          console.error('KB fetch error:', kbError.message);
         }
 
-        if (kbData.ai_generated_content) {
-          contextText = kbData.ai_generated_content;
-          console.log('Using AI-generated content from knowledge base');
+        // Verify access: user owns it OR is a team member
+        const hasAccess = kb && (
+          kb.user_id === user_id ||
+          (kb.team_id && teamIds.includes(kb.team_id))
+        );
+
+        if (!kb || !hasAccess) {
+          console.log('KB not found or access denied for:', knowledge_base_id);
+        } else {
+          console.log('KB found:', kb.title, '- document IDs:', (kb.source_document_ids || []).length);
+
+          const docIds: string[] = kb.source_document_ids || [];
+          if (docIds.length > 0) {
+            // Step 2: Fetch all documents referenced by this KB
+            const { data: docs, error: docsError } = await supabaseService
+              .from('knowledge_documents')
+              .select('id, title, content, ai_summary, tags, file_type, category, sheet_data, sheet_metadata')
+              .in('id', docIds);
+
+            if (docsError) {
+              console.error('KB documents fetch error:', docsError.message);
+            } else if (docs && docs.length > 0) {
+              contextDocuments = docs;
+              console.log('Loaded', docs.length, 'KB documents:', docs.map((d: any) => d.title));
+            } else {
+              console.log('No documents matched the', docIds.length, 'IDs in this KB');
+            }
+          } else {
+            console.log('KB has no source_document_ids');
+          }
+
+          // Use AI-generated KB content if available
+          if (kb.ai_generated_content) {
+            contextText = typeof kb.ai_generated_content === 'string'
+              ? kb.ai_generated_content
+              : JSON.stringify(kb.ai_generated_content);
+            console.log('Using AI-generated content from KB');
+          }
         }
+      } catch (fetchError) {
+        console.error('KB document fetch failed:', fetchError);
+        // Continue without document context
       }
     } else if (shouldFetchDocuments) {
       console.log('Searching all user documents');
