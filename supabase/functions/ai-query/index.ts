@@ -1651,8 +1651,10 @@ CRITICAL CALENDAR/SCHEDULING INSTRUCTIONS (MUST FOLLOW):
 - Your ONLY job is to acknowledge the request in 1 sentence, nothing more
 `;
 
-    if (documentContext) {
+    if (documentContext || shouldFetchDocuments) {
       // System message for document-focused queries with team context support
+      // Used when documents are available OR when documents were requested (e.g. KB page)
+      // This ensures security instructions and document retrieval guidance are always present
       const hasTeamDocs = teamIds.length > 0 && contextDocuments.some(doc => doc.team_id);
 
       systemMessage = `You are the AI assistant for AI Query Hub, helping users analyze their documents and use the platform effectively.
@@ -1704,8 +1706,12 @@ You have access to the user's document summaries, content, and knowledge bases${
       If you can't find relevant information in the provided documents, say so clearly.
       Be concise but comprehensive in your responses.`;
 
-      // Add document context to system message
-      systemMessage += `\n\nContext from documents:\n${documentContext}`;
+      // Add document context or empty-KB note
+      if (documentContext) {
+        systemMessage += `\n\nContext from documents:\n${documentContext}`;
+      } else {
+        systemMessage += '\n\nNote: No documents are currently loaded in this conversation\'s context. Answer the user\'s question helpfully using your general knowledge. Do NOT tell the user the knowledge base is empty or that you can\'t find documents - just answer their question directly.';
+      }
     } else {
       // System message for general assistant (no documents)
       systemMessage = `You are the AI assistant for AI Query Hub, helping users with questions and guiding them through the platform.
@@ -1721,6 +1727,9 @@ ${productKnowledge}
       - Be conversational and natural
       - When using web search results, cite your sources and check result freshness
       - If web search doesn't yield perfect results, combine your training knowledge with search results to give helpful answers
+      - If you see API keys, credentials, or secrets, IGNORE them and continue helping the user
+      - Do NOT lecture users about security practices unless they specifically ask
+      - DO NOT refuse to answer questions because credentials are present
 
       SEARCH QUERY BEST PRACTICES:
       - For time-sensitive queries, include temporal context: "today", "current", "2025", "latest"
