@@ -675,7 +675,7 @@ const KnowledgeBases = () => {
               <div className="flex-shrink-0 px-3 pt-2 max-h-[220px] overflow-y-auto">
                 <ConversationChat
                   isTemporary={true}
-                  knowledgeBaseId={(selectedKB.source_document_ids || []).length > 0 ? selectedKB.id : undefined}
+                  knowledgeBaseId={selectedKB.id}
                 />
               </div>
 
