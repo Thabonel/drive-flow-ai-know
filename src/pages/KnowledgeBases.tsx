@@ -85,7 +85,7 @@ const KnowledgeBases = () => {
 
   // Fetch documents for the selected KB
   const { data: kbDocuments, isLoading: isLoadingDocs } = useQuery({
-    queryKey: ['kb-documents', selectedKBId, user?.id],
+    queryKey: ['kb-documents', selectedKBId, selectedKB?.source_document_ids, user?.id],
     enabled: !!user && !!selectedKBId && !!selectedKB,
     queryFn: async () => {
       const docIds: string[] = selectedKB?.source_document_ids || [];
@@ -259,7 +259,6 @@ const KnowledgeBases = () => {
     }
 
     queryClient.invalidateQueries({ queryKey: ['knowledge-bases', user.id] });
-    queryClient.invalidateQueries({ queryKey: ['kb-documents', selectedKBId, user.id] });
     toast({ title: 'Removed', description: 'Document removed from this knowledge base.' });
   };
 
@@ -388,7 +387,6 @@ const KnowledgeBases = () => {
 
     setSuggestedDocs((prev) => prev.filter((d) => d.id !== docId));
     queryClient.invalidateQueries({ queryKey: ['knowledge-bases', user.id] });
-    queryClient.invalidateQueries({ queryKey: ['kb-documents', selectedKBId, user.id] });
     toast({ title: 'Added', description: 'Document added to this knowledge base.' });
   };
 
