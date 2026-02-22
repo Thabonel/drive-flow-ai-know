@@ -672,7 +672,7 @@ const KnowledgeBases = () => {
               )}
 
               {/* Scoped AI Chat */}
-              <div className="flex-shrink-0 px-3 pt-2 max-h-[220px] overflow-y-auto">
+              <div className="flex-shrink-0 px-3 pt-2 max-h-[400px] overflow-y-auto">
                 <ConversationChat
                   isTemporary={true}
                   knowledgeBaseId={selectedKB.id}
