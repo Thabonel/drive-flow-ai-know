@@ -737,7 +737,7 @@ async function claudeCompletion(
       }
 
       // Process all tool uses and collect results
-      const toolResults: Array<{type: string; tool_use_id: any; content: string}> = [];
+      const toolResults: Array<{ type: string; tool_use_id: any; content: string }> = [];
       for (const toolUse of toolUseBlocks) {
         if (toolUse.name === 'web_search') {
           console.log('Processing web search:', toolUse.input.query);
@@ -1186,6 +1186,7 @@ serve(async (req) => {
   const corsHeaders = getCorsHeaders(origin);
 
   try {
+    console.log('ai-query version: 203-rpc');
     console.log('AI Query function called');
 
     // Get authorization header
@@ -1360,48 +1361,33 @@ serve(async (req) => {
     console.log('User is member of teams:', teamIds.length, 'teams');
 
     if (shouldFetchDocuments && knowledge_base_id) {
-      console.log('Searching for specific knowledge base:', knowledge_base_id);
+      console.log('Fetching KB documents via RPC for:', knowledge_base_id);
 
-      // Get specific knowledge base content (personal OR team)
-      const { data: knowledgeBase, error: kbError } = await supabaseService
-        .from('knowledge_bases')
-        .select('*')
-        .eq('id', knowledge_base_id)
-        .or(teamIds.length > 0
-          ? `user_id.eq.${user_id},and(team_id.in.(${teamIds.join(',')}),visibility.eq.team)`
-          : `user_id.eq.${user_id}`)
-        .single();
-
-      console.log('Knowledge base query result:', { found: !!knowledgeBase, error: kbError?.message });
+      // Single RPC call to stored procedure - bypasses JS query builder issues
+      const { data: kbData, error: kbError } = await supabaseService
+        .rpc('get_kb_documents_for_ai', {
+          p_knowledge_base_id: knowledge_base_id,
+          p_user_id: user_id
+        });
 
       if (kbError) {
-        throw new Error(`Knowledge base not found: ${kbError.message}`);
-      }
+        console.error('RPC get_kb_documents_for_ai error:', kbError);
+        // Don't crash - fall through to general AI response without document context
+      } else if (!kbData) {
+        console.log('KB not found or access denied for ID:', knowledge_base_id, '- proceeding without document context');
+      } else {
+        console.log('RPC result:', { kb_title: kbData?.kb_title, documents: kbData?.documents?.length || 0 });
 
-      // Get documents from the knowledge base  
-      if (knowledgeBase.source_document_ids && knowledgeBase.source_document_ids.length > 0) {
-        console.log('Fetching documents from knowledge base, count:', knowledgeBase.source_document_ids.length);
-
-        // Fetch documents (personal OR team) - include spreadsheet data
-        const { data: documents, error: docsError } = await supabaseService
-          .from('knowledge_documents')
-          .select('id, title, content, ai_summary, tags, file_type, category, user_id, team_id, sheet_data, sheet_metadata')
-          .in('id', knowledgeBase.source_document_ids)
-          .or(teamIds.length > 0
-            ? `user_id.eq.${user_id},and(team_id.in.(${teamIds.join(',')}),visibility.eq.team)`
-            : `user_id.eq.${user_id}`);
-
-        console.log('Knowledge base documents result:', { found: documents?.length || 0, error: docsError?.message });
-
-        if (!docsError && documents) {
-          contextDocuments = documents;
+        if (kbData.documents) {
+          contextDocuments = kbData.documents;
+          console.log('Loaded', contextDocuments.length, 'documents via RPC');
+          console.log('Loaded document titles:', contextDocuments.map((d: any) => d.title));
         }
-      }
 
-      // Use AI-generated content from knowledge base if available
-      if (knowledgeBase.ai_generated_content) {
-        contextText = knowledgeBase.ai_generated_content;
-        console.log('Using AI-generated content from knowledge base');
+        if (kbData.ai_generated_content) {
+          contextText = kbData.ai_generated_content;
+          console.log('Using AI-generated content from knowledge base');
+        }
       }
     } else if (shouldFetchDocuments) {
       console.log('Searching all user documents');
@@ -1951,7 +1937,7 @@ ${productKnowledge}
     const isVisualCreationRequest = (
       // Direct creation requests
       (/\b(create|make|generate|design|build|draw)\b/i.test(query) &&
-       /\b(visual|image|graphic|picture|illustration|infographic|diagram|chart|icon|logo|artwork|poster|banner)\b/i.test(query)) ||
+        /\b(visual|image|graphic|picture|illustration|infographic|diagram|chart|icon|logo|artwork|poster|banner)\b/i.test(query)) ||
       // Show/visualize requests
       /\b(show me|draw|illustrate|visualize|sketch)\b/i.test(query) ||
       // Specific graphic types
