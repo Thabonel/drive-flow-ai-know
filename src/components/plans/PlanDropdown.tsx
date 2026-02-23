@@ -106,6 +106,7 @@ export function PlanDropdown() {
               {schedulablePlans.slice(0, 3).map((plan) => (
                 <DropdownMenuItem
                   key={plan.id}
+                  textValue={plan.title}
                   onClick={() => handleSchedulePlan(plan)}
                   className="flex items-center justify-between"
                 >
