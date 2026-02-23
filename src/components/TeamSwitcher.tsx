@@ -38,7 +38,7 @@ export function TeamSwitcher() {
           <ChevronsUpDown className="h-4 w-4 opacity-50 flex-shrink-0" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="w-64">
+      <DropdownMenuContent align="start" className="w-64" aria-label="Team switcher">
         <DropdownMenuLabel>Switch Team</DropdownMenuLabel>
         <DropdownMenuSeparator />
 
@@ -46,6 +46,7 @@ export function TeamSwitcher() {
         {allTeams.map((t) => (
           <DropdownMenuItem
             key={t.id}
+            textValue={t.name}
             onClick={() => setActiveTeam(t.id)}
             className="cursor-pointer"
           >
@@ -62,7 +63,7 @@ export function TeamSwitcher() {
         <DropdownMenuSeparator />
 
         {/* Create Team Action */}
-        <DropdownMenuItem onClick={() => navigate('/team/create')} className="cursor-pointer">
+        <DropdownMenuItem textValue="Create Team" onClick={() => navigate('/team/create')} className="cursor-pointer">
           <Plus className="h-4 w-4 mr-2" />
           Create Team
         </DropdownMenuItem>
