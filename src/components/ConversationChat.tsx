@@ -1896,7 +1896,6 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
                 <Edit2 className="h-4 w-4" />
               </Button>
             )}
-            {/* Document Access Toggle - inline with heading */}
             <Button
               size="sm"
               variant={useDocuments ? "default" : "outline"}
@@ -1916,41 +1915,41 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
               Temporary Chat (not saved)
             </div>
           )}
+          <Button
+            onClick={handlePrint}
+            size="sm"
+            variant="outline"
+            title="Print conversation"
+          >
+            <Printer className="h-4 w-4" />
+          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
               <Button
-                onClick={handlePrint}
                 size="sm"
                 variant="outline"
-                title="Print conversation"
+                title="Download conversation"
               >
-                <Printer className="h-4 w-4" />
+                <Download className="h-4 w-4 mr-2" />
+                Download
+                <ChevronDown className="h-3 w-3 ml-1" />
               </Button>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    title="Download conversation"
-                  >
-                    <Download className="h-4 w-4 mr-2" />
-                    Download
-                    <ChevronDown className="h-3 w-3 ml-1" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" aria-label="Download format options">
-                  <DropdownMenuItem textValue="Plain Text" onClick={() => handleDownload('txt')}>
-                    Plain Text (.txt)
-                  </DropdownMenuItem>
-                  <DropdownMenuItem textValue="Markdown" onClick={() => handleDownload('md')}>
-                    Markdown (.md)
-                  </DropdownMenuItem>
-                  <DropdownMenuItem textValue="HTML" onClick={() => handleDownload('html')}>
-                    HTML (.html)
-                  </DropdownMenuItem>
-                  <DropdownMenuItem textValue="PDF" onClick={() => handleDownload('pdf')}>
-                    PDF (via Print)
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" aria-label="Download format options">
+              <DropdownMenuItem textValue="Plain Text" onClick={() => handleDownload('txt')}>
+                Plain Text (.txt)
+              </DropdownMenuItem>
+              <DropdownMenuItem textValue="Markdown" onClick={() => handleDownload('md')}>
+                Markdown (.md)
+              </DropdownMenuItem>
+              <DropdownMenuItem textValue="HTML" onClick={() => handleDownload('html')}>
+                HTML (.html)
+              </DropdownMenuItem>
+              <DropdownMenuItem textValue="PDF" onClick={() => handleDownload('pdf')}>
+                PDF (via Print)
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           {messages.some(m => m.role === 'assistant') && (
             <Button
               onClick={handleAddToTimeline}
@@ -2003,7 +2002,6 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
       </div>
 
       {messages.length === 0 ? (
-        // Empty state - input directly, no buffer card
         renderInputForm()
       ) : (
         // Active conversation - sticky input
