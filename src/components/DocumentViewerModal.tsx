@@ -595,7 +595,7 @@ export const DocumentViewerModal = ({ document, isOpen, onClose }: DocumentViewe
                         <ChevronDown className="h-3 w-3 ml-1" />
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
+                    <DropdownMenuContent align="end" aria-label="Download format options">
                       <DropdownMenuItem onClick={() => handleDownload('pdf')}>
                         PDF (.pdf)
                       </DropdownMenuItem>

@@ -927,33 +927,33 @@ export function TimelineManager({ onCanvasReady }: TimelineManagerProps = {}) {
                 Access planning tools: daily planning, AI scheduling, templates, and routines
               </TooltipContent>
             </Tooltip>
-            <DropdownMenuContent align="start">
-              <DropdownMenuItem onClick={() => setShowDailyPlanning(true)}>
+            <DropdownMenuContent align="start" aria-label="Planning tools">
+              <DropdownMenuItem textValue="Daily Planning" onClick={() => setShowDailyPlanning(true)}>
                 <Sunrise className="h-4 w-4 mr-2" />
                 Daily Planning
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setShowWeeklyCalibration(true)}>
+              <DropdownMenuItem textValue="Weekly Calibration" onClick={() => setShowWeeklyCalibration(true)}>
                 <Calendar className="h-4 w-4 mr-2" />
                 Weekly Calibration
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setShowAIPlanning(true)} disabled={layers.length === 0}>
+              <DropdownMenuItem textValue="AI Plan My Day" onClick={() => setShowAIPlanning(true)} disabled={layers.length === 0}>
                 <Sparkles className="h-4 w-4 mr-2" />
                 AI Plan My Day
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => setShowTemplates(true)}>
+              <DropdownMenuItem textValue="Templates" onClick={() => setShowTemplates(true)}>
                 <LayoutTemplate className="h-4 w-4 mr-2" />
                 Templates
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setShowRoleTemplates(true)}>
+              <DropdownMenuItem textValue="Role Templates" onClick={() => setShowRoleTemplates(true)}>
                 <Sparkles className="h-4 w-4 mr-2" />
                 Role Templates
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setShowRoutines(true)}>
+              <DropdownMenuItem textValue="Manage Routines" onClick={() => setShowRoutines(true)}>
                 <CalIcon className="h-4 w-4 mr-2" />
                 Manage Routines
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={handlePopulateRoutines} disabled={populatingRoutines || layers.length === 0}>
+              <DropdownMenuItem textValue="Add Today's Routines" onClick={handlePopulateRoutines} disabled={populatingRoutines || layers.length === 0}>
                 <RefreshCw className="h-4 w-4 mr-2" />
                 {populatingRoutines ? 'Adding...' : "Add Today's Routines"}
               </DropdownMenuItem>
@@ -1057,26 +1057,26 @@ export function TimelineManager({ onCanvasReady }: TimelineManagerProps = {}) {
                 Additional timeline actions: end of day, AI insights, layers, and settings
               </TooltipContent>
             </Tooltip>
-            <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuItem onClick={() => setShowEndOfDay(true)}>
+            <DropdownMenuContent align="end" className="w-56" aria-label="More actions">
+              <DropdownMenuItem textValue="End of Day" onClick={() => setShowEndOfDay(true)}>
                 <Moon className="h-4 w-4 mr-2" />
                 End of Day
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setShowAIInsights(true)}>
+              <DropdownMenuItem textValue="AI Insights" onClick={() => setShowAIInsights(true)}>
                 <Brain className="h-4 w-4 mr-2" />
                 AI Insights
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setShowParkedItems(true)}>
+              <DropdownMenuItem textValue="Parked Items" onClick={() => setShowParkedItems(true)}>
                 <Archive className="h-4 w-4 mr-2" />
                 Parked Items ({parkedItems?.length || 0})
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => window.location.href = '/booking-links'}>
+              <DropdownMenuItem textValue="Booking Links" onClick={() => window.location.href = '/booking-links'}>
                 <LinkIcon className="h-4 w-4 mr-2" />
                 Booking Links
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuLabel>Timeline Settings</DropdownMenuLabel>
-              <DropdownMenuItem asChild>
+              <DropdownMenuItem textValue="Layers" asChild>
                 <Popover>
                   <PopoverTrigger asChild>
                     <button className="w-full flex items-center px-2 py-1.5 text-sm">
@@ -1100,7 +1100,7 @@ export function TimelineManager({ onCanvasReady }: TimelineManagerProps = {}) {
                   </PopoverContent>
                 </Popover>
               </DropdownMenuItem>
-              <DropdownMenuItem asChild>
+              <DropdownMenuItem textValue="Zoom Controls" asChild>
                 <Popover>
                   <PopoverTrigger asChild>
                     <button className="w-full flex items-center px-2 py-1.5 text-sm">

@@ -193,14 +193,15 @@ function PlanCard({ plan, onSchedule, onDelete, getStatusBadge, formatDate }: Pl
                 <MoreVertical className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
+            <DropdownMenuContent align="end" aria-label="Plan actions">
               {canSchedule && (
-                <DropdownMenuItem onClick={onSchedule}>
+                <DropdownMenuItem textValue="Schedule Plan" onClick={onSchedule}>
                   <CalendarPlus className="h-4 w-4 mr-2" />
                   Schedule Plan
                 </DropdownMenuItem>
               )}
               <DropdownMenuItem
+                textValue="Delete Plan"
                 onClick={onDelete}
                 className="text-destructive focus:text-destructive"
               >
