@@ -842,7 +842,8 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
               timezone_offset: getTimezoneOffset(),
             },
           }, {
-            userMessage: 'Failed to process your message. Please try again.',
+            showToast: false,
+            silentInProduction: true,
             reportToAdmin: true,
           });
 
@@ -865,7 +866,8 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
             'agent-orchestrator',
             { body: { session_id: translateData.session_id } },
             {
-              userMessage: 'Failed to execute your request. Please try again.',
+              showToast: false,
+              silentInProduction: true,
               reportToAdmin: true,
             }
           );
@@ -909,7 +911,6 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
           toast.success(`${subAgentIds.length} task(s) started!`);
         } catch (autoExecError) {
           console.error('Auto-execution error:', autoExecError);
-          toast.error(autoExecError instanceof Error ? autoExecError.message : 'Task execution failed');
           // Remove from auto-executing set so "Run as Task" button appears as fallback
           setAutoExecutingMessageIds(prev => {
             const newSet = new Set(prev);
@@ -1936,17 +1937,17 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
                     <ChevronDown className="h-3 w-3 ml-1" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => handleDownload('txt')}>
+                <DropdownMenuContent align="end" aria-label="Download format options">
+                  <DropdownMenuItem textValue="Plain Text" onClick={() => handleDownload('txt')}>
                     Plain Text (.txt)
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleDownload('md')}>
+                  <DropdownMenuItem textValue="Markdown" onClick={() => handleDownload('md')}>
                     Markdown (.md)
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleDownload('html')}>
+                  <DropdownMenuItem textValue="HTML" onClick={() => handleDownload('html')}>
                     HTML (.html)
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleDownload('pdf')}>
+                  <DropdownMenuItem textValue="PDF" onClick={() => handleDownload('pdf')}>
                     PDF (via Print)
                   </DropdownMenuItem>
                 </DropdownMenuContent>

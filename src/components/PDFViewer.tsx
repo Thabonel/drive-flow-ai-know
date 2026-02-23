@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Download, ExternalLink, ZoomIn, ZoomOut, Loader2 } from 'lucide-react';
@@ -15,6 +15,46 @@ export function PDFViewer({ fileUrl, fileName, showDownload = true, className = 
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
   const [zoom, setZoom] = useState(100);
+  const [blobUrl, setBlobUrl] = useState<string | null>(null);
+  const blobUrlRef = useRef<string | null>(null);
+
+  // Fetch PDF as blob to bypass X-Frame-Options blocking from Supabase Storage
+  useEffect(() => {
+    let cancelled = false;
+
+    const fetchPdf = async () => {
+      setIsLoading(true);
+      setHasError(false);
+
+      try {
+        const response = await fetch(fileUrl);
+        if (!response.ok) throw new Error(`Failed to fetch PDF: ${response.status}`);
+
+        const blob = await response.blob();
+        if (cancelled) return;
+
+        const url = URL.createObjectURL(blob);
+        blobUrlRef.current = url;
+        setBlobUrl(url);
+      } catch (err) {
+        console.error('PDF fetch error:', err);
+        if (!cancelled) {
+          setHasError(true);
+          setIsLoading(false);
+        }
+      }
+    };
+
+    fetchPdf();
+
+    return () => {
+      cancelled = true;
+      if (blobUrlRef.current) {
+        URL.revokeObjectURL(blobUrlRef.current);
+        blobUrlRef.current = null;
+      }
+    };
+  }, [fileUrl]);
 
   const handleLoad = () => {
     setIsLoading(false);
@@ -27,11 +67,20 @@ export function PDFViewer({ fileUrl, fileName, showDownload = true, className = 
   };
 
   const handleDownload = () => {
-    window.open(fileUrl, '_blank');
+    if (blobUrl) {
+      const a = document.createElement('a');
+      a.href = blobUrl;
+      a.download = fileName.endsWith('.pdf') ? fileName : `${fileName}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    } else {
+      window.open(fileUrl, '_blank');
+    }
   };
 
   const handleOpenInNewTab = () => {
-    window.open(fileUrl, '_blank', 'noopener,noreferrer');
+    window.open(blobUrl || fileUrl, '_blank', 'noopener,noreferrer');
   };
 
   const handleZoomIn = () => {
@@ -113,32 +162,34 @@ export function PDFViewer({ fileUrl, fileName, showDownload = true, className = 
           </Alert>
         )}
 
-        <div
-          className={`relative ${isLoading || hasError ? 'hidden' : ''}`}
-          style={{
-            width: '100%',
-            height: '600px',
-            overflow: 'auto',
-            border: '1px solid hsl(var(--border))',
-            borderRadius: '8px',
-            backgroundColor: 'hsl(var(--muted))'
-          }}
-        >
-          <iframe
-            src={`${fileUrl}#zoom=${zoom}`}
-            className="w-full h-full"
+        {blobUrl && (
+          <div
+            className={`relative ${isLoading || hasError ? 'hidden' : ''}`}
             style={{
-              border: 'none',
-              transform: `scale(${zoom / 100})`,
-              transformOrigin: 'top left',
-              width: `${10000 / zoom}%`,
-              height: `${10000 / zoom}%`
+              width: '100%',
+              height: '600px',
+              overflow: 'auto',
+              border: '1px solid hsl(var(--border))',
+              borderRadius: '8px',
+              backgroundColor: 'hsl(var(--muted))'
             }}
-            title={fileName}
-            onLoad={handleLoad}
-            onError={handleError}
-          />
-        </div>
+          >
+            <iframe
+              src={`${blobUrl}#zoom=${zoom}`}
+              className="w-full h-full"
+              style={{
+                border: 'none',
+                transform: `scale(${zoom / 100})`,
+                transformOrigin: 'top left',
+                width: `${10000 / zoom}%`,
+                height: `${10000 / zoom}%`
+              }}
+              title={fileName}
+              onLoad={handleLoad}
+              onError={handleError}
+            />
+          </div>
+        )}
 
         <div className="mt-4 text-xs text-muted-foreground">
           <p>
