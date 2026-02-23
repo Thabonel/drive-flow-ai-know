@@ -7,7 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Loader2, Send, Archive, Trash2, Edit2, Check, X, FileText, Calendar, Printer, Download, ChevronDown, ImageIcon } from 'lucide-react';
+import { Loader2, Send, Archive, Trash2, Edit2, Check, X, FileText, Calendar, Printer, Download, ChevronDown, ImageIcon, Paperclip } from 'lucide-react';
 import { arrayBufferToBase64 } from '@/lib/base64Utils';
 import heic2any from 'heic2any';
 import {
@@ -114,6 +114,18 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
     fileName?: string;
   } | null>(null);
   const [isProcessingImage, setIsProcessingImage] = useState(false);
+
+  // Document attachment state
+  const [pendingDocument, setPendingDocument] = useState<{
+    fileName: string;
+    content: string;
+    mimeType: string;
+    fileSize: number;
+    fileType: string;
+    originalFile?: File;
+  } | null>(null);
+  const [isProcessingDocument, setIsProcessingDocument] = useState(false);
+  const documentInputRef = useRef<HTMLInputElement>(null);
 
   // Agent mode state
   const [subAgentResults, setSubAgentResults] = useState<Record<string, SubAgentResult[]>>({});
@@ -542,20 +554,22 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if ((!input.trim() && !pendingImage) || isLoading) return;
+    if ((!input.trim() && !pendingImage && !pendingDocument) || isLoading) return;
 
-    // Capture image data before clearing
+    // Capture image and document data before clearing
     const imageData = pendingImage;
+    const documentData = pendingDocument;
 
     // Store original message for display before any modifications
-    const originalMessage = input.trim() || (imageData ? "What's in this image?" : '');
+    const originalMessage = input.trim() || (imageData ? "What's in this image?" : '') || (documentData ? `Analyze this document: ${documentData.fileName}` : '');
     let userMessage = originalMessage;
     let autoSavedDocId: string | null = null;
     let forceUseDocuments = useDocuments;
 
-    // CRITICAL: Clear input and image IMMEDIATELY for instant UI feedback
+    // CRITICAL: Clear input, image, and document IMMEDIATELY for instant UI feedback
     setInput('');
     setPendingImage(null);
+    setPendingDocument(null);
 
     // If message is very long (>10KB), auto-save as document and reference it
     const LONG_MESSAGE_THRESHOLD = 10000;
@@ -647,6 +661,15 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
         role: msg.role,
         content: msg.content,
       }));
+
+      // Inject document content into conversation context if attached
+      if (documentData) {
+        conversationContext.push({
+          role: 'user',
+          content: `[ATTACHED DOCUMENT: ${documentData.fileName}]\n\n${documentData.content}`,
+        });
+        forceUseDocuments = true;
+      }
 
       // Create AbortController for cancelling the request
       abortControllerRef.current = new AbortController();
@@ -894,6 +917,50 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
             return newSet;
           });
         }
+      }
+
+      // Background save: persist dropped document to knowledge_documents
+      if (documentData && user) {
+        (async () => {
+          try {
+            // Upload binary files to Supabase Storage
+            let fileUrl: string | null = null;
+            let storagePath: string | null = null;
+            if (documentData.originalFile && !documentData.mimeType.startsWith('text/')) {
+              const fileName = `${user.id}/${Date.now()}_${documentData.fileName}`;
+              storagePath = fileName;
+              const { error: uploadError } = await supabase.storage
+                .from('documents')
+                .upload(fileName, documentData.originalFile, {
+                  cacheControl: '3600',
+                  upsert: false,
+                  contentType: documentData.mimeType,
+                });
+              if (!uploadError) {
+                const { data: urlData } = supabase.storage
+                  .from('documents')
+                  .getPublicUrl(fileName);
+                fileUrl = urlData.publicUrl;
+              }
+            }
+
+            await supabase.from('knowledge_documents').insert({
+              user_id: user.id,
+              title: documentData.fileName.replace(/\.[^/.]+$/, ''),
+              content: documentData.content,
+              file_type: documentData.fileType,
+              category: 'general',
+              google_file_id: `chat_upload_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+              file_size: documentData.content.length,
+              mime_type: documentData.mimeType,
+              file_url: fileUrl,
+              storage_path: storagePath,
+              original_file_size: documentData.fileSize,
+            });
+          } catch (err) {
+            console.error('Background document save failed:', err);
+          }
+        })();
       }
 
       // Update conversation message count and title if first message
@@ -1476,6 +1543,93 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
     }
   };
 
+  // Document handling utilities
+  const VALID_DOC_EXTENSIONS = ['.txt', '.md', '.pdf', '.docx', '.doc', '.rtf', '.csv', '.xlsx', '.xls', '.json', '.xml'];
+  const TEXT_EXTENSIONS = ['.txt', '.md', '.json', '.xml', '.csv'];
+  const MAX_DOC_SIZE = 20 * 1024 * 1024; // 20MB
+
+  const isValidDocumentFile = (file: File): boolean => {
+    const ext = '.' + (file.name.split('.').pop()?.toLowerCase() || '');
+    return VALID_DOC_EXTENSIONS.includes(ext) && file.size <= MAX_DOC_SIZE;
+  };
+
+  const isTextFile = (file: File): boolean => {
+    const ext = '.' + (file.name.split('.').pop()?.toLowerCase() || '');
+    return TEXT_EXTENSIONS.includes(ext) || file.type.startsWith('text/');
+  };
+
+  const handleDocumentFile = async (file: File) => {
+    if (!isValidDocumentFile(file)) {
+      const ext = file.name.split('.').pop()?.toLowerCase() || '';
+      const sizeMB = (file.size / (1024 * 1024)).toFixed(1);
+      toast.error(`Invalid document. File: .${ext} (${sizeMB}MB). Supported: ${VALID_DOC_EXTENSIONS.join(', ')} (max 20MB)`);
+      return;
+    }
+
+    setIsProcessingDocument(true);
+    try {
+      let content: string;
+
+      if (isTextFile(file)) {
+        // Read text files directly
+        content = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = (e) => resolve(e.target?.result as string);
+          reader.onerror = () => reject(new Error('Failed to read file'));
+          reader.readAsText(file);
+        });
+      } else {
+        // Binary files: base64 encode and call parse-document edge function
+        const arrayBuffer = await file.arrayBuffer();
+        const uint8Array = new Uint8Array(arrayBuffer);
+        const base64 = arrayBufferToBase64(uint8Array);
+
+        let mimeType = file.type;
+        const ext = file.name.split('.').pop()?.toLowerCase() || '';
+        if (!mimeType) {
+          const mimeMap: Record<string, string> = {
+            pdf: 'application/pdf',
+            docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            doc: 'application/msword',
+            rtf: 'application/rtf',
+            xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            xls: 'application/vnd.ms-excel',
+          };
+          mimeType = mimeMap[ext] || 'application/octet-stream';
+        }
+
+        const { data, error } = await supabase.functions.invoke('parse-document', {
+          body: { fileName: file.name, mimeType, fileData: base64 },
+        });
+
+        if (error) throw new Error(error.message || 'Failed to parse document');
+        if (data?.metadata?.parseError) throw new Error(data.metadata.parseError);
+
+        content = data?.content || '';
+      }
+
+      // Truncate to 50,000 characters if needed
+      if (content.length > 50000) {
+        content = content.substring(0, 50000) + '\n\n[Content truncated at 50,000 characters]';
+      }
+
+      const ext = file.name.split('.').pop()?.toLowerCase() || 'text';
+      setPendingDocument({
+        fileName: file.name,
+        content,
+        mimeType: file.type || 'application/octet-stream',
+        fileSize: file.size,
+        fileType: ext,
+        originalFile: file,
+      });
+    } catch (error) {
+      console.error('Document processing error:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to process document');
+    } finally {
+      setIsProcessingDocument(false);
+    }
+  };
+
   // Open a document in the DocumentViewerModal
   const handleOpenDocument = async (docId: string) => {
     try {
@@ -1553,14 +1707,14 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
   const renderInputForm = () => (
     <form onSubmit={handleSubmit} className="p-2 border-t flex-shrink-0 bg-background">
       <div
-        className={`relative ${pendingImage ? 'ring-2 ring-primary ring-offset-2 rounded-lg' : ''}`}
+        className={`relative ${pendingImage || pendingDocument ? 'ring-2 ring-primary ring-offset-2 rounded-lg' : ''}`}
         onDragOver={(e) => {
           e.preventDefault();
           e.currentTarget.classList.add('ring-2', 'ring-primary', 'ring-offset-2', 'rounded-lg');
         }}
         onDragLeave={(e) => {
           e.preventDefault();
-          if (!pendingImage) {
+          if (!pendingImage && !pendingDocument) {
             e.currentTarget.classList.remove('ring-2', 'ring-primary', 'ring-offset-2', 'rounded-lg');
           }
         }}
@@ -1571,6 +1725,11 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
           const imageFile = files.find(f => f.type.startsWith('image/'));
           if (imageFile) {
             await handleImageFile(imageFile);
+            return;
+          }
+          const docFile = files.find(f => isValidDocumentFile(f));
+          if (docFile) {
+            await handleDocumentFile(docFile);
           }
         }}
       >
@@ -1593,14 +1752,50 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
           </div>
         )}
 
+        {/* Document preview indicator */}
+        {pendingDocument && (
+          <div className="flex items-center gap-2 p-2 mb-2 bg-blue-500/10 rounded-lg">
+            <FileText className="h-4 w-4 text-blue-600" />
+            <span className="text-sm text-blue-700 dark:text-blue-400 flex-1 truncate">
+              {pendingDocument.fileName}
+            </span>
+            <span className="text-xs text-muted-foreground">
+              {pendingDocument.fileSize < 1024
+                ? `${pendingDocument.fileSize}B`
+                : pendingDocument.fileSize < 1024 * 1024
+                  ? `${Math.round(pendingDocument.fileSize / 1024)}KB`
+                  : `${(pendingDocument.fileSize / (1024 * 1024)).toFixed(1)}MB`}
+            </span>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-6 w-6 p-0"
+              onClick={() => setPendingDocument(null)}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
+
+        {/* Document processing indicator */}
+        {isProcessingDocument && (
+          <div className="flex items-center gap-2 p-2 mb-2 bg-blue-500/10 rounded-lg">
+            <Loader2 className="h-4 w-4 text-blue-600 animate-spin" />
+            <span className="text-sm text-blue-700 dark:text-blue-400">
+              Extracting text content...
+            </span>
+          </div>
+        )}
+
         <div className="flex gap-2">
           <Textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder={pendingImage ? "Describe what you want to know about this image..." : "Type your message..."}
+            placeholder={pendingImage ? "Describe what you want to know about this image..." : pendingDocument ? `Ask about ${pendingDocument.fileName}...` : "Type your message..."}
             className="resize-none border-2 border-primary/30 focus:border-primary focus:ring-2 focus:ring-primary/20"
             rows={2}
-            disabled={isLoading || isProcessingImage}
+            disabled={isLoading || isProcessingImage || isProcessingDocument}
             onPaste={async (e) => {
               const items = e.clipboardData?.items;
               if (!items) return;
@@ -1622,10 +1817,32 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
               }
             }}
           />
+          <input
+            ref={documentInputRef}
+            type="file"
+            accept=".txt,.md,.pdf,.docx,.doc,.rtf,.csv,.xlsx,.xls,.json,.xml"
+            className="hidden"
+            onChange={async (e) => {
+              const file = e.target.files?.[0];
+              if (file) await handleDocumentFile(file);
+              e.target.value = '';
+            }}
+          />
           <div className="flex flex-col gap-2">
             <DictationButton
               onTranscription={(text) => setInput(prev => prev ? prev + ' ' + text : text)}
             />
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-9 w-9 p-0"
+              title="Attach document"
+              disabled={isLoading || isProcessingDocument}
+              onClick={() => documentInputRef.current?.click()}
+            >
+              <Paperclip className="h-4 w-4" />
+            </Button>
             {isLoading ? (
               <Button
                 type="button"
@@ -1636,7 +1853,7 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
                 <X className="h-4 w-4" />
               </Button>
             ) : (
-              <Button type="submit" disabled={!input.trim() && !pendingImage}>
+              <Button type="submit" disabled={!input.trim() && !pendingImage && !pendingDocument}>
                 <Send className="h-4 w-4" />
               </Button>
             )}
