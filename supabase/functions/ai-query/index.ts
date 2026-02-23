@@ -1902,7 +1902,8 @@ ${productKnowledge}
       const errorStr = String(aiError);
 
       // Better error categorization
-      if (errorStr.includes('401') || errorStr.includes('unauthorized')) {
+      const errorLower = errorStr.toLowerCase();
+      if (errorLower.includes('401') || errorLower.includes('unauthorized') || errorLower.includes('authentication')) {
         return new Response(
           JSON.stringify({
             error: 'Authentication error',
@@ -1913,7 +1914,7 @@ ${productKnowledge}
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           }
         );
-      } else if (errorStr.includes('429') || errorStr.includes('rate limit')) {
+      } else if (errorLower.includes('429') || errorLower.includes('rate limit') || errorLower.includes('rate_limit')) {
         return new Response(
           JSON.stringify({
             error: 'Provider rate limit',
@@ -1924,7 +1925,7 @@ ${productKnowledge}
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           }
         );
-      } else if (errorStr.includes('413') || errorStr.includes('too large') || errorStr.includes('token')) {
+      } else if (errorLower.includes('413') || errorLower.includes('too large') || errorLower.includes('too long') || errorLower.includes('token') || errorLower.includes('content_too_large') || errorLower.includes('max_tokens')) {
         return new Response(
           JSON.stringify({
             error: 'Context too large',
@@ -1935,8 +1936,43 @@ ${productKnowledge}
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           }
         );
+      } else if (errorLower.includes('529') || errorLower.includes('overloaded') || errorLower.includes('capacity') || errorLower.includes('503') || errorLower.includes('service unavailable')) {
+        return new Response(
+          JSON.stringify({
+            error: 'Provider overloaded',
+            response: "The AI service is temporarily overloaded. Please try again in a few seconds."
+          }),
+          {
+            status: 503,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          }
+        );
+      } else if (errorLower.includes('500') || errorLower.includes('internal server') || errorLower.includes('internal_server')) {
+        return new Response(
+          JSON.stringify({
+            error: 'Provider server error',
+            response: "The AI service encountered a temporary error. Please try again."
+          }),
+          {
+            status: 502,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          }
+        );
+      } else if (errorLower.includes('timeout') || errorLower.includes('timed out') || errorLower.includes('deadline') || errorLower.includes('econnreset') || errorLower.includes('fetch failed')) {
+        return new Response(
+          JSON.stringify({
+            error: 'Request timeout',
+            response: "The AI request timed out. Your conversation may be too long - try starting a new one, or just try again."
+          }),
+          {
+            status: 504,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          }
+        );
       }
 
+      // Fallback: include the actual error for debugging
+      console.error('Unrecognized AI error (fell through all patterns):', errorStr);
       aiAnswer = "I'm having trouble generating a response right now. Please try again in a moment.";
     }
 
