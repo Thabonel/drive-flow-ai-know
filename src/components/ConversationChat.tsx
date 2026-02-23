@@ -1896,27 +1896,26 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
                 <Edit2 className="h-4 w-4" />
               </Button>
             )}
+            {/* Document Access Toggle - inline with heading */}
+            <Button
+              size="sm"
+              variant={useDocuments ? "default" : "outline"}
+              onClick={() => setUseDocuments(!useDocuments)}
+              className="gap-2"
+              title={useDocuments ? "Documents: ON - AI can access your documents" : "Documents: OFF - General AI chat"}
+            >
+              <FileText className="h-4 w-4" />
+              {useDocuments ? "Docs: ON" : "Docs: OFF"}
+            </Button>
           </div>
         )}
+        {messages.length > 0 && (
         <div className="flex gap-2 flex-wrap">
-          {/* Document Access Toggle */}
-          <Button
-            size="sm"
-            variant={useDocuments ? "default" : "outline"}
-            onClick={() => setUseDocuments(!useDocuments)}
-            className="gap-2"
-            title={useDocuments ? "Documents: ON - AI can access your documents" : "Documents: OFF - General AI chat"}
-          >
-            <FileText className="h-4 w-4" />
-            {useDocuments ? "Docs: ON" : "Docs: OFF"}
-          </Button>
-          {isTemporary && messages.length > 0 && (
+          {isTemporary && (
             <div className="text-sm text-muted-foreground bg-yellow-50 dark:bg-yellow-900/20 px-3 py-1.5 rounded-md border border-yellow-200 dark:border-yellow-800">
               Temporary Chat (not saved)
             </div>
           )}
-          {messages.length > 0 && (
-            <>
               <Button
                 onClick={handlePrint}
                 size="sm"
@@ -1952,9 +1951,7 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
-            </>
-          )}
-          {messages.length > 0 && messages.some(m => m.role === 'assistant') && (
+          {messages.some(m => m.role === 'assistant') && (
             <Button
               onClick={handleAddToTimeline}
               size="sm"
@@ -1964,7 +1961,7 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
               Add to Timeline
             </Button>
           )}
-          {!isTemporary && conversationId && messages.length > 0 && (
+          {!isTemporary && conversationId && (
             <>
               <Button
                 onClick={handleSummarize}
@@ -2002,18 +1999,12 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
             </>
           )}
         </div>
+        )}
       </div>
 
       {messages.length === 0 ? (
-        // Empty state - input in Card (normal flow)
-        <Card className="flex flex-col overflow-hidden h-auto">
-          <div className="p-2 h-20 overflow-y-auto" ref={scrollRef}>
-            <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
-              <p>Start a conversation</p>
-            </div>
-          </div>
-          {renderInputForm()}
-        </Card>
+        // Empty state - input directly, no buffer card
+        renderInputForm()
       ) : (
         // Active conversation - sticky input
         <div className="flex flex-col flex-1 overflow-hidden">

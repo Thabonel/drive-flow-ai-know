@@ -426,7 +426,7 @@ export function RouterInbox() {
                             <MoreVertical className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent>
+                        <DropdownMenuContent aria-label="Request actions">
                           <DropdownMenuItem>View Details</DropdownMenuItem>
                           <DropdownMenuItem>Add Follow-up</DropdownMenuItem>
                           <DropdownMenuItem>Mark as Done</DropdownMenuItem>

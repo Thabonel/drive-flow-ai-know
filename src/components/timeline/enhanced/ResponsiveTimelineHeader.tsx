@@ -263,20 +263,20 @@ export const ResponsiveTimelineHeader: React.FC<ResponsiveTimelineHeaderProps> =
                 </DropdownMenuTrigger>
                 <TooltipContent>Access planning tools and AI scheduling</TooltipContent>
               </Tooltip>
-              <DropdownMenuContent align="start">
-                <DropdownMenuItem onClick={props.onShowDailyPlanning}>
+              <DropdownMenuContent align="start" aria-label="Planning tools">
+                <DropdownMenuItem textValue="Daily Planning" onClick={props.onShowDailyPlanning}>
                   <Sunrise className="h-4 w-4 mr-2" />
                   Daily Planning
                 </DropdownMenuItem>
 
                 <ConditionalFeature feature="weeklyCalibration">
-                  <DropdownMenuItem onClick={props.onShowWeeklyCalibration}>
+                  <DropdownMenuItem textValue="Weekly Calibration" onClick={props.onShowWeeklyCalibration}>
                     <Calendar className="h-4 w-4 mr-2" />
                     Weekly Calibration
                   </DropdownMenuItem>
                 </ConditionalFeature>
 
-                <DropdownMenuItem onClick={props.onShowAIPlanning} disabled={props.layers.length === 0}>
+                <DropdownMenuItem textValue="AI Plan My Day" onClick={props.onShowAIPlanning} disabled={props.layers.length === 0}>
                   <Sparkles className="h-4 w-4 mr-2" />
                   AI Plan My Day
                 </DropdownMenuItem>
@@ -284,25 +284,26 @@ export const ResponsiveTimelineHeader: React.FC<ResponsiveTimelineHeaderProps> =
                 <DropdownMenuSeparator />
 
                 <ConditionalFeature feature="templates">
-                  <DropdownMenuItem onClick={props.onShowTemplates}>
+                  <DropdownMenuItem textValue="Templates" onClick={props.onShowTemplates}>
                     <LayoutTemplate className="h-4 w-4 mr-2" />
                     Templates
                   </DropdownMenuItem>
                 </ConditionalFeature>
 
                 <ConditionalFeature feature="roleZones">
-                  <DropdownMenuItem onClick={props.onShowRoleTemplates}>
+                  <DropdownMenuItem textValue="Role Templates" onClick={props.onShowRoleTemplates}>
                     <Sparkles className="h-4 w-4 mr-2" />
                     Role Templates
                   </DropdownMenuItem>
                 </ConditionalFeature>
 
-                <DropdownMenuItem onClick={props.onShowRoutines}>
+                <DropdownMenuItem textValue="Manage Routines" onClick={props.onShowRoutines}>
                   <CalIcon className="h-4 w-4 mr-2" />
                   Manage Routines
                 </DropdownMenuItem>
 
                 <DropdownMenuItem
+                  textValue="Add Today's Routines"
                   onClick={props.onPopulateRoutines}
                   disabled={props.populatingRoutines || props.layers.length === 0}
                 >
@@ -410,28 +411,28 @@ export const ResponsiveTimelineHeader: React.FC<ResponsiveTimelineHeaderProps> =
               <TooltipContent>Additional actions and settings</TooltipContent>
             </Tooltip>
 
-            <DropdownMenuContent align="start" className="w-56">
-              <DropdownMenuItem onClick={props.onShowEndOfDay}>
+            <DropdownMenuContent align="start" className="w-56" aria-label="More actions">
+              <DropdownMenuItem textValue="End of Day" onClick={props.onShowEndOfDay}>
                 <Moon className="h-4 w-4 mr-2" />
                 End of Day
               </DropdownMenuItem>
 
               <ConditionalFeature feature="aiInsights">
-                <DropdownMenuItem onClick={props.onShowAIInsights}>
+                <DropdownMenuItem textValue="AI Insights" onClick={props.onShowAIInsights}>
                   <Brain className="h-4 w-4 mr-2" />
                   AI Insights
                 </DropdownMenuItem>
               </ConditionalFeature>
 
               <ConditionalFeature feature="parkedItems">
-                <DropdownMenuItem onClick={props.onShowParkedItems}>
+                <DropdownMenuItem textValue="Parked Items" onClick={props.onShowParkedItems}>
                   <Archive className="h-4 w-4 mr-2" />
                   Parked Items ({props.parkedItems?.length || 0})
                 </DropdownMenuItem>
               </ConditionalFeature>
 
               <ConditionalFeature feature="bookingLinks">
-                <DropdownMenuItem onClick={() => window.location.href = '/booking-links'}>
+                <DropdownMenuItem textValue="Booking Links" onClick={() => window.location.href = '/booking-links'}>
                   <LinkIcon className="h-4 w-4 mr-2" />
                   Booking Links
                 </DropdownMenuItem>
@@ -441,7 +442,7 @@ export const ResponsiveTimelineHeader: React.FC<ResponsiveTimelineHeaderProps> =
               <DropdownMenuLabel>Settings</DropdownMenuLabel>
 
               <ConditionalFeature feature="layers">
-                <DropdownMenuItem asChild>
+                <DropdownMenuItem textValue="Layers" asChild>
                   <Popover>
                     <PopoverTrigger asChild>
                       <button className="w-full flex items-center px-2 py-1.5 text-sm">
@@ -463,7 +464,7 @@ export const ResponsiveTimelineHeader: React.FC<ResponsiveTimelineHeaderProps> =
                 </DropdownMenuItem>
               </ConditionalFeature>
 
-              <DropdownMenuItem asChild>
+              <DropdownMenuItem textValue="Zoom Controls" asChild>
                 <Popover>
                   <PopoverTrigger asChild>
                     <button className="w-full flex items-center px-2 py-1.5 text-sm">

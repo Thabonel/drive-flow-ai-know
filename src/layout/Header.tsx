@@ -90,7 +90,7 @@ const Header = () => {
                   {user?.user_metadata?.full_name || user?.email || 'User menu'}
                 </TooltipContent>
               </Tooltip>
-              <DropdownMenuContent className="w-56" align="end" forceMount>
+              <DropdownMenuContent className="w-56" align="end" forceMount aria-label="User menu">
                 <div className="flex items-center justify-start gap-2 p-2">
                   <div className="flex flex-col space-y-1 leading-none">
                     <p className="font-medium">{user?.user_metadata?.full_name || 'User'}</p>
@@ -100,11 +100,11 @@ const Header = () => {
                   </div>
                 </div>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => navigate('/settings')}>
+                <DropdownMenuItem textValue="Settings" onClick={() => navigate('/settings')}>
                   <Settings className="mr-2 h-4 w-4" />
                   Settings
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleSignOut}>
+                <DropdownMenuItem textValue="Sign out" onClick={handleSignOut}>
                   <LogOut className="mr-2 h-4 w-4" />
                   Sign out
                 </DropdownMenuItem>
