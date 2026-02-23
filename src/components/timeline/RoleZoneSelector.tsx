@@ -162,7 +162,7 @@ export function RoleZoneSelector({ className, showLabels = true, size = 'default
               <p className="text-xs">{roleDesc.description}</p>
             </TooltipContent>
           </Tooltip>
-        <DropdownMenuContent align="start" className="w-64">
+        <DropdownMenuContent align="start" className="w-64" aria-label="Role mode">
           <DropdownMenuLabel>Role Mode</DropdownMenuLabel>
           <DropdownMenuSeparator />
           {Object.values(ROLE_MODES).map((mode) => {
@@ -170,6 +170,7 @@ export function RoleZoneSelector({ className, showLabels = true, size = 'default
             return (
               <DropdownMenuItem
                 key={mode}
+                textValue={desc.label}
                 onClick={() => handleRoleChange(mode)}
                 className="flex flex-col items-start p-3"
               >
@@ -210,7 +211,7 @@ export function RoleZoneSelector({ className, showLabels = true, size = 'default
               <p className="text-xs">{zoneDesc.description}</p>
             </TooltipContent>
           </Tooltip>
-        <DropdownMenuContent align="start" className="w-64">
+        <DropdownMenuContent align="start" className="w-64" aria-label="Zone context">
           <DropdownMenuLabel>Zone Context</DropdownMenuLabel>
           <DropdownMenuSeparator />
           {Object.values(ZONE_CONTEXTS).map((zone) => {
@@ -218,6 +219,7 @@ export function RoleZoneSelector({ className, showLabels = true, size = 'default
             return (
               <DropdownMenuItem
                 key={zone}
+                textValue={desc.label}
                 onClick={() => handleZoneChange(zone)}
                 className="flex flex-col items-start p-3"
               >

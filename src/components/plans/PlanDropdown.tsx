@@ -70,15 +70,15 @@ export function PlanDropdown() {
           </Button>
         </DropdownMenuTrigger>
 
-        <DropdownMenuContent align="end" className="w-56">
-          <DropdownMenuItem onClick={() => setShowCreator(true)}>
+        <DropdownMenuContent align="end" className="w-56" aria-label="Plans menu">
+          <DropdownMenuItem textValue="Create New Plan" onClick={() => setShowCreator(true)}>
             <Plus className="h-4 w-4 mr-2" />
             Create New Plan
           </DropdownMenuItem>
 
           <DropdownMenuSeparator />
 
-          <DropdownMenuItem onClick={() => setShowList(true)}>
+          <DropdownMenuItem textValue="My Plans" onClick={() => setShowList(true)}>
             <List className="h-4 w-4 mr-2" />
             My Plans
             {plans.length > 0 && (
@@ -91,7 +91,7 @@ export function PlanDropdown() {
           <DropdownMenuSeparator />
 
           {/* Attention Budget - Opens as Popover */}
-          <DropdownMenuItem onClick={() => setShowAttentionBudget(true)}>
+          <DropdownMenuItem textValue="Attention Budget" onClick={() => setShowAttentionBudget(true)}>
             <Brain className="h-4 w-4 mr-2" />
             Attention Budget
           </DropdownMenuItem>
@@ -106,6 +106,7 @@ export function PlanDropdown() {
               {schedulablePlans.slice(0, 3).map((plan) => (
                 <DropdownMenuItem
                   key={plan.id}
+                  textValue={plan.title}
                   onClick={() => handleSchedulePlan(plan)}
                   className="flex items-center justify-between"
                 >
