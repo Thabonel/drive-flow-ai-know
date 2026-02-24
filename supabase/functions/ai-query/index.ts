@@ -1343,7 +1343,17 @@ serve(async (req) => {
 
     // IMPORTANT: Only fetch documents if EXPLICITLY requested (use_documents === true) or if knowledge_base_id is provided
     // Default behavior (when use_documents is undefined or false) is to NOT search documents
+
+    // DIAGNOSTIC: Log received parameters for debugging
+    console.log('🔍 BACKEND DOCUMENT ACCESS DEBUG:', {
+      use_documents,
+      knowledge_base_id,
+      user_id
+    });
+
     const shouldFetchDocuments = (use_documents === true) || (knowledge_base_id !== undefined && knowledge_base_id !== null);
+
+    console.log('🔍 SHOULD FETCH DOCUMENTS:', shouldFetchDocuments);
 
     // TEAM CONTEXT SUPPORT: Fetch user's team memberships for team document access
     const { data: teamMemberships, error: teamError } = await supabaseService
