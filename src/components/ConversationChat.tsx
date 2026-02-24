@@ -695,7 +695,7 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
           body: JSON.stringify({
             query: userMessage,
             conversationContext,
-            use_documents: forceUseDocuments,
+            use_documents: forceUseDocuments || !!knowledgeBaseId,
             knowledge_base_id: knowledgeBaseId || undefined,
             image: imageData ? {
               base64: imageData.base64,
