@@ -684,6 +684,15 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
 
       // Use fetch directly to support AbortController
       const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+
+      // DIAGNOSTIC: Log document access values
+      console.log('🔍 DOCUMENT ACCESS DEBUG:', {
+        forceUseDocuments,
+        knowledgeBaseId,
+        finalUseDocuments: forceUseDocuments || !!knowledgeBaseId,
+        knowledgeBaseIdExists: !!knowledgeBaseId
+      });
+
       const response = await fetch(
         `${SUPABASE_URL}/functions/v1/ai-query`,
         {
