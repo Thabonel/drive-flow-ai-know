@@ -39,6 +39,7 @@ export const AIQueryInput = ({ selectedKnowledgeBase, onClearSelection }: AIQuer
   const [timelineContent, setTimelineContent] = useState('');
   const [viewerDocument, setViewerDocument] = useState<any>(null);
   const [isViewerOpen, setIsViewerOpen] = useState(false);
+  const [useDocuments, setUseDocuments] = useState(true);
   const { toast } = useToast();
   const { user } = useAuth();
   const { submitTask, tasks, getTask, clearTask } = useBackgroundTasks();
@@ -82,6 +83,13 @@ export const AIQueryInput = ({ selectedKnowledgeBase, onClearSelection }: AIQuer
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages]);
+
+  // Force documents ON when knowledge base is selected
+  useEffect(() => {
+    if (selectedKnowledgeBase?.id && !useDocuments) {
+      setUseDocuments(true);
+    }
+  }, [selectedKnowledgeBase, useDocuments]);
 
   // Watch for background task completion and update local messages
   useEffect(() => {
@@ -267,7 +275,8 @@ export const AIQueryInput = ({ selectedKnowledgeBase, onClearSelection }: AIQuer
       query: userMessage,
       knowledgeBaseId: selectedKnowledgeBase?.id,
       knowledgeBaseName: selectedKnowledgeBase?.name,
-      conversationContext
+      conversationContext,
+      useDocuments: useDocuments || !!selectedKnowledgeBase?.id
     });
 
     // Track this task so we can show results inline when it completes
@@ -487,7 +496,7 @@ export const AIQueryInput = ({ selectedKnowledgeBase, onClearSelection }: AIQuer
                 </div>
               ))}
               {isLoading && (
-                <AIProgressIndicator useDocuments={true} />
+                <AIProgressIndicator useDocuments={useDocuments || !!selectedKnowledgeBase?.id} />
               )}
             </div>
           </ScrollArea>
@@ -534,6 +543,17 @@ export const AIQueryInput = ({ selectedKnowledgeBase, onClearSelection }: AIQuer
             <DictationButton
               onTranscription={(text) => setQuery(prev => prev ? prev + ' ' + text : text)}
             />
+            <Button
+              size="sm"
+              variant={useDocuments ? "default" : "outline"}
+              onClick={() => setUseDocuments(!useDocuments)}
+              className="gap-2 h-auto px-3 py-2"
+              title={useDocuments ? "Documents: ON - AI can access your documents" : "Documents: OFF - General AI chat"}
+              disabled={!!selectedKnowledgeBase?.id} // Force ON when knowledge base is selected
+            >
+              <FileText className="h-4 w-4" />
+              {useDocuments ? "Docs: ON" : "Docs: OFF"}
+            </Button>
             {isLoading ? (
               <Button
                 type="button"
