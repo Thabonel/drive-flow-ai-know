@@ -30,6 +30,7 @@ export interface BackgroundTask {
   knowledgeBaseId?: string;
   knowledgeBaseName?: string;
   conversationContext?: Array<{ role: string; content: string }>;
+  useDocuments?: boolean;
 }
 
 interface BackgroundTasksContextType {
@@ -40,6 +41,7 @@ interface BackgroundTasksContextType {
     knowledgeBaseId?: string;
     knowledgeBaseName?: string;
     conversationContext?: Array<{ role: string; content: string }>;
+    useDocuments?: boolean;
   }) => string;
   getTask: (id: string) => BackgroundTask | undefined;
   clearTask: (id: string) => void;
@@ -85,6 +87,9 @@ export function BackgroundTasksProvider({ children }: { children: React.ReactNod
 
       updateTask(task.id, { progress: 'Processing your request...' });
 
+      // Diagnostic logging for document access debugging
+      console.log('🔍 BackgroundTasks using documents:', task.useDocuments ?? true);
+
       const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
       const response = await fetch(
         `${SUPABASE_URL}/functions/v1/ai-query`,
@@ -97,7 +102,7 @@ export function BackgroundTasksProvider({ children }: { children: React.ReactNod
           body: JSON.stringify({
             query: task.query,
             knowledge_base_id: task.knowledgeBaseId,
-            use_documents: true,
+            use_documents: task.useDocuments ?? true,
             conversationContext: task.conversationContext || [],
           }),
           signal: abortController.signal,
@@ -171,6 +176,7 @@ export function BackgroundTasksProvider({ children }: { children: React.ReactNod
     knowledgeBaseId?: string;
     knowledgeBaseName?: string;
     conversationContext?: Array<{ role: string; content: string }>;
+    useDocuments?: boolean;
   }): string => {
     const taskId = generateTaskId();
 
@@ -182,6 +188,7 @@ export function BackgroundTasksProvider({ children }: { children: React.ReactNod
       knowledgeBaseId: params.knowledgeBaseId,
       knowledgeBaseName: params.knowledgeBaseName,
       conversationContext: params.conversationContext,
+      useDocuments: params.useDocuments,
     };
 
     setTasks(prev => [newTask, ...prev]);
