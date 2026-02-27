@@ -142,9 +142,9 @@ serve(async (req) => {
     // Append negative prompt guidance
     enhancedPrompt += `\n\nAvoid: ${finalNegativePrompt}`;
 
-    // Use Gemini 3 Flash Preview for image generation (latest model)
+    // Use Gemini 3.1 Pro Preview for image generation (latest model)
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-pro-preview:generateContent?key=${apiKey}`,
       {
         method: 'POST',
         headers: {

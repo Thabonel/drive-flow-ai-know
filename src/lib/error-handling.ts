@@ -69,16 +69,22 @@ export const handleEdgeFunctionError = (
   }
 
   // Handle user-facing error display
-  if (showToast && !silentInProduction) {
+  // CRITICAL: In production, NEVER show toasts for Edge Function errors - they're handled gracefully
+  const shouldShowToast = showToast &&
+                         !silentInProduction &&
+                         (!config.isProduction || !isSupabaseEdgeError);
+
+  if (shouldShowToast) {
     if (config.isProduction) {
-      // Production: User-friendly messages only
+      // Production: User-friendly messages only (and only for non-Edge Function errors)
       if (isMissingConfig) {
         toast({
           title: 'Configuration Issue',
           description: 'Please contact support if this issue persists.',
           variant: 'destructive',
         });
-      } else {
+      } else if (!isSupabaseEdgeError) {
+        // Only show toast for non-Edge Function errors in production
         toast({
           title: 'Connection Failed',
           description: userMessage,
@@ -91,11 +97,14 @@ export const handleEdgeFunctionError = (
       // (Toast suppressed in staging to avoid bothering users while still debugging)
     } else {
       // Development: Show detailed errors for immediate debugging feedback
-      toast({
-        title: `${context} Error`,
-        description: `${errorMessage} (Dev Mode)`,
-        variant: 'destructive',
-      });
+      // But only if explicitly requested (not silentInProduction)
+      if (!silentInProduction) {
+        toast({
+          title: `${context} Error`,
+          description: `${errorMessage} (Dev Mode)`,
+          variant: 'destructive',
+        });
+      }
     }
   }
 
@@ -115,12 +124,22 @@ export const safeEdgeFunctionCall = async <T>(
     const result = await functionCall();
 
     if (result.error) {
+      // Mark error as handled to prevent duplicate global handling
+      if (result.error && typeof result.error === 'object') {
+        result.error._alreadyHandled = true;
+      }
+
       const handledError = handleEdgeFunctionError(result.error, context, options);
       return { data: null, error: handledError };
     }
 
     return { data: result.data, error: null };
   } catch (error) {
+    // Mark error as handled to prevent duplicate global handling
+    if (error && typeof error === 'object') {
+      (error as any)._alreadyHandled = true;
+    }
+
     const handledError = handleEdgeFunctionError(error, context, options);
     return { data: null, error: handledError };
   }

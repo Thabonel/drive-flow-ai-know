@@ -10,7 +10,7 @@ Built with Vite, React, shadcn-ui, Tailwind CSS, and Supabase backend.
 
 - **Frontend**: React 18, TypeScript (strict), Vite, Tailwind CSS, shadcn-ui
 - **Backend**: Supabase (PostgreSQL, Auth, Edge Functions, Realtime, Storage)
-- **AI/ML**: Anthropic Claude API (Claude Opus 4.6, Sonnet 4.5, Haiku 4.5), OpenRouter (GPT-4.1, fallback), Ollama (offline), Google Gemini 3 Flash (image generation)
+- **AI/ML**: Anthropic Claude API (Claude Opus 4.6, Sonnet 4.5, Haiku 4.5), OpenRouter (GPT-4.1, fallback), Ollama (offline), Google Gemini 3.1 Pro Preview (image generation)
 - **Design**: Neumorphic (soft UI) design system - Navy & Gold theme
 - **Hosting**: Static deployment (Netlify/Vercel) + Supabase cloud
 - **Supabase Project**: `fskwutnoxbbflzqrphro` (ap-southeast-1)
@@ -165,7 +165,7 @@ python mcp/start_mcp_server.py
 - **Timeline Manager**: Shipped, ongoing bug fixes
 - **Research Agent**: Functional, optional component
 - **Booking Links**: In development
-- **Updated AI Models**: ✅ **SHIPPED** - Claude Opus 4.6, GPT-4.1, Gemini 3 Flash
+- **Updated AI Models**: ✅ **SHIPPED** - Claude Opus 4.6, GPT-4.1, Gemini 3.1 Pro Preview
 - **Security Enhancements**: ✅ **SHIPPED** - Comprehensive audit logging, encryption, parameterized queries
 - **ANTHROPIC_API_KEY**: Must be set in Supabase dashboard for AI functionality
 
@@ -371,7 +371,7 @@ All model IDs centralised in `supabase/functions/_shared/models.ts`.
 | CHEAP | `claude-haiku-4-5-20251001` | Summarisation, simple tasks |
 
 **OpenAI**: `gpt-4.1` ✨ **UPDATED** (1M token context) via OpenRouter fallback.
-**Gemini**: `gemini-3-flash-preview` ✨ **UPDATED** for image generation.
+**Gemini**: `gemini-3.1-pro-preview` ✨ **UPDATED** for image generation.
 **Offline**: Ollama `llama3` at `localhost:11434`.
 
 Override via Supabase environment variables:
@@ -380,7 +380,7 @@ CLAUDE_PRIMARY_MODEL=claude-opus-4-6
 CLAUDE_FAST_MODEL=claude-sonnet-4-5-20250929
 CLAUDE_CHEAP_MODEL=claude-haiku-4-5-20251001
 OPENAI_MODEL=gpt-4.1
-GEMINI_MODEL=gemini-3-flash-preview
+GEMINI_MODEL=gemini-3.1-pro-preview
 ```
 
 ## Environment Variables

@@ -14,7 +14,7 @@
  * - CLAUDE_CHEAP_MODEL: Cost-effective model (default: claude-haiku-4-5)
  * - OPENROUTER_MODEL: OpenRouter fallback model (default: openai/gpt-4.1)
  * - OPENAI_MODEL: Direct OpenAI model (default: gpt-4.1)
- * - GEMINI_MODEL: Google Gemini model (default: google/gemini-3-flash)
+ * - GEMINI_MODEL: Google Gemini model (default: google/gemini-3.1-pro-preview)
  * - LOCAL_MODEL: Local Ollama model (default: llama3)
  */
 
@@ -45,7 +45,7 @@ export const OPENAI_MODELS = {
 
 // Google Gemini models (via OpenRouter)
 export const GEMINI_MODELS = {
-  PRIMARY: Deno.env.get('GEMINI_MODEL') || 'google/gemini-3-flash',
+  PRIMARY: Deno.env.get('GEMINI_MODEL') || 'google/gemini-3.1-pro-preview',
 } as const;
 
 // Local models (Ollama)

@@ -1487,6 +1487,38 @@ export default function PitchDeck() {
 
         // Optionally save to Documents
         if (saveUploadedToDocuments && user) {
+          let fileUrl = '';
+          let storagePath = '';
+
+          // Store original file for viewing (PDFs, etc.)
+          if (!file.type.startsWith('text/') && ext !== '.md' && ext !== '.txt' && ext !== '.json') {
+            try {
+              // Generate unique storage path
+              const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 9)}_${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
+              storagePath = `${user.id}/pitchdecks/${fileName}`;
+
+              // Upload file to storage
+              const { data: uploadData, error: uploadError } = await supabase.storage
+                .from('documents')
+                .upload(storagePath, file, {
+                  cacheControl: '3600',
+                  upsert: false,
+                });
+
+              if (uploadError) {
+                console.warn('File upload failed, saving without file_url:', uploadError);
+              } else {
+                // Get public URL
+                const { data: urlData } = supabase.storage
+                  .from('documents')
+                  .getPublicUrl(storagePath);
+                fileUrl = urlData.publicUrl;
+              }
+            } catch (storageError) {
+              console.warn('Storage error, saving without file_url:', storageError);
+            }
+          }
+
           await supabase.from('knowledge_documents').insert({
             title: file.name.replace(/\.[^/.]+$/, ''),
             content,
@@ -1495,6 +1527,10 @@ export default function PitchDeck() {
             category: 'general',
             file_type: ext.substring(1),
             file_size: content.length,
+            mime_type: file.type,
+            file_url: fileUrl || null,
+            storage_path: storagePath || null,
+            original_file_size: file.size,
           });
         }
 
