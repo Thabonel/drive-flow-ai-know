@@ -24,13 +24,20 @@ export const initializeGlobalErrorHandling = () => {
       // Prevent the default browser behavior (console error)
       event.preventDefault();
 
-      // Handle with our error handling system
-      handleEdgeFunctionError(error, 'Unhandled Promise Rejection', {
-        userMessage: 'A background operation failed. Please refresh and try again.',
-        showToast: !config.isProduction, // Only show toast in dev/staging
-        silentInProduction: true,
-        reportToAdmin: true
-      });
+      // IMPORTANT: Only handle if this error wasn't already handled by safeEdgeFunctionCall
+      // Check if the error has already been processed (we'll set a flag)
+      if (!error?._alreadyHandled) {
+        // Handle with our error handling system - but NEVER show toast to avoid duplicates
+        handleEdgeFunctionError(error, 'Unhandled Promise Rejection', {
+          userMessage: 'A background operation failed. Please refresh and try again.',
+          showToast: false, // NEVER show toast here - safeEdgeFunctionCall handles it
+          silentInProduction: true,
+          reportToAdmin: true
+        });
+      }
+
+      // Always log for debugging but don't duplicate user-facing errors
+      console.error('Global handler caught Edge Function error:', error?.message);
     } else {
       // Let other unhandled rejections be handled normally in development
       if (!config.isProduction) {

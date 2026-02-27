@@ -1347,6 +1347,8 @@ serve(async (req) => {
     // DIAGNOSTIC: Log received parameters for debugging
     console.log('🔍 BACKEND DOCUMENT ACCESS DEBUG:', {
       use_documents,
+      use_documents_type: typeof use_documents,
+      use_documents_exact: use_documents === true,
       knowledge_base_id,
       user_id
     });
@@ -1485,9 +1487,54 @@ serve(async (req) => {
           }
         }
 
-        // If no marketing docs or general query, get recent documents
+        // If no marketing docs or general query, search for query-relevant documents first
         if (contextDocuments.length === 0) {
-          console.log('Getting recent documents as fallback...');
+          console.log('Searching for query-relevant documents...');
+
+          // Extract keywords from the query for better document matching
+          const queryKeywords = queryLower.split(/\s+/).filter(word =>
+            word.length > 2 && !['the', 'and', 'for', 'are', 'but', 'not', 'you', 'all', 'can', 'had', 'her', 'was', 'one', 'our', 'out', 'day', 'get', 'has', 'him', 'his', 'how', 'its', 'may', 'new', 'now', 'old', 'see', 'two', 'who', 'boy', 'did', 'man', 'car', 'way', 'who', 'oil', 'sit', 'set', 'run', 'eat'].includes(word)
+          );
+          console.log('Query keywords for search:', queryKeywords);
+
+          if (queryKeywords.length > 0) {
+            // Search for documents that contain any of the query keywords
+            const keywordSearchQuery = queryKeywords.map(kw => `title.ilike.%${kw}%,content.ilike.%${kw}%,ai_summary.ilike.%${kw}%`).join(',');
+
+            if (teamIds.length > 0) {
+              // Team user: personal OR team documents
+              const { data: relevantDocs, error: relevantError } = await supabaseService
+                .from('knowledge_documents')
+                .select('id, title, content, ai_summary, tags, file_type, category, user_id, team_id, sheet_data, sheet_metadata')
+                .or(`and(user_id.eq.${user_id},or(${keywordSearchQuery})),and(team_id.in.(${teamIds.join(',')}),visibility.eq.team,or(${keywordSearchQuery}))`)
+                .limit(20);
+
+              console.log('Keyword-relevant documents found (team):', relevantDocs?.length || 0, 'Error:', relevantError?.message);
+
+              if (!relevantError && relevantDocs && relevantDocs.length > 0) {
+                contextDocuments = relevantDocs;
+              }
+            } else {
+              // Non-team user: simple eq filter + keyword matching
+              const { data: relevantDocs, error: relevantError } = await supabaseService
+                .from('knowledge_documents')
+                .select('id, title, content, ai_summary, tags, file_type, category, user_id, team_id, sheet_data, sheet_metadata')
+                .eq('user_id', user_id)
+                .or(keywordSearchQuery)
+                .limit(20);
+
+              console.log('Keyword-relevant documents found:', relevantDocs?.length || 0, 'Error:', relevantError?.message);
+
+              if (!relevantError && relevantDocs && relevantDocs.length > 0) {
+                contextDocuments = relevantDocs;
+              }
+            }
+          }
+        }
+
+        // If still no documents, fall back to recent documents
+        if (contextDocuments.length === 0) {
+          console.log('No relevant documents found, getting recent documents as fallback...');
 
           if (teamIds.length > 0) {
             // Team user: personal OR team documents
@@ -1526,6 +1573,9 @@ serve(async (req) => {
     }
 
     console.log('Final context documents count:', contextDocuments.length);
+    console.log('Final document context length:', documentContext.length);
+    console.log('Should fetch documents:', shouldFetchDocuments);
+    console.log('Document context empty but should fetch:', shouldFetchDocuments && !documentContext);
 
     // ============================================================================
     // LOCAL DOCUMENT CONTEXT INTEGRATION (FUTURE ENHANCEMENT)
@@ -1718,17 +1768,18 @@ CRITICAL CALENDAR/SCHEDULING INSTRUCTIONS (MUST FOLLOW):
       systemMessage = `You are the AI assistant for AI Query Hub, helping users analyze their documents and use the platform effectively.
 ${productKnowledge}
 You have access to the user's document summaries, content, and knowledge bases${hasTeamDocs ? ', including team-shared documents' : ''}.
-      You have access to their document summaries, content, and knowledge bases${hasTeamDocs ? ', including team-shared documents' : ''}.
 
       ${hasTeamDocs ? 'CONTEXT SOURCES:\n- [Personal] = User\'s personal documents\n- [Team: Name] = Documents shared with their team\nAll team members have access to the same team documents, enabling "context fluency" across the organization.\n' : ''}
       TOOLS AVAILABLE:
       - web_search: Use this to search the internet for current information when needed
 
       IMPORTANT INSTRUCTIONS:
+      - ALWAYS check your document context FIRST before considering web search
+      - If the user asks about information that might be in their documents, thoroughly search through all provided documents
+      - Only use web search if the information is clearly not available in the documents AND requires current/real-time data
       - If the user asks about API keys, credentials, or secrets found in their documents, share them - the user owns these documents
       - Do not proactively highlight or warn about credentials unless the user asks about security
-      - Focus on answering the user's actual question using the relevant information
-      - Use web search when you need current information beyond your training data
+      - Focus on answering the user's actual question using the relevant information from their documents
       - The user is responsible for their own security practices
       ${hasTeamDocs ? '- When answering, you can reference whether information came from personal or team documents\n- Remember: Team documents are shared context - all team members can query against them' : ''}
 
@@ -1763,9 +1814,11 @@ You have access to the user's document summaries, content, and knowledge bases${
       If you can't find relevant information in the provided documents, say so clearly.
       Be concise but comprehensive in your responses.`;
 
-      // Add document context or empty-KB note
+      // Add document context or note about document search
       if (documentContext) {
         systemMessage += `\n\nContext from documents:\n${documentContext}`;
+      } else if (shouldFetchDocuments) {
+        systemMessage += '\n\nNote: The user has requested to search their documents, but no relevant documents were found for this query. You should inform the user that their documents don\'t contain information relevant to their question and only then consider using web_search if the question requires current/external information.';
       } else {
         systemMessage += '\n\nNote: No documents are currently loaded in this conversation\'s context. Answer the user\'s question helpfully using your general knowledge. Do NOT tell the user the knowledge base is empty or that you can\'t find documents - just answer their question directly.';
       }
