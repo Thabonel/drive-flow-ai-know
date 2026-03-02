@@ -1502,14 +1502,19 @@ serve(async (req) => {
 
           if (queryKeywords.length > 0) {
             // Search for documents that contain any of the query keywords
-            const keywordSearchQuery = queryKeywords.map(kw => `title.ilike.%${kw}%,content.ilike.%${kw}%,ai_summary.ilike.%${kw}%`).join(',');
+            const titleSearch = queryKeywords.map(kw => `title.ilike.%${kw}%`).join(',');
+            const contentSearch = queryKeywords.map(kw => `content.ilike.%${kw}%`).join(',');
+            const summarySearch = queryKeywords.map(kw => `ai_summary.ilike.%${kw}%`).join(',');
+
+            console.log('DEBUG: Keywords extracted:', queryKeywords);
+            console.log('DEBUG: Search query built:', titleSearch, contentSearch, summarySearch);
 
             if (teamIds.length > 0) {
               // Team user: personal OR team documents
               const { data: relevantDocs, error: relevantError } = await supabaseService
                 .from('knowledge_documents')
                 .select('id, title, content, ai_summary, tags, file_type, category, user_id, team_id, sheet_data, sheet_metadata')
-                .or(`and(user_id.eq.${user_id},or(${keywordSearchQuery})),and(team_id.in.(${teamIds.join(',')}),visibility.eq.team,or(${keywordSearchQuery}))`)
+                .or(`and(user_id.eq.${user_id},or(or(${titleSearch}),or(${contentSearch}),or(${summarySearch}))),and(team_id.in.(${teamIds.join(',')}),visibility.eq.team,or(or(${titleSearch}),or(${contentSearch}),or(${summarySearch})))`)
                 .limit(20);
 
               console.log('Keyword-relevant documents found (team):', relevantDocs?.length || 0, 'Error:', relevantError?.message);
@@ -1523,10 +1528,11 @@ serve(async (req) => {
                 .from('knowledge_documents')
                 .select('id, title, content, ai_summary, tags, file_type, category, user_id, team_id, sheet_data, sheet_metadata')
                 .eq('user_id', user_id)
-                .or(keywordSearchQuery)
+                .or(`or(${titleSearch}),or(${contentSearch}),or(${summarySearch})`)
                 .limit(20);
 
               console.log('Keyword-relevant documents found:', relevantDocs?.length || 0, 'Error:', relevantError?.message);
+              console.log('DEBUG: Query result count:', relevantDocs?.length || 0);
 
               if (!relevantError && relevantDocs && relevantDocs.length > 0) {
                 contextDocuments = relevantDocs;
