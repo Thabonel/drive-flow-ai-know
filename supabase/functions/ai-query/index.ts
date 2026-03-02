@@ -1273,6 +1273,7 @@ serve(async (req) => {
 
     const body = await req.json();
     const { query, knowledge_base_id, conversationContext, use_documents, image } = body;
+    console.log('🔍 DEBUG: use_documents from request body:', use_documents);
 
     // Input validation
     if (!query || typeof query !== 'string') {
@@ -1354,6 +1355,7 @@ serve(async (req) => {
     });
 
     const shouldFetchDocuments = (use_documents === true) || (knowledge_base_id !== undefined && knowledge_base_id !== null);
+    console.log('🔍 DEBUG: shouldFetchDocuments evaluated to:', shouldFetchDocuments);
 
     console.log('🔍 SHOULD FETCH DOCUMENTS:', shouldFetchDocuments);
 
@@ -1441,6 +1443,7 @@ serve(async (req) => {
           .eq('user_id', user_id);
 
         console.log('Total documents for user:', totalDocs, 'Count error:', countError?.message);
+        console.log('🔍 DEBUG: About to query documents from database with shouldFetchDocuments:', shouldFetchDocuments);
 
         // Search all user's documents with more robust logic
         const queryLower = query.toLowerCase();
@@ -1816,6 +1819,7 @@ You have access to the user's document summaries, content, and knowledge bases${
 
       // Add document context or note about document search
       if (documentContext) {
+        console.log('🔍 DEBUG: Adding document content to system prompt, documentContext length:', documentContext.length);
         systemMessage += `\n\nContext from documents:\n${documentContext}`;
       } else if (shouldFetchDocuments) {
         systemMessage += '\n\nNote: The user has requested to search their documents, but no relevant documents were found for this query. You should inform the user that their documents don\'t contain information relevant to their question and only then consider using web_search if the question requires current/external information.';
