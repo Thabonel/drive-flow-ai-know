@@ -102,7 +102,7 @@ export function BackgroundTasksProvider({ children }: { children: React.ReactNod
           body: JSON.stringify({
             query: task.query,
             knowledge_base_id: task.knowledgeBaseId,
-            use_documents: task.useDocuments ?? true,
+            use_documents: true,
             conversationContext: task.conversationContext || [],
           }),
           signal: abortController.signal,
