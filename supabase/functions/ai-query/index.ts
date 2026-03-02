@@ -1576,9 +1576,7 @@ serve(async (req) => {
     }
 
     console.log('Final context documents count:', contextDocuments.length);
-    console.log('Final document context length:', documentContext.length);
     console.log('Should fetch documents:', shouldFetchDocuments);
-    console.log('Document context empty but should fetch:', shouldFetchDocuments && !documentContext);
 
     // ============================================================================
     // LOCAL DOCUMENT CONTEXT INTEGRATION (FUTURE ENHANCEMENT)
