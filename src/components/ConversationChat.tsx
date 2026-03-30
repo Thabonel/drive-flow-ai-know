@@ -1554,7 +1554,7 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
   };
 
   // Document handling utilities
-  const VALID_DOC_EXTENSIONS = ['.txt', '.md', '.pdf', '.docx', '.doc', '.rtf', '.csv', '.xlsx', '.xls', '.json', '.xml'];
+  const VALID_DOC_EXTENSIONS = ['.txt', '.md', '.pdf', '.docx', '.doc', '.rtf', '.csv', '.xlsx', '.xls', '.json', '.xml', '.mp4', '.mov', '.avi', '.webm', '.mkv', '.mp3', '.wav', '.ogg'];
   const TEXT_EXTENSIONS = ['.txt', '.md', '.json', '.xml', '.csv'];
   const MAX_DOC_SIZE = 20 * 1024 * 1024; // 20MB
 
@@ -1834,7 +1834,13 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
             className="hidden"
             onChange={async (e) => {
               const file = e.target.files?.[0];
-              if (file) await handleDocumentFile(file);
+              if (file) {
+                if (file.type.startsWith('image/') || /\.(heic|heif)$/i.test(file.name)) {
+                  await handleImageFile(file);
+                } else {
+                  await handleDocumentFile(file);
+                }
+              }
               e.target.value = '';
             }}
           />
