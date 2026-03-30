@@ -36,7 +36,11 @@ const DragDropUpload = ({ onFilesAdded }: DragDropUploadProps) => {
   const acceptedTypes = [
     '.txt', '.md', '.pdf', '.docx', '.doc', '.rtf', '.fdx',
     '.xlsx', '.xls', '.csv',
+    '.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg', '.bmp', '.heic', '.heif',
+    '.mp4', '.mov', '.avi', '.webm', '.mkv',
+    '.mp3', '.wav', '.ogg',
     'text/*', 'application/pdf', 'application/msword',
+    'image/*', 'video/*', 'audio/*',
     'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
     'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
     'application/vnd.ms-excel',

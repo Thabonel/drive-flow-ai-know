@@ -1830,7 +1830,7 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
           <input
             ref={documentInputRef}
             type="file"
-            accept=".txt,.md,.pdf,.docx,.doc,.rtf,.csv,.xlsx,.xls,.json,.xml"
+            accept=".txt,.md,.pdf,.docx,.doc,.rtf,.csv,.xlsx,.xls,.json,.xml,.png,.jpg,.jpeg,.gif,.webp,.svg,.bmp,.heic,.heif,.mp4,.mov,.avi,.webm,.mkv,.mp3,.wav,.ogg"
             className="hidden"
             onChange={async (e) => {
               const file = e.target.files?.[0];
