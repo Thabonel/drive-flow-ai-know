@@ -7,7 +7,9 @@ import { KeyboardShortcutsHelp } from '@/components/KeyboardShortcutsHelp';
 import { BackgroundTaskIndicator } from '@/components/BackgroundTaskIndicator';
 import { useOffline } from '@/hooks/useOffline';
 import { useUserSettings } from '@/hooks/useUserSettings';
-import { LogOut, Settings, User, Plus } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { LogOut, Settings, Shield, Plus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import {
   Tooltip,
@@ -22,7 +24,20 @@ const Header = () => {
   const { offlineEnabled } = useOffline();
   const { modelPreference } = useUserSettings();
 
+  const [isAdmin, setIsAdmin] = useState(false);
   const showBanner = offlineEnabled;
+
+  useEffect(() => {
+    if (!user) return;
+    supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.id)
+      .eq('role', 'admin')
+      .then(({ data }) => {
+        setIsAdmin(!!data && data.length > 0);
+      });
+  }, [user]);
 
   const handleSignOut = async () => {
     await signOut();
@@ -104,6 +119,13 @@ const Header = () => {
                   <Settings className="mr-2 h-4 w-4" />
                   Settings
                 </DropdownMenuItem>
+                {isAdmin && (
+                  <DropdownMenuItem textValue="Admin" onClick={() => navigate('/admin')}>
+                    <Shield className="mr-2 h-4 w-4" />
+                    Admin
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuSeparator />
                 <DropdownMenuItem textValue="Sign out" onClick={handleSignOut}>
                   <LogOut className="mr-2 h-4 w-4" />
                   Sign out
