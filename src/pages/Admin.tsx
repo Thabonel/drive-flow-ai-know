@@ -37,6 +37,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/hooks/useAuth';
 
 interface AdminMessage {
   id: string;
@@ -89,6 +90,7 @@ interface AdminUser {
 
 export default function Admin() {
   const navigate = useNavigate();
+  const { user: authUser } = useAuth();
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
@@ -137,25 +139,28 @@ export default function Admin() {
   const [loadingEmailHistory, setLoadingEmailHistory] = useState(false);
 
   useEffect(() => {
+    if (!authUser) return;
     checkAdminAccess();
     fetchMessages();
     fetchAnalytics();
     fetchSettings();
-  }, []);
+  }, [authUser]);
 
   const checkAdminAccess = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      setUser(user);
-      if (!user) {
+      // Use the user from auth context (already validated by ProtectedRoute)
+      // Avoid calling supabase.auth.getUser() which forces a server-side JWT
+      // validation and can trigger a SIGNED_OUT event if the token needs refresh
+      if (!authUser) {
         setLoading(false);
         return;
       }
+      setUser(authUser);
 
       const { data: roles } = await supabase
         .from('user_roles')
         .select('role')
-        .eq('user_id', user.id)
+        .eq('user_id', authUser.id)
         .eq('role', 'admin');
 
       setIsAdmin(roles && roles.length > 0);
