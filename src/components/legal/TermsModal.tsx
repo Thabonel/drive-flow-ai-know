@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { FileText, Shield, Eye, Scale } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -12,6 +12,29 @@ const TermsModal = () => {
   const [isLoading, setIsLoading] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
   const { user } = useAuth();
+
+  // Check if content fits without scrolling (button should be enabled immediately)
+  useEffect(() => {
+    const checkIfScrollNeeded = () => {
+      const scrollContainer = scrollRef.current;
+      if (!scrollContainer) return;
+
+      // If content fits without scrolling, enable the button immediately
+      if (scrollContainer.scrollHeight <= scrollContainer.clientHeight + 10) {
+        setHasScrolledToBottom(true);
+      }
+    };
+
+    if (showModal) {
+      // Small delay to ensure content is rendered
+      const timer = setTimeout(checkIfScrollNeeded, 100);
+      window.addEventListener('resize', checkIfScrollNeeded);
+      return () => {
+        clearTimeout(timer);
+        window.removeEventListener('resize', checkIfScrollNeeded);
+      };
+    }
+  }, [showModal]);
 
   useEffect(() => {
     const checkTermsAcceptance = async () => {
@@ -78,13 +101,17 @@ const TermsModal = () => {
   }, [user]);
 
   const handleScroll = () => {
+    if (hasScrolledToBottom) return; // Once enabled, stay enabled
+
     const scrollContainer = scrollRef.current;
     if (!scrollContainer) return;
 
     const { scrollTop, scrollHeight, clientHeight } = scrollContainer;
-    const isAtBottom = scrollTop + clientHeight >= scrollHeight - 10; // 10px tolerance
+    const isAtBottom = scrollTop + clientHeight >= scrollHeight - 30; // 30px tolerance
 
-    setHasScrolledToBottom(isAtBottom);
+    if (isAtBottom) {
+      setHasScrolledToBottom(true);
+    }
   };
 
   const handleAccept = async () => {

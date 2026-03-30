@@ -297,6 +297,25 @@ serve(async (req) => {
 
     if (error) {
       console.error('Error creating user:', error);
+
+      // Handle "email already exists" specifically with a helpful message
+      // Return 200 so supabase.functions.invoke() passes the body to the client
+      // (non-2xx responses get wrapped in a generic FunctionsHttpError)
+      const isEmailExists = error.message?.toLowerCase().includes('already been registered') ||
+                            error.message?.toLowerCase().includes('email_exists');
+
+      if (isEmailExists) {
+        return new Response(
+          JSON.stringify({
+            error: 'An account with this email already exists. Please sign in instead, or use "Forgot Password" if you need to reset your password.'
+          }),
+          {
+            status: 200,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          }
+        );
+      }
+
       return new Response(
         JSON.stringify({
           error: error.message
