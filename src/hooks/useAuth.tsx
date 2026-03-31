@@ -26,14 +26,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let subscription: any = null;
 
+    // Check if a session might exist in localStorage (even if token is expired).
+    // This prevents a race condition where getSession() returns null during
+    // an in-flight token refresh, causing a premature redirect to /auth.
+    const storageKey = `sb-fskwutnoxbbflzqrphro-auth-token`;
+    const hasStoredSession = !!localStorage.getItem(storageKey);
+
     try {
-      // Set up auth state listener FIRST
+      // Set up auth state listener - this is the PRIMARY way to get auth state.
+      // It fires INITIAL_SESSION immediately, then TOKEN_REFRESHED after refresh.
       const { data: { subscription: authSubscription } } = supabase.auth.onAuthStateChange(
-        (_, session) => {
+        (event, session) => {
           setSession(session);
           setUser(session?.user ?? null);
-          // Only set loading=false if initial session was already loaded
+
           if (initialSessionLoaded.current) {
+            setLoading(false);
+          }
+
+          // If we get a definitive auth event after initialization, always update loading
+          if (event === 'TOKEN_REFRESHED' || event === 'SIGNED_OUT' || event === 'SIGNED_IN') {
+            initialSessionLoaded.current = true;
             setLoading(false);
           }
         }
@@ -41,23 +54,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       subscription = authSubscription;
     } catch (error) {
       console.error('Auth state listener setup failed:', error);
-      // Fallback: just set loading false without auth
       setLoading(false);
     }
 
-    // THEN check for existing session - this completes the initialization
+    // Check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      initialSessionLoaded.current = true;
-      setLoading(false); // Only set loading=false once, after initial session check
+      if (session) {
+        // Session retrieved successfully
+        setSession(session);
+        setUser(session.user);
+        initialSessionLoaded.current = true;
+        setLoading(false);
+      } else if (hasStoredSession) {
+        // getSession() returned null but localStorage has a session.
+        // This means a token refresh is in-flight. Stay in loading state
+        // and let onAuthStateChange handle it when refresh completes.
+        // Set a timeout as safety net to prevent infinite loading.
+        setTimeout(() => {
+          if (!initialSessionLoaded.current) {
+            console.warn('Auth: token refresh timed out, clearing session');
+            initialSessionLoaded.current = true;
+            setLoading(false);
+          }
+        }, 5000);
+      } else {
+        // No session anywhere - user is genuinely not logged in
+        initialSessionLoaded.current = true;
+        setLoading(false);
+      }
     }).catch((error) => {
       console.error('Auth session initialization failed:', error);
-      // Set auth state as if user is not logged in
       setSession(null);
       setUser(null);
       initialSessionLoaded.current = true;
-      setLoading(false); // Still set loading=false to prevent infinite loading
+      setLoading(false);
     });
 
     return () => {
