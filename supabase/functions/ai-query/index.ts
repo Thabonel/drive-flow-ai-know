@@ -387,7 +387,8 @@ async function claudeCompletion(
   systemMessage: string,
   userId: string,
   token: string,
-  imageData?: { base64: string; media_type: string }
+  imageData?: { base64: string; media_type: string },
+  videoFrames?: Array<{ base64: string; media_type: string }>
 ) {
   if (!anthropicApiKey) {
     throw new Error('Anthropic API key not available');
@@ -424,6 +425,40 @@ async function claudeCompletion(
     } as any; // Type assertion needed for mixed content
 
     console.log('Image added to message, media type:', imageData.media_type);
+  }
+
+  // If we have video frames, add them as multi-image content to the last user message
+  if (videoFrames && videoFrames.length > 0 && userMessages.length > 0) {
+    const lastIdx = userMessages.length - 1;
+    const lastMsg = userMessages[lastIdx];
+    const existingContent = typeof lastMsg.content === 'string' ? lastMsg.content : '';
+
+    const contentParts: any[] = [];
+
+    // Add each video frame as an image
+    for (const frame of videoFrames) {
+      contentParts.push({
+        type: 'image',
+        source: {
+          type: 'base64',
+          media_type: frame.media_type,
+          data: frame.base64,
+        }
+      });
+    }
+
+    // Add the text message
+    contentParts.push({
+      type: 'text',
+      text: existingContent + `\n\nThese are ${videoFrames.length} key frames extracted at regular intervals from the uploaded video. Analyze the visual content, describe what you see, and identify any key information, text, objects, or activities shown.`
+    });
+
+    userMessages[lastIdx] = {
+      role: 'user',
+      content: contentParts
+    } as any;
+
+    console.log(`Video frames added: ${videoFrames.length} frames`);
   }
 
   // Define search tools
@@ -1109,7 +1144,8 @@ export async function getLLMResponse(
   userId: string,
   token: string,
   providerOverride?: string,
-  imageData?: { base64: string; media_type: string }
+  imageData?: { base64: string; media_type: string },
+  videoFrames?: Array<{ base64: string; media_type: string }>
 ) {
   let providerEnv = providerOverride || Deno.env.get('MODEL_PROVIDER');
   const useOpenRouter = Deno.env.get('USE_OPENROUTER') === 'true';
@@ -1152,7 +1188,7 @@ export async function getLLMResponse(
             console.log('Anthropic API key not available, skipping');
             continue;
           }
-          return await claudeCompletion(messages, systemMessage, userId, token, imageData);
+          return await claudeCompletion(messages, systemMessage, userId, token, imageData, videoFrames);
         case 'openrouter':
           if (!openRouterApiKey) {
             console.log('OpenRouter API key not available, skipping');
@@ -1272,7 +1308,7 @@ serve(async (req) => {
     }
 
     const body = await req.json();
-    const { query, knowledge_base_id, conversationContext, use_documents, image } = body;
+    const { query, knowledge_base_id, conversationContext, use_documents, image, video_frames } = body;
     console.log('🔍 DEBUG: use_documents from request body:', use_documents);
 
     // Input validation
@@ -1342,43 +1378,42 @@ serve(async (req) => {
     let contextDocuments: any[] = [];
     let contextText = '';
 
-    // IMPORTANT: Only fetch documents if EXPLICITLY requested (use_documents === true) or if knowledge_base_id is provided
-    // Default behavior (when use_documents is undefined or false) is to NOT search documents
-
-    // DIAGNOSTIC: Log received parameters for debugging
-    console.log('🔍 BACKEND DOCUMENT ACCESS DEBUG:', {
-      use_documents,
-      use_documents_type: typeof use_documents,
-      use_documents_exact: use_documents === true,
-      knowledge_base_id,
-      user_id
-    });
-
+    // Only fetch documents if explicitly requested or if knowledge_base_id is provided
     const shouldFetchDocuments = (use_documents === true) || (knowledge_base_id !== undefined && knowledge_base_id !== null);
-    console.log('🔍 DEBUG: shouldFetchDocuments evaluated to:', shouldFetchDocuments);
+    console.log('Should fetch documents:', shouldFetchDocuments, '| use_documents:', use_documents, '| knowledge_base_id:', knowledge_base_id);
 
-    console.log('🔍 SHOULD FETCH DOCUMENTS:', shouldFetchDocuments);
+    // Team context: safely attempt to get team memberships (table may not exist)
+    let teamIds: string[] = [];
+    const teamNamesMap = new Map<string, string>();
+    try {
+      const { data: teamMemberships, error: teamError } = await supabaseService
+        .from('team_members')
+        .select('team_id, teams(name)')
+        .eq('user_id', user_id);
 
-    // TEAM CONTEXT SUPPORT: Fetch user's team memberships for team document access
-    const { data: teamMemberships, error: teamError } = await supabaseService
-      .from('team_members')
-      .select('team_id, teams(name)')
-      .eq('user_id', user_id);
-
-    if (teamError) {
-      console.error('Error fetching team memberships:', teamError);
-      // Continue without team context rather than failing
+      if (!teamError && teamMemberships) {
+        teamIds = teamMemberships.map(m => m.team_id).filter(Boolean);
+        teamMemberships.forEach(m => {
+          if (m.team_id && m.teams?.name) teamNamesMap.set(m.team_id, m.teams.name);
+        });
+      }
+    } catch (e) {
+      console.log('Team memberships not available (table may not exist)');
     }
+    console.log('Team memberships:', teamIds.length);
 
-    const teamIds = (teamMemberships || []).map(m => m.team_id).filter(Boolean);
-    const teamNamesMap = new Map((teamMemberships || []).map(m => [m.team_id, m.teams?.name]) || []);
-    console.log('User is member of teams:', teamIds.length, 'teams');
+    // Helper: build ownership filter for queries
+    const ownershipFilter = teamIds.length > 0
+      ? `user_id.eq.${user_id},and(team_id.in.(${teamIds.join(',')}),visibility.eq.team)`
+      : `user_id.eq.${user_id}`;
+
+    const docSelectFields = 'id, title, content, ai_summary, tags, file_type, category, user_id, team_id, sheet_data, sheet_metadata';
 
     if (shouldFetchDocuments && knowledge_base_id) {
+      // ---- KNOWLEDGE BASE MODE: Fetch documents from a specific KB ----
       console.log('Fetching KB documents for:', knowledge_base_id);
 
       try {
-        // Step 1: Get the knowledge base record (service role bypasses RLS)
         const { data: kb, error: kbError } = await supabaseService
           .from('knowledge_bases')
           .select('id, title, description, ai_generated_content, source_document_ids, user_id, team_id')
@@ -1389,7 +1424,6 @@ serve(async (req) => {
           console.error('KB fetch error:', kbError.message);
         }
 
-        // Verify access: user owns it OR is a team member
         const hasAccess = kb && (
           kb.user_id === user_id ||
           (kb.team_id && teamIds.includes(kb.team_id))
@@ -1402,182 +1436,113 @@ serve(async (req) => {
 
           const docIds: string[] = kb.source_document_ids || [];
           if (docIds.length > 0) {
-            // Step 2: Fetch all documents referenced by this KB
             const { data: docs, error: docsError } = await supabaseService
               .from('knowledge_documents')
-              .select('id, title, content, ai_summary, tags, file_type, category, sheet_data, sheet_metadata')
+              .select(docSelectFields)
               .in('id', docIds);
 
             if (docsError) {
               console.error('KB documents fetch error:', docsError.message);
             } else if (docs && docs.length > 0) {
               contextDocuments = docs;
-              console.log('Loaded', docs.length, 'KB documents:', docs.map((d: any) => d.title));
-            } else {
-              console.log('No documents matched the', docIds.length, 'IDs in this KB');
+              console.log('Loaded', docs.length, 'KB documents');
             }
-          } else {
-            console.log('KB has no source_document_ids');
           }
 
-          // Use AI-generated KB content if available
           if (kb.ai_generated_content) {
             contextText = typeof kb.ai_generated_content === 'string'
               ? kb.ai_generated_content
               : JSON.stringify(kb.ai_generated_content);
-            console.log('Using AI-generated content from KB');
           }
         }
       } catch (fetchError) {
         console.error('KB document fetch failed:', fetchError);
-        // Continue without document context
       }
     } else if (shouldFetchDocuments) {
+      // ---- GENERAL DOCUMENT SEARCH MODE ----
+      console.log('Searching all user documents for query:', query);
+
       try {
-        console.log('Searching all user documents');
-
-        // First, get total document count for this user
-        const { count: totalDocs, error: countError } = await supabaseService
-          .from('knowledge_documents')
-          .select('id', { count: 'exact' })
-          .eq('user_id', user_id);
-
-        console.log('Total documents for user:', totalDocs, 'Count error:', countError?.message);
-        console.log('🔍 DEBUG: About to query documents from database with shouldFetchDocuments:', shouldFetchDocuments);
-
-        // Search all user's documents with more robust logic
+        // Step 1: Try keyword-based search first
         const queryLower = query.toLowerCase();
-        console.log('Query keywords:', queryLower);
+        const stopWords = new Set(['the', 'and', 'for', 'are', 'but', 'not', 'you', 'all', 'can', 'had', 'her', 'was', 'one', 'our', 'out', 'day', 'get', 'has', 'him', 'his', 'how', 'its', 'may', 'new', 'now', 'old', 'see', 'two', 'who', 'did', 'what', 'this', 'that', 'with', 'from', 'have', 'been', 'will', 'they', 'about', 'would', 'there', 'their', 'which', 'could', 'other', 'into', 'more', 'some', 'than', 'them', 'very', 'when', 'come', 'make', 'like', 'just', 'know', 'take', 'people', 'year', 'your', 'good', 'give', 'most', 'only', 'tell', 'also', 'back', 'after', 'use', 'way', 'look', 'first', 'well', 'even', 'want', 'because', 'these', 'much']);
+        const queryKeywords = queryLower.split(/\s+/).filter(word =>
+          word.length > 2 && !stopWords.has(word)
+        );
+        console.log('Search keywords:', queryKeywords);
 
-        // Check for marketing-related terms
-        const isMarketingQuery = queryLower.includes('marketing') || queryLower.includes('market') ||
-          queryLower.includes('campaign') || queryLower.includes('brand') ||
-          queryLower.includes('promotion') || queryLower.includes('wheels') ||
-          queryLower.includes('wins');
+        if (queryKeywords.length > 0) {
+          // Build a flat OR filter: any keyword in title, content, or summary
+          const allConditions = queryKeywords.flatMap(kw => [
+            `title.ilike.%${kw}%`,
+            `content.ilike.%${kw}%`,
+            `ai_summary.ilike.%${kw}%`
+          ]);
+          const searchFilter = allConditions.join(',');
 
-        console.log('Is marketing query:', isMarketingQuery);
-
-        if (isMarketingQuery) {
-          console.log('Searching for marketing documents...');
-
-          if (teamIds.length > 0) {
-            // Team user: need OR logic for personal + team documents
-            const { data: marketingDocs, error: marketingError } = await supabaseService
+          try {
+            const { data: relevantDocs, error: relevantError } = await supabaseService
               .from('knowledge_documents')
-              .select('id, title, content, ai_summary, tags, file_type, category, user_id, team_id, sheet_data, sheet_metadata')
-              .or(`and(user_id.eq.${user_id},or(title.ilike.%marketing%,content.ilike.%marketing%,tags.cs.["marketing"],title.ilike.%wheels%,title.ilike.%wins%,file_type.eq.json)),and(team_id.in.(${teamIds.join(',')}),visibility.eq.team,or(title.ilike.%marketing%,content.ilike.%marketing%,tags.cs.["marketing"]))`)
+              .select(docSelectFields)
+              .or(ownershipFilter)
+              .or(searchFilter)
               .limit(30);
 
-            console.log('Marketing documents found (team):', marketingDocs?.length || 0, 'Error:', marketingError?.message);
+            console.log('Keyword search results:', relevantDocs?.length || 0, 'Error:', relevantError?.message);
 
-            if (!marketingError && marketingDocs && marketingDocs.length > 0) {
-              contextDocuments = marketingDocs;
+            if (!relevantError && relevantDocs && relevantDocs.length > 0) {
+              contextDocuments = relevantDocs;
             }
-          } else {
-            // Non-team user: simple eq filter + content matching
-            const { data: marketingDocs, error: marketingError } = await supabaseService
-              .from('knowledge_documents')
-              .select('id, title, content, ai_summary, tags, file_type, category, user_id, team_id, sheet_data, sheet_metadata')
-              .eq('user_id', user_id)
-              .or('title.ilike.%marketing%,content.ilike.%marketing%,tags.cs.["marketing"],title.ilike.%wheels%,title.ilike.%wins%,file_type.eq.json')
-              .limit(30);
-
-            console.log('Marketing documents found:', marketingDocs?.length || 0, 'Error:', marketingError?.message);
-
-            if (!marketingError && marketingDocs && marketingDocs.length > 0) {
-              contextDocuments = marketingDocs;
-            }
+          } catch (searchErr) {
+            console.error('Keyword search failed:', searchErr);
           }
         }
 
-        // If no marketing docs or general query, search for query-relevant documents first
+        // Step 2: Fallback - always load recent documents if keyword search found nothing
         if (contextDocuments.length === 0) {
-          console.log('Searching for query-relevant documents...');
+          console.log('Keyword search found nothing, falling back to recent documents...');
 
-          // Extract keywords from the query for better document matching
-          const queryKeywords = queryLower.split(/\s+/).filter(word =>
-            word.length > 2 && !['the', 'and', 'for', 'are', 'but', 'not', 'you', 'all', 'can', 'had', 'her', 'was', 'one', 'our', 'out', 'day', 'get', 'has', 'him', 'his', 'how', 'its', 'may', 'new', 'now', 'old', 'see', 'two', 'who', 'boy', 'did', 'man', 'car', 'way', 'who', 'oil', 'sit', 'set', 'run', 'eat'].includes(word)
-          );
-          console.log('Query keywords for search:', queryKeywords);
-
-          if (queryKeywords.length > 0) {
-            // Search for documents that contain any of the query keywords
-            const titleSearch = queryKeywords.map(kw => `title.ilike.%${kw}%`).join(',');
-            const contentSearch = queryKeywords.map(kw => `content.ilike.%${kw}%`).join(',');
-            const summarySearch = queryKeywords.map(kw => `ai_summary.ilike.%${kw}%`).join(',');
-
-            console.log('DEBUG: Keywords extracted:', queryKeywords);
-            console.log('DEBUG: Search query built:', titleSearch, contentSearch, summarySearch);
-
-            if (teamIds.length > 0) {
-              // Team user: personal OR team documents
-              const { data: relevantDocs, error: relevantError } = await supabaseService
-                .from('knowledge_documents')
-                .select('id, title, content, ai_summary, tags, file_type, category, user_id, team_id, sheet_data, sheet_metadata')
-                .or(`and(user_id.eq.${user_id},or(or(${titleSearch}),or(${contentSearch}),or(${summarySearch}))),and(team_id.in.(${teamIds.join(',')}),visibility.eq.team,or(or(${titleSearch}),or(${contentSearch}),or(${summarySearch})))`)
-                .limit(20);
-
-              console.log('Keyword-relevant documents found (team):', relevantDocs?.length || 0, 'Error:', relevantError?.message);
-
-              if (!relevantError && relevantDocs && relevantDocs.length > 0) {
-                contextDocuments = relevantDocs;
-              }
-            } else {
-              // Non-team user: simple eq filter + keyword matching
-              const { data: relevantDocs, error: relevantError } = await supabaseService
-                .from('knowledge_documents')
-                .select('id, title, content, ai_summary, tags, file_type, category, user_id, team_id, sheet_data, sheet_metadata')
-                .eq('user_id', user_id)
-                .or(`or(${titleSearch}),or(${contentSearch}),or(${summarySearch})`)
-                .limit(20);
-
-              console.log('Keyword-relevant documents found:', relevantDocs?.length || 0, 'Error:', relevantError?.message);
-              console.log('DEBUG: Query result count:', relevantDocs?.length || 0);
-
-              if (!relevantError && relevantDocs && relevantDocs.length > 0) {
-                contextDocuments = relevantDocs;
-              }
-            }
-          }
-        }
-
-        // If still no documents, fall back to recent documents
-        if (contextDocuments.length === 0) {
-          console.log('No relevant documents found, getting recent documents as fallback...');
-
-          if (teamIds.length > 0) {
-            // Team user: personal OR team documents
-            const { data: documents, error: docsError } = await supabaseService
+          try {
+            const { data: recentDocs, error: recentError } = await supabaseService
               .from('knowledge_documents')
-              .select('id, title, content, ai_summary, tags, file_type, category, user_id, team_id, sheet_data, sheet_metadata')
-              .or(`user_id.eq.${user_id},and(team_id.in.(${teamIds.join(',')}),visibility.eq.team)`)
+              .select(docSelectFields)
+              .or(ownershipFilter)
               .order('updated_at', { ascending: false })
               .limit(30);
 
-            console.log('Recent documents found (team):', documents?.length || 0, 'Error:', docsError?.message);
+            console.log('Recent documents fallback:', recentDocs?.length || 0, 'Error:', recentError?.message);
 
-            if (!docsError && documents) {
-              contextDocuments = documents;
+            if (!recentError && recentDocs) {
+              contextDocuments = recentDocs;
             }
-          } else {
-            // Non-team user: simple eq filter
-            const { data: documents, error: docsError } = await supabaseService
+          } catch (fallbackErr) {
+            console.error('Recent documents fallback failed:', fallbackErr);
+          }
+        }
+
+        // Step 3: Last resort - try simplest possible query if everything else failed
+        if (contextDocuments.length === 0) {
+          console.log('All searches failed, trying simplest query...');
+
+          try {
+            const { data: anyDocs, error: anyError } = await supabaseService
               .from('knowledge_documents')
-              .select('id, title, content, ai_summary, tags, file_type, category, user_id, team_id, sheet_data, sheet_metadata')
+              .select('id, title, content, ai_summary, tags, file_type, category')
               .eq('user_id', user_id)
               .order('updated_at', { ascending: false })
               .limit(30);
 
-            console.log('Recent documents found:', documents?.length || 0, 'Error:', docsError?.message);
+            console.log('Simple fallback:', anyDocs?.length || 0, 'Error:', anyError?.message);
 
-            if (!docsError && documents) {
-              contextDocuments = documents;
+            if (!anyError && anyDocs) {
+              contextDocuments = anyDocs;
             }
+          } catch (simpleErr) {
+            console.error('Even simple query failed:', simpleErr);
           }
         }
       } catch (fetchError) {
         console.error('General document fetch failed:', fetchError);
-        // Continue without document context rather than crashing the function
       }
     }
 
@@ -1962,7 +1927,7 @@ ${productKnowledge}
     console.log('Calling AI model for response generation with', messages.length, 'messages...');
     let aiAnswer;
     try {
-      aiAnswer = await getLLMResponse(messages, systemMessage, user_id, token, providerOverride, image);
+      aiAnswer = await getLLMResponse(messages, systemMessage, user_id, token, providerOverride, image, video_frames);
       console.log('AI response generated successfully:', aiAnswer ? 'Yes' : 'No', 'Length:', aiAnswer?.length || 0);
     } catch (aiError) {
       console.error('AI model error details:', {
