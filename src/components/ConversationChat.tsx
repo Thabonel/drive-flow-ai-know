@@ -10,6 +10,9 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Loader2, Send, Archive, Trash2, Edit2, Check, X, FileText, Calendar, Printer, Download, ChevronDown, ImageIcon, Paperclip } from 'lucide-react';
 import { arrayBufferToBase64 } from '@/lib/base64Utils';
 import heic2any from 'heic2any';
+import { isMediaFile, isVideoFile, extractVideoMetadata, generateVideoThumbnail, extractVideoFrames, extractAudioDuration, formatFileSize as formatMediaSize, formatDuration, MAX_VIDEO_SIZE, MAX_AUDIO_SIZE, type MediaAttachment } from '@/lib/mediaUtils';
+import { uploadMediaFile } from '@/lib/mediaUploader';
+import { MediaPreview } from '@/components/ui/MediaPreview';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -126,6 +129,11 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
   } | null>(null);
   const [isProcessingDocument, setIsProcessingDocument] = useState(false);
   const documentInputRef = useRef<HTMLInputElement>(null);
+
+  // Media attachment state (video/audio)
+  const [pendingMedia, setPendingMedia] = useState<import('@/lib/mediaUtils').MediaAttachment | null>(null);
+  const [mediaUploadProgress, setMediaUploadProgress] = useState<number | undefined>(undefined);
+  const [isProcessingMedia, setIsProcessingMedia] = useState(false);
 
   // Agent mode state
   const [subAgentResults, setSubAgentResults] = useState<Record<string, SubAgentResult[]>>({});
@@ -554,22 +562,25 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if ((!input.trim() && !pendingImage && !pendingDocument) || isLoading) return;
+    if ((!input.trim() && !pendingImage && !pendingDocument && !pendingMedia) || isLoading) return;
 
-    // Capture image and document data before clearing
+    // Capture image, document, and media data before clearing
     const imageData = pendingImage;
     const documentData = pendingDocument;
+    const mediaData = pendingMedia;
 
     // Store original message for display before any modifications
-    const originalMessage = input.trim() || (imageData ? "What's in this image?" : '') || (documentData ? `Analyze this document: ${documentData.fileName}` : '');
+    const originalMessage = input.trim() || (imageData ? "What's in this image?" : '') || (documentData ? `Analyze this document: ${documentData.fileName}` : '') || (mediaData ? `Analyze this ${mediaData.fileType}: ${mediaData.fileName}` : '');
     let userMessage = originalMessage;
     let autoSavedDocId: string | null = null;
     let forceUseDocuments = useDocuments;
 
-    // CRITICAL: Clear input, image, and document IMMEDIATELY for instant UI feedback
+    // CRITICAL: Clear input, image, document, and media IMMEDIATELY for instant UI feedback
     setInput('');
     setPendingImage(null);
     setPendingDocument(null);
+    setPendingMedia(null);
+    setMediaUploadProgress(undefined);
 
     // If message is very long (>10KB), auto-save as document and reference it
     const LONG_MESSAGE_THRESHOLD = 10000;
@@ -671,6 +682,65 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
         forceUseDocuments = true;
       }
 
+      // Handle media file: upload to storage + extract frames for AI vision
+      let mediaFramesForAI: string[] = [];
+      if (mediaData) {
+        // Upload file to Supabase Storage in background
+        const uploadPromise = user ? uploadMediaFile(mediaData.file, user.id, (progress) => {
+          setMediaUploadProgress(progress.percent);
+        }) : Promise.resolve({ path: '', publicUrl: '', error: 'Not authenticated' });
+
+        // Extract video frames for AI analysis (client-side, in parallel with upload)
+        if (mediaData.fileType === 'video') {
+          setIsProcessingMedia(true);
+          try {
+            mediaFramesForAI = await extractVideoFrames(mediaData.file, 10);
+          } catch (err) {
+            console.error('Frame extraction failed:', err);
+          }
+          setIsProcessingMedia(false);
+        }
+
+        // Wait for upload to complete
+        const uploadResult = await uploadPromise;
+        setMediaUploadProgress(100);
+
+        if (uploadResult.error) {
+          console.error('Media upload failed:', uploadResult.error);
+          toast.error(`Upload failed: ${uploadResult.error}`);
+        }
+
+        // Inject media context for the AI
+        const durationStr = mediaData.metadata?.duration ? formatDuration(mediaData.metadata.duration) : 'unknown';
+        const dimsStr = mediaData.metadata?.width ? `${mediaData.metadata.width}x${mediaData.metadata.height}` : '';
+        conversationContext.push({
+          role: 'user',
+          content: `[ATTACHED ${mediaData.fileType.toUpperCase()}: ${mediaData.fileName}]\nType: ${mediaData.mimeType} | Size: ${formatMediaSize(mediaData.fileSize)} | Duration: ${durationStr}${dimsStr ? ` | Resolution: ${dimsStr}` : ''}\n\nThe user has uploaded a ${mediaData.fileType} file.${mediaFramesForAI.length > 0 ? ` ${mediaFramesForAI.length} key frames have been extracted for your analysis.` : ' Frame extraction was not available for this file.'}`,
+        });
+
+        // Save metadata record to knowledge_documents
+        if (user && uploadResult.path) {
+          try {
+            await supabase.from('knowledge_documents').insert({
+              user_id: user.id,
+              title: mediaData.fileName,
+              content: `[${mediaData.fileType.toUpperCase()}: ${mediaData.fileName}] Duration: ${durationStr}, Size: ${formatMediaSize(mediaData.fileSize)}${dimsStr ? `, Resolution: ${dimsStr}` : ''}`,
+              file_type: mediaData.fileName.split('.').pop()?.toLowerCase() || mediaData.fileType,
+              file_size: mediaData.fileSize,
+              mime_type: mediaData.mimeType,
+              original_file_size: mediaData.fileSize,
+              storage_path: uploadResult.path,
+              file_url: uploadResult.publicUrl,
+              media_metadata: mediaData.metadata ? { duration: mediaData.metadata.duration, width: mediaData.metadata.width, height: mediaData.metadata.height } : null,
+              expires_at: new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString(), // 48 hours
+              knowledge_base_id: knowledgeBaseId || null,
+            });
+          } catch (err) {
+            console.error('Failed to save media metadata:', err);
+          }
+        }
+      }
+
       // Create AbortController for cancelling the request
       abortControllerRef.current = new AbortController();
 
@@ -710,6 +780,11 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
               base64: imageData.base64,
               media_type: imageData.mimeType,
             } : undefined,
+            // Send extracted video frames as additional images for AI vision
+            video_frames: mediaFramesForAI.length > 0 ? mediaFramesForAI.map(frame => ({
+              base64: frame.replace(/^data:image\/\w+;base64,/, ''),
+              media_type: 'image/jpeg',
+            })) : undefined,
           }),
           signal: abortControllerRef.current.signal,
         }
@@ -1640,6 +1715,47 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
     }
   };
 
+  // Media file handler (video/audio) - uploads directly to Supabase Storage
+  const handleMediaFile = async (file: File) => {
+    const maxSize = isVideoFile(file) ? MAX_VIDEO_SIZE : MAX_AUDIO_SIZE;
+    if (file.size > maxSize) {
+      toast.error(`File too large (${formatMediaSize(file.size)}). Max: ${formatMediaSize(maxSize)}`);
+      return;
+    }
+
+    setIsProcessingMedia(true);
+    try {
+      const isVideo = isVideoFile(file);
+      let metadata: MediaAttachment['metadata'];
+      let thumbnailDataUrl = '';
+
+      if (isVideo) {
+        [metadata, thumbnailDataUrl] = await Promise.all([
+          extractVideoMetadata(file),
+          generateVideoThumbnail(file),
+        ]);
+      } else {
+        const duration = await extractAudioDuration(file);
+        metadata = { duration, width: 0, height: 0 };
+      }
+
+      setPendingMedia({
+        fileName: file.name,
+        file,
+        mimeType: file.type,
+        fileSize: file.size,
+        fileType: isVideo ? 'video' : 'audio',
+        metadata,
+        thumbnailDataUrl,
+      });
+    } catch (error) {
+      console.error('Media processing error:', error);
+      toast.error('Failed to process media file');
+    } finally {
+      setIsProcessingMedia(false);
+    }
+  };
+
   // Open a document in the DocumentViewerModal
   const handleOpenDocument = async (docId: string) => {
     try {
@@ -1732,6 +1848,11 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
           e.preventDefault();
           e.currentTarget.classList.remove('ring-2', 'ring-primary', 'ring-offset-2', 'rounded-lg');
           const files = Array.from(e.dataTransfer.files);
+          const mediaFile = files.find(f => isMediaFile(f));
+          if (mediaFile) {
+            await handleMediaFile(mediaFile);
+            return;
+          }
           const imageFile = files.find(f => f.type.startsWith('image/'));
           if (imageFile) {
             await handleImageFile(imageFile);
@@ -1788,6 +1909,23 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
           </div>
         )}
 
+        {/* Media attachment preview */}
+        {pendingMedia && (
+          <div className="mb-2">
+            <MediaPreview
+              fileName={pendingMedia.fileName}
+              fileSize={pendingMedia.fileSize}
+              fileType={pendingMedia.fileType}
+              duration={pendingMedia.metadata?.duration}
+              dimensions={pendingMedia.metadata ? { width: pendingMedia.metadata.width, height: pendingMedia.metadata.height } : undefined}
+              thumbnailUrl={pendingMedia.thumbnailDataUrl}
+              uploadProgress={mediaUploadProgress}
+              isProcessing={isProcessingMedia}
+              onRemove={() => { setPendingMedia(null); setMediaUploadProgress(undefined); }}
+            />
+          </div>
+        )}
+
         {/* Document processing indicator */}
         {isProcessingDocument && (
           <div className="flex items-center gap-2 p-2 mb-2 bg-blue-500/10 rounded-lg">
@@ -1835,7 +1973,9 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
             onChange={async (e) => {
               const file = e.target.files?.[0];
               if (file) {
-                if (file.type.startsWith('image/') || /\.(heic|heif)$/i.test(file.name)) {
+                if (isMediaFile(file)) {
+                  await handleMediaFile(file);
+                } else if (file.type.startsWith('image/') || /\.(heic|heif)$/i.test(file.name)) {
                   await handleImageFile(file);
                 } else {
                   await handleDocumentFile(file);
@@ -1869,7 +2009,7 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
                 <X className="h-4 w-4" />
               </Button>
             ) : (
-              <Button type="submit" disabled={!input.trim() && !pendingImage && !pendingDocument}>
+              <Button type="submit" disabled={!input.trim() && !pendingImage && !pendingDocument && !pendingMedia}>
                 <Send className="h-4 w-4" />
               </Button>
             )}
