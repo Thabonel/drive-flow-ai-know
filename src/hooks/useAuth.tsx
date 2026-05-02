@@ -49,6 +49,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             initialSessionLoaded.current = true;
             setLoading(false);
           }
+
+          // Notify user when session is lost after being previously signed in
+          if (event === 'SIGNED_OUT' && initialSessionLoaded.current) {
+            toast({
+              title: 'Session ended',
+              description: 'Please sign in again to continue.',
+              variant: 'destructive',
+            });
+          }
         }
       );
       subscription = authSubscription;
@@ -70,11 +79,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // This means a token refresh is in-flight. Stay in loading state
         // and let onAuthStateChange handle it when refresh completes.
         // Set a timeout as safety net to prevent infinite loading.
+        // This fires when the network is unreachable during token refresh.
         setTimeout(() => {
           if (!initialSessionLoaded.current) {
             console.warn('Auth: token refresh timed out, clearing session');
             initialSessionLoaded.current = true;
+            setSession(null);
+            setUser(null);
             setLoading(false);
+            localStorage.removeItem(storageKey);
+            toast({
+              title: 'Connection issue',
+              description: 'Could not reconnect your session. Please sign in again.',
+              variant: 'destructive',
+            });
           }
         }, 5000);
       } else {

@@ -929,10 +929,21 @@ async function claudeCompletion(
             });
           } catch (err) {
             console.error('save_document error:', err);
+            const errMsg: string = err?.message ?? '';
+            let userMsg = 'Failed to save document. Please try again.';
+            if (errMsg.includes('JWT') || errMsg.includes('401') || errMsg.includes('403') || errMsg.includes('Unauthorized') || errMsg.includes('not authenticated')) {
+              userMsg = 'Your session has expired. Please sign in again and retry.';
+            } else if (errMsg.includes('column') || errMsg.includes('42703') || errMsg.includes('relation') || errMsg.includes('PGRST204')) {
+              userMsg = 'A database schema error occurred. This is a backend issue - please contact support.';
+            } else if (errMsg.includes('ENOTFOUND') || errMsg.includes('network') || errMsg.includes('fetch') || errMsg.includes('ERR_NAME')) {
+              userMsg = 'Network error. Please check your connection and try again.';
+            } else if (errMsg.includes('rate') || errMsg.includes('429')) {
+              userMsg = 'Too many requests. Please wait a moment and try again.';
+            }
             toolResults.push({
               type: 'tool_result',
               tool_use_id: toolUse.id,
-              content: JSON.stringify({ success: false, error: err.message })
+              content: JSON.stringify({ success: false, error: userMsg })
             });
           }
         } else if (toolUse.name === 'create_knowledge_base') {
