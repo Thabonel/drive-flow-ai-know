@@ -867,7 +867,8 @@ async function claudeCompletion(
                 file_type: 'ai_generated',
                 user_id: userId,
                 category: 'general',
-                source: 'ai_chat'
+                source: 'ai_chat',
+                google_file_id: `ai_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`
               }])
               .select()
               .single();
