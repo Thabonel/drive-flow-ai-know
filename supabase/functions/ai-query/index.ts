@@ -382,6 +382,53 @@ function getProviderTokenLimit(providerName: string): number {
   return PROVIDER_TOKEN_LIMITS.openrouter;
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// JUDGE SYSTEM — calls action-judge Edge Function before side-effecting tools
+// Fail-open: if the judge is unavailable, defaults to allow.
+// ─────────────────────────────────────────────────────────────────────────────
+async function judgeToolCall(params: {
+  toolName: string;
+  toolInput: Record<string, unknown>;
+  actorReasoning: string;
+  userQuery: string;
+  token: string;
+}): Promise<{ decision: 'allow' | 'block' | 'revise' | 'escalate'; reason: string; revisedInput?: any }> {
+  const supabaseUrl = Deno.env.get('SUPABASE_URL');
+  if (!supabaseUrl) return { decision: 'allow', reason: 'Judge unavailable' };
+
+  try {
+    const response = await fetch(`${supabaseUrl}/functions/v1/action-judge`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${params.token}`,
+      },
+      body: JSON.stringify({
+        tool_name: params.toolName,
+        tool_input: params.toolInput,
+        actor_reasoning: params.actorReasoning,
+        user_query: params.userQuery,
+      }),
+    });
+
+    if (!response.ok) {
+      console.warn('action-judge returned', response.status, '— defaulting to allow');
+      return { decision: 'allow', reason: 'Judge unavailable' };
+    }
+
+    const result = await response.json();
+    console.log(`Judge[${params.toolName}]: ${result.decision} — ${result.reason} (${result.judge_model})`);
+    return {
+      decision: result.decision ?? 'allow',
+      reason: result.reason ?? '',
+      revisedInput: result.revised_input,
+    };
+  } catch (err) {
+    console.warn('judgeToolCall error, defaulting to allow:', err);
+    return { decision: 'allow', reason: 'Judge error' };
+  }
+}
+
 async function claudeCompletion(
   messages: Message[],
   systemMessage: string,
@@ -399,6 +446,12 @@ async function claudeCompletion(
     role: m.role,
     content: m.content
   }));
+
+  // Original user query captured for judge context (last user message in the turn)
+  const originalQuery = (() => {
+    const last = userMessages.slice().reverse().find(m => m.role === 'user');
+    return typeof last?.content === 'string' ? last.content : '';
+  })();
 
   // If we have an image, modify the last user message to include it
   if (imageData && userMessages.length > 0) {
@@ -764,6 +817,12 @@ async function claudeCompletion(
       const toolUseBlocks = data.content.filter((block: any) => block.type === 'tool_use');
       console.log('Tool use blocks found:', toolUseBlocks.length);
 
+      // Actor reasoning: text Claude wrote before deciding to call tools
+      const actorReasoning = (data.content as any[])
+        .filter(b => b.type === 'text')
+        .map(b => b.text)
+        .join('\n');
+
       if (toolUseBlocks.length === 0) {
         // Unexpected: stop_reason is tool_use but no tool_use blocks
         console.error('No tool_use blocks despite stop_reason=tool_use');
@@ -819,27 +878,63 @@ async function claudeCompletion(
           });
         } else if (toolUse.name === 'write_sheet') {
           console.log('Processing write_sheet:', toolUse.input.sheet_id);
-          const writeResult = await callGoogleSheetsAPI(token, 'write', {
-            sheet_id: toolUse.input.sheet_id,
-            data: toolUse.input.data,
-            range: toolUse.input.range
+          const writeJudgment = await judgeToolCall({
+            toolName: 'write_sheet',
+            toolInput: toolUse.input,
+            actorReasoning,
+            userQuery: originalQuery,
+            token,
           });
-          toolResults.push({
-            type: 'tool_result',
-            tool_use_id: toolUse.id,
-            content: JSON.stringify(writeResult)
-          });
+          if (writeJudgment.decision === 'block' || writeJudgment.decision === 'escalate') {
+            toolResults.push({
+              type: 'tool_result',
+              tool_use_id: toolUse.id,
+              content: JSON.stringify({ success: false, blocked: true, decision: writeJudgment.decision, error: `Action ${writeJudgment.decision}: ${writeJudgment.reason}` })
+            });
+          } else {
+            const effectiveInput = (writeJudgment.decision === 'revise' && writeJudgment.revisedInput)
+              ? writeJudgment.revisedInput
+              : toolUse.input;
+            const writeResult = await callGoogleSheetsAPI(token, 'write', {
+              sheet_id: effectiveInput.sheet_id,
+              data: effectiveInput.data,
+              range: effectiveInput.range
+            });
+            toolResults.push({
+              type: 'tool_result',
+              tool_use_id: toolUse.id,
+              content: JSON.stringify(writeResult)
+            });
+          }
         } else if (toolUse.name === 'create_sheet') {
           console.log('Processing create_sheet:', toolUse.input.title);
-          const createResult = await callGoogleSheetsAPI(token, 'create', {
-            title: toolUse.input.title,
-            headers: toolUse.input.headers
+          const createJudgment = await judgeToolCall({
+            toolName: 'create_sheet',
+            toolInput: toolUse.input,
+            actorReasoning,
+            userQuery: originalQuery,
+            token,
           });
-          toolResults.push({
-            type: 'tool_result',
-            tool_use_id: toolUse.id,
-            content: JSON.stringify(createResult)
-          });
+          if (createJudgment.decision === 'block' || createJudgment.decision === 'escalate') {
+            toolResults.push({
+              type: 'tool_result',
+              tool_use_id: toolUse.id,
+              content: JSON.stringify({ success: false, blocked: true, decision: createJudgment.decision, error: `Action ${createJudgment.decision}: ${createJudgment.reason}` })
+            });
+          } else {
+            const effectiveInput = (createJudgment.decision === 'revise' && createJudgment.revisedInput)
+              ? createJudgment.revisedInput
+              : toolUse.input;
+            const createResult = await callGoogleSheetsAPI(token, 'create', {
+              title: effectiveInput.title,
+              headers: effectiveInput.headers
+            });
+            toolResults.push({
+              type: 'tool_result',
+              tool_use_id: toolUse.id,
+              content: JSON.stringify(createResult)
+            });
+          }
         } else if (toolUse.name === 'analyze_sheet') {
           console.log('Processing analyze_sheet:', toolUse.input.sheet_id);
           const analyzeResult = await callGoogleSheetsAPI(token, 'metadata', {
