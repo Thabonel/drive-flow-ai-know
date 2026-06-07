@@ -17,8 +17,8 @@ ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = NOW();
 -- Update the store function to read from app_config table
 CREATE OR REPLACE FUNCTION public.store_encrypted_microsoft_token(
   p_user_id UUID,
-  p_access_token TEXT,
-  p_refresh_token TEXT DEFAULT NULL,
+  p_accessToken TEXT,
+  p_refreshToken TEXT DEFAULT NULL,
   p_token_type TEXT DEFAULT 'Bearer',
   p_expires_at TIMESTAMP WITH TIME ZONE DEFAULT NULL,
   p_scope TEXT DEFAULT NULL,
@@ -44,17 +44,17 @@ BEGIN
   -- Upsert encrypted tokens
   INSERT INTO public.user_microsoft_tokens (
     user_id,
-    encrypted_access_token,
-    encrypted_refresh_token,
+    encrypted_accessToken,
+    encrypted_refreshToken,
     token_type,
     expires_at,
     scope,
     updated_at
   ) VALUES (
     p_user_id,
-    pgp_sym_encrypt(p_access_token, encryption_key),
-    CASE WHEN p_refresh_token IS NOT NULL
-      THEN pgp_sym_encrypt(p_refresh_token, encryption_key)
+    pgp_sym_encrypt(p_accessToken, encryption_key),
+    CASE WHEN p_refreshToken IS NOT NULL
+      THEN pgp_sym_encrypt(p_refreshToken, encryption_key)
       ELSE NULL
     END,
     p_token_type,
@@ -63,10 +63,10 @@ BEGIN
     NOW()
   )
   ON CONFLICT (user_id) DO UPDATE SET
-    encrypted_access_token = pgp_sym_encrypt(p_access_token, encryption_key),
-    encrypted_refresh_token = CASE WHEN p_refresh_token IS NOT NULL
-      THEN pgp_sym_encrypt(p_refresh_token, encryption_key)
-      ELSE user_microsoft_tokens.encrypted_refresh_token
+    encrypted_accessToken = pgp_sym_encrypt(p_accessToken, encryption_key),
+    encrypted_refreshToken = CASE WHEN p_refreshToken IS NOT NULL
+      THEN pgp_sym_encrypt(p_refreshToken, encryption_key)
+      ELSE user_microsoft_tokens.encrypted_refreshToken
     END,
     token_type = p_token_type,
     expires_at = p_expires_at,
@@ -106,8 +106,8 @@ $$;
 -- Update the get function to read from app_config table
 CREATE OR REPLACE FUNCTION public.get_decrypted_microsoft_token(p_user_id UUID)
 RETURNS TABLE (
-  access_token TEXT,
-  refresh_token TEXT,
+  accessToken TEXT,
+  refreshToken TEXT,
   token_type TEXT,
   expires_at TIMESTAMP WITH TIME ZONE,
   scope TEXT
@@ -128,9 +128,9 @@ BEGIN
 
   RETURN QUERY
   SELECT
-    pgp_sym_decrypt(encrypted_access_token, encryption_key)::TEXT,
+    pgp_sym_decrypt(encrypted_accessToken, encryption_key)::TEXT,
     CASE
-      WHEN encrypted_refresh_token IS NOT NULL THEN pgp_sym_decrypt(encrypted_refresh_token, encryption_key)::TEXT
+      WHEN encrypted_refreshToken IS NOT NULL THEN pgp_sym_decrypt(encrypted_refreshToken, encryption_key)::TEXT
       ELSE NULL
     END,
     umt.token_type,
