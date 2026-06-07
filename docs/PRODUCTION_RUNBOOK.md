@@ -31,7 +31,7 @@ curl -s https://fskwutnoxbbflzqrphro.supabase.co/functions/v1/ai-query >/dev/nul
 2. **Backend API Status**
    ```bash
    curl -X GET https://fskwutnoxbbflzqrphro.supabase.co/functions/v1/ai-query \
-     -H "Authorization: Bearer invalid_token" 2>/dev/null
+     -H "Authorization: Bearer ${ACCESS_TOKEN}" 2>/dev/null
    # Should return: {"code":401,"message":"Invalid JWT"}
    ```
 

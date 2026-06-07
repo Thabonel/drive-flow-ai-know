@@ -22,7 +22,7 @@ All API requests require authentication using JWT tokens obtained through the we
 Include the token in the Authorization header:
 
 ```bash
-curl -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+curl -H "Authorization: Bearer ${ACCESS_TOKEN}" \
   https://fskwutnoxbbflzqrphro.supabase.co/functions/v1/endpoint
 ```
 
@@ -77,7 +77,7 @@ Send queries to your AI assistant programmatically.
 **Example:**
 ```bash
 curl -X POST https://fskwutnoxbbflzqrphro.supabase.co/functions/v1/ai-query \
-  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Authorization: Bearer ${ACCESS_TOKEN}" \
   -H "Content-Type: application/json" \
   -d '{
     "query": "Summarize my Q1 project documents",
@@ -113,7 +113,7 @@ Upload documents for AI processing.
 **Example:**
 ```bash
 curl -X POST https://fskwutnoxbbflzqrphro.supabase.co/functions/v1/upload-document \
-  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Authorization: Bearer ${ACCESS_TOKEN}" \
   -F "file=@document.pdf" \
   -F "title=Q1 Marketing Plan" \
   -F "knowledge_base_id=kb-12345"
@@ -246,7 +246,7 @@ Receives events from Slack integration.
 ### Basic Chat Query
 ```bash
 curl -X POST https://fskwutnoxbbflzqrphro.supabase.co/functions/v1/ai-query \
-  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Authorization: Bearer ${ACCESS_TOKEN}" \
   -H "Content-Type: application/json" \
   -d '{"query": "What is the weather today?"}'
 ```
@@ -254,7 +254,7 @@ curl -X POST https://fskwutnoxbbflzqrphro.supabase.co/functions/v1/ai-query \
 ### Document Analysis
 ```bash
 curl -X POST https://fskwutnoxbbflzqrphro.supabase.co/functions/v1/ai-query \
-  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Authorization: Bearer ${ACCESS_TOKEN}" \
   -H "Content-Type: application/json" \
   -d '{
     "query": "What are the key action items in my meeting notes?",
@@ -265,7 +265,7 @@ curl -X POST https://fskwutnoxbbflzqrphro.supabase.co/functions/v1/ai-query \
 ### Fast Response Query
 ```bash
 curl -X POST https://fskwutnoxbbflzqrphro.supabase.co/functions/v1/ai-query \
-  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Authorization: Bearer ${ACCESS_TOKEN}" \
   -H "Content-Type: application/json" \
   -d '{
     "query": "Quick summary of today events",
@@ -276,7 +276,7 @@ curl -X POST https://fskwutnoxbbflzqrphro.supabase.co/functions/v1/ai-query \
 ### Complex Research Query
 ```bash
 curl -X POST https://fskwutnoxbbflzqrphro.supabase.co/functions/v1/ai-query \
-  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Authorization: Bearer ${ACCESS_TOKEN}" \
   -H "Content-Type: application/json" \
   -d '{
     "query": "Analyze market trends and provide strategic recommendations",
@@ -344,7 +344,7 @@ X-RateLimit-Reset: 1640995200
 ```bash
 # Check rate limit status
 curl -I https://fskwutnoxbbflzqrphro.supabase.co/functions/v1/ai-query \
-  -H "Authorization: Bearer YOUR_TOKEN"
+  -H "Authorization: Bearer ${ACCESS_TOKEN}"
 
 # Implement exponential backoff for 429 responses
 ```

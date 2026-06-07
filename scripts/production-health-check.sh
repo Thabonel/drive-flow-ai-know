@@ -85,7 +85,7 @@ echo "----------------------------------------"
 
 # AI Query Endpoint
 TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
-AI_RESPONSE=$(curl -s --max-time 15 -X GET "$SUPABASE_URL/functions/v1/ai-query" -H "Authorization: Bearer invalid_token" 2>/dev/null || echo "ERROR")
+AI_RESPONSE=$(curl -s --max-time 15 -X GET "$SUPABASE_URL/functions/v1/ai-query" -H "Authorization: Bearer ${ACCESS_TOKEN}" 2>/dev/null || echo "ERROR")
 if [[ "$AI_RESPONSE" == *"Invalid JWT"* ]]; then
     print_status 0 "AI Query Endpoint (auth properly configured)"
 else
@@ -115,7 +115,7 @@ fi
 
 # Search Memories Function
 TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
-SEARCH_RESPONSE=$(curl -s --max-time 10 -X GET "$SUPABASE_URL/functions/v1/search-memories" -H "Authorization: Bearer invalid_token" 2>/dev/null || echo "ERROR")
+SEARCH_RESPONSE=$(curl -s --max-time 10 -X GET "$SUPABASE_URL/functions/v1/search-memories" -H "Authorization: Bearer ${ACCESS_TOKEN}" 2>/dev/null || echo "ERROR")
 if [[ "$SEARCH_RESPONSE" == *"Invalid JWT"* ]] || [[ "$SEARCH_RESPONSE" == *"401"* ]]; then
     print_status 0 "Search Memories Endpoint"
 else
@@ -125,7 +125,7 @@ fi
 
 # Proactive Check-in Function
 TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
-CHECKIN_RESPONSE=$(curl -s --max-time 10 -X GET "$SUPABASE_URL/functions/v1/proactive-checkin" -H "Authorization: Bearer invalid_token" 2>/dev/null || echo "ERROR")
+CHECKIN_RESPONSE=$(curl -s --max-time 10 -X GET "$SUPABASE_URL/functions/v1/proactive-checkin" -H "Authorization: Bearer ${ACCESS_TOKEN}" 2>/dev/null || echo "ERROR")
 if [[ "$CHECKIN_RESPONSE" == *"Invalid JWT"* ]] || [[ "$CHECKIN_RESPONSE" == *"401"* ]]; then
     print_status 0 "Proactive Check-in Endpoint"
 else
@@ -151,7 +151,7 @@ fi
 
 # API Response Time
 TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
-API_TIME=$(curl -w "%{time_total}" -o /dev/null -s --max-time 15 -X GET "$SUPABASE_URL/functions/v1/ai-query" -H "Authorization: Bearer invalid_token" 2>/dev/null || echo "999")
+API_TIME=$(curl -w "%{time_total}" -o /dev/null -s --max-time 15 -X GET "$SUPABASE_URL/functions/v1/ai-query" -H "Authorization: Bearer ${ACCESS_TOKEN}" 2>/dev/null || echo "999")
 if (( $(echo "$API_TIME < 2.0" | bc -l) )); then
     print_status 0 "API Response Time (${API_TIME}s)"
 else
