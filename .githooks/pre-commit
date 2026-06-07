@@ -76,7 +76,7 @@ is_exception() {
     fi
 
     # Specific old example key (safe to commit in docs)
-    if echo "$content" | grep -qF "<GOOGLE_TOKEN>"; then
+    if echo "$content" | grep -qF "<GOOGLE_API_KEY>"; then
         return 0
     fi
 

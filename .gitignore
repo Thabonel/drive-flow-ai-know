@@ -71,3 +71,11 @@ dist/
 
 # Generated content that shouldn't be committed
 conversation.md
+# Local secrets
+.env
+.env.*
+*.env
+*.env.*
+.mcp.json
+.claude.json
+.secrets.baseline
