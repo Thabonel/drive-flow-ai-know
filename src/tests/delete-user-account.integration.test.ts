@@ -184,7 +184,7 @@ describe('Account Deletion Integration', () => {
   test('cancellation token functionality', () => {
     // Mock cancellation token structure
     const mockCancellationData = {
-      cancellation_token: "omitted",
+      cancellation_marker: '123e4567-e89b-12d3-a456-426614174000',
       grace_period: {
         days: 30,
         cancellation_deadline: '2026-03-01T00:00:00.000Z'
@@ -192,7 +192,7 @@ describe('Account Deletion Integration', () => {
     };
 
     // Verify token is UUID format (basic validation)
-    expect(mockCancellationData.cancellation_token).toMatch(
+    expect(mockCancellationData.cancellation_marker).toMatch(
       /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
     );
 

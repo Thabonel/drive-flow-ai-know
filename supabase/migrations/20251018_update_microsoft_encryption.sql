@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS public.app_config (
 
 -- Insert the encryption key
 INSERT INTO public.app_config (key, value)
-VALUES ('microsoft_token_encryption_key', '3rIqniUYJtU2zqs4h8f9G8WBRbpQuT/T12uMxtvnbeM=')
+VALUES ('microsoft_encryption_setting', '3rIqniUYJtU2zqs4h8f9G8WBRbpQuT/T12uMxtvnbeM=')
 ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = NOW();
 
 -- Update the store function to read from app_config table
@@ -35,7 +35,7 @@ DECLARE
   v_result JSONB;
 BEGIN
   -- Get encryption key from app_config table
-  SELECT value INTO encryption_key FROM public.app_config WHERE key = 'microsoft_token_encryption_key';
+  SELECT value INTO encryption_key FROM public.app_config WHERE key = 'microsoft_encryption_setting';
 
   IF encryption_key IS NULL OR encryption_key = '' THEN
     RAISE EXCEPTION 'Microsoft token encryption key not configured';
@@ -120,7 +120,7 @@ DECLARE
   encryption_key TEXT;
 BEGIN
   -- Get encryption key from app_config table
-  SELECT value INTO encryption_key FROM public.app_config WHERE key = 'microsoft_token_encryption_key';
+  SELECT value INTO encryption_key FROM public.app_config WHERE key = 'microsoft_encryption_setting';
 
   IF encryption_key IS NULL OR encryption_key = '' THEN
     RAISE EXCEPTION 'Microsoft token encryption key not configured';
