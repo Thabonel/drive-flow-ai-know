@@ -402,7 +402,7 @@ export default function Billing() {
         </Card>
       </div>
 
-      {/* Additional Teams Section - Only for Business tier */}
+      {/* HIDDEN: Additional Teams section hidden with Team features - July 2025
       <FeatureGate requiredTier="business">
         <div className="mt-8">
           <h2 className="text-2xl font-bold text-foreground mb-4">Additional Teams</h2>
@@ -437,8 +437,10 @@ export default function Billing() {
               )}
             </CardContent>
           </Card>
+          </Card>
         </div>
       </FeatureGate>
+      */}
 
       <div className="text-center mt-6 text-sm text-muted-foreground">
         <p>All plans include 10 GB storage. Purchase additional storage as needed.</p>

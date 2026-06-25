@@ -1,9 +1,12 @@
-import { Home, FileText, BookOpen, Brain, Settings, LogOut, HelpCircle, Clock, Users, UserCog, Building2, Calendar, MessageSquare, Presentation, Plus } from 'lucide-react';
+import { Home, FileText, BookOpen, Brain, Settings, LogOut, HelpCircle, Clock, MessageSquare } from 'lucide-react';
+// HIDDEN: Team + Pitch Deck icons
+// import { Users, UserCog, Building2, Calendar, Presentation, Plus } from 'lucide-react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { usePresentationMode } from '@/contexts/PresentationModeContext';
-import { FeatureGate } from '@/components/FeatureGate';
-import { TeamSwitcher } from '@/components/TeamSwitcher';
+// HIDDEN: Team features
+// import { FeatureGate } from '@/components/FeatureGate';
+// import { TeamSwitcher } from '@/components/TeamSwitcher';
 import {
   Sidebar,
   SidebarContent,
@@ -50,12 +53,13 @@ const navigationItems = [
     icon: Brain,
     description: 'AI-powered document collections'
   },
-  {
-    title: 'Pitch Deck',
-    url: '/pitch-deck',
-    icon: Presentation,
-    description: 'Create presentations'
-  },
+  // HIDDEN: Pitch Deck feature hidden - July 2025
+  // {
+  //   title: 'Pitch Deck',
+  //   url: '/pitch-deck',
+  //   icon: Presentation,
+  //   description: 'Create presentations'
+  // },
 ];
 
 
@@ -124,20 +128,24 @@ export function AppSidebar() {
           </SidebarGroup>
 
 
-        {/* Team Navigation - Only visible for Business tier and above */}
+      {/* HIDDEN: Team features hidden - July 2025
         <FeatureGate requiredTier="business">
-          {/* Team Switcher */}
+
+
           {!collapsed && (
             <div className="px-3 py-2">
               <TeamSwitcher />
             </div>
           )}
 
+
+
           <SidebarGroup>
             <SidebarGroupLabel>Team</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
-                {/* Create Team - Always visible for Business users */}
+
+
                 <SidebarMenuItem>
                   {collapsed ? (
                     <Tooltip>
@@ -248,7 +256,7 @@ export function AppSidebar() {
             </SidebarGroupContent>
           </SidebarGroup>
         </FeatureGate>
-
+      */}
       </SidebarContent>
 
       <SidebarFooter className="border-t border-sidebar-border p-4">

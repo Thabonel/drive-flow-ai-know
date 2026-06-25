@@ -1,12 +1,14 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
-import { CLAUDE_MODELS, OPENROUTER_MODELS } from '../_shared/models.ts';
+import { CLAUDE_MODELS, OPENROUTER_MODELS, OPENAI_MODELS, KIMI_MODELS } from '../_shared/models.ts';
 import { getCorsHeaders, handleCorsPreflightRequest } from '../_shared/cors.ts';
 import { checkRateLimitDb, getRateLimitHeaders, RATE_LIMIT_PRESETS } from '../_shared/rate-limit.ts';
 
 const openRouterApiKey = Deno.env.get('OPENROUTER_API_KEY');
 const anthropicApiKey = Deno.env.get('ANTHROPIC_API_KEY');
+const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
+const kimiApiKey = Deno.env.get('KIMI_API_KEY');
 const braveSearchApiKey = Deno.env.get('BRAVE_SEARCH_API_KEY');
 const rapidApiKey = Deno.env.get('RAPIDAPI_KEY');
 
@@ -327,9 +329,11 @@ interface Message {
 }
 
 const PROVIDER_TOKEN_LIMITS = {
-  claude: 200000, // Claude 4.x Sonnet
-  'gpt-5': 200000, // GPT-5 family
-  gemini: 100000, // Gemini 2.5
+  openai: 200000,    // GPT-4.1 has 1M but we cap at 200k for cost
+  kimi: 128000,      // moonshot-v1-128k
+  claude: 200000,    // Claude 4.x (legacy)
+  'gpt-5': 200000,   // GPT-5 family
+  gemini: 100000,    // Gemini 2.5
   openrouter: 200000,
 } as const;
 
@@ -375,11 +379,59 @@ function chunkConversationContext(messages: Message[], maxTokens: number): Messa
 function getProviderTokenLimit(providerName: string): number {
   const lowerProvider = providerName?.toLowerCase() || '';
 
+  if (lowerProvider.includes('openai') || lowerProvider.includes('gpt')) return PROVIDER_TOKEN_LIMITS.openai;
+  if (lowerProvider.includes('kimi') || lowerProvider.includes('moonshot')) return PROVIDER_TOKEN_LIMITS.kimi;
   if (lowerProvider.includes('claude')) return PROVIDER_TOKEN_LIMITS.claude;
-  if (lowerProvider.includes('gpt-5') || lowerProvider.includes('gpt-4')) return PROVIDER_TOKEN_LIMITS['gpt-5'];
   if (lowerProvider.includes('gemini')) return PROVIDER_TOKEN_LIMITS.gemini;
 
   return PROVIDER_TOKEN_LIMITS.openrouter;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// JUDGE SYSTEM — calls action-judge Edge Function before side-effecting tools
+// Fail-open: if the judge is unavailable, defaults to allow.
+// ─────────────────────────────────────────────────────────────────────────────
+async function judgeToolCall(params: {
+  toolName: string;
+  toolInput: Record<string, unknown>;
+  actorReasoning: string;
+  userQuery: string;
+  token: string;
+}): Promise<{ decision: 'allow' | 'block' | 'revise' | 'escalate'; reason: string; revisedInput?: any }> {
+  const supabaseUrl = Deno.env.get('SUPABASE_URL');
+  if (!supabaseUrl) return { decision: 'allow', reason: 'Judge unavailable' };
+
+  try {
+    const response = await fetch(`${supabaseUrl}/functions/v1/action-judge`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${params.token}`,
+      },
+      body: JSON.stringify({
+        tool_name: params.toolName,
+        tool_input: params.toolInput,
+        actor_reasoning: params.actorReasoning,
+        user_query: params.userQuery,
+      }),
+    });
+
+    if (!response.ok) {
+      console.warn('action-judge returned', response.status, '— defaulting to allow');
+      return { decision: 'allow', reason: 'Judge unavailable' };
+    }
+
+    const result = await response.json();
+    console.log(`Judge[${params.toolName}]: ${result.decision} — ${result.reason} (${result.judge_model})`);
+    return {
+      decision: result.decision ?? 'allow',
+      reason: result.reason ?? '',
+      revisedInput: result.revised_input,
+    };
+  } catch (err) {
+    console.warn('judgeToolCall error, defaulting to allow:', err);
+    return { decision: 'allow', reason: 'Judge error' };
+  }
 }
 
 async function claudeCompletion(
@@ -399,6 +451,12 @@ async function claudeCompletion(
     role: m.role,
     content: m.content
   }));
+
+  // Original user query captured for judge context (last user message in the turn)
+  const originalQuery = (() => {
+    const last = userMessages.slice().reverse().find(m => m.role === 'user');
+    return typeof last?.content === 'string' ? last.content : '';
+  })();
 
   // If we have an image, modify the last user message to include it
   if (imageData && userMessages.length > 0) {
@@ -764,6 +822,12 @@ async function claudeCompletion(
       const toolUseBlocks = data.content.filter((block: any) => block.type === 'tool_use');
       console.log('Tool use blocks found:', toolUseBlocks.length);
 
+      // Actor reasoning: text Claude wrote before deciding to call tools
+      const actorReasoning = (data.content as any[])
+        .filter(b => b.type === 'text')
+        .map(b => b.text)
+        .join('\n');
+
       if (toolUseBlocks.length === 0) {
         // Unexpected: stop_reason is tool_use but no tool_use blocks
         console.error('No tool_use blocks despite stop_reason=tool_use');
@@ -819,27 +883,63 @@ async function claudeCompletion(
           });
         } else if (toolUse.name === 'write_sheet') {
           console.log('Processing write_sheet:', toolUse.input.sheet_id);
-          const writeResult = await callGoogleSheetsAPI(token, 'write', {
-            sheet_id: toolUse.input.sheet_id,
-            data: toolUse.input.data,
-            range: toolUse.input.range
+          const writeJudgment = await judgeToolCall({
+            toolName: 'write_sheet',
+            toolInput: toolUse.input,
+            actorReasoning,
+            userQuery: originalQuery,
+            token,
           });
-          toolResults.push({
-            type: 'tool_result',
-            tool_use_id: toolUse.id,
-            content: JSON.stringify(writeResult)
-          });
+          if (writeJudgment.decision === 'block' || writeJudgment.decision === 'escalate') {
+            toolResults.push({
+              type: 'tool_result',
+              tool_use_id: toolUse.id,
+              content: JSON.stringify({ success: false, blocked: true, decision: writeJudgment.decision, error: `Action ${writeJudgment.decision}: ${writeJudgment.reason}` })
+            });
+          } else {
+            const effectiveInput = (writeJudgment.decision === 'revise' && writeJudgment.revisedInput)
+              ? writeJudgment.revisedInput
+              : toolUse.input;
+            const writeResult = await callGoogleSheetsAPI(token, 'write', {
+              sheet_id: effectiveInput.sheet_id,
+              data: effectiveInput.data,
+              range: effectiveInput.range
+            });
+            toolResults.push({
+              type: 'tool_result',
+              tool_use_id: toolUse.id,
+              content: JSON.stringify(writeResult)
+            });
+          }
         } else if (toolUse.name === 'create_sheet') {
           console.log('Processing create_sheet:', toolUse.input.title);
-          const createResult = await callGoogleSheetsAPI(token, 'create', {
-            title: toolUse.input.title,
-            headers: toolUse.input.headers
+          const createJudgment = await judgeToolCall({
+            toolName: 'create_sheet',
+            toolInput: toolUse.input,
+            actorReasoning,
+            userQuery: originalQuery,
+            token,
           });
-          toolResults.push({
-            type: 'tool_result',
-            tool_use_id: toolUse.id,
-            content: JSON.stringify(createResult)
-          });
+          if (createJudgment.decision === 'block' || createJudgment.decision === 'escalate') {
+            toolResults.push({
+              type: 'tool_result',
+              tool_use_id: toolUse.id,
+              content: JSON.stringify({ success: false, blocked: true, decision: createJudgment.decision, error: `Action ${createJudgment.decision}: ${createJudgment.reason}` })
+            });
+          } else {
+            const effectiveInput = (createJudgment.decision === 'revise' && createJudgment.revisedInput)
+              ? createJudgment.revisedInput
+              : toolUse.input;
+            const createResult = await callGoogleSheetsAPI(token, 'create', {
+              title: effectiveInput.title,
+              headers: effectiveInput.headers
+            });
+            toolResults.push({
+              type: 'tool_result',
+              tool_use_id: toolUse.id,
+              content: JSON.stringify(createResult)
+            });
+          }
         } else if (toolUse.name === 'analyze_sheet') {
           console.log('Processing analyze_sheet:', toolUse.input.sheet_id);
           const analyzeResult = await callGoogleSheetsAPI(token, 'metadata', {
@@ -867,7 +967,8 @@ async function claudeCompletion(
                 file_type: 'ai_generated',
                 user_id: userId,
                 category: 'general',
-                source: 'ai_chat'
+                source: 'ai_chat',
+                google_file_id: `ai_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`
               }])
               .select()
               .single();
@@ -929,10 +1030,21 @@ async function claudeCompletion(
             });
           } catch (err) {
             console.error('save_document error:', err);
+            const errMsg: string = err?.message ?? '';
+            let userMsg = 'Failed to save document. Please try again.';
+            if (errMsg.includes('JWT') || errMsg.includes('401') || errMsg.includes('403') || errMsg.includes('Unauthorized') || errMsg.includes('not authenticated')) {
+              userMsg = 'Your session has expired. Please sign in again and retry.';
+            } else if (errMsg.includes('column') || errMsg.includes('42703') || errMsg.includes('relation') || errMsg.includes('PGRST204')) {
+              userMsg = 'A database schema error occurred. This is a backend issue - please contact support.';
+            } else if (errMsg.includes('ENOTFOUND') || errMsg.includes('network') || errMsg.includes('fetch') || errMsg.includes('ERR_NAME')) {
+              userMsg = 'Network error. Please check your connection and try again.';
+            } else if (errMsg.includes('rate') || errMsg.includes('429')) {
+              userMsg = 'Too many requests. Please wait a moment and try again.';
+            }
             toolResults.push({
               type: 'tool_result',
               tool_use_id: toolUse.id,
-              content: JSON.stringify({ success: false, error: err.message })
+              content: JSON.stringify({ success: false, error: userMsg })
             });
           }
         } else if (toolUse.name === 'create_knowledge_base') {
@@ -1115,6 +1227,52 @@ async function claudeCompletion(
 }
 
 
+async function openaiCompletion(messages: Message[], systemMessage: string) {
+  const allMessages = [
+    { role: 'system', content: systemMessage },
+    ...messages.filter(m => m.role !== 'system')
+  ];
+
+  const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${openaiApiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: OPENAI_MODELS.PRIMARY,
+      messages: allMessages,
+      max_tokens: 4096,
+    }),
+  });
+  const data = await response.json();
+  return data.choices?.[0]?.message?.content ?? '';
+}
+
+
+async function kimiCompletion(messages: Message[], systemMessage: string) {
+  const allMessages = [
+    { role: 'system', content: systemMessage },
+    ...messages.filter(m => m.role !== 'system')
+  ];
+
+  const response = await fetch('https://api.moonshot.cn/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${kimiApiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: KIMI_MODELS.PRIMARY,
+      messages: allMessages,
+      max_tokens: 4096,
+    }),
+  });
+  const data = await response.json();
+  return data.choices?.[0]?.message?.content ?? '';
+}
+
+
 async function openRouterCompletion(messages: Message[], systemMessage: string) {
   // Build messages array with system message at start
   const allMessages = [
@@ -1148,31 +1306,31 @@ export async function getLLMResponse(
   videoFrames?: Array<{ base64: string; media_type: string }>
 ) {
   let providerEnv = providerOverride || Deno.env.get('MODEL_PROVIDER');
-  const useOpenRouter = Deno.env.get('USE_OPENROUTER') === 'true';
 
-  // Ignore discontinued providers (ollama, local) - fall back to claude
+  // Ignore discontinued providers
   if (providerEnv === 'ollama' || providerEnv === 'local') {
-    console.log(`Provider '${providerEnv}' is discontinued, falling back to claude`);
-    providerEnv = 'claude';
+    console.log(`Provider '${providerEnv}' is discontinued, falling back to openai`);
+    providerEnv = 'openai';
   }
 
-  // Define fallback order - Claude first, then OpenRouter
+  // Define fallback order - OpenAI first, then Kimi, then OpenRouter, then Claude (legacy)
   const providers = [];
 
   if (providerEnv) {
     providers.push(providerEnv);
-  } else if (useOpenRouter) {
-    providers.push('openrouter');
   } else {
-    providers.push('claude'); // Default to Claude
+    providers.push('openai'); // Default to OpenAI
   }
 
   // Add fallbacks based on available API keys
-  if (!providers.includes('claude') && anthropicApiKey) {
-    providers.push('claude');
+  if (!providers.includes('kimi') && kimiApiKey) {
+    providers.push('kimi');
   }
   if (!providers.includes('openrouter') && openRouterApiKey) {
     providers.push('openrouter');
+  }
+  if (!providers.includes('claude') && anthropicApiKey) {
+    providers.push('claude');
   }
 
   console.log('Available providers to try:', providers);
@@ -1183,18 +1341,30 @@ export async function getLLMResponse(
       console.log('Trying AI provider:', provider);
 
       switch (provider) {
-        case 'claude':
-          if (!anthropicApiKey) {
-            console.log('Anthropic API key not available, skipping');
+        case 'openai':
+          if (!openaiApiKey) {
+            console.log('OpenAI API key not available, skipping');
             continue;
           }
-          return await claudeCompletion(messages, systemMessage, userId, token, imageData, videoFrames);
+          return await openaiCompletion(messages, systemMessage);
+        case 'kimi':
+          if (!kimiApiKey) {
+            console.log('Kimi API key not available, skipping');
+            continue;
+          }
+          return await kimiCompletion(messages, systemMessage);
         case 'openrouter':
           if (!openRouterApiKey) {
             console.log('OpenRouter API key not available, skipping');
             continue;
           }
           return await openRouterCompletion(messages, systemMessage);
+        case 'claude':
+          if (!anthropicApiKey) {
+            console.log('Anthropic API key not available, skipping');
+            continue;
+          }
+          return await claudeCompletion(messages, systemMessage, userId, token, imageData, videoFrames);
         default:
           continue;
       }
@@ -1892,7 +2062,7 @@ ${productKnowledge}
       console.log('Sanitized conversation from', conversationContext.length, 'to', sanitizedContext.length, 'messages');
 
       // Determine provider token limit
-      const providerName = providerOverride || 'claude';
+      const providerName = providerOverride || 'openai';
       const maxTokens = getProviderTokenLimit(providerName);
       console.log('Provider:', providerName, 'Max tokens:', maxTokens);
 

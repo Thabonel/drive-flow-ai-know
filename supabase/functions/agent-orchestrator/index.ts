@@ -298,12 +298,77 @@ serve(async (req) => {
       );
     }
 
+    // ── Risk map: sub-agent type → risk class ────────────────────────────────
+    const AGENT_RISK: Record<string, 'reversible_write' | 'external_impact'> = {
+      calendar:  'external_impact',  // creates real calendar events
+      creative:  'external_impact',  // generates content that may be published
+      briefing:  'reversible_write', // generates text, stored internally
+      analysis:  'reversible_write', // read-only analysis
+    };
+
+    // Helper: call action-judge before spawning an external-impact sub-agent
+    async function judgeSubAgent(agentType: string, task: AgentTask): Promise<boolean> {
+      const riskClass = AGENT_RISK[agentType] ?? 'external_impact';
+      if (riskClass === 'reversible_write') return true; // auto-allow
+
+      const supabaseUrl = Deno.env.get('SUPABASE_URL');
+      if (!supabaseUrl) return true; // judge unavailable, fail-open
+
+      try {
+        const response = await fetch(`${supabaseUrl}/functions/v1/action-judge`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            tool_name: `${agentType}_sub_agent`,
+            tool_input: task.structured_output,
+            actor_reasoning: task.structured_output.description,
+            user_query: task.original_input,
+          }),
+        });
+
+        if (!response.ok) {
+          console.warn(`Judge unavailable for ${agentType} sub-agent, allowing`);
+          return true;
+        }
+
+        const judgment = await response.json();
+        console.log(`Judge[${agentType}_sub_agent]: ${judgment.decision} — ${judgment.reason}`);
+        return judgment.decision === 'allow' || judgment.decision === 'revise';
+      } catch (err) {
+        console.warn(`Judge call failed for ${agentType}, allowing:`, err);
+        return true;
+      }
+    }
+
     const createdAgents = [];
     const subAgentInvocationPromises = [];
 
     // Create sub-agents and collect their invocation promises in parallel
     for (const task of pendingTasks as AgentTask[]) {
       const agentType = task.structured_output.agent_type;
+
+      // ── Judge gate: check external-impact sub-agents before spawning ───────
+      const judgeAllowed = await judgeSubAgent(agentType, task);
+      if (!judgeAllowed) {
+        console.log(`Judge blocked ${agentType} sub-agent for task ${task.id}`);
+        await supabase.from('agent_tasks').update({ status: 'failed' }).eq('id', task.id);
+        await supabase.from('agent_memory').insert({
+          session_id: task.session_id,
+          user_id: task.user_id,
+          memory_type: 'action_log',
+          content: {
+            action: 'sub_agent_blocked_by_judge',
+            agent_type: agentType,
+            task_title: task.structured_output.title,
+            timestamp: new Date().toISOString(),
+          },
+          importance: 4,
+        });
+        continue;
+      }
 
       // Create sub-agent
       const { data: subAgent, error: agentError } = await supabase

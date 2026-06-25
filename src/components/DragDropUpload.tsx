@@ -363,7 +363,10 @@ const DragDropUpload = ({ onFilesAdded }: DragDropUploadProps) => {
       let originalFileSize: number | null = null;
 
       if (originalFile && (type === 'pdf' || !originalFile.type.startsWith('text/'))) {
-        const fileName = `${user!.id}/${Date.now()}_${originalFile.name}`;
+        const safeFileName = originalFile.name
+          .normalize('NFC')
+          .replace(/[^\w\s.\-]/g, '_');
+        const fileName = `${user!.id}/${Date.now()}_${safeFileName}`;
         storagePath = fileName;
 
         const { data: uploadData, error: uploadError } = await supabase.storage

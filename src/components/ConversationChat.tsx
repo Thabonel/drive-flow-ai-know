@@ -733,7 +733,6 @@ export function ConversationChat({ conversationId: initialConversationId, isTemp
               file_url: uploadResult.publicUrl,
               media_metadata: mediaData.metadata ? { duration: mediaData.metadata.duration, width: mediaData.metadata.width, height: mediaData.metadata.height } : null,
               expires_at: new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString(), // 48 hours
-              knowledge_base_id: knowledgeBaseId || null,
             });
           } catch (err) {
             console.error('Failed to save media metadata:', err);
