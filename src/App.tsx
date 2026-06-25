@@ -25,6 +25,8 @@ import { initializeGlobalErrorHandling } from "@/lib/global-error-handler";
 import Header from "./layout/Header";
 import PrivacyPolicyWidget from "@/components/legal/PrivacyPolicyWidget";
 import TermsModal from "@/components/legal/TermsModal";
+import SEOHead from "@/components/SEO/SEOHead";
+import AICrawlerLogger from "@/components/AICrawlerLogger";
 
 // Lazy load page components for better performance
 const Index = React.lazy(() => import("./pages/Index"));
@@ -35,7 +37,7 @@ const GoogleDrive = React.lazy(() => import("./pages/GoogleDrive"));
 const Documents = React.lazy(() => import("./pages/Documents"));
 const AddDocuments = React.lazy(() => import("./pages/AddDocuments"));
 const KnowledgeBases = React.lazy(() => import("./pages/KnowledgeBases"));
-const PitchDeck = React.lazy(() => import("./pages/PitchDeck"));
+// HIDDEN: const PitchDeck = React.lazy(() => import("./pages/PitchDeck"));
 const SyncStatus = React.lazy(() => import("./pages/SyncStatus"));
 const Settings = React.lazy(() => import("./pages/Settings"));
 const NotFound = React.lazy(() => import("./pages/NotFound"));
@@ -62,13 +64,14 @@ const MobileDemo = React.lazy(() => import("./pages/MobileDemo"));
 const BookingLinks = React.lazy(() => import("./pages/BookingLinks"));
 const DailyBrief = React.lazy(() => import("./pages/DailyBrief"));
 const EmailToTask = React.lazy(() => import("./pages/EmailToTask"));
-const TeamSettings = React.lazy(() => import("./pages/Team/Settings"));
-const TeamMembers = React.lazy(() => import("./pages/Team/Members"));
-const TeamDocuments = React.lazy(() => import("./pages/Team/Documents"));
-const TeamTimeline = React.lazy(() => import("./pages/Team/TeamTimeline"));
-const CreateTeam = React.lazy(() => import("./pages/Team/CreateTeam"));
-const AcceptInvite = React.lazy(() => import("./pages/Team/AcceptInvite"));
-const PresentationAudience = React.lazy(() => import("./pages/PresentationAudience"));
+// HIDDEN: Team features hidden - July 2025
+// const TeamSettings = React.lazy(() => import("./pages/Team/Settings"));
+// const TeamMembers = React.lazy(() => import("./pages/Team/Members"));
+// const TeamDocuments = React.lazy(() => import("./pages/Team/Documents"));
+// const TeamTimeline = React.lazy(() => import("./pages/Team/TeamTimeline"));
+// const CreateTeam = React.lazy(() => import("./pages/Team/CreateTeam"));
+// const AcceptInvite = React.lazy(() => import("./pages/Team/AcceptInvite"));
+// const PresentationAudience = React.lazy(() => import("./pages/PresentationAudience"));
 
 const queryClient = new QueryClient();
 
@@ -239,6 +242,8 @@ const App = () => (
                 <PWAInstallPrompt />
                 <PrivacyPolicyWidget />
                 <TermsModal />
+                <SEOHead />
+                <AICrawlerLogger />
                 <Routes>
                   <Route path="/auth" element={
                     <PublicRoute>
@@ -281,11 +286,12 @@ const App = () => (
                       <KnowledgeBases />
                     </ProtectedRoute>
                   } />
+                  {/* HIDDEN: Pitch Deck feature hidden - July 2025
                   <Route path="/pitch-deck" element={
                     <ProtectedRoute>
                       <PitchDeck />
                     </ProtectedRoute>
-                  } />
+                  } /> */}
                   <Route path="/sync" element={
                     <ProtectedRoute>
                       <SyncStatus />
@@ -362,6 +368,7 @@ const App = () => (
                       <EmailToTask />
                     </ProtectedRoute>
                   } />
+                  {/* HIDDEN: Team features hidden - July 2025
                   <Route path="/team/settings" element={
                     <ProtectedRoute>
                       <TeamSettings />
@@ -392,8 +399,11 @@ const App = () => (
                       <AcceptInvite />
                     </ProtectedRoute>
                   } />
+                  */}
                   <Route path="/book/:slug" element={<BookingPage />} />
+                  {/* HIDDEN: Presentation audience hidden with Pitch Deck
                   <Route path="/presentation-audience/:sessionId" element={<PresentationAudience />} />
+                  */}
                   <Route path="/terms" element={<Terms />} />
                   <Route path="/privacy" element={<Privacy />} />
                   <Route path="/disclaimer" element={<Disclaimer />} />

@@ -1,12 +1,14 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
-import { CLAUDE_MODELS, OPENROUTER_MODELS } from '../_shared/models.ts';
+import { CLAUDE_MODELS, OPENROUTER_MODELS, OPENAI_MODELS, KIMI_MODELS } from '../_shared/models.ts';
 import { getCorsHeaders, handleCorsPreflightRequest } from '../_shared/cors.ts';
 import { checkRateLimitDb, getRateLimitHeaders, RATE_LIMIT_PRESETS } from '../_shared/rate-limit.ts';
 
 const openRouterApiKey = Deno.env.get('OPENROUTER_API_KEY');
 const anthropicApiKey = Deno.env.get('ANTHROPIC_API_KEY');
+const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
+const kimiApiKey = Deno.env.get('KIMI_API_KEY');
 const braveSearchApiKey = Deno.env.get('BRAVE_SEARCH_API_KEY');
 const rapidApiKey = Deno.env.get('RAPIDAPI_KEY');
 
@@ -327,9 +329,11 @@ interface Message {
 }
 
 const PROVIDER_TOKEN_LIMITS = {
-  claude: 200000, // Claude 4.x Sonnet
-  'gpt-5': 200000, // GPT-5 family
-  gemini: 100000, // Gemini 2.5
+  openai: 200000,    // GPT-4.1 has 1M but we cap at 200k for cost
+  kimi: 128000,      // moonshot-v1-128k
+  claude: 200000,    // Claude 4.x (legacy)
+  'gpt-5': 200000,   // GPT-5 family
+  gemini: 100000,    // Gemini 2.5
   openrouter: 200000,
 } as const;
 
@@ -375,8 +379,9 @@ function chunkConversationContext(messages: Message[], maxTokens: number): Messa
 function getProviderTokenLimit(providerName: string): number {
   const lowerProvider = providerName?.toLowerCase() || '';
 
+  if (lowerProvider.includes('openai') || lowerProvider.includes('gpt')) return PROVIDER_TOKEN_LIMITS.openai;
+  if (lowerProvider.includes('kimi') || lowerProvider.includes('moonshot')) return PROVIDER_TOKEN_LIMITS.kimi;
   if (lowerProvider.includes('claude')) return PROVIDER_TOKEN_LIMITS.claude;
-  if (lowerProvider.includes('gpt-5') || lowerProvider.includes('gpt-4')) return PROVIDER_TOKEN_LIMITS['gpt-5'];
   if (lowerProvider.includes('gemini')) return PROVIDER_TOKEN_LIMITS.gemini;
 
   return PROVIDER_TOKEN_LIMITS.openrouter;
@@ -1222,6 +1227,52 @@ async function claudeCompletion(
 }
 
 
+async function openaiCompletion(messages: Message[], systemMessage: string) {
+  const allMessages = [
+    { role: 'system', content: systemMessage },
+    ...messages.filter(m => m.role !== 'system')
+  ];
+
+  const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${openaiApiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: OPENAI_MODELS.PRIMARY,
+      messages: allMessages,
+      max_tokens: 4096,
+    }),
+  });
+  const data = await response.json();
+  return data.choices?.[0]?.message?.content ?? '';
+}
+
+
+async function kimiCompletion(messages: Message[], systemMessage: string) {
+  const allMessages = [
+    { role: 'system', content: systemMessage },
+    ...messages.filter(m => m.role !== 'system')
+  ];
+
+  const response = await fetch('https://api.moonshot.cn/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${kimiApiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: KIMI_MODELS.PRIMARY,
+      messages: allMessages,
+      max_tokens: 4096,
+    }),
+  });
+  const data = await response.json();
+  return data.choices?.[0]?.message?.content ?? '';
+}
+
+
 async function openRouterCompletion(messages: Message[], systemMessage: string) {
   // Build messages array with system message at start
   const allMessages = [
@@ -1255,31 +1306,31 @@ export async function getLLMResponse(
   videoFrames?: Array<{ base64: string; media_type: string }>
 ) {
   let providerEnv = providerOverride || Deno.env.get('MODEL_PROVIDER');
-  const useOpenRouter = Deno.env.get('USE_OPENROUTER') === 'true';
 
-  // Ignore discontinued providers (ollama, local) - fall back to claude
+  // Ignore discontinued providers
   if (providerEnv === 'ollama' || providerEnv === 'local') {
-    console.log(`Provider '${providerEnv}' is discontinued, falling back to claude`);
-    providerEnv = 'claude';
+    console.log(`Provider '${providerEnv}' is discontinued, falling back to openai`);
+    providerEnv = 'openai';
   }
 
-  // Define fallback order - Claude first, then OpenRouter
+  // Define fallback order - OpenAI first, then Kimi, then OpenRouter, then Claude (legacy)
   const providers = [];
 
   if (providerEnv) {
     providers.push(providerEnv);
-  } else if (useOpenRouter) {
-    providers.push('openrouter');
   } else {
-    providers.push('claude'); // Default to Claude
+    providers.push('openai'); // Default to OpenAI
   }
 
   // Add fallbacks based on available API keys
-  if (!providers.includes('claude') && anthropicApiKey) {
-    providers.push('claude');
+  if (!providers.includes('kimi') && kimiApiKey) {
+    providers.push('kimi');
   }
   if (!providers.includes('openrouter') && openRouterApiKey) {
     providers.push('openrouter');
+  }
+  if (!providers.includes('claude') && anthropicApiKey) {
+    providers.push('claude');
   }
 
   console.log('Available providers to try:', providers);
@@ -1290,18 +1341,30 @@ export async function getLLMResponse(
       console.log('Trying AI provider:', provider);
 
       switch (provider) {
-        case 'claude':
-          if (!anthropicApiKey) {
-            console.log('Anthropic API key not available, skipping');
+        case 'openai':
+          if (!openaiApiKey) {
+            console.log('OpenAI API key not available, skipping');
             continue;
           }
-          return await claudeCompletion(messages, systemMessage, userId, token, imageData, videoFrames);
+          return await openaiCompletion(messages, systemMessage);
+        case 'kimi':
+          if (!kimiApiKey) {
+            console.log('Kimi API key not available, skipping');
+            continue;
+          }
+          return await kimiCompletion(messages, systemMessage);
         case 'openrouter':
           if (!openRouterApiKey) {
             console.log('OpenRouter API key not available, skipping');
             continue;
           }
           return await openRouterCompletion(messages, systemMessage);
+        case 'claude':
+          if (!anthropicApiKey) {
+            console.log('Anthropic API key not available, skipping');
+            continue;
+          }
+          return await claudeCompletion(messages, systemMessage, userId, token, imageData, videoFrames);
         default:
           continue;
       }
@@ -1999,7 +2062,7 @@ ${productKnowledge}
       console.log('Sanitized conversation from', conversationContext.length, 'to', sanitizedContext.length, 'messages');
 
       // Determine provider token limit
-      const providerName = providerOverride || 'claude';
+      const providerName = providerOverride || 'openai';
       const maxTokens = getProviderTokenLimit(providerName);
       console.log('Provider:', providerName, 'Max tokens:', maxTokens);
 

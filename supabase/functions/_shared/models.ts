@@ -3,52 +3,53 @@
  *
  * This module provides a single source of truth for all AI model IDs used across edge functions.
  *
- * MODEL ALIASES (Recommended):
- * Using aliases like "claude-sonnet-4-5" automatically points to the latest version,
- * so you don't need to update when Anthropic releases new versions.
- *
  * ENVIRONMENT VARIABLE OVERRIDES:
  * Set these in Supabase dashboard to override defaults without code changes:
- * - CLAUDE_PRIMARY_MODEL: Main model for complex tasks (default: claude-opus-4-6)
- * - CLAUDE_FAST_MODEL: Fast model for quick responses (default: claude-sonnet-4-5)
- * - CLAUDE_CHEAP_MODEL: Cost-effective model (default: claude-haiku-4-5)
- * - OPENROUTER_MODEL: OpenRouter fallback model (default: openai/gpt-4.1)
  * - OPENAI_MODEL: Direct OpenAI model (default: gpt-4.1)
- * - GEMINI_MODEL: Google Gemini model (default: google/gemini-3.1-pro-preview)
+ * - OPENAI_FAST_MODEL: Fast OpenAI model (default: gpt-4o-mini)
+ * - KIMI_MODEL: Moonshot/Kimi model (default: moonshot-v1-128k)
+ * - CLAUDE_PRIMARY_MODEL: Main Claude model (optional, for compatibility)
+ * - CLAUDE_FAST_MODEL: Fast Claude model (optional)
+ * - CLAUDE_CHEAP_MODEL: Cost-effective Claude model (optional)
+ * - OPENROUTER_MODEL: OpenRouter model (default: openai/gpt-4.1)
+ * - GEMINI_MODEL: Google Gemini model (optional)
  * - LOCAL_MODEL: Local Ollama model (default: llama3)
  */
 
-// Claude model IDs - using current Anthropic API model IDs (February 2026)
+// Direct OpenAI models (PRIMARY provider)
+// See: https://platform.openai.com/docs/models
+export const OPENAI_MODELS = {
+  PRIMARY: Deno.env.get('OPENAI_MODEL') || 'gpt-4.1',
+  FAST: Deno.env.get('OPENAI_FAST_MODEL') || 'gpt-4o-mini',
+} as const;
+
+// Moonshot / Kimi models (SECONDARY provider)
+// See: https://platform.moonshot.cn/docs
+export const KIMI_MODELS = {
+  PRIMARY: Deno.env.get('KIMI_MODEL') || 'moonshot-v1-128k',
+  FAST: 'moonshot-v1-8k',
+} as const;
+
+// Claude model IDs (LEGACY - optional, for compatibility with other edge functions)
 // See: https://docs.anthropic.com/en/docs/about-claude/models
 export const CLAUDE_MODELS = {
-  // Primary: Most capable model for complex reasoning and analysis (Opus 4.6 - Feb 2026)
   PRIMARY: Deno.env.get('CLAUDE_PRIMARY_MODEL') || 'claude-opus-4-6',
-
-  // Fast: Good balance of speed and capability
   FAST: Deno.env.get('CLAUDE_FAST_MODEL') || 'claude-sonnet-4-5',
-
-  // Cheap: Most cost-effective for simple tasks
   CHEAP: Deno.env.get('CLAUDE_CHEAP_MODEL') || 'claude-haiku-4-5-20251001',
 } as const;
 
-// OpenRouter models (for fallback)
+// OpenRouter models (FALLBACK provider)
 export const OPENROUTER_MODELS = {
   PRIMARY: Deno.env.get('OPENROUTER_MODEL') || 'openai/gpt-4.1',
   FAST: 'openai/gpt-4o-mini',
 } as const;
 
-// Direct OpenAI models
-export const OPENAI_MODELS = {
-  PRIMARY: Deno.env.get('OPENAI_MODEL') || 'gpt-4.1',
-  FAST: 'gpt-4o-mini',
-} as const;
-
-// Google Gemini models (via OpenRouter)
+// Google Gemini models (OPTIONAL)
 export const GEMINI_MODELS = {
   PRIMARY: Deno.env.get('GEMINI_MODEL') || 'google/gemini-3.1-pro-preview',
 } as const;
 
-// Local models (Ollama)
+// Local models (Ollama) (OPTIONAL)
 export const LOCAL_MODELS = {
   PRIMARY: Deno.env.get('LOCAL_MODEL') || 'llama3',
 } as const;
@@ -57,7 +58,7 @@ export const LOCAL_MODELS = {
 export type ModelTier = 'PRIMARY' | 'FAST' | 'CHEAP';
 
 // Provider types
-export type Provider = 'claude' | 'openrouter' | 'openai' | 'gemini' | 'local';
+export type Provider = 'openai' | 'kimi' | 'claude' | 'openrouter' | 'gemini' | 'local';
 
 /**
  * Get the appropriate Claude model based on tier

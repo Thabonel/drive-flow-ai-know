@@ -92,11 +92,11 @@ export const REQUIRED_ENV = {
   // Core Supabase (required by all functions)
   SUPABASE_CORE: ['SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY'],
 
-  // AI Query functions
-  AI_QUERY: ['SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY', 'ANTHROPIC_API_KEY'],
+  // AI Query functions - OpenAI is primary
+  AI_QUERY: ['SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY', 'OPENAI_API_KEY'],
 
-  // AI Query with fallback
-  AI_QUERY_FULL: ['SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY', 'ANTHROPIC_API_KEY', 'OPENROUTER_API_KEY'],
+  // AI Query with fallback providers
+  AI_QUERY_FULL: ['SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY', 'OPENAI_API_KEY', 'KIMI_API_KEY', 'OPENROUTER_API_KEY'],
 
   // Email functions
   EMAIL: ['SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY', 'RESEND_API_KEY'],
