@@ -19,8 +19,8 @@
 // Direct OpenAI models (PRIMARY provider)
 // See: https://platform.openai.com/docs/models
 export const OPENAI_MODELS = {
-  PRIMARY: Deno.env.get('OPENAI_MODEL') || 'gpt-4o-mini',
-  FAST: Deno.env.get('OPENAI_FAST_MODEL') || 'gpt-4o-mini',
+  PRIMARY: Deno.env.get('OPENAI_MODEL') || 'gpt-5.2',
+  FAST: Deno.env.get('OPENAI_FAST_MODEL') || 'gpt-5 mini',
 } as const;
 
 // Moonshot / Kimi models (SECONDARY provider)
